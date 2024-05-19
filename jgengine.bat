@@ -1,1 +1,1 @@
-call "C:/JGProject/Engine/premake5.exe" vs2022 --file=../../jgengine.lua
+call "C:/Develop/JGEngine/premake5.exe" vs2022 --file=../../jgengine.lua

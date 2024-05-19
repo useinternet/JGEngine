@@ -2,8 +2,9 @@
 
 # ParkJeongHee Ignore File
 *.pdb
-Engine/Temp/
-Engine/.vs/
+Temp/
+.vs/
+Bin/
 
 
 
