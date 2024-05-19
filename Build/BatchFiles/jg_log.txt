@@ -1,0 +1,99 @@
+[:21240:][info][Core]: Active Thread: [3382835629]
+[:21240:][info][Core]: Active Thread: [3298485805]
+[:21240:][info][Core]: Active Thread: [1125144598]
+[:21240:][info][Core]: Active Thread: [3162264341]
+[:21240:][info][Core]: Active Thread: [1748247670]
+[:21240:][info][Core]: Active Thread: [2372655092]
+[:21240:][info][Core]: Active Thread: [114494495]
+[:21240:][info][Core]: Active Thread: [3497363655]
+[:21240:][info][Core]: Active Thread: [869042947]
+[:21240:][info][Core]: Active Thread: [1613330556]
+[:21240:][info][Core]: Active Thread: [96794531]
+[:21240:][info][Core]: Active Thread: [752791016]
+[:21240:][info][Core]: Active Thread: [2507259162]
+[:21240:][info][Core]: Active Thread: [1115981572]
+[:21240:][info][Core]: Active Thread: [940312369]
+[:21240:][info][Core]: Active Thread: [2619280673]
+[:21240:][info][Core]: Active Thread: [2633639338]
+[:21240:][info][Core]: Active Thread: [348928795]
+[:21240:][info][Core]: Active Thread: [743627990]
+[:21240:][info][Core]: Active Thread: [2607767654]
+[:21240:][info][Core]: Active Thread: [1425991812]
+[:21240:][info][Core]: Active Thread: [3735139254]
+[:21240:][info][Core]: Active Thread: [3550280938]
+[:21240:][info][Core]: Active Thread: [2086036108]
+[:21240:][info][Core]: Active Thread: [652778177]
+[:21240:][info][Core]: Active Thread: [2715639169]
+[:21240:][info][Core]: Active Thread: [3238416358]
+[:21240:][info][Core]: Active Thread: [2119399087]
+[:21240:][info][Core]: Active Thread: [826253909]
+[:21240:][info][Core]: Active Thread: [3667837219]
+[:21240:][info][Core]: Active Thread: [498700227]
+[:21240:][info][Core]: Active Thread: [2865723645]
+[:21240:][info][Core]: Active Thread Totoal Count: 32 
+[:21240:][info][Core]: Recognized Class List...
+[:21240:][info][BuildTool]: Step 1. Engine Collection Module Infos..
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: Programs Category Module List
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: JGBuildTool
+[:21240:][trace][BuildTool]: JGConsole
+[:21240:][trace][BuildTool]: JGHeaderTool
+[:21240:][trace][BuildTool]: JGLauncher
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: Editor Category Module List
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: JGDev_Graphics
+[:21240:][trace][BuildTool]: JGEditor
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: Runtime Category Module List
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: Asset
+[:21240:][trace][BuildTool]: Core
+[:21240:][trace][BuildTool]: Game
+[:21240:][trace][BuildTool]: GameFrameWorks
+[:21240:][trace][BuildTool]: Graphics
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][trace][BuildTool]: Editor: 2
+[:21240:][trace][BuildTool]: Programs: 4
+[:21240:][trace][BuildTool]: Runtime: 5
+[:21240:][trace][BuildTool]: Total: 11
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][info][BuildTool]: Step 2. User Collection Module Infos..
+[:21240:][trace][BuildTool]: Total: 0
+[:21240:][trace][BuildTool]: ----------------------------------------------------
+[:21240:][info][BuildTool]: Step 3. Generate Build Script..
+[:21240:][trace][BuildTool]: Module: JGBuildTool: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGBuildTool: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGConsole: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGConsole: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGHeaderTool: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGHeaderTool: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGLauncher: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGLauncher: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGDev_Graphics: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGDev_Graphics: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: JGEditor: Start Generate Build Script
+[:21240:][error][BuildTool]: Module: JGEditor: is not exists dependency module(GUI)
+[:21240:][trace][BuildTool]: Module: JGEditor: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: Asset: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: Asset: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: Core: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: Core: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: Game: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: Game: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: GameFrameWorks: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: GameFrameWorks: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Module: Graphics: Start Generate Build Script
+[:21240:][trace][BuildTool]: Module: Graphics: Compelete Generate Build Script
+[:21240:][trace][BuildTool]: Generate Build Script: ../../Source/Programs/JGBuildTool/jgengine.lua
+[:21240:][info][BuildTool]: Step 4. Insert Include PCH..
+[:21240:][info][BuildTool]: Step 5. Make Project Files..
+[:21240:][info][BuildTool]: Recognize CodeGenable Module : Asset
+[:21240:][info][BuildTool]: Recognize CodeGenable Module : JGDev_Graphics
+[:21240:][info][BuildTool]: Recognize CodeGenable Module : Game
+[:21240:][info][BuildTool]: Recognize CodeGenable Module : JGEditor
+[:21240:][info][BuildTool]: Recognize CodeGenable Module : Graphics
+[:21240:][info][BuildTool]: Compelete Build Tool Run..
