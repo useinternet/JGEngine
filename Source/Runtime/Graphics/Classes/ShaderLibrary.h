@@ -6,8 +6,8 @@ class GShaderLibrary : public GGlobalSystemInstance<GShaderLibrary>
 {
 public:
 	static PString GraphicsShaderTemplate;
-	static PString MaterialSurfaceContentScript;
-	static PString MaterialConstantBufferContentScript;
+	static PString MaterialSurfaceContentcript;
+	static PString MaterialConstantBufferContentcript;
 private:
 	HHashMap<PName, PString> _shaderTemplates;
 

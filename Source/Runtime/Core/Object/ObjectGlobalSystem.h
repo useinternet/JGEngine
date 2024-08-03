@@ -193,15 +193,22 @@ inline PSharedPtr<JGObject> LoadObject(const PString& path)
 		if (PJson::ToObject(jsonString, &Json) == true)
 		{
 			JGType ObjectType;
-			PJsonData ObjectData;
-
-			if (Json.GetData("JGObjectType", &ObjectType) == false)
+			PJsonData ObjectTypeData = Json.CreateJsonData();
+			PJsonData ObjectData     = Json.CreateJsonData();
+			
+			Json.FindMember("JGObjectType", &ObjectTypeData);
+			if (ObjectTypeData.IsValid() == false || ObjectTypeData.GetData(&ObjectType) == false)
 			{
 				JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Unknown ObjectType", path);
 				return nullptr;
 			}
 
 			Json.FindMember("JGObject", &ObjectData);
+			if (ObjectData.IsValid() == false)
+			{
+				JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Missing Object", path);
+				return nullptr;
+			}
 
 			PSharedPtr<JGObject> result = AllocateByClass(StaticClass(ObjectType));
 			if (ObjectData.GetData(result.GetRawPointer()) == true)

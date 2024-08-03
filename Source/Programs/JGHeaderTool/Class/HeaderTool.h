@@ -78,7 +78,7 @@ struct HHeaderInfo
 {
 	PString ModuleName;
 	PString FileName;
-	PString Contents;
+	PString Content;
 	PString LocalRelativePath;
 
 	HList<HClass> Classes;

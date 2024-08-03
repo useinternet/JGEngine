@@ -374,8 +374,8 @@ bool PDX12Material::generateShaderCode()
 		}
 	}
 
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialConstantBufferContentScript, constantBufferShaderCode);
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentScript, materialShaderCode);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialConstantBufferContentcript, constantBufferShaderCode);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentcript, materialShaderCode);
 
 	_fullShaderCode = std::move(fullShaderCode);
 

@@ -95,7 +95,7 @@ bool GModuleGlobalSystem::ConnectModule(const PString& moduleName)
 	PString dllName = PString::Format("%s.dll", moduleName);;
 	PString getTypeFuncName = PString::Format("_Get_%s_Type_", moduleName);
 	PString createModuleFuncName = "_Create_Module_Interface_";
-
+	
 	HJInstance dllIns = HPlatform::LoadDll(dllName);
 	if (dllIns == 0)
 	{

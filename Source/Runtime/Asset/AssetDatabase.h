@@ -43,6 +43,6 @@ public:
 
 //private:
 	void loadAssets();
-	void loadAssetsInternal(const PString& inContentsDir);
+	void loadAssetsInternal(const PString& inContentDir);
 	void loadAsset_Thread(HLoadingThreadData inAssetData);
 };

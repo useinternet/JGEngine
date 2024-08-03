@@ -12,10 +12,13 @@ JG_ENUM_FLAG(EFBXAssetImportFlags)
 enum class EFBXAssetImportFlags
 {
 	None = 0x000,
-	Import_Mesh = 0x001,
-	Import_Skeletal = 0x002,
-	Import_AnimationClip = 0x004,
-	Import_Texture = 0x008,
+	Import_StaticMesh   = 0x001,
+	Import_SkeletalMesh = 0x002,
+	Import_Skeletal		= 0x004,
+	Import_AnimationClip = 0x008,
+	Import_Texture = 0x010,
+
+	Import_Mesh = Import_StaticMesh | Import_SkeletalMesh,
 };
 
 class JGFBXAssetImporter;

@@ -15,6 +15,10 @@ private:
 public:
 	HAssetPath();
 	HAssetPath(const PString& inAssetPath);
+	HAssetPath(const char* inAssetPath);
+
+	HAssetPath& operator=(const PString& inAssetPath);
+	HAssetPath& operator=(const char* inAssetPath);
 
 	const PName& GetRawAssetPath() const { return RawAssetPath; }
 	const PName& GetAssetPath() const { return AssetPath; }

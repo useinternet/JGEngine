@@ -24,11 +24,16 @@
  {
  	HJWindowArguments winArgs;
  	winArgs.Title = "JGDev_Graphics";
- 	winArgs.Size  = HVector2Int(800, 600);
+ 	winArgs.Size  = HVector2Int(1936, 1119);
  	_window = HPlatform::CreateJWindow(winArgs);
 
  	GCoreSystem::GetGlobalValues().MainWindow = _window.GetRawPointer();
 
+	if (GModuleGlobalSystem::GetInstance().ConnectModule("Asset") == false)
+	{
+		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Asset Module...");
+
+	}
  	if (GModuleGlobalSystem::GetInstance().ConnectModule("Graphics") == false)
  	{
  		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Graphics Module...");
@@ -36,31 +41,22 @@
 
  	JG_LOG(JGDev_GraphicsModule, ELogLevel::Trace, "Startup JGDev_GraphicsModule Module...");
 
-
-	HTextureInfo TexInfo;
-	TexInfo.Width = 1920;
-	TexInfo.Height = 1080;
-	TexInfo.Format = ETextureFormat::R16G16B16A16_Float;
-	TexInfo.Flags = ETextureFlags::Allow_RenderTarget;
-	TexInfo.MipLevel = 1;
-	TexInfo.ArraySize = 1;
-
-	TexInfo.ClearColor = HLinearColor(1.0F, 0.0F, 0.0F, 1.0F);
-
-	auto tex = GetGraphicsAPI().CreateRawTexture(TexInfo);
-	GetGraphicsAPI().GetGraphicsCommand()->ClearTexture(tex);
-	GetGraphicsAPI().SubmitFinalTexture(tex);
-
-    PSharedPtr<JGFBXAssetImporter> importer = Allocate< JGFBXAssetImporter>();
-    PSharedPtr<PFBXAssetImportArguments> args = Allocate<PFBXAssetImportArguments>();
-    HFileHelper::CombinePath(HFileHelper::EngineContentsDirectory(), "RawResources", &(args->SrcPath));
-    HFileHelper::CombinePath(HFileHelper::EngineContentsDirectory(), "TempAsset", &(args->DestPath));
-
-    importer->Import(args);
+    _test.Init();
+    GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::Update, PTaskDelegate::CreateRaw(&_test, &HJGDevGraphicsTest::Update));
+ //
+ //    PSharedPtr<JGFBXAssetImporter> importer = Allocate< JGFBXAssetImporter>();
+ //    PSharedPtr<PFBXAssetImportArguments> args = Allocate<PFBXAssetImportArguments>();
+ //    HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "RawResources/X Bot.fbx", &(args->SrcPath));
+ //    HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "TempAsset", &(args->DestPath));
+ // 	args->Flags = EFBXAssetImportFlags::Import_StaticMesh;
+ // 	
+ //    importer->Import(args);
  }
 
  void HJGDev_GraphicsModule::ShutdownModule()
  {
+     _test.Shutdown();
+
  	_window = nullptr;
 
  	GModuleGlobalSystem::GetInstance().DisconnectModule("Graphics");

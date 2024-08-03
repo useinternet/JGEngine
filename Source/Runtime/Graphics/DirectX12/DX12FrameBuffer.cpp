@@ -75,7 +75,6 @@ void PDX12FrameBuffer::Update()
 	{
 		CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
 			backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST);
-
 		commandList->Get()->ResourceBarrier(1, &resourceBarrier);
 
 		commandList->TransitionBarrier(_submittedTexture->Get(), D3D12_RESOURCE_STATE_COPY_SOURCE);

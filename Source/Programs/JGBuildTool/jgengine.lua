@@ -50,6 +50,7 @@ workspace "JGEngine"
         language "C++"
         debugdir  (BIN_PATH)
         targetdir (BIN_PATH)
+        libdirs(BIN_PATH)
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)
@@ -72,6 +73,7 @@ workspace "JGEngine"
         language "C++"
         debugdir  (BIN_PATH)
         targetdir (BIN_PATH)
+        libdirs(BIN_PATH)
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)
@@ -173,47 +175,15 @@ workspace "JGEngine"
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\JGDev_Graphics_Dynamic.dll"
-}
 				filter "configurations:DevelopGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\JGDev_Graphics_Dynamic.dll"
-}
 				filter "configurations:ConfirmGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\JGDev_Graphics_Dynamic.dll"
-}
 				filter "configurations:ReleaseGame"
 					ReleaseConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGDev_Graphics.dll $(TargetDir)..\\JGDev_Graphics_Dynamic.dll"
-}
 
 
 			project "JGEditor"
@@ -223,47 +193,15 @@ workspace "JGEngine"
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\JGEditor_Dynamic.dll"
-}
 				filter "configurations:DevelopGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\JGEditor_Dynamic.dll"
-}
 				filter "configurations:ConfirmGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\JGEditor_Dynamic.dll"
-}
 				filter "configurations:ReleaseGame"
 					ReleaseConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.lib $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.exp $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)JGEditor.dll $(TargetDir)..\\JGEditor_Dynamic.dll"
-}
 
 
 		group "Engine/Runtime"
@@ -274,47 +212,15 @@ workspace "JGEngine"
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\Asset_Dynamic.dll"
-}
 				filter "configurations:DevelopGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\Asset_Dynamic.dll"
-}
 				filter "configurations:ConfirmGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\Asset_Dynamic.dll"
-}
 				filter "configurations:ReleaseGame"
 					ReleaseConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Asset.dll $(TargetDir)..\\Asset_Dynamic.dll"
-}
 
 
 			project "Core"
@@ -342,47 +248,15 @@ workspace "JGEngine"
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Game.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Game.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Game.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\Game_Dynamic.dll"
-}
 				filter "configurations:DevelopGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Game.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Game.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Game.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\Game_Dynamic.dll"
-}
 				filter "configurations:ConfirmGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Game.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Game.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Game.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\Game_Dynamic.dll"
-}
 				filter "configurations:ReleaseGame"
 					ReleaseConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Game.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Game.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Game.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Game.dll $(TargetDir)..\\Game_Dynamic.dll"
-}
 
 
 			project "GameFrameWorks"
@@ -410,47 +284,15 @@ workspace "JGEngine"
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\Graphics_Dynamic.dll"
-}
 				filter "configurations:DevelopGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\Graphics_Dynamic.dll"
-}
 				filter "configurations:ConfirmGame"
 					ConfirmConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\Graphics_Dynamic.dll"
-}
 				filter "configurations:ReleaseGame"
 					ReleaseConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-					
-				postbuildcommands {
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.lib $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.exp $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)Graphics.dll $(TargetDir)..\\Graphics_Dynamic.dll"
-}
 
 
 

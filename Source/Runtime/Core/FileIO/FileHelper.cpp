@@ -32,14 +32,26 @@ bool HFileHelper::ReadAllText(const PString& path, PString* out_str)
 		return false;
 	}
 	std::ifstream fin;
-	fin.open(path.GetRawString());
+	fin.open(path.GetRawString(), std::ios::binary);
 	if (fin.is_open() == true)
 	{
-		std::stringstream ss;
-		ss << fin.rdbuf();
-		
-		*out_str = ss.str().c_str();
+		// 파일의 끝으로 이동하여 파일 크기를 가져옵니다.
+		fin.seekg(0, std::ios::end);
+		int64 fileSize = fin.tellg();
+		fin.seekg(0, std::ios::beg);
 
+		// 파일 내용을 저장할 벡터를 할당합니다.
+		HList<char> buffer(fileSize);
+		buffer.resize(fileSize, 0);
+
+		// 파일 내용을 벡터로 읽어옵니다.
+		bool bResult = false;
+		if(fin.read(buffer.data(), fileSize))
+		{
+			bResult = true;
+			*out_str = buffer.data();
+		}
+		
 		fin.close();
 		return true;
 	}
@@ -302,6 +314,21 @@ const PString& HFileHelper::EngineDirectory()
 	return enginePath;
 }
 
+const PString& HFileHelper::EngineBinDirectory()
+{
+	static PString engineBinPath;
+	if (engineBinPath.Empty())
+	{
+		CombinePath(EngineDirectory(), "Bin", &engineBinPath);
+		if (Exists(engineBinPath) == false)
+		{
+			CreateDirectory(engineBinPath);
+		}
+	}
+
+	return engineBinPath;
+}
+
 const PString& HFileHelper::EngineBuildDirectory()
 {
 	static PString engineBuildPath;
@@ -317,19 +344,19 @@ const PString& HFileHelper::EngineBuildDirectory()
 	return engineBuildPath;
 }
 
-const PString& HFileHelper::EngineContentsDirectory()
+const PString& HFileHelper::EngineContentDirectory()
 {
-	static PString engineContentsPath;
-	if (engineContentsPath.Empty())
+	static PString engineContentPath;
+	if (engineContentPath.Empty())
 	{
-		CombinePath(EngineDirectory(), "Contents", &engineContentsPath);
-		if (Exists(engineContentsPath) == false)
+		CombinePath(EngineDirectory(), "Content", &engineContentPath);
+		if (Exists(engineContentPath) == false)
 		{
-			CreateDirectory(engineContentsPath);
+			CreateDirectory(engineContentPath);
 		}
 	}
 
-	return engineContentsPath;
+	return engineContentPath;
 }
 
 const PString& HFileHelper::EngineConfigDirectory()
@@ -465,4 +492,10 @@ const PString& HFileHelper::EngineShaderDirectory()
 	}
 
 	return engineShaderDirectory;
+}
+
+const PString& HFileHelper::GameContentDirectory()
+{
+	static PString gameContentDirectory;
+	return gameContentDirectory;
 }

@@ -6,7 +6,7 @@
 PSharedPtr<JGStaticMesh> PJGGraphicsAPI::CreateStaticMesh(const HStaticMeshConstructArguments& inArgs)
 {
     PSharedPtr<JGStaticMesh> result = Allocate<JGStaticMesh>();
-    result->SetName(inArgs.Name);
+    result->SetName(inArgs.Name.GetAssetPath());
     result->SetData(inArgs.SubMeshNames, inArgs.Verties, inArgs.Indeies);
     return result;
 }

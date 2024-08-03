@@ -376,9 +376,9 @@ struct IDxcUtils : public IUnknown {
     _COM_Outptr_ IDxcBlobEncoding **pBlobEncoding) = 0;
 
   ////
-  // New blobs and copied contents are allocated with the current allocator
+  // New blobs and copied Content are allocated with the current allocator
 
-  // Copy blob contents to memory owned by the new blob.
+  // Copy blob Content to memory owned by the new blob.
   // (was: CreateBlobWithEncodingOnHeapCopy)
   virtual HRESULT STDMETHODCALLTYPE CreateBlob(
     _In_bytecount_(size) LPCVOID pData, UINT32 size, UINT32 codePage,
@@ -426,7 +426,7 @@ struct IDxcUtils : public IUnknown {
   ) = 0;
 
   // Takes the shader PDB and returns the hash and the container inside it
-  virtual HRESULT STDMETHODCALLTYPE GetPDBContents(
+  virtual HRESULT STDMETHODCALLTYPE GetPDBContent(
     _In_ IDxcBlob *pPDBBlob, _COM_Outptr_ IDxcBlob **ppHash, _COM_Outptr_ IDxcBlob **ppContainer) = 0;
 };
 

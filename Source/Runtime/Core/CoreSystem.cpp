@@ -26,17 +26,17 @@ GCoreSystem* GCoreSystem::Instance = nullptr;
 
 bool GCoreSystem::Create(const HCoreSystemArguments& args)
 {
-	/* CoreSystem ±¸ÇöÇÒ ¸ñ·Ï
+	/* CoreSystem êµ¬í˜„í•  ëª©ë¡
 
 * AScheduler
-* * ¾²·¹µå ½ÇÇà ¹× ÇÔ¼ö ½ÇÇà °ü¸®
-* * ÇÒ¼ö ÀÖ´Ù¸é C++20 ÄÚ·çÆ¾µµ µµÀÔ
+* * ì“°ë ˆë“œ ì‹¤í–‰ ë° í•¨ìˆ˜ ì‹¤í–‰ ê´€ë¦¬
+* * í• ìˆ˜ ìˆë‹¤ë©´ C++20 ì½”ë£¨í‹´ë„ ë„ì…
 *
 * AStringGlobalSystem
-* * ¹®ÀÚ¿­ °ü¸®, À¯´ÏÄÚµå <-> ¾Æ½ºÅ° °£ º¯È¯ ¹× ½ºÆ®¸µ ÄÚµå°ü¸®
+* * ë¬¸ìì—´ ê´€ë¦¬, ìœ ë‹ˆì½”ë“œ <-> ì•„ìŠ¤í‚¤ ê°„ ë³€í™˜ ë° ìŠ¤íŠ¸ë§ ì½”ë“œê´€ë¦¬
 *
 * AModuleGlobalSystem
-* ¸ğµâ °ü¸®
+* ëª¨ë“ˆ ê´€ë¦¬
 */
 
 	if (Instance != nullptr)
@@ -63,7 +63,7 @@ bool GCoreSystem::Create(const HCoreSystemArguments& args)
 			JG_LOG(Core, ELogLevel::Critical, "Fail ObjectGlobalSystem Code Generation");
 		}
 	}
-
+	
 	if (args.LaunchModule.length() > 0)
 	{
 		if (GModuleGlobalSystem::GetInstance().ConnectModule(args.LaunchModule.c_str()) == false)

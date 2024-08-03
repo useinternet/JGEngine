@@ -21,21 +21,21 @@ bool PBuildTool::Run()
 {
 	const PArguments& arguments = getArguments();
 
-	// Step 1. Engine Module Á¤º¸ ¼öÁý 
+	// Step 1. Engine Module ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 1. Engine Collection Module Infos..");
 	if (collectionModuleInfos(arguments.EngineWorkDirectory, arguments.EngineWorkCategories, _engineModuleInfoMap) == false)
 	{
 		return false;
 	}
 
-	// Step 2. User Module Á¤º¸ ¼öÁý 
+	// Step 2. User Module ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 2. User Collection Module Infos..");
 	if (collectionModuleInfos(arguments.UserWorkDirectory, arguments.UserWorkCategories, _userModuleInfoMap) == false)
 	{
 		return false;
 	}
 
-	// Step 3. lua ÄÚµå ÀÛ¼º
+	// Step 3. lua ï¿½Úµï¿½ ï¿½Û¼ï¿½
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 3. Generate Build Script..");
 	if (generateBuildScript() == false)
 	{
@@ -273,16 +273,16 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 			PString links;
 			PString defines;
 
-			PString postcommands = PString::Format(R"(
-				postbuildcommands {
-					"copy $(TargetDir)%s.dll $(TargetDir)..\\",
-					"copy $(TargetDir)%s.lib $(TargetDir)..\\",
-					"copy $(TargetDir)%s.exp $(TargetDir)..\\",
-					"copy $(TargetDir)%s.pdb $(TargetDir)..\\",
-					"copy $(TargetDir)%s.dll $(TargetDir)..\\%s_Dynamic.dll"
-})"
-, moduleInfo.ModuleName, moduleInfo.ModuleName, moduleInfo.ModuleName,
-moduleInfo.ModuleName, moduleInfo.ModuleName, moduleInfo.ModuleName);
+// 			PString postcommands = PString::Format(R"(
+// 				postbuildcommands {
+// 					"copy $(TargetDir)%s.dll $(TargetDir)..\\",
+// 					"copy $(TargetDir)%s.lib $(TargetDir)..\\",
+// 					"copy $(TargetDir)%s.exp $(TargetDir)..\\",
+// 					"copy $(TargetDir)%s.pdb $(TargetDir)..\\",
+// 					"copy $(TargetDir)%s.dll $(TargetDir)..\\%s_Dynamic.dll"
+// })"
+// , moduleInfo.ModuleName, moduleInfo.ModuleName, moduleInfo.ModuleName,
+// moduleInfo.ModuleName, moduleInfo.ModuleName, moduleInfo.ModuleName);
 
 	
 
@@ -351,37 +351,37 @@ moduleInfo.ModuleName, moduleInfo.ModuleName, moduleInfo.ModuleName);
 			outScript.AppendLine("filter \"configurations:DevelopEngine\"");
 			outScript.Append("\t\t\t\t\t").Append(moduleInfo.ModuleFilters[(int32)EModuleFilter::DevelopEngine].Config).AppendLine("()");
 			outScript.Append("\t\t\t\t\t").AppendLine(getDefines(moduleInfo, EModuleFilter::DevelopEngine));
-			if (bIsSharedLib)
-			{
-				outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
-			}
+			// if (bIsSharedLib)
+			// {
+			// 	outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
+			// }
 			outScript.Append("\t\t\t\t");
 
 			outScript.AppendLine("filter \"configurations:DevelopGame\"");
 			outScript.Append("\t\t\t\t\t").Append(moduleInfo.ModuleFilters[(int32)EModuleFilter::DevelopGame].Config).AppendLine("()");
 			outScript.Append("\t\t\t\t\t").AppendLine(getDefines(moduleInfo, EModuleFilter::DevelopGame));
-			if (bIsSharedLib)
-			{
-				outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
-			}
+			// if (bIsSharedLib)
+			// {
+			// 	outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
+			// }
 			outScript.Append("\t\t\t\t");
 
 			outScript.AppendLine("filter \"configurations:ConfirmGame\"");
 			outScript.Append("\t\t\t\t\t").Append(moduleInfo.ModuleFilters[(int32)EModuleFilter::ConfirmGame].Config).AppendLine("()");
 			outScript.Append("\t\t\t\t\t").AppendLine(getDefines(moduleInfo, EModuleFilter::ConfirmGame));
-			if (bIsSharedLib)
-			{
-				outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
-			}
+			// if (bIsSharedLib)
+			// {
+			// 	outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
+			// }
 			outScript.Append("\t\t\t\t");
 
 			outScript.AppendLine("filter \"configurations:ReleaseGame\"");
 			outScript.Append("\t\t\t\t\t").Append(moduleInfo.ModuleFilters[(int32)EModuleFilter::ReleaseGame].Config).AppendLine("()");
 			outScript.Append("\t\t\t\t\t").AppendLine(getDefines(moduleInfo, EModuleFilter::ReleaseGame));
-			if (bIsSharedLib)
-			{
-				outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
-			}
+			// if (bIsSharedLib)
+			// {
+			// 	outScript.Append("\t\t\t\t\t").AppendLine(postcommands);
+			// }
 
 			outScript.AppendLine("");
 			outScript.AppendLine("");

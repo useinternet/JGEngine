@@ -27,8 +27,9 @@ public:
 	static void AbsolutePath(const PString& inPath, PString* outPath);
 
 	static const PString& EngineDirectory();
+	static const PString& EngineBinDirectory();
 	static const PString& EngineBuildDirectory();
-	static const PString& EngineContentsDirectory();
+	static const PString& EngineContentDirectory();
 	static const PString& EngineConfigDirectory();
 	static const PString& EngineSourceDirectory();
 	static const PString& EngineEditorSourceDirectory();
@@ -38,4 +39,6 @@ public:
 	static const PString& EngineTempDirectory();
 	static const PString& EngineCodeGenDirectory();
 	static const PString& EngineShaderDirectory();
+
+	static const PString& GameContentDirectory();
 };

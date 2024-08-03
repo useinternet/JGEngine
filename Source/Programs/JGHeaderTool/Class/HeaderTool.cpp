@@ -150,7 +150,7 @@ bool PHeaderTool::collectionHeaderFiles_Internal(const PString& inDir, const HHa
 		}
 		headerInfo.ModuleName.SubString(&headerInfo.ModuleName, 0, pos);
 		
-		if (HFileHelper::ReadAllText(headerFilePath, &headerInfo.Contents) == false)
+		if (HFileHelper::ReadAllText(headerFilePath, &headerInfo.Content) == false)
 		{
 			// Error Log
 			continue;
@@ -217,7 +217,7 @@ bool PHeaderTool::extractReflectionDatasInternal(HList<HHeaderInfo>& inHeaderInf
 		HProperty* pProperty = nullptr;
 		HFunction* pFunction = nullptr;
 
-		HList<PString> lines = headerInfo.Contents.Split('\n');
+		HList<PString> lines = headerInfo.Content.Split('\n');
 		for (const PString& line : lines)
 		{
 			if (isCanAnalysisClass(line) == true)
@@ -915,13 +915,13 @@ bool PHeaderTool::generateCodeGenHeaderSourceCode(const HHeaderInfo& headerInfo,
 	targetClass.GetCodeGenStaticCreateFuncName(&codeGenStaticCreateFuncName);
 	targetClass.GetCodeGenCreateFuncName(&codeGenCreateFuncName);
 
-	PString writeJsonContents;
-	PString readJsonContents;
+	PString writeJsonContent;
+	PString readJsonContent;
 
 	for (const HProperty& property : targetClass.Properties)
 	{
-		writeJsonContents.AppendLine(PString::Format("    dataJson.AddMember(\"%s\", %s); \\", property.Name, property.Name));
-		readJsonContents.AppendLine(PString::Format(R"(\
+		writeJsonContent.AppendLine(PString::Format("    dataJson.AddMember(\"%s\", %s); \\", property.Name, property.Name));
+		readJsonContent.AppendLine(PString::Format(R"(\
 		if (dataJson.GetData("%s", &%s) == false)\
 		{\
 			\
@@ -929,8 +929,8 @@ bool PHeaderTool::generateCodeGenHeaderSourceCode(const HHeaderInfo& headerInfo,
 \)", property.Name, property.Name));
 	}
 	
-	writeJsonContents.Append("\\");
-	readJsonContents.Append("\\");
+	writeJsonContent.Append("\\");
+	readJsonContent.Append("\\");
 
 	outCode->
 		AppendLine("#ifdef JG_GENERATED_CLASS_BODY")
@@ -966,7 +966,7 @@ bool PHeaderTool::generateCodeGenHeaderSourceCode(const HHeaderInfo& headerInfo,
 \
 	}\
 private:\
-\)", writeJsonContents, targetClass.Name, targetClass.Name, readJsonContents));
+\)", writeJsonContent, targetClass.Name, targetClass.Name, readJsonContent));
 
 	return true;
 }

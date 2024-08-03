@@ -2,8 +2,8 @@
 #include "ShaderLibrary.h"
 
 PString GShaderLibrary::GraphicsShaderTemplate = "graphics_shader_template";
-PString GShaderLibrary::MaterialSurfaceContentScript = "__PS_SURFACE_CONTENTS_SCRIPT__";
-PString GShaderLibrary::MaterialConstantBufferContentScript = "__PS_CONSTANT_BUFFER_CONTENTS_SCRIPT__";
+PString GShaderLibrary::MaterialSurfaceContentcript = "__PS_SURFACE_Content_SCRIPT__";
+PString GShaderLibrary::MaterialConstantBufferContentcript = "__PS_CONSTANT_BUFFER_Content_SCRIPT__";
 
 void GShaderLibrary::Start()
 {

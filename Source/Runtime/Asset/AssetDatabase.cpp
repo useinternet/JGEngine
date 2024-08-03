@@ -98,16 +98,16 @@ bool GAssetDatabase::LoadAssetAsync(const HAssetPath& inAssetPath, const POnLoad
 
 void GAssetDatabase::loadAssets()
 {
-	loadAssetsInternal(HFileHelper::EngineContentsDirectory());
+	loadAssetsInternal(HFileHelper::EngineContentDirectory());
 	//loadAssetsInternal(HFileHelper::GameContentDirectory());
 }
 
-void GAssetDatabase::loadAssetsInternal(const PString& inContentsDir)
+void GAssetDatabase::loadAssetsInternal(const PString& inContentDir)
 {
 	HList<PString> assetFiles;
-	HFileHelper::FileListInDirectory(inContentsDir, &assetFiles, true, { JG_ASSET_FORMAT });
+	HFileHelper::FileListInDirectory(inContentDir, &assetFiles, true, { JG_ASSET_FORMAT });
 
-	JG_LOG(Asset, ELogLevel::Trace, "Start Load Assets in %s", inContentsDir);
+	JG_LOG(Asset, ELogLevel::Trace, "Start Load Assets in %s", inContentDir);
 	for (const PString& assetFile : assetFiles)
 	{
 		LoadAssetAsync(HAssetPath(assetFile));
@@ -121,7 +121,7 @@ void GAssetDatabase::loadAsset_Thread(HLoadingThreadData inThreadData)
 
 	if (Asset == nullptr)
 	{
-		JG_LOG(Asset, ELogLevel::Error, "%s : Fail Load Asset", inThreadData.AssetPath.GetAssetPath());
+		JG_LOG(Asset, ELogLevel::Error, "%s : Fail Load Asset", inThreadData.AssetPath.GetAssetPath().ToString());
 	}
 
 	Asset->OnLoadAsset_Thread();

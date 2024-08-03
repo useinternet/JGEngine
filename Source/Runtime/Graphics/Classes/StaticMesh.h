@@ -12,7 +12,7 @@ class IRawMaterial;
 
 struct HStaticMeshConstructArguments
 {
-	PName Name;
+	HAssetPath Name;
 	HList<PName> SubMeshNames;
 	HList<HList<HVertex>> Verties;
 	HList<HList<uint32>>  Indeies;
@@ -29,8 +29,8 @@ struct HStaticSubMesh : public IJsonable
 	void SetName(const PName& inName);
 
 protected:
-	virtual void WriteJson(PJsonData& json) const;
-	virtual void ReadJson(const PJsonData& json);
+	virtual void WriteJson(PJsonData& json) const override;
+	virtual void ReadJson(const PJsonData& json) override;
 };
 
 JGCLASS()
@@ -43,7 +43,7 @@ class GRAPHICS_API JGStaticMesh : public JGAsset
 
 public:
 	JGStaticMesh();
-	virtual ~JGStaticMesh() = default;
+	virtual ~JGStaticMesh() override = default;
 
 	const uint64 GetTotalVertexCount() const;
 	const uint64 GetTotalIndexCount() const;

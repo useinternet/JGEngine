@@ -50,6 +50,7 @@ workspace "JGEngine"
         language "C++"
         debugdir  (BIN_PATH)
         targetdir (BIN_PATH)
+        libdirs(BIN_PATH)
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)
@@ -72,6 +73,7 @@ workspace "JGEngine"
         language "C++"
         debugdir  (BIN_PATH)
         targetdir (BIN_PATH)
+        libdirs(BIN_PATH)
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)

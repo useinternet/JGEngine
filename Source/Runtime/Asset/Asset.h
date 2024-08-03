@@ -27,6 +27,10 @@ public:
 	const HGuid& GetGuid() const { return _guid; }
 	uint32 GetVersion() const { return Version; }
 protected:
+	// JGObject
+	virtual void SetName(const PName& name) override;
+	// ~JGObject
+	
 	virtual bool IsValid() const { return _guid.IsValid();  }
 	virtual void OnLoadAsset_Thread() {}
 };

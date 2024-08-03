@@ -86,15 +86,21 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 			}
 			if (_args.Flags & EFBXAssetImportFlags::Import_Mesh)
 			{
-				HMeshStock mestStock;
-				mestStock.Name = scene->mName.C_Str();
+				HMeshStock meshStock;
+				meshStock.Name = scene->mName.C_Str();
 				uint32 meshCount = scene->mNumMeshes;
 				for (uint32 i = 0; i < meshCount; ++i)
 				{
-					auto mesh = scene->mMeshes[i];
-					ReadMesh(scene, mesh, &mestStock);
+					const aiMesh* mesh = scene->mMeshes[i];
+					if(meshStock.Name.Empty())
+					{
+						meshStock.Name = mesh->mName.C_Str();
+					}
+					
+					ReadMesh(scene, mesh, &meshStock);
 				}
-				//WriteMesh(setting.OutputPath, mestStock);
+				
+				WriteMesh(meshStock);
 			}
 		}
 		if (scene->HasAnimations() == true && _args.Flags & EFBXAssetImportFlags::Import_AnimationClip)
@@ -252,49 +258,50 @@ void JGFBXAssetImporter::ReadMesh(const aiScene* scene, const aiMesh* mesh, HMes
 	}
 	inOutStock->Indices.push_back(indices);
 
-
-	if (mesh->HasBones() == true)
+	if(_args.Flags & EFBXAssetImportFlags::Import_Skeletal)
 	{
-		boneVertices.resize(vertices.size());
-
-		HSceneHierarchyInfo info;
-		ReadSkeletal(scene, nullptr, &info);
-
-
-		uint32 boneCount = mesh->mNumBones;
-		for (uint32 i = 0; i < boneCount; ++i)
+		if (mesh->HasBones() == true)
 		{
-			aiBone* bone = mesh->mBones[i];
-			// Bone
+			boneVertices.resize(vertices.size());
 
-			// Weight
-			uint32 weightCnt = bone->mNumWeights;
-			for (uint32 j = 0; j < weightCnt; ++j)
+			HSceneHierarchyInfo info;
+			ReadSkeletal(scene, nullptr, &info);
+		
+			uint32 boneCount = mesh->mNumBones;
+			for (uint32 i = 0; i < boneCount; ++i)
 			{
-				uint32 vertexID = bone->mWeights[j].mVertexId;
-				float32 vertexWeight = bone->mWeights[j].mWeight;
+				aiBone* bone = mesh->mBones[i];
+				// Bone
 
-				for (uint32 k = 0; k < 4; ++k)
+				// Weight
+				uint32 weightCnt = bone->mNumWeights;
+				for (uint32 j = 0; j < weightCnt; ++j)
 				{
-					HBoneVertex& boneVertex = boneVertices[vertexID];
-					if (boneVertex.BoneWeights[k] == 0.0f)
+					uint32 vertexID = bone->mWeights[j].mVertexId;
+					float32 vertexWeight = bone->mWeights[j].mWeight;
+
+					for (uint32 k = 0; k < 4; ++k)
 					{
-						boneVertex.BoneIDs[k] = info.NodeIDMap[bone->mName.C_Str()];
-						boneVertex.BoneWeights[k] = vertexWeight;
-						break;
+						HBoneVertex& boneVertex = boneVertices[vertexID];
+						if (boneVertex.BoneWeights[k] == 0.0f)
+						{
+							boneVertex.BoneIDs[k] = info.NodeIDMap[bone->mName.C_Str()];
+							boneVertex.BoneWeights[k] = vertexWeight;
+							break;
+						}
 					}
 				}
+
+				// Offset
+				HBoneOffsetData offsetData;
+				offsetData.ID = info.NodeIDMap[bone->mName.C_Str()];
+				offsetData.Offset = ToHMatrix(bone->mOffsetMatrix);
+				boneOffsetDatas.push_back(offsetData);
 			}
 
-			// Offset
-			HBoneOffsetData offsetData;
-			offsetData.ID = info.NodeIDMap[bone->mName.C_Str()];
-			offsetData.Offset = ToHMatrix(bone->mOffsetMatrix);
-			boneOffsetDatas.push_back(offsetData);
+			inOutStock->BoneOffsetDatas.push_back(boneOffsetDatas);
+			inOutStock->BoneVertices.push_back(boneVertices);
 		}
-
-		inOutStock->BoneOffsetDatas.push_back(boneOffsetDatas);
-		inOutStock->BoneVertices.push_back(boneVertices);
 	}
 }
 
@@ -407,7 +414,7 @@ void JGFBXAssetImporter::WriteMesh(const HMeshStock& inStock)
 	if (bIsSkelMesh == false)
 	{
 		HStaticMeshConstructArguments args;
-		args.Name = inStock.Name;
+		args.Name = HAssetPath(destPath);
 		args.SubMeshNames = inStock.SubMeshNames;
 		args.Verties = inStock.Vertices;
 		args.Indeies = inStock.Indices;
@@ -420,7 +427,6 @@ void JGFBXAssetImporter::WriteMesh(const HMeshStock& inStock)
 		{
 			JG_LOG(Asset, ELogLevel::Error, "%s : Fail Save Mesh", destPath);
 		}
-
 	}
 	else
 	{

@@ -10,11 +10,14 @@
 #define JGDEV_GRAPHICS_C_API extern "C" __declspec(dllimport)
 #endif
 
+#include "JGDevGraphicsTest.h"
+
 class PJWindow;
 class HMenuBuilder;
 class JGDEV_GRAPHICS_API HJGDev_GraphicsModule : public IModuleInterface
 {
 	PSharedPtr<PJWindow> _window;
+	HJGDevGraphicsTest _test;
 public:
 	virtual ~HJGDev_GraphicsModule();
 

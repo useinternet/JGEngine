@@ -214,8 +214,6 @@ void JGStaticMesh::SetMaterial(uint32 inSlot, PSharedPtr<IRawMaterial> inMateria
 
 void JGStaticMesh::SetData(const HList<PName>& subMeshNames, const HList<HList<HVertex>>& inVerties, const HList<HList<uint32>>& inIndeies)
 {
-	JG_CHECK(subMeshNames.size() == inVerties.size() == inIndeies.size());
-
 	_subMeshes.clear();
 
 	uint64 subMeshCount = subMeshNames.size();
@@ -237,6 +235,8 @@ void JGStaticMesh::SetData(const HList<PName>& subMeshNames, const HList<HList<H
 
 		subMesh.VertexBuffer->SetDatas(inVerties[i].data(), sizeof(HVertex), inVerties[i].size());
 		subMesh.IndexBuffer->SetDatas(inIndeies[i].data(), inIndeies[i].size());
+
+		_subMeshes.push_back(subMesh);
 	}
 }
 

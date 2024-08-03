@@ -21,8 +21,6 @@ JGType HJGGraphicsModule::GetModuleType() const
 
 void HJGGraphicsModule::StartupModule()
 {
-	// 나중에 Engine Setting 값으로 뺄 예정
-	// 일단 DirectX12 API 원픽
 #ifdef _DIRECTX12
 	_graphicsAPI = Allocate<PDirectX12API>();
 

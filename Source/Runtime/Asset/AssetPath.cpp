@@ -11,6 +11,23 @@ HAssetPath::HAssetPath(const PString& inAssetPath)
 	setupAssetPath(inAssetPath);
 }
 
+HAssetPath::HAssetPath(const char* inAssetPath)
+{
+	setupAssetPath(PString(inAssetPath));
+}
+
+HAssetPath& HAssetPath::operator=(const PString& inAssetPath)
+{
+	setupAssetPath(inAssetPath);
+	return *this;
+}
+
+HAssetPath& HAssetPath::operator=(const char* inAssetPath)
+{
+	setupAssetPath(PString(inAssetPath));
+	return *this;
+}
+
 void HAssetPath::WriteJson(PJsonData& json) const
 {
 	json.AddMember("AssetPath", AssetPath);
@@ -31,16 +48,19 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 {
 	if (inAssetPath.StartWidth(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN))
 	{
-		PString RawAssetPathStr = inAssetPath;
-		RawAssetPathStr.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
-		HFileHelper::CombinePath(HFileHelper::EngineContentsDirectory(), RawAssetPathStr, &RawAssetPathStr);
-		RawAssetPathStr += JG_ASSET_FORMAT;
+		PString rawAssetPathStr = inAssetPath;
+		rawAssetPathStr.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
+		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), rawAssetPathStr, &rawAssetPathStr);
+		rawAssetPathStr += JG_ASSET_FORMAT;
 
 		AssetPath = inAssetPath;
 
 		PString AssetNameStr;
 		HFileHelper::FileNameOnly(inAssetPath, &AssetNameStr);
 
+
+		RawAssetPath = rawAssetPathStr;
+		AssetName = AssetNameStr;
 		bIsValid = true;
 	}
 	else if (inAssetPath.StartWidth(JG_ASSET_GAME_PATH_RECOGNITION_TOEKN))
@@ -52,6 +72,23 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 	}
 	else
 	{
-		bIsValid = false;
+		// Full Path
+		PString engineContentPath = HFileHelper::EngineContentDirectory();
+		HFileHelper::AbsolutePath(engineContentPath, &engineContentPath);
+		
+		//const PString& gameContentPath = HFileHelper::GameContentDirectory();
+		if(inAssetPath.StartWidth(engineContentPath) == true)
+		{
+			PString assetPath = inAssetPath;
+			assetPath.Remove(0, engineContentPath.Length());
+			HFileHelper::CombinePath(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN, assetPath, &assetPath);
+			setupAssetPath(assetPath);
+		}
+		else
+		{
+			bIsValid = false;
+			JG_CHECK(false);
+			JG_LOG(Asset, ELogLevel::Critical, "NOT Support Asset Path");
+		}
 	}
 }
