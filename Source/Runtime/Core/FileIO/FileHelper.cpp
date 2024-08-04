@@ -32,25 +32,13 @@ bool HFileHelper::ReadAllText(const PString& path, PString* out_str)
 		return false;
 	}
 	std::ifstream fin;
-	fin.open(path.GetRawString(), std::ios::binary);
+	fin.open(path.GetRawString());
 	if (fin.is_open() == true)
 	{
-		// 파일의 끝으로 이동하여 파일 크기를 가져옵니다.
-		fin.seekg(0, std::ios::end);
-		int64 fileSize = fin.tellg();
-		fin.seekg(0, std::ios::beg);
-
-		// 파일 내용을 저장할 벡터를 할당합니다.
-		HList<char> buffer(fileSize);
-		buffer.resize(fileSize, 0);
-
-		// 파일 내용을 벡터로 읽어옵니다.
-		bool bResult = false;
-		if(fin.read(buffer.data(), fileSize))
-		{
-			bResult = true;
-			*out_str = buffer.data();
-		}
+		std::stringstream ss;
+		ss << fin.rdbuf();
+		
+		*out_str = ss.str().c_str();
 		
 		fin.close();
 		return true;
