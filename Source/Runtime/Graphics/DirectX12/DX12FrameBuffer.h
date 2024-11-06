@@ -33,6 +33,7 @@ public:
 	virtual const PName& GetName() const override;
 	virtual void SetName(const PName& inName) override;
 	// ~IJGGraphicsObject
+
 protected:
 	virtual bool Initialize(const HFrameBufferInfo& info) override;
 	virtual void Update() override;
@@ -40,6 +41,6 @@ protected:
 
 public:
 	virtual void SubmitTexture(PSharedPtr<IRawTexture> inTexture) override;
-	virtual void Resize(uint32 width, uint32 height) override;
+	virtual GRAPHICS_API void Resize(uint32 width, uint32 height) override;
 	virtual const HFrameBufferInfo& GetInfo() const override;
 };

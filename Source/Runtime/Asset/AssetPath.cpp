@@ -51,7 +51,19 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 		PString rawAssetPathStr = inAssetPath;
 		rawAssetPathStr.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
 		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), rawAssetPathStr, &rawAssetPathStr);
-		rawAssetPathStr += JG_ASSET_FORMAT;
+
+		PString FileExtension;
+		HFileHelper::FileExtension(rawAssetPathStr, &FileExtension);
+		if (FileExtension.Empty())
+		{
+			rawAssetPathStr += JG_ASSET_FORMAT;
+		}
+
+		if (FileExtension.Equal(JG_ASSET_FORMAT) == false)
+		{
+			JG_LOG(Asset, ELogLevel::Warning, "NOT Support Format");
+		}
+	
 
 		AssetPath = inAssetPath;
 
@@ -76,10 +88,13 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 		PString engineContentPath = HFileHelper::EngineContentDirectory();
 		HFileHelper::AbsolutePath(engineContentPath, &engineContentPath);
 		
+
+		PString assetPath;
+		HFileHelper::AbsolutePath(inAssetPath, &assetPath);
+
 		//const PString& gameContentPath = HFileHelper::GameContentDirectory();
-		if(inAssetPath.StartWidth(engineContentPath) == true)
+		if(assetPath.StartWidth(engineContentPath) == true)
 		{
-			PString assetPath = inAssetPath;
 			assetPath.Remove(0, engineContentPath.Length());
 			HFileHelper::CombinePath(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN, assetPath, &assetPath);
 			setupAssetPath(assetPath);
@@ -87,8 +102,8 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 		else
 		{
 			bIsValid = false;
-			JG_CHECK(false);
-			JG_LOG(Asset, ELogLevel::Critical, "NOT Support Asset Path");
+			//JG_CHECK(false);
+			JG_LOG(Asset, ELogLevel::Warning, "NOT Support Asset Path");
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "CoreDefines.h"
 #include "Memory/Memory.h"
+#include "Memory/Allocator.h"
 
 
 class PSequentialIDGenerator : public IMemoryObject

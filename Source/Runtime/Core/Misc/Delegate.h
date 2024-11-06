@@ -37,11 +37,11 @@ using Name = HMulticastDelegate<__VA_ARGS__>; \
 using Name ## Delegate = HMulticastDelegate<__VA_ARGS__>::DelegateT; \
 
 #define JG_DECLARE_EVENT(Name, OwnerType, ...) \
-class Name : public HMulticastDelegate<__VA_ARGS__>; \
+class Name : public HMulticastDelegate<__VA_ARGS__> \
 { \
 private: \
 	friend class OwnerType; \
-	using HMulticastDelegate::Broadcast; \
+	using HMulticastDelegate::BroadCast; \
 	using HMulticastDelegate::RemoveAll; \
 	using HMulticastDelegate::Remove; \
 }; \

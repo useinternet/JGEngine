@@ -122,6 +122,7 @@ void GAssetDatabase::loadAsset_Thread(HLoadingThreadData inThreadData)
 	if (Asset == nullptr)
 	{
 		JG_LOG(Asset, ELogLevel::Error, "%s : Fail Load Asset", inThreadData.AssetPath.GetAssetPath().ToString());
+		return;
 	}
 
 	Asset->OnLoadAsset_Thread();

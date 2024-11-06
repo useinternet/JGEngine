@@ -8,7 +8,6 @@
 #include "Classes/CommandList.h"
 #include "DirectX12/DX12FrameBuffer.h"
 #include "DirectX12/DX12Texture.h"
-#include "DirectX12/DX12JGGui.h"
 #include "DirectX12/DX12GraphicsCommand.h"
 #include "DirectX12/DX12VertexBuffer.h"
 #include "DirectX12/DX12IndexBuffer.h"
@@ -62,19 +61,13 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	frameBufferInfo.Format = ETextureFormat::R16G16B16A16_Float;
 	_frameBuffer = Allocate<PDX12FrameBuffer>();
 	_frameBuffer->Initialize(frameBufferInfo);
-	
-	_gui = Allocate<PDX12JGGui>();
-	_gui->Create();
 
-	GCoreSystem::GetGlobalValues().GraphicsAPI = this;
 	JG_LOG(Graphics, ELogLevel::Trace, "DirectX12 Init End");
 }
 
 void PDirectX12API::Destroy()
 {
 	_commandQueue->Flush();
-	_gui->Destroy();
-	_gui.Reset();
 	_frameBuffer = nullptr;
 	_csuAllocator = nullptr;
 	_rtvAllocator = nullptr;
@@ -90,7 +83,6 @@ void PDirectX12API::Destroy()
 void PDirectX12API::BeginFrame()
 {
 	_commandQueue->Begin();
-	_gui->NewFrame();
 }
 
 void PDirectX12API::EndFrame()
@@ -106,16 +98,6 @@ void PDirectX12API::EndFrame()
 void PDirectX12API::SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture)
 {
 	GetFrameBuffer()->SubmitTexture(inTexture);
-}
-
-IJGGui* PDirectX12API::GetGui() const
-{
-	if (_gui.IsValid() == false)
-	{
-		return nullptr;
-	}
-
-	return _gui.GetRawPointer();
 }
 
 PSharedPtr<IJGGraphicsCommand> PDirectX12API::GetGraphicsCommand() const
@@ -258,17 +240,17 @@ PSharedPtr<PCommandList> PDirectX12API::RequestCommandList()
 
 HDescriptionAllocation PDirectX12API::RTVAllocate()
 {
-	return _rtvAllocator->Allocate();
+	return std::move(_rtvAllocator->Allocate());
 }
 
 HDescriptionAllocation PDirectX12API::DSVAllocate()
 {
-	return _dsvAllocator->Allocate();
+	return std::move(_dsvAllocator->Allocate());
 }
 
 HDescriptionAllocation PDirectX12API::CSUAllocate()
 {
-	return _csuAllocator->Allocate();
+	return std::move(_csuAllocator->Allocate());
 }
 
 PSharedPtr<PCommandQueue> PDirectX12API::GetCommandQueue() const
@@ -381,17 +363,17 @@ PSharedPtr<PCommandList> HDirectXAPI::RequestCommandList()
 
 HDescriptionAllocation HDirectXAPI::RTVAllocate()
 {
-	return getDX12API()->RTVAllocate();
+	return std::move(getDX12API()->RTVAllocate());
 }
 
 HDescriptionAllocation HDirectXAPI::DSVAllocate()
 {
-	return getDX12API()->DSVAllocate();
+	return std::move(getDX12API()->DSVAllocate());
 }
 
 HDescriptionAllocation HDirectXAPI::CSUAllocate()
 {
-	return getDX12API()->CSUAllocate();
+	return std::move(getDX12API()->CSUAllocate());
 }
 
 PSharedPtr<PCommandQueue> HDirectXAPI::GetCommandQueue()

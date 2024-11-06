@@ -33,7 +33,6 @@ struct HCoreSystemArguments
 
 struct HCoreSystemGlobalValues
 {
-	PJGGraphicsAPI* GraphicsAPI;
 	PJWindow*		MainWindow;
 	HSTLSharedPtr<HWindowCallBacks> WindowCallBacks;
 	
@@ -45,10 +44,9 @@ class GCoreSystem
 	friend void HCoreSystemPrivate::SetInstance(GCoreSystem* instance);
 private:
 	static GCoreSystem* Instance;
-	HHashMap<uint64, GGlobalSystemInstanceBase*> SystemInstancePool;
-	HList<GGlobalSystemInstanceBase*> SystemInstanceList;
-	HList<ThreadID>   ThreadIDList;
-	HHashSet<HJInstance> DllInstances;
+	std::unordered_map<uint64, GGlobalSystemInstanceBase*> SystemInstancePool;
+	std::vector<GGlobalSystemInstanceBase*> SystemInstanceList;
+	std::unordered_set<HJInstance> DllInstances;
 	HCoreSystemGlobalValues GlobalValues;
 public:
 	bool bIsRunning;
@@ -121,8 +119,12 @@ public:
 	template<class T>
 	static bool IsValidSystemInstance()
 	{
-		uint64 code = getTypeHashCode<T>();
+		if (Instance == nullptr)
+		{
+			return false;
+		}
 
+		uint64 code = getTypeHashCode<T>();
 		return Instance->SystemInstancePool.find(code) != Instance->SystemInstancePool.end();
 	}
 
@@ -130,17 +132,13 @@ public:
 	static void UnregisterDll(HJInstance InInstance);
 
 	static uint32 GetThreadCount();
-	static HList<ThreadID> GetAllThreadIDs();
-	
-	
+
 private:
 	template<class T>
 	static uint64 getTypeHashCode()
 	{
 		return typeid(T).hash_code();
 	}
-
-	static void collectionThreadIDs();
 };
 
 class GGlobalSystemInstanceBase

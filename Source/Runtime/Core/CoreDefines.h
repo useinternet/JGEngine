@@ -91,32 +91,6 @@ using ThreadID = uint64;
 using ModuleID = uint64;
 using InstanceID = uint64;
 
-
-
-template<class Key, class Value>
-using HHashMap = std::unordered_map<Key, Value>;
-
-template<class Key, class Value>
-using HMap = std::map<Key, Value>;
-
-template<class T>
-using HHashSet = std::unordered_set<T>;
-
-template<class T>
-using HSet = std::set<T>;
-
-template<class T>
-using HList = std::vector<T>;
-
-template<class T>
-using HDeque = std::deque<T>;
-
-template<class T>
-using HQueue = std::queue<T>;
-
-template<class T>
-using HStack = std::stack<T>;
-
 using HConditionVariable = std::condition_variable;
 using HMutex = std::mutex;
 using HSharedMutex = std::shared_mutex;

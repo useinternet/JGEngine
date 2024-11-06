@@ -297,7 +297,11 @@ void HFileHelper::AbsolutePath(const PString& inPath, PString* outPath)
 
 const PString& HFileHelper::EngineDirectory()
 {
-	static PString enginePath = "../../";
+	static PString enginePath;
+	if (enginePath.Empty())
+	{
+		enginePath = "../../";
+	} 
 
 	return enginePath;
 }

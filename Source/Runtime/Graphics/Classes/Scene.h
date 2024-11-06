@@ -22,7 +22,7 @@ public:
 	void AddMaterial(PSharedPtr<IRawMaterial> inMaterial);
 	void RemoveMaterial(PSharedPtr<IRawMaterial> inMaterial);
 
-	void AddStaticMesh(PSharedPtr)
+	//void AddStaticMesh(PSharedPtr)
 public:
 	HList<PSharedPtr<IJGGraphicsObject>> _graphicsObjectPool;
 

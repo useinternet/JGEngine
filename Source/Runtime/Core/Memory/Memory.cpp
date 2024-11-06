@@ -1,15 +1,18 @@
 #include "PCH/PCH.h"
 #include "Memory.h"
+#include "Misc/Log.h"
 
 GMemoryGlobalSystem::GMemoryGlobalSystem(int32 processBlockCountPerFrame)
 {
-	_processBlockCountPerFrame = processBlockCountPerFrame;
+	ProcessBlockCountPerFrame = processBlockCountPerFrame;
+	MemoryPool.Initialize();
 }
 
 GMemoryGlobalSystem::~GMemoryGlobalSystem()
 {
 	forceFlush();
-	_allocatedMemoryBlocks.clear();
+	AllocatedMemoryBlocks.clear();
+	MemoryPool.Shutdown();
 }
 
 void GMemoryGlobalSystem::Update()
@@ -29,19 +32,18 @@ void GMemoryGlobalSystem::forceFlush()
 
 void GMemoryGlobalSystem::garbageCollection(int32 level)
 {
-	HLockGuard<HMutex> lock(_mutex);
-
+	HLockGuard<HMutex> lock(Mutex);
 	if (level < 0)
 	{
-		while (_allocatedMemoryBlockQueue.empty() == false)
+		while (AllocatedMemoryBlockQueue.empty() == false)
 		{
-			int32 deleteCount = garbageCollectionInternal((int32)_allocatedMemoryBlocks.size());
+			int32 deleteCount = garbageCollectionInternal((int32)AllocatedMemoryBlocks.size());
 
 			if (deleteCount <= 0)
 			{
-				if (_allocatedMemoryBlocks.size() > 0)
+				if (AllocatedMemoryBlocks.size() > 0)
 				{
-					garbageCollectionInternal((int32)_allocatedMemoryBlocks.size(), true);
+					garbageCollectionInternal((int32)AllocatedMemoryBlocks.size(), true);
 				}
 				break;
 			}
@@ -49,16 +51,16 @@ void GMemoryGlobalSystem::garbageCollection(int32 level)
 	}
 	else if (level == 0)
 	{
-		while (garbageCollectionInternal((int32)_allocatedMemoryBlocks.size())) {}
+		while (garbageCollectionInternal((int32)AllocatedMemoryBlocks.size())) {}
 	}
 	else
 	{
 		int32 tempCnt = 0;
 
-		while (_allocatedMemoryBlockQueue.empty() == false && tempCnt <= level)
+		while (AllocatedMemoryBlockQueue.empty() == false && tempCnt <= level)
 		{
 			++tempCnt;
-			garbageCollectionInternal(_processBlockCountPerFrame);
+			garbageCollectionInternal(ProcessBlockCountPerFrame);
 		}
 	}
 
@@ -69,7 +71,7 @@ int32 GMemoryGlobalSystem::garbageCollectionInternal(int32 countPerFrame, bool b
 	int32 deleteCount = 0;
 	int32 tempCnt     = 0;
 
-	while (_allocatedMemoryBlockQueue.empty() == false)
+	while (AllocatedMemoryBlockQueue.empty() == false)
 	{
 		if (tempCnt > countPerFrame)
 		{
@@ -77,34 +79,32 @@ int32 GMemoryGlobalSystem::garbageCollectionInternal(int32 countPerFrame, bool b
 		}
 		++tempCnt;
 
-		void* ptr = _allocatedMemoryBlockQueue.front();
+		void* ptr = AllocatedMemoryBlockQueue.front();
 
-		const HMemoryBlock& memoryBlock = _allocatedMemoryBlocks[ptr];
+		const HMemoryBlock& memoryBlock = AllocatedMemoryBlocks[ptr];
 
 		bool bIsClass   = memoryBlock.bIsClass;
 		int32 refCount  = memoryBlock.RefCount->load();
 		int32 weakCount = memoryBlock.WeakCount->load();
-		_allocatedMemoryBlockQueue.pop();
+		AllocatedMemoryBlockQueue.pop();
 		if (refCount == 0 || bForce)
 		{
-			_allocatedMemoryBlocks.erase(ptr);
 			if (bIsClass == true)
 			{
 				((IMemoryObject*)ptr)->Destruction();
-				delete (IMemoryObject*)ptr;
-			}
-			else
-			{
-				delete ptr;
+				((IMemoryObject*)ptr)->~IMemoryObject();
 			}
 
+			MemoryPool.Deallocate(ptr);
+
+			AllocatedMemoryBlocks.erase(ptr);
 			ptr = nullptr;
 
 			++deleteCount;
 		}
 		else
 		{
-			_allocatedMemoryBlockQueue.push(ptr);
+			AllocatedMemoryBlockQueue.push(ptr);
 		}
 	}
 

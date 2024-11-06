@@ -3,6 +3,7 @@
 
 #include "CoreDefines.h"
 #include "Memory/Memory.h"
+#include "Memory/Allocator.h"
 #include "Name.h"
 #include <iostream>
 

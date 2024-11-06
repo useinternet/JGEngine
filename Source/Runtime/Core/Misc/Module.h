@@ -36,7 +36,7 @@ struct HModuleSystemInfo : public IJsonable
 	virtual void WriteJson(PJsonData& json) const;
 	virtual void ReadJson(const PJsonData& json);
 
-	static const HModuleSystemInfo& Get();
+	static HModuleSystemInfo Get();
 	static const bool Set(const HModuleSystemInfo& inSysInfo);
 };
 

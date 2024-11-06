@@ -168,6 +168,24 @@ workspace "JGEngine"
 
 
 		group "Engine/Editor"
+			project "DevStatistics"
+				includedirs{ "Source/Editor/DevStatistics/", "Source/ThirdParty", "Source/", "Temp/CodeGen/DevStatistics/", "Source/Runtime/Core/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
+				links{ "Core", "Graphics", "Asset", "GUI", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/DevStatistics/", {"_DEVSTATISTICS", }, "Temp/CodeGen/DevStatistics/")
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+
+
 			project "JGDev_Graphics"
 				includedirs{ "Source/Editor/JGDev_Graphics/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGDev_Graphics/", "Source/Runtime/Core/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", }
 				links{ "Core", "Graphics", "Asset", }
@@ -187,8 +205,8 @@ workspace "JGEngine"
 
 
 			project "JGEditor"
-				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", }
-				links{ "Core", "GameFrameWorks", "Graphics", }
+				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
+				links{ "Core", "GameFrameWorks", "Graphics", "GUI", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/JGEditor/", {"_JGEDITOR", }, "Temp/CodeGen/JGEditor/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()
@@ -281,6 +299,24 @@ workspace "JGEngine"
 				includedirs{ "Source/Runtime/Graphics/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Graphics/", "Source/Runtime/Core/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", }
 				links{ "Core", "Asset", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/Graphics/", {"_GRAPHICS", }, "Temp/CodeGen/Graphics/")
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+
+
+			project "GUI"
+				includedirs{ "Source/Runtime/GUI/", "Source/ThirdParty", "Source/", "Temp/CodeGen/GUI/", "Source/Runtime/Core/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", }
+				links{ "Core", "Asset", "Graphics", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/GUI/", {"_GUI", }, "Temp/CodeGen/GUI/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }

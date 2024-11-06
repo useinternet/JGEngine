@@ -1,0 +1,32 @@
+{
+  "ModuleInfo": {
+    "ModuleFormat": "SharedLib",
+    "ModuleDependencies": [
+      "Core",
+      "Graphics",
+      "Asset",
+      "GUI"
+    ],
+    "ModuleName": "DevStatistics",
+    "ModulePath": "Source/Editor/DevStatistics/",
+    "Defines": [
+      "_DEVSTATISTICS"
+    ],
+    "DevelopEngine": {
+      "Config": "DebugConfig",
+      "Defines": []
+    },
+    "DevelopGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ConfirmGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ReleaseGame": {
+      "Config": "ReleaseConfig",
+      "Defines": []
+    }
+  }
+}

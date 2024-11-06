@@ -29,7 +29,7 @@ struct HFrameBufferInfo
 
 };
 
-class  IFrameBuffer : public IJGGraphicsObject
+class GRAPHICS_API IFrameBuffer : public IJGGraphicsObject
 {
 protected:
 	virtual bool Initialize(const HFrameBufferInfo& info) = 0;

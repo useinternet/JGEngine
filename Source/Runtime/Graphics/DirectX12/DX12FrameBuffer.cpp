@@ -19,6 +19,7 @@ void PDX12FrameBuffer::SetName(const PName& inName)
 	_name = inName;
 }
 
+
 bool PDX12FrameBuffer::Initialize(const HFrameBufferInfo& info)
 {
 	_name = PName("DX12FrameBuffer");

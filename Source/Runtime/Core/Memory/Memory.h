@@ -2,6 +2,7 @@
 
 #include "CoreDefines.h"
 #include "CoreSystem.h"
+#include "MemoryPool.h"
 
 class IMemoryObject
 {
@@ -531,25 +532,25 @@ private:
 
 		_pWeakCount->fetch_sub(1);
 	}
-
 };
+
+
 
 class GMemoryGlobalSystem : public GGlobalSystemInstance<GMemoryGlobalSystem>
 {
 	struct HMemoryBlock
 	{
 		void*  Ptr  = nullptr;
-		uint64 Size = 0;
 		bool bIsClass = false;
 		std::unique_ptr<HAtomicInt32> RefCount;
 		std::unique_ptr<HAtomicInt32> WeakCount;
 	};
-
-	mutable HHashMap<const void*, HMemoryBlock> _allocatedMemoryBlocks;
-	mutable HQueue<void*> _allocatedMemoryBlockQueue;
-
-	mutable HMutex _mutex;
-	int32 _processBlockCountPerFrame;
+public:
+	mutable std::unordered_map<const void*, HMemoryBlock> AllocatedMemoryBlocks;
+	mutable std::queue<void*> AllocatedMemoryBlockQueue;
+	mutable HMutex Mutex;
+	mutable HMemoryPool MemoryPool;
+	int32 ProcessBlockCountPerFrame;
 
 public:
 	GMemoryGlobalSystem(int32 processBlockCountPerFrame = 10240);
@@ -568,30 +569,39 @@ public:
 			JG_ASSERT(false);
 		}
 		
-		PSharedPtr<T> ptr;
-		ptr._ptr = new T(args ...);
+		void* MemPtr = MemoryPool.Allocate(sizeof(T));
+		PSharedPtr<T> Result;
+		Result._ptr = new(MemPtr) T(std::forward<Args>(args)...);
 
+
+		// @NOTE
+		// 아래 항목 HMemoryPool 로 이동
 		HMemoryBlock memoryBlock;
-		memoryBlock.Ptr = ptr._ptr;
-		memoryBlock.Size	 = sizeof(T);
+		memoryBlock.Ptr = Result._ptr;
 		memoryBlock.bIsClass = std::is_class<T>::value;
 		memoryBlock.RefCount = std::make_unique<HAtomicInt32>();
 		memoryBlock.WeakCount = std::make_unique<HAtomicInt32>();
 
-		ptr._pWeakCount = memoryBlock.WeakCount.get();
-		ptr._pRefCount = memoryBlock.RefCount.get();
-		ptr._pRefCount->fetch_add(1);
+		Result._pWeakCount = memoryBlock.WeakCount.get();
+		Result._pRefCount = memoryBlock.RefCount.get();
+		Result._pRefCount->fetch_add(1);
 
 		{
-			HLockGuard<HMutex> lock(_mutex);
-			_allocatedMemoryBlocks.emplace(ptr._ptr, std::move(memoryBlock));
-			_allocatedMemoryBlockQueue.push(ptr._ptr);
+			HLockGuard<HMutex> lock(Mutex);
+			AllocatedMemoryBlocks.emplace(Result._ptr, std::move(memoryBlock));
+			AllocatedMemoryBlockQueue.push(Result._ptr);
 		}
+		// ~ @NOTE
 
-		IMemoryObject* memObject = ptr._ptr;
+		IMemoryObject* memObject = Result._ptr;
 		memObject->Construct();
 
-		return ptr;
+		return Result;
+	}
+
+	HMemoryPool* GetMemoryPool() const
+	{
+		return &MemoryPool;
 	}
 
 	template<class T>
@@ -608,20 +618,24 @@ public:
 			return PSharedPtr<T>();
 		}
 
-		HLockGuard<HMutex> lock(_mutex);
-		if (_allocatedMemoryBlocks.find(fromThis) == _allocatedMemoryBlocks.end())
+		// @NOTE
+		// 아래 항목 MemoryPool 로 이동
+		HLockGuard<HMutex> lock(Mutex);
+		if (AllocatedMemoryBlocks.find(fromThis) == AllocatedMemoryBlocks.end())
 		{
 			//unlock();
 			return PSharedPtr<T>();
 		}
-		HMemoryBlock& memoryBlock = _allocatedMemoryBlocks[(const void*)fromThis];
-		
-		PSharedPtr<T> ptr;
-		ptr._ptr = static_cast<T*>(memoryBlock.Ptr);
-		ptr._pRefCount = memoryBlock.RefCount.get();
-		ptr._pRefCount->fetch_add(1);
+		HMemoryBlock& memoryBlock = AllocatedMemoryBlocks[(const void*)fromThis];
+		// 여기 까지
 
-		return ptr;
+
+		PSharedPtr<T> Result;
+		Result._ptr = static_cast<T*>(memoryBlock.Ptr);
+		Result._pRefCount = memoryBlock.RefCount.get();
+		Result._pRefCount->fetch_add(1);
+
+		return Result;
 	}
 
 	template<class T, class U>
@@ -741,6 +755,7 @@ inline PSharedPtr<T> Allocate(Args ...args)
 {
 	return GMemoryGlobalSystem::GetInstance().Allocate<T>(args...);
 }
+
 
 template<class T>
 inline PSharedPtr<T> Allocate(const T& data)

@@ -55,7 +55,7 @@ bool PBuildTool::Run()
 
 	{
 		HModuleSystemInfo moduleSysInfo;
-		for (const HPair<const PString, HList<PModuleInfo>>& _pair : _engineModuleInfoMap) 
+		for (const HPair<const PString, HList<PModuleInfo>>& _pair : _engineModuleInfoMap)
 		{
 			for (const PModuleInfo& info : _pair.second)
 			{

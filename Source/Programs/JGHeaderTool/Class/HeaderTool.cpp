@@ -867,16 +867,25 @@ bool PHeaderTool::generateCodeGenFiles()
 		if (generateCodeGenRegistration(moduleName, collectedClassQueues[moduleName], collectedEnumQueues[moduleName], &engineCodeGenRegisterCppCode) == false)
 		{
 			// Error Log
-			return false;
+			continue;
 		}
 
 		PString codeGenPath;
 		HFileHelper::CombinePath(engineCodeGenPath, moduleName, &codeGenPath);
+		if (HFileHelper::Exists(codeGenPath) == false)
+		{
+			if (HFileHelper::CreateDirectory(codeGenPath) == false)
+			{
+				JG_LOG(HeaderTool, ELogLevel::Error, "%s : Fail Create CodeGen Directory", codeGenPath);
+				continue;
+			}
+		}
+
 		HFileHelper::CombinePath(codeGenPath, PString::Format("%s.codegen.generate.cpp", moduleName), &codeGenPath);
 		if (HFileHelper::WriteAllText(codeGenPath, engineCodeGenRegisterCppCode) == false)
 		{
 			// Error Log
-			return false;
+			continue;
 		}
 	}
 

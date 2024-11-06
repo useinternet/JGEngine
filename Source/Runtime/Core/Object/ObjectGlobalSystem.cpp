@@ -274,7 +274,8 @@ bool GObjectGlobalSystem::codeGen()
 		}
 
 		codeGenFunc(this);
-		HPlatform::UnLoadDll(ins);
+
+		GCoreSystem::RegisterDll(ins);
 	}
 	
 	return true;

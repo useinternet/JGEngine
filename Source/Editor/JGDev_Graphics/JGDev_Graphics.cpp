@@ -29,15 +29,28 @@
 
  	GCoreSystem::GetGlobalValues().MainWindow = _window.GetRawPointer();
 
+
+ 	if (GModuleGlobalSystem::GetInstance().ConnectModule("Graphics") == false)
+ 	{
+ 		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Graphics Module...");
+ 	}
+
+	if (GModuleGlobalSystem::GetInstance().ConnectModule("GUI") == false)
+	{
+		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Graphics Module...");
+	}
+
 	if (GModuleGlobalSystem::GetInstance().ConnectModule("Asset") == false)
 	{
 		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Asset Module...");
 
 	}
- 	if (GModuleGlobalSystem::GetInstance().ConnectModule("Graphics") == false)
- 	{
- 		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Graphics Module...");
- 	}
+
+	if (GModuleGlobalSystem::GetInstance().ConnectModule("DevStatistics") == false)
+	{
+		JG_LOG(JGDev_GraphicsModule, ELogLevel::Critical, "Fail Connect Asset Module...");
+
+	}
 
  	JG_LOG(JGDev_GraphicsModule, ELogLevel::Trace, "Startup JGDev_GraphicsModule Module...");
 
@@ -59,7 +72,11 @@
 
  	_window = nullptr;
 
- 	GModuleGlobalSystem::GetInstance().DisconnectModule("Graphics");
+    GModuleGlobalSystem::GetInstance().DisconnectModule("DevStatistics");
+    GModuleGlobalSystem::GetInstance().DisconnectModule("Asset");
+    GModuleGlobalSystem::GetInstance().DisconnectModule("GUI");
+    GModuleGlobalSystem::GetInstance().DisconnectModule("Graphics");
+
  	JG_LOG(JGDev_GraphicsModule, ELogLevel::Trace, "Shutdown JGDev_GraphicsModule Module...");
  }
 

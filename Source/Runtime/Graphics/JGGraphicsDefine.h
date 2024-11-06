@@ -155,6 +155,7 @@ public:
 	uint32 SementicSlot = 0;
 	EShaderDataType Type = EShaderDataType::Unknown;
 public:
+	HInputElement() = default;
 	HInputElement(EShaderDataType type, const char* sementicName, uint32 sementicSlot)
 		: Type(type), SementicName(sementicName), SementicSlot(sementicSlot) {}
 };

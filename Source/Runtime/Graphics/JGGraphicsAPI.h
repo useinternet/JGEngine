@@ -21,7 +21,6 @@ public:
 class IRawTexture;
 class IIndexBuffer;
 class IVertexBuffer;
-class IJGGui;
 class IJGGraphicsCommand;
 class IRawMaterial;
 class JGStaticMesh;
@@ -50,7 +49,6 @@ public:
 
 	virtual void SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture) = 0;
 public:
-	virtual IJGGui* GetGui() const = 0;
 	virtual PSharedPtr<IJGGraphicsCommand> GetGraphicsCommand() const = 0;
 	virtual PSharedPtr<IRawTexture> GetDefaultTexture() const { return _defaultTexture; }
 	virtual PSharedPtr<IRawMaterial> GetDefaultMaterial() const { return _defaultMaterial; }

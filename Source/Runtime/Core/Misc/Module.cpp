@@ -15,10 +15,10 @@ void HModuleSystemInfo::ReadJson(const PJsonData& json)
 	json.GetData("CodeGenableModuleSet", &CodeGenableModuleSet);
 }
 
-const HModuleSystemInfo& HModuleSystemInfo::Get()
+HModuleSystemInfo HModuleSystemInfo::Get()
 {
-	static HModuleSystemInfo sysInfo;
-	static PString codeGenPath;
+	HModuleSystemInfo sysInfo;
+	PString codeGenPath;
 	if (codeGenPath.Empty())
 	{
 		HFileHelper::CombinePath(HFileHelper::EngineCodeGenDirectory(), "module_system_info.json", &codeGenPath);
@@ -88,8 +88,7 @@ bool GModuleGlobalSystem::ConnectModule(const PString& moduleName)
 {
 	if (FindModule(moduleName) != nullptr)
 	{
-		JG_LOG(Core, ELogLevel::Error, "Fail Connect Module:%s", moduleName);
-		return false;
+		return true;
 	}
 
 	PString dllName = PString::Format("%s.dll", moduleName);;
@@ -170,6 +169,8 @@ bool GModuleGlobalSystem::DisconnectModule(const PString& moduleName)
 	_modulesByType.erase(moduleIf->GetModuleType());
 	_modulesByName.erase(moduleName);
 
+	GMemoryGlobalSystem::GetInstance().Flush();
+
 	HPlatform::Deallocate(moduleIf);
 
 	return true;
@@ -187,6 +188,8 @@ void GModuleGlobalSystem::Destroy()
 	{
 		pair.second->ShutdownModule();
 	}
+
+	GMemoryGlobalSystem::GetInstance().Flush();
 
 	for (HPair<const JGType, IModuleInterface*>& pair : _modulesByType)
 	{

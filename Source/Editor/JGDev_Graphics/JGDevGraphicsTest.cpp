@@ -18,19 +18,12 @@ void HJGDevGraphicsTest::Init()
 
 	TexInfo.ClearColor = HLinearColor(1.0F, 0.0F, 0.0F, 1.0F);
 
-	auto tex = GetGraphicsAPI().CreateRawTexture(TexInfo);
-	GetGraphicsAPI().GetGraphicsCommand()->ClearTexture(tex);
-	GetGraphicsAPI().SubmitFinalTexture(tex);
+	//auto tex = GetGraphicsAPI().CreateRawTexture(TexInfo);
+	// GraphicsCommand : 하나 만드는거 <= 하나의 부품
+	// GraphicsBuilder :
+	//GetGraphicsAPI().GetGraphicsCommand()->ClearTexture(tex);
+	//GetGraphicsAPI().SubmitFinalTexture(tex);
 
-
-	HAssetPath AssetPath = "/JGEngine/TempAsset/Sample";
-	GAssetDatabase::GetInstance().LoadAssetAsync(AssetPath, POnLoadCompelete::CreateLambda([](PWeakPtr<JGAsset> InAsset)
-		{
-			JG_LOG(DevGraphicsTest, ELogLevel::Info, "Load Complete Asset : %s", InAsset.Pin()->GetName().ToString());
-
-		}));
-	// Mesh 뷰어
-	// 머터리얼까지
 }
 
 void HJGDevGraphicsTest::Shutdown()

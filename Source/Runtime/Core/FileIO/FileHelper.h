@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreDefines.h"
+#include "Memory/Allocator.h"
 #include "String/String.h"
 
 class HFileHelper
@@ -39,6 +40,5 @@ public:
 	static const PString& EngineTempDirectory();
 	static const PString& EngineCodeGenDirectory();
 	static const PString& EngineShaderDirectory();
-
 	static const PString& GameContentDirectory();
 };

@@ -134,7 +134,7 @@ public:
 	}
 
 	template <typename T>
-	inline T AlignPowerOfTwo(T value)
+	inline static T AlignPowerOfTwo(T value)
 	{
 		return value == 0 ? 0 : 1 << Log2(value);
 	}
