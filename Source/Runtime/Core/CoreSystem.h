@@ -48,6 +48,8 @@ private:
 	std::vector<GGlobalSystemInstanceBase*> SystemInstanceList;
 	std::unordered_set<HJInstance> DllInstances;
 	HCoreSystemGlobalValues GlobalValues;
+
+	ThreadID MainThreadID;
 public:
 	bool bIsRunning;
 
@@ -132,6 +134,7 @@ public:
 	static void UnregisterDll(HJInstance InInstance);
 
 	static uint32 GetThreadCount();
+	static ThreadID GetMainThreadID();
 
 private:
 	template<class T>

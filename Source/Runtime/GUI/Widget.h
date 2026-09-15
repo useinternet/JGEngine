@@ -1,6 +1,7 @@
 #pragma once
 #include "Core.h"
 #include "GUIDefines.h"
+#include "WidgetComponent.h"
 #include "Widget.generation.h"
 
 #define JG_GENERATED_WIDGET_BODY \
@@ -13,15 +14,21 @@ public: \
 	} \
 private: \
 
-enum class EWidgetFlags
+enum class GUI_API EWidgetFlags
 {
 	None = 0,
-
+	AllowAlwaysUpdate = 0x001,
+	AllowAlwaysUpdateFrame  = 0x002,
+	AllowUpdate = 0x004,
+	AllowUpdateFrame = 0x008,
 };
 JG_ENUM_FLAG(EWidgetFlags)
 
+struct GUI_API HWidgetLayout
+{
+	HVector2 ContentSize;
+};
 
-class JGWidgetComponent;
 
 JGCLASS()
 class GUI_API JGWidget : public JGObject
@@ -37,7 +44,7 @@ private:
 	JGPROPERTY()
 	HList<PSharedPtr<JGWidgetComponent>> WidgetComponents;
 
-
+	
 	// Flags 및 윈도우 사이즈 
 	EWidgetFlags WidgetFlags;
 
@@ -46,6 +53,9 @@ protected:
 	virtual void OnShutdown() {}
 	virtual void OnOpen() {}
 	virtual void OnClose() {}
+	virtual void OnUpdate() {}
+	virtual void OnUpdateFrame() {}
+	virtual void OnLayout(const HWidgetLayout& InLayout) {}
 	virtual void OnGenerateGUI() {}
 
 	virtual PString  GetTitleName() const;
@@ -60,12 +70,17 @@ protected:
 		return WidgetComp;
 	}
 
+	PSharedPtr<JGWidgetComponent> MakeWidgetComponent(PSharedPtr<JGClass> InClass);
 
 public:
 	bool IsOpen() const { return bOpen; }
+	EWidgetFlags GetFlags() const { return WidgetFlags; }
 
 private:
+	void SetupLayout();
 	void GenerateGUI();
+	void Update();
+	void UpdateFrame();
 	void Open();
 	void Close();
 	void Initialize();

@@ -23,6 +23,8 @@ struct HTextureConstructArguments
 {
 	HTextureInfo TextureInfo;
 	HList<uint8> Pixels;
+
+	HTextureConstructArguments() {}
 };
 
 JGCLASS()

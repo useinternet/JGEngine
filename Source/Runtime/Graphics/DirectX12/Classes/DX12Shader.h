@@ -1,6 +1,7 @@
 #pragma once
 #include "Core.h"
 #include "JGGraphicsDefine.h"
+#include "Classes/Shader.h"
 #include "DirectX12Helper.h"
 
 class IComputeBuffer;
@@ -105,4 +106,13 @@ public:
 
 		return _CSData.Get();
 	}
+};
+
+class PDX12GraphicsShader : public IRawGraphicsShader
+{
+private:
+	PDX12GraphicsShaderCompiler Compiler;
+
+public:
+	PDX12GraphicsShaderCompiler* GetCompiler();
 };

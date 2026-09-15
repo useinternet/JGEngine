@@ -11,7 +11,7 @@ void HMemoryChunk::Initialize(const HMemoryChunkArguments& InArguments)
 	TotalMemorySize = 0;
 	for (const std::pair<EMemorySize, uint64>& Pair : InArguments.MemoryBlockCountMap)
 	{
-		uint64 MemorySize = static_cast<uint64>(Pair.first) * Pair.second;
+		uint64 MemorySize = ( static_cast<uint64>(Pair.first) + sizeof(HMemoryHeader) ) * Pair.second;
 		TotalMemorySize += MemorySize;
 	}
 
@@ -115,6 +115,40 @@ void HMemoryChunk::Deallocate(void* InMemory)
 	JG_LOG(Memory, ELogLevel::Info, "[ID: %u] Deallocated %u byte, address : %x", GetID(), MemoryHeader->MemorySize, InMemory);
 }
 
+void HMemoryChunk::GetStatInfo(HMemoryChunkStatInfo& OutStatInfo)  const
+{
+	OutStatInfo = HMemoryChunkStatInfo();
+	OutStatInfo.ChunkID = GetID();
+	OutStatInfo.TotalMemorySize = TotalMemorySize;
+	OutStatInfo.AllocatedMemorySize = 0;
+	OutStatInfo.HeaderMemorySize = 0;
+
+	uint64 OffsetPos = 0;
+	while (OffsetPos < OutStatInfo.TotalMemorySize)
+	{
+		void* CurrentPos = (void*)((uint64)pMemory + OffsetPos);
+
+		HMemoryHeader* pMemoryHeader = static_cast<HMemoryHeader*>(CurrentPos);
+		OutStatInfo.HeaderMemorySize += sizeof(HMemoryHeader);
+
+		HMemroyBlockStat BlockStat;
+		BlockStat.MemorySize = pMemoryHeader->MemorySize;
+		BlockStat.Ptr = (void*)((uint64)CurrentPos + sizeof(HMemoryHeader));
+
+		if (pMemoryHeader->MemeoryState == EMemoryState::Allocated)
+		{
+			OutStatInfo.AllocatedMemorySize += (uint64)BlockStat.MemorySize;
+			OutStatInfo.AllocatedMemories[BlockStat.MemorySize].push_back(BlockStat);
+		}
+		else
+		{
+			OutStatInfo.EmptyMemories[BlockStat.MemorySize].push_back(BlockStat);
+		}
+
+		OffsetPos += ((uint64)pMemoryHeader->MemorySize + sizeof(HMemoryHeader));
+	}
+}
+
 void HMemoryPool::Initialize()
 {
 
@@ -174,6 +208,20 @@ void  HMemoryPool::Deallocate(void* InMemory)
 		Itr->second.Deallocate(InMemory);
 
 		JG_LOG(Memory, ELogLevel::Warning, "Dismatch Allocated Thread(%u) And Deallocated Thread(%u), Memory Location : %x", ID, ThisThreadID, InMemory);
+	}
+}
+
+void HMemoryPool::GetStatInfo(HMemoryPoolStatInfo& OutStatInfo)
+{
+	std::shared_lock<std::shared_mutex> lock(RWLock);
+
+	for (const std::pair<const ThreadID, HMemoryChunk>& Pair : MemoryChunkMap)
+	{
+		const HMemoryChunk& MemoryChunk = Pair.second;
+		HMemoryChunkStatInfo MemoryChunkStatInfo;
+		MemoryChunk.GetStatInfo(MemoryChunkStatInfo);
+
+		OutStatInfo.ChunkStatInfos.push_back(MemoryChunkStatInfo);
 	}
 }
 

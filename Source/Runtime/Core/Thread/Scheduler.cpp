@@ -220,7 +220,8 @@ int32 GScheduleGlobalSystem::getRecommandThreadIndex(ENamedThread inNamedThread)
 			ENamedThread namedThread = pair.first;
 			int32 threadIndex = pair.second;
 
-			if ((namedThread & inNamedThread) == false)
+	
+			if (EnumHasAnyFlags(namedThread, inNamedThread) == false)
 			{
 				continue;
 			}

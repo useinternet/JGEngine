@@ -25,7 +25,11 @@ void PDX12Texture::SetName(const PName& inName)
 
 uint64 PDX12Texture::GetTextureID() const
 {
-	return uint64();
+
+
+
+
+	return GetSRV().ptr;
 	//D3D12_SHADER_RESOURCE_VIEW_DESC;
 	//HDirectXAPI::GetDevice()->CreateShaderResourceView()
 }
@@ -60,10 +64,7 @@ void PDX12Texture::Reset()
 	_srvs.clear();
 	_uavs.clear();	
 
-	if (HDirectXAPI::IsValid())
-	{
-		HDirectXAPI::DestroyCommittedResource(_dx12Resource);
-	}
+	HDirectXAPI::DestroyCommittedResource(_dx12Resource);
 
 	_dx12Resource.Reset();
 	_dx12Resource = nullptr;
@@ -156,13 +157,13 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetRTV() const
 	if (IsValid() == false) return { 0 };
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
-	if ((_textureInfo.Flags & ETextureFlags::Allow_RenderTarget) == false)
+	if (EnumHasAnyFlags(_textureInfo.Flags, ETextureFlags::Allow_RenderTarget) == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "not supported RenderTarget because does not include  ETextureFlags::Allow_RenderTarget Flag");
 		return { 0 };
 	}
 
-	bool bIsDefaultDesc = createRTVDesc(_textureInfo.Flags, rtvDesc) == false;
+	bool bIsDefaultDesc = createRTVDesc(_textureInfo.Flags, rtvDesc);
 
 	uint64 hash = 0;
 	if (bIsDefaultDesc == false)
@@ -194,7 +195,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetRTV() const
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetDSV() const
 {
 	if (IsValid() == false) return { 0 };
-	if ((_textureInfo.Flags & ETextureFlags::Allow_DepthStencil) == false)
+	if (EnumHasAnyFlags(_textureInfo.Flags, ETextureFlags::Allow_DepthStencil) == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "not supported DepthStencil because does not include  ETextureFlags::Allow_DepthStencil Flag");
 		return { 0 };
@@ -222,7 +223,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetDSV() const
 	if (isFind == false)
 	{
 		std::lock_guard<std::shared_mutex> lock(_dsvMutex);
-		HDescriptionAllocation alloc = HDirectXAPI::RTVAllocate();
+		HDescriptionAllocation alloc = HDirectXAPI::DSVAllocate();
 		HDirectXAPI::GetDevice()->CreateDepthStencilView(Get(), bIsDefaultDesc ? nullptr : &dsvDesc, alloc.CPU());
 		_dsvs.emplace(hash, std::move(alloc));
 		handle = _dsvs[hash].CPU();
@@ -240,15 +241,15 @@ void PDX12Texture::Initialize(const HTextureInfo& inTextureInfo)
 	ETextureFlags flags = inTextureInfo.Flags;
 
 	D3D12_RESOURCE_FLAGS d3dRscFlags = D3D12_RESOURCE_FLAG_NONE;
-	if (flags & ETextureFlags::Allow_RenderTarget)
+	if (EnumHasAnyFlags(flags, ETextureFlags::Allow_RenderTarget))
 	{
 		d3dRscFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 	}
-	else if (flags & ETextureFlags::Allow_DepthStencil)
+	else if (EnumHasAnyFlags(flags, ETextureFlags::Allow_DepthStencil))
 	{
 		d3dRscFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 	}
-	if (flags & ETextureFlags::Allow_UnorderedAccessView)
+	if (EnumHasAnyFlags(flags, ETextureFlags::Allow_UnorderedAccessView))
 	{
 		d3dRscFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 	}
@@ -261,7 +262,7 @@ void PDX12Texture::Initialize(const HTextureInfo& inTextureInfo)
 	bool bUseClearValue = false;
 
 	D3D12_CLEAR_VALUE clearValue;
-	if (flags & ETextureFlags::Allow_RenderTarget)
+	if (EnumHasAnyFlags(flags, ETextureFlags::Allow_RenderTarget))
 	{
 		bUseClearValue = true;
 
@@ -270,8 +271,8 @@ void PDX12Texture::Initialize(const HTextureInfo& inTextureInfo)
 		clearValue.Color[2] = _textureInfo.ClearColor.B;
 		clearValue.Color[3] = _textureInfo.ClearColor.A;
 		clearValue.Format = HDirectX12Helper::ConvertDXGIFormat(_textureInfo.Format);
-	}
-	else if (flags & ETextureFlags::Allow_DepthStencil)
+	}	
+	else if (EnumHasAnyFlags(flags, ETextureFlags::Allow_DepthStencil))
 	{
 		bUseClearValue = true;
 
@@ -308,8 +309,7 @@ bool PDX12Texture::createSRVDesc(ETextureFlags inTextureFlags, D3D12_SHADER_RESO
 	JG_CHECK(IsValid());
 
 	D3D12_RESOURCE_DESC desc = Get()->GetDesc();
-
-	if (inTextureFlags & ETextureFlags::SRV_TextureCube)
+	if (EnumHasAnyFlags(inTextureFlags, ETextureFlags::SRV_TextureCube))
 	{
 		outDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		outDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
@@ -318,21 +318,21 @@ bool PDX12Texture::createSRVDesc(ETextureFlags inTextureFlags, D3D12_SHADER_RESO
 		outDesc.TextureCube.ResourceMinLODClamp = 0.0f;
 		outDesc.Format = desc.Format;
 
-		return true;
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 bool PDX12Texture::CreateUAVDesc(ETextureFlags inTextureFlags, D3D12_UNORDERED_ACCESS_VIEW_DESC& outDesc) const
 {
-	return false;
+	return true;
 }
 bool PDX12Texture::createRTVDesc(ETextureFlags inTextureFlags, D3D12_RENDER_TARGET_VIEW_DESC& outDesc) const
 {
-	return false;
+	return true;
 }
 bool PDX12Texture::createDSVDesc(ETextureFlags inTextureFlags, D3D12_DEPTH_STENCIL_VIEW_DESC& outDesc) const
 {
-	return false;
+	return true;
 }

@@ -19,6 +19,11 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	_arguments   = args;
 	_dx12Factory = HDirectX12Helper::CreateDXGIFactory();
 
+	ComPtr<ID3D12Debug> debugController;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+		debugController->EnableDebugLayer(); // 꼭 device 만들기 전에 호출!
+	}
+
 	DXGI_ADAPTER_DESC1 adapterDesc = {};
 	_bIsSupportedRayTracing = false;
 	_dx12Device = HDirectX12Helper::CreateD3DDevice(_dx12Factory, false, &adapterDesc, &_bIsSupportedRayTracing);
@@ -118,7 +123,7 @@ PSharedPtr<IRawTexture> PDirectX12API::CreateRawTexture(const uint8* pixels, con
 {
 	PSharedPtr<PDX12Texture> texture = Allocate<PDX12Texture>();
 	texture->InitializeByMemory(pixels, textureInfo);
-
+	
 	return texture;
 }
 
@@ -276,24 +281,6 @@ HDX12Factory* HDirectXAPI::GetFactory()
 const HJGGraphicsArguments& HDirectXAPI::GetArguments()
 {
 	return getDX12API()->GetArguments();
-}
-
-bool HDirectXAPI::IsValid()
-{
-	HJGGraphicsModule* GraphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>();
-	if (GraphicsModule == nullptr)
-	{
-		return false;
-	}
-
-	PSharedPtr<PJGGraphicsAPI> GraphicsAPI = GraphicsModule->GetGraphicsAPI();
-	PSharedPtr<PDirectX12API>  Dx12API = RawFastCast<PDirectX12API>(GraphicsAPI);
-	if (Dx12API.IsValid() == false)
-	{
-		return false;
-	}
-
-	return true;
 }
 
 HDX12ComPtr<HDX12Resource> HDirectXAPI::CreateCommittedResource(const PString& name, const D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_HEAP_FLAGS heapFlags, const D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES initialResourceState, const D3D12_CLEAR_VALUE* pOptimizedClearValue)

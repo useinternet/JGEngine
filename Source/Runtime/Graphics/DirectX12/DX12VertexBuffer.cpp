@@ -99,10 +99,7 @@ void PDX12VertexBuffer::Reset()
 		return;
 	}
 
-	if (HDirectXAPI::IsValid())
-	{
-		HDirectXAPI::DestroyCommittedResource(_dx12Resource);
-	}
+	HDirectXAPI::DestroyCommittedResource(_dx12Resource);
 
 	_dx12Resource.Reset();
 	_dx12Resource = nullptr;

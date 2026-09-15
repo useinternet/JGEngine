@@ -41,35 +41,35 @@ bool PDX12GraphicsShaderCompiler::Compile(const PString& code, EShaderCompileFla
 {
 	_flags = flags;
 	
-	if (_flags & EShaderCompileFlags::Allow_VertexShader)
+	if (EnumHasAnyFlags(_flags, EShaderCompileFlags::Allow_VertexShader))
 	{
 		if (compile(_VSData, code, HCompileConfig(HHLSL::VSEntry, HHLSL::VSTarget), inMacros, error) == false)
 		{
 			return false;
 		}
 	}
-	if (_flags & EShaderCompileFlags::Allow_DomainShader)
+	if (EnumHasAnyFlags(_flags, EShaderCompileFlags::Allow_DomainShader))
 	{
 		if (compile(_DSData, code, HCompileConfig(HHLSL::DSEntry, HHLSL::DSTarget), inMacros, error) == false)
 		{
 			return false;
 		}
 	}
-	if (_flags & EShaderCompileFlags::Allow_HullShader)
+	if (EnumHasAnyFlags(_flags, EShaderCompileFlags::Allow_HullShader))
 	{
 		if (compile(_HSData, code, HCompileConfig(HHLSL::HSEntry, HHLSL::HSTarget), inMacros, error) == false)
 		{
 			return false;
 		}
 	}
-	if (_flags & EShaderCompileFlags::Allow_GeometryShader)
+	if (EnumHasAnyFlags(_flags, EShaderCompileFlags::Allow_GeometryShader))
 	{
 		if (compile(_GSData, code, HCompileConfig(HHLSL::GSEntry, HHLSL::GSTarget), inMacros, error) == false)
 		{
 			return false;
 		}
 	}
-	if (_flags & EShaderCompileFlags::Allow_PixelShader)
+	if (EnumHasAnyFlags(_flags, EShaderCompileFlags::Allow_PixelShader))
 	{
 		if (compile(_PSData, code, HCompileConfig(HHLSL::PSEntry, HHLSL::PSTarget), inMacros, error) == false)
 		{
@@ -159,3 +159,8 @@ bool PDX12ComputeShaderCompiler::Compile(const PString& code, PString* error)
 //		return pBlob;
 //	}
 //}
+
+PDX12GraphicsShaderCompiler* PDX12GraphicsShader::GetCompiler()
+{
+	return &Compiler;
+}

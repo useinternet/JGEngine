@@ -3,6 +3,8 @@
 #include "JGGraphicsObject.h"
 
 
+class IRawGraphicsShader;
+
 enum class GRAPHICS_API EMaterialDomain
 {
 	Surface,
@@ -163,5 +165,8 @@ public:
 	virtual bool GetTexture(const PName& inName, PSharedPtr<IRawTexture>& outValue) const = 0;
 	virtual bool Compile(const HMaterialCompileArguments& inArgs) = 0;
 
+	virtual HList<PSharedPtr<IRawTexture>> GetTextures() const = 0;
+	virtual PWeakPtr<IConstantBuffer> GetConstantBuffer() const = 0;
+	virtual PWeakPtr<IRawGraphicsShader> GetShader() const = 0;
 	virtual bool IsValid() const = 0;
 };

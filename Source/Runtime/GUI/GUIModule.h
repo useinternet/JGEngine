@@ -14,6 +14,7 @@ class GUI_API HGUIModule : public IModuleInterface
     HMainMenuTree MainMenuTree;
 
     HHashMap<HGuid, PSharedPtr<JGWidget>> Widgets;
+
 protected:
     JGType GetModuleType() const override;
 
@@ -57,8 +58,23 @@ public:
         CloseWidgetInternal(Widgets[WidgetGUID]);
     }
 
+    template<class T>
+    PSharedPtr<T> FindWidget() const
+    {
+        HGuid WidgetGUID = T::GetStaticGUID();
+		if (Widgets.contains(WidgetGUID))
+		{
+			return Cast<T>(Widgets.at(WidgetGUID));
+		}
+
+        return nullptr;
+    }
+
+    PWeakPtr<PGUIBackend> GetGUIBackend() const;
 private:
     bool OpenWidgetInternal(PSharedPtr<JGWidget> InWidget);
     void CloseWidgetInternal(PSharedPtr<JGWidget> InWidget);
+    void UpdateWidgets();
+    void UpdateFrameWidgets();
 };
 

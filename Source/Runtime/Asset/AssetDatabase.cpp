@@ -33,11 +33,11 @@ void GAssetDatabase::Update()
 				OnLoadCompelete.ExecuteIfBound(asset);
 			}
 			
-			JG_LOG(Asset, ELogLevel::Trace, "%s : Success Load Asset");
+			JG_LOG(Asset, ELogLevel::Trace, "%s : Success Load Asset", loadedAssetPath.ToString());
 		}
 		else
 		{
-			JG_LOG(Asset, ELogLevel::Error, "%s : Failed Load Asset, Loaded Asset is nullptr");
+			JG_LOG(Asset, ELogLevel::Error, "%s : Failed Load Asset, Loaded Asset is nullptr", loadedAssetPath.ToString());
 		}
 
 		_loadingAssets.erase(loadedAssetPath);

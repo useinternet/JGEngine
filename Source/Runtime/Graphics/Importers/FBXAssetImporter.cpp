@@ -66,8 +66,8 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 	{
 		if (scene->HasMeshes() == true)
 		{
-
-			if (_args.Flags & EFBXAssetImportFlags::Import_Skeletal)
+			
+			if (EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_Skeletal))
 			{
 				uint32 meshCount = scene->mNumMeshes;
 				for (uint32 i = 0; i < meshCount; ++i)
@@ -84,7 +84,7 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 					}
 				}
 			}
-			if (_args.Flags & EFBXAssetImportFlags::Import_Mesh)
+			if (EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_Mesh))
 			{
 				HMeshStock meshStock;
 				meshStock.Name = scene->mName.C_Str();
@@ -103,7 +103,7 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 				WriteMesh(meshStock);
 			}
 		}
-		if (scene->HasAnimations() == true && _args.Flags & EFBXAssetImportFlags::Import_AnimationClip)
+		if (scene->HasAnimations() == true && EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_AnimationClip))
 		{
 			uint32 animCount = scene->mNumAnimations;
 			for (uint32 i = 0; i < animCount; ++i)
@@ -128,7 +128,7 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 
 			}
 		}
-		if (scene->HasTextures() == true && _args.Flags & EFBXAssetImportFlags::Import_Texture)
+		if (scene->HasTextures() == true && EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_Texture))
 		{
 			// Texture
 			uint32 texCnt = scene->mNumTextures;
@@ -257,8 +257,8 @@ void JGFBXAssetImporter::ReadMesh(const aiScene* scene, const aiMesh* mesh, HMes
 		}
 	}
 	inOutStock->Indices.push_back(indices);
-
-	if(_args.Flags & EFBXAssetImportFlags::Import_Skeletal)
+	
+	if(EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_Skeletal))
 	{
 		if (mesh->HasBones() == true)
 		{

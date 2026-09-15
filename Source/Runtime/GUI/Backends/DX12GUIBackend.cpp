@@ -32,6 +32,8 @@ void PDX12GUIBackend::Initialize()
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
+
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 //	io.Fonts->AddFontFromFileTTF("../../Source/Font/Consolas.ttf", 16.0f);
 	ImGui::StyleColorsDark();
@@ -140,6 +142,8 @@ void PDX12GUIBackend::Shutdown()
 #ifdef _PLATFORM_WINDOWS
 	ImGui_ImplWin32_Shutdown();
 #endif
+
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 }
 

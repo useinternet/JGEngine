@@ -385,19 +385,34 @@ struct HRenderTarget
 {
 public:
 	PSharedPtr<IRawTexture> RenderTextures[MAX_RENDERTARGET];
+	PSharedPtr<IRawTexture> DepthTexture;
 	HList<HViewport>    Viewports;
 	HList<HScissorRect> ScissorRects;
 };
 
-struct HRenderPassData
+struct HRenderPassCBData
 {
+	HMatrix ProjMatrix;
+	HMatrix ViewMatrix;
+	HMatrix ViewProjMatrix;
+	HMatrix InvViewMatrix;
+	HMatrix InvProjMatrix;
+	HMatrix InvViewProjMatrix;
+	HVector2   Resolution;
+	float32    NearZ;
+	float32    FarZ;
+	HVector3   EyePosition;
+};
 
+struct HObjectCBData
+{
+	HMatrix WorldMatrix;	
 };
 
 struct HDrawArguments
 {
 	PSharedPtr<IMesh> Mesh;
-	HMatrix WorldMatrix;
+	HObjectCBData ObjectCBData;
 };
 
 struct HSceneDrawArguments

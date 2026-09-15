@@ -548,7 +548,8 @@ class GMemoryGlobalSystem : public GGlobalSystemInstance<GMemoryGlobalSystem>
 public:
 	mutable std::unordered_map<const void*, HMemoryBlock> AllocatedMemoryBlocks;
 	mutable std::queue<void*> AllocatedMemoryBlockQueue;
-	mutable HMutex Mutex;
+	mutable HRecursiveMutex Mutex;
+	mutable bool bProcessingGarbageCollection;
 	mutable HMemoryPool MemoryPool;
 	int32 ProcessBlockCountPerFrame;
 
@@ -587,10 +588,11 @@ public:
 		Result._pRefCount->fetch_add(1);
 
 		{
-			HLockGuard<HMutex> lock(Mutex);
+			HLockGuard<HRecursiveMutex> lock(Mutex);
 			AllocatedMemoryBlocks.emplace(Result._ptr, std::move(memoryBlock));
 			AllocatedMemoryBlockQueue.push(Result._ptr);
 		}
+
 		// ~ @NOTE
 
 		IMemoryObject* memObject = Result._ptr;
@@ -620,10 +622,9 @@ public:
 
 		// @NOTE
 		// 아래 항목 MemoryPool 로 이동
-		HLockGuard<HMutex> lock(Mutex);
+		HLockGuard<HRecursiveMutex> lock(Mutex);
 		if (AllocatedMemoryBlocks.find(fromThis) == AllocatedMemoryBlocks.end())
 		{
-			//unlock();
 			return PSharedPtr<T>();
 		}
 		HMemoryBlock& memoryBlock = AllocatedMemoryBlocks[(const void*)fromThis];

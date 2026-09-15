@@ -4,7 +4,9 @@
     "ModuleDependencies": [
       "Core",
       "Graphics",
-      "Asset"
+      "Asset",
+      "Devkit",
+      "GUI"
     ],
     "ModuleName": "JGDev_Graphics",
     "ModulePath": "Source/Editor/JGDev_Graphics/",

@@ -102,8 +102,6 @@ public:
 	static HDX12Factory* GetFactory();
 	static const HJGGraphicsArguments& GetArguments();
 
-	static bool IsValid();
-
 	static 	HDX12ComPtr<HDX12Resource> CreateCommittedResource(
 		const PString& name,
 		const D3D12_HEAP_PROPERTIES* pHeapProperties,

@@ -8,13 +8,12 @@ class IVertexBuffer;
 class IIndexBuffer;
 class IStructuredBuffer;
 class IMesh;
+class IRawGraphicsShader;
 
 class IJGGraphicsCommand : public IMemoryObject
 {
 public:
 	virtual ~IJGGraphicsCommand() = default;
-
-
 public:
 	//
 	virtual void BeginDraw() = 0;
@@ -22,22 +21,25 @@ public:
 
 	// Render Setting
 	virtual void SetRenderTarget(const HRenderTarget& inRenderTarget) = 0;
-	virtual void SetRenderPassData(const HRenderPassData& inData) = 0;
+	virtual void SetRenderPassData(const HRenderPassCBData& inData) = 0;
 	virtual void Draw(const HDrawArguments& inArgs) = 0;
 	virtual void Draw(const HSceneDrawArguments& inArgs) = 0;
 	// Util
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture) const = 0;
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture, const HLinearColor& InClearColor) const = 0;
 
-	//void BindMesh(PSharedPtr<PStaticMesh> inMesh);
+	// Bind
+	// 
+	virtual void BindTextures(uint32 rootParam, HList<PSharedPtr<IRawTexture>> inTextures) = 0;
+	virtual void BindConstantBuffer(uint32 rootParam, PSharedPtr<IConstantBuffer> inConstantBuffer) = 0;
+	virtual void BindStructuredBuffer(uint32 rootParam, PSharedPtr<IStructuredBuffer> inStructuredBuffer) = 0;
+	virtual void BindVertexBuffer(PSharedPtr<IVertexBuffer> inVertexBuffer) = 0;
+	virtual void BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffer) = 0;
+	virtual void BindShader(PSharedPtr<IRawGraphicsShader> inGraphicsShader) = 0;
 
 	// Bind Data
 protected:
-	//virtual void BindTextures(uint32 rootParam, HList<PSharedPtr<ITexture>> inTextures) = 0;
-	//virtual void BindConstantBuffer(uint32 rootParam, PSharedPtr<IConstantBuffer> inConstantBuffer) = 0;
-	//virtual void BindStructuredBuffer(uint32 rootParam, PSharedPtr<IStructuredBuffer> inStructuredBuffer) = 0;
-	//virtual void BindVertexBuffer(PSharedPtr<IVertexBuffer> inVertexBuffer) = 0;
-	//virtual void BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffer) = 0;
+
 
 	//
 

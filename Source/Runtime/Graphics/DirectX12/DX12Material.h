@@ -6,6 +6,7 @@
 class PDX12ConstantBuffer;
 class PGraphicsPipelineState;
 class PDX12GraphicsShaderCompiler;
+class PDX12GraphicsShader;
 
 struct HDX12CompileConfig
 {
@@ -18,51 +19,56 @@ class PDX12Material
 	: public IMemoryObject
 	, public IRawMaterial
 {
-	// ±¸Çö ÇÒ°Å
-	// µ¥ÀÌÅÍ ¼ÂÆÃ
-	// PSO ¿¡ Shader ¹ÙÀÎµù
-	// ÇÏ°í ÀÓÆ÷Æ®ÇÒ¼öÀÖ´Â °£´ÜÇÑ °Å ÁØºñÇØ¼­ ·»´õ¸µÇØº¸±â
+	// êµ¬í˜„ í• ê±°
+	// ë°ì´í„° ì…‹íŒ…
+	// PSO ì— Shader ë°”ì¸ë”©
+	// í•˜ê³  ì„í¬íŠ¸í• ìˆ˜ìˆëŠ” ê°„ë‹¨í•œ ê±° ì¤€ë¹„í•´ì„œ ë Œë”ë§í•´ë³´ê¸°
 
-	// ¹Ì¸® Shader ÄÄÆÄÀÏ
+	// ë¯¸ë¦¬ Shader ì»´íŒŒì¼
 
 	PName _name;
 	mutable bool _bNeedCompile;
 
 
-	// ÀÓ½Ã µ¥ÀÌÅÍ ( ÄÄÆÄÀÏ ¿ë )
-	PSharedPtr<PDX12GraphicsShaderCompiler> _graphicsShader;
+	// ì„ì‹œ ë°ì´í„° ( ì»´íŒŒì¼ ìš© )
+	PSharedPtr<PDX12GraphicsShader> _graphicsShader;
 
 	PString _shaderCode;
 	PString _fullShaderCode;
 
 
-	// ¾Æ·¡ µ¥ÀÌÅÍ¸¸ ÀÖÀ¸¸é µ¿ÀÛÇÏµµ·Ï ±¸¼º
-	HMaterialPropertyDefinitionist  _propertyDefinitionist;
+	// ì•„ë˜ ë°ì´í„°ë§Œ ìˆìœ¼ë©´ ë™ì‘í•˜ë„ë¡ êµ¬ì„±
+	HMaterialPropertyDefinitionist        _propertyDefinitionist;
 	PSharedPtr<PGraphicsPipelineState>    _graphicsPSO;
 	PSharedPtr<PDX12ConstantBuffer>       _materialConstantBuffer;
 	HHashMap<PName, uint64>               _materialConstantDataOffsetMap;
-	HHashMap<PName, PSharedPtr<IRawTexture>> _materialTextures;
+	HList<PSharedPtr<IRawTexture>>        _materialTextures;
+	HList<PSharedPtr<IRawTexture>>        _materialTextureCubes;
+	HHashMap<PName, uint64> _materialTextureNameMap;
+	HHashMap<PName, uint64> _materialTextureCubeNameMap;
+	
+	
 	HList<PName>					      _materialConstantPropertyList;
 
-	// ³ªÁß¿¡ ÄÄÆÄÀÏµÈ ¹ÙÀÌÆ® µ¥ÀÌÅÍ °¡Á®¿Í¼­ ¹Ù·Î ±¸µ¿ÇÒ¼öÀÖµµ·Ï µû·Î »«°ÅÀÔ´Ï´Ù.
+	// ë‚˜ì¤‘ì— ì»´íŒŒì¼ëœ ë°”ì´íŠ¸ ë°ì´í„° ê°€ì ¸ì™€ì„œ ë°”ë¡œ êµ¬ë™í• ìˆ˜ìˆë„ë¡ ë”°ë¡œ ëº€ê±°ì…ë‹ˆë‹¤.
 	HHashMap<EShaderDomain, HList<uint8>> _shaderBtDatas;
 
-	// ¸ÓÅÍ¸®¾ó ÄÄÆÄÀÏ ´Ü°è
-	// ÅÛÇÃ¸´ ¼ÎÀÌ´õ ÄÚµå °¡Á®¿È
-	// ¼Ò½ºÄÚµå »ğÀÔ
-	// ¸ÅÅ©·Î »ğÀÔ
-	// ¼ÎÀÌ´õ ÄÄÆÄÀÏ
+	// ë¨¸í„°ë¦¬ì–¼ ì»´íŒŒì¼ ë‹¨ê³„
+	// í…œí”Œë¦¿ ì…°ì´ë” ì½”ë“œ ê°€ì ¸ì˜´
+	// ì†ŒìŠ¤ì½”ë“œ ì‚½ì…
+	// ë§¤í¬ë¡œ ì‚½ì…
+	// ì…°ì´ë” ì»´íŒŒì¼
 
 
-	// ·»´õ¸µ ´Ü°è
-	// Scene¿¡¼­ ÅëÇÕ ·»´õ¸µ Àü¿ë RootSignature ¹ÙÀÎµå
-	// Scene¿¡¼­ ÅØ½ºÃÄ ÀÎµ¦½º ÇÒ´ç
-	// ¸®¼Ò½º ¹× °ø¿ë ¹öÆÛ ¹ÙÀÎµå
-	// --------------------------- ¹İº¹
-	// ÆÄÀÌÇÁ¶óÀÎ ¹ÙÀÎµå
-	// ¸ÓÅÍ¸®¾ó »ó¼ö¹öÆÛ ¹ÙÀÎµå
-	// Mesh ¹ÙÀÎµå
-	// ·»´õ¸µ
+	// ë Œë”ë§ ë‹¨ê³„
+	// Sceneì—ì„œ í†µí•© ë Œë”ë§ ì „ìš© RootSignature ë°”ì¸ë“œ
+	// Sceneì—ì„œ í…ìŠ¤ì³ ì¸ë±ìŠ¤ í• ë‹¹
+	// ë¦¬ì†ŒìŠ¤ ë° ê³µìš© ë²„í¼ ë°”ì¸ë“œ
+	// --------------------------- ë°˜ë³µ
+	// íŒŒì´í”„ë¼ì¸ ë°”ì¸ë“œ
+	// ë¨¸í„°ë¦¬ì–¼ ìƒìˆ˜ë²„í¼ ë°”ì¸ë“œ
+	// Mesh ë°”ì¸ë“œ
+	// ë Œë”ë§
 	//---------------------------
 
 public:
@@ -100,7 +106,11 @@ public:
 
 	virtual bool Compile(const HMaterialCompileArguments& inArgs) override;
 
+	virtual HList<PSharedPtr<IRawTexture>> GetTextures() const override;
+	
 	virtual bool IsValid() const override;
+	virtual PWeakPtr<IConstantBuffer> GetConstantBuffer() const override;
+	virtual PWeakPtr<IRawGraphicsShader> GetShader() const override;
 private:
 	bool updateMaterialConstantData();
 	bool generateShaderCode();

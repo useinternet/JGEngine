@@ -243,6 +243,11 @@ bool PDX12Material::GetTexture(const PName& inName, PSharedPtr<IRawTexture>& out
 
 bool PDX12Material::Compile(const HMaterialCompileArguments& inArgs)
 {
+	if (_bNeedCompile == false)
+	{
+		return true;
+	}
+	
 	if (IsValid() == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Compile, Invalid Material", GetName());
@@ -272,25 +277,40 @@ bool PDX12Material::Compile(const HMaterialCompileArguments& inArgs)
 	_bNeedCompile = false;
 	return true;
 
-	// 16¿¡ ¸ÂÃç¾ßÇÔ
-	// 1. Texture, TextureCube ½½·Ô ¸¸µé±â
-	// 2. º¯¼ö ½½·Ô ¸¸µé±â
-	// 3. »ó¼ö ¹öÆÛ »ı¼º
-	// 4. Template Code¿¡ Source Code ºÙÈ÷±â
-	// 5. Texture, ³ª TextureCube º¯¼ö´Â Global Texture ¹è¿­ Á¢±ÙÀ¸·Î º¯°æ
-	// 6. FullSourceCode ¿Ï¼º
+	// 16ì— ë§ì¶°ì•¼í•¨
+	// 1. Texture, TextureCube ìŠ¬ë¡¯ ë§Œë“¤ê¸°
+	// 2. ë³€ìˆ˜ ìŠ¬ë¡¯ ë§Œë“¤ê¸°
+	// 3. ìƒìˆ˜ ë²„í¼ ìƒì„±
+	// 4. Template Codeì— Source Code ë¶™íˆê¸°
+	// 5. Texture, ë‚˜ TextureCube ë³€ìˆ˜ëŠ” Global Texture ë°°ì—´ ì ‘ê·¼ìœ¼ë¡œ ë³€ê²½
+	// 6. FullSourceCode ì™„ì„±
 
-	// ¼ÎÀÌ´õ ÄÄÆÄÀÏ
-	// ¹ÙÀÌÆ® ÇüÅÂ·Î ÀúÀå
-	// ÄÄÆÄÀÏÀº ¼öµ¿ÀÌ°í, ¸ÅÅ©·Î¸¶´Ù ¹ÙÀÌÆ® ÇüÅÂ·Î ÀúÀåÇÏ°íÀÖ´Ù.
-	// ¸ÓÅÍ¸®¾óÀº ¹ÙÀÌÆ® ÇüÅÂ·Î ÀúÀå
+	// ì…°ì´ë” ì»´íŒŒì¼
+	// ë°”ì´íŠ¸ í˜•íƒœë¡œ ì €ì¥
+	// ì»´íŒŒì¼ì€ ìˆ˜ë™ì´ê³ , ë§¤í¬ë¡œë§ˆë‹¤ ë°”ì´íŠ¸ í˜•íƒœë¡œ ì €ì¥í•˜ê³ ìˆë‹¤.
+	// ë¨¸í„°ë¦¬ì–¼ì€ ë°”ì´íŠ¸ í˜•íƒœë¡œ ì €ì¥
 
 	return false;
+}
+
+HList<PSharedPtr<IRawTexture>> PDX12Material::GetTextures() const
+{
+	return _materialTextures;
 }
 
 bool PDX12Material::IsValid() const
 {
 	return _shaderBtDatas.empty();
+}
+
+PWeakPtr<IConstantBuffer> PDX12Material::GetConstantBuffer() const
+{
+	return _materialConstantBuffer;
+}
+
+PWeakPtr<IRawGraphicsShader> PDX12Material::GetShader() const
+{
+	return _graphicsShader;
 }
 
 bool PDX12Material::updateMaterialConstantData()
@@ -332,9 +352,15 @@ bool PDX12Material::generateShaderCode()
 	PString materialShaderCode = _shaderCode;
 	PString fullShaderCode = std::move(templateShaderCode);
 
-	// »ó¼ö¹öÆÛ ÄÚµå ÀÛ¼º
+	// ìƒìˆ˜ë²„í¼ ì½”ë“œ ì‘ì„±
+	
 
-	// ¸ÓÅÍ¸®¾ó Shader Code ÄÁ¹öÆÃ
+	// ë¨¸í„°ë¦¬ì–¼ Shader Code ì»¨ë²„íŒ…
+	_materialTextures.clear();
+	_materialTextureCubes.clear();
+	_materialTextureNameMap.clear();
+	_materialTextureCubeNameMap.clear();
+	
 	const HList<HMaterialDefineInfo>& defineInfos = _propertyDefinitionist.GetDefineInfos();
 	for (const HMaterialDefineInfo& info : defineInfos)
 	{
@@ -358,7 +384,11 @@ bool PDX12Material::generateShaderCode()
 		{
 			PString sampleStateName;
 
-			getSampleStateName(_materialTextures[info.Name], sampleStateName);
+			uint64 textureIndex = _materialTextures.size();
+			// @TODO
+			//_materialTextures.push_back()
+
+			getSampleStateName(_materialTextures[_materialTextureNameMap[info.Name]], sampleStateName);
 
 			switch(info.Type)
 			{
@@ -386,24 +416,26 @@ bool PDX12Material::compileShader(const HMaterialCompileArguments& inArgs)
 {
 	PString errorCode;
 
-	// ¸ÓÅÍ¸®¾ó ¿É¼Ç¿¡ µû¸¥ µğÆÄÀÎ ÁÖ±â ( ¼öµ¿ )
-	// Á¶ÇÕº° ¹ÙÀÌÆ® ÄÚµå °¡Áö°íÀÖ±â
+	// ë¨¸í„°ë¦¬ì–¼ ì˜µì…˜ì— ë”°ë¥¸ ë””íŒŒì¸ ì£¼ê¸° ( ìˆ˜ë™ )
+	// ì¡°í•©ë³„ ë°”ì´íŠ¸ ì½”ë“œ ê°€ì§€ê³ ìˆê¸°
 
-	_graphicsShader->Compile(GetFullShaderCode(), EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader, HList<HPair<PName, PName>>(), &errorCode);
-	if (_graphicsShader->IsSuccessed() == false)
+	PDX12GraphicsShaderCompiler* shaderCompiler = _graphicsShader->GetCompiler();
+
+	shaderCompiler->Compile(GetFullShaderCode(), EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader, HList<HPair<PName, PName>>(), &errorCode);
+	if (shaderCompiler->IsSuccessed() == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Compile, %s", GetName(), errorCode);
 		return false;
 	}
 
-	uint64 vsDataSize = _graphicsShader->GetVSData()->GetBufferSize();
-	uint64 psDataSize = _graphicsShader->GetPSData()->GetBufferSize();
+	uint64 vsDataSize = shaderCompiler->GetVSData()->GetBufferSize();
+	uint64 psDataSize = shaderCompiler->GetPSData()->GetBufferSize();
 
 	_shaderBtDatas[EShaderDomain::Vertex].resize(vsDataSize);
 	_shaderBtDatas[EShaderDomain::Pixel].resize(psDataSize);
 
-	memcpy(_shaderBtDatas[EShaderDomain::Vertex].data(), _graphicsShader->GetVSData()->GetBufferPointer(), vsDataSize);
-	memcpy(_shaderBtDatas[EShaderDomain::Pixel].data(), _graphicsShader->GetPSData()->GetBufferPointer(), psDataSize);
+	memcpy(_shaderBtDatas[EShaderDomain::Vertex].data(), shaderCompiler->GetVSData()->GetBufferPointer(), vsDataSize);
+	memcpy(_shaderBtDatas[EShaderDomain::Pixel].data(), shaderCompiler->GetPSData()->GetBufferPointer(), psDataSize);
 
 	return true;
 }

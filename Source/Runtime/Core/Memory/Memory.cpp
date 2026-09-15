@@ -5,6 +5,7 @@
 GMemoryGlobalSystem::GMemoryGlobalSystem(int32 processBlockCountPerFrame)
 {
 	ProcessBlockCountPerFrame = processBlockCountPerFrame;
+	bProcessingGarbageCollection = false;
 	MemoryPool.Initialize();
 }
 
@@ -32,7 +33,8 @@ void GMemoryGlobalSystem::forceFlush()
 
 void GMemoryGlobalSystem::garbageCollection(int32 level)
 {
-	HLockGuard<HMutex> lock(Mutex);
+	HLockGuard<HRecursiveMutex> lock(Mutex);
+	bProcessingGarbageCollection = true;
 	if (level < 0)
 	{
 		while (AllocatedMemoryBlockQueue.empty() == false)
@@ -63,7 +65,7 @@ void GMemoryGlobalSystem::garbageCollection(int32 level)
 			garbageCollectionInternal(ProcessBlockCountPerFrame);
 		}
 	}
-
+	bProcessingGarbageCollection = false;
 }
 
 int32 GMemoryGlobalSystem::garbageCollectionInternal(int32 countPerFrame, bool bForce)

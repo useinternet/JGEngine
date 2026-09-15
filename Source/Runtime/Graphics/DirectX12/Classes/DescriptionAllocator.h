@@ -62,12 +62,12 @@ public:
 	}
 
 	bool IsValid() const {
-		return _CPU.ptr != 0;
+		return _CPU.ptr != 0 && _ownerPage.IsValid();
 	}
 
 	void Reset();
 
 private:
-	D3D12_CPU_DESCRIPTOR_HANDLE _CPU;
+	D3D12_CPU_DESCRIPTOR_HANDLE _CPU = D3D12_CPU_DESCRIPTOR_HANDLE();
 	PWeakPtr<PDescriptionAllocator::PCPUDescriptionPage> _ownerPage;
 };

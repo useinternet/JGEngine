@@ -1,6 +1,7 @@
 #pragma once
 #include "GUIBackend.h"
 #include "Imgui/imgui.h"
+#include "Imgui/implot.h"
 
 #ifdef _DIRECTX12
 #include "DirectX12/DirectX12Define.h"

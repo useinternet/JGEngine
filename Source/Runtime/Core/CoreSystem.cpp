@@ -30,6 +30,7 @@ bool GCoreSystem::Create(const HCoreSystemArguments& args)
 	}
 
 	Instance = new GCoreSystem;
+	Instance->MainThreadID = std::hash<std::thread::id>()(std::this_thread::get_id());
 
 	GCoreSystem::RegisterSystemInstance<GLogGlobalSystem>();
 	GCoreSystem::RegisterSystemInstance<GMemoryGlobalSystem>();
@@ -42,7 +43,8 @@ bool GCoreSystem::Create(const HCoreSystemArguments& args)
 	Instance->GlobalValues.MainWindow = nullptr;
 	Instance->GlobalValues.WindowCallBacks = std::make_unique<HWindowCallBacks>();
 
-	if ((args.Flags & ECoreSystemFlags::No_CodeGen) == false)
+	
+	if (EnumHasAnyFlags(args.Flags, ECoreSystemFlags::No_CodeGen) == false)
 	{
 		if (GObjectGlobalSystem::GetInstance().codeGen() == false)
 		{
@@ -85,7 +87,7 @@ void GCoreSystem::Destroy()
 
 	Instance->GlobalValues.MainWindow = nullptr;
 	Instance->GlobalValues.WindowCallBacks = nullptr;
-
+	
 	int32 NumSystem = (int32)Instance->SystemInstanceList.size();
 	for (int32 i = NumSystem - 1; i >= 0; --i)
 	{
@@ -144,4 +146,9 @@ uint32 GCoreSystem::GetThreadCount()
 {
 	static uint32  threadCount = std::thread::hardware_concurrency();
 	return threadCount;
+}
+
+ThreadID GCoreSystem::GetMainThreadID()
+{
+	return Instance->MainThreadID;
 }

@@ -54,20 +54,54 @@ namespace fs = std::filesystem;
 
 #define JG_SUPER __super
 
-#define JG_ENUM_FLAG(enumName) \
-enum class enumName; \
-inline enumName operator|(enumName c1, enumName c2) \
-{ \
-	return (enumName)((int32)c1 | (int32)c2); \
-} \
-inline int32 operator&(enumName c1, enumName c2) \
-{ \
-	return (int32)((int32)c1 & (int32)c2); \
-} \
-inline enumName operator~(enumName flags)\
-{\
-	return (enumName)~((int)flags);\
-}\
+#define JG_ENUM_FLAG(EnumName) \
+	enum class EnumName; \
+	inline           EnumName& operator|=(EnumName& Lhs, EnumName Rhs) { return Lhs = (EnumName)((__underlying_type(EnumName))Lhs | (__underlying_type(EnumName))Rhs); } \
+	inline           EnumName& operator&=(EnumName& Lhs, EnumName Rhs) { return Lhs = (EnumName)((__underlying_type(EnumName))Lhs & (__underlying_type(EnumName))Rhs); } \
+	inline           EnumName& operator^=(EnumName& Lhs, EnumName Rhs) { return Lhs = (EnumName)((__underlying_type(EnumName))Lhs ^ (__underlying_type(EnumName))Rhs); } \
+	inline constexpr EnumName  operator| (EnumName  Lhs, EnumName Rhs) { return (EnumName)((__underlying_type(EnumName))Lhs | (__underlying_type(EnumName))Rhs); } \
+	inline constexpr EnumName  operator& (EnumName  Lhs, EnumName Rhs) { return (EnumName)((__underlying_type(EnumName))Lhs & (__underlying_type(EnumName))Rhs); } \
+	inline constexpr EnumName  operator^ (EnumName  Lhs, EnumName Rhs) { return (EnumName)((__underlying_type(EnumName))Lhs ^ (__underlying_type(EnumName))Rhs); } \
+	inline constexpr bool  operator! (EnumName  E)             { return !(__underlying_type(EnumName))E; } \
+	inline constexpr EnumName  operator~ (EnumName  E)             { return (EnumName)~(__underlying_type(EnumName))E; } \
+
+#define JG_FRIEND_ENUM_FLAG(EnumName) \
+	friend           EnumName& operator|=(EnumName& Lhs, EnumName Rhs); \
+	friend           EnumName& operator&=(EnumName& Lhs, EnumName Rhs); \
+	friend           EnumName& operator^=(EnumName& Lhs, EnumName Rhs); \
+	friend constexpr EnumName  operator| (EnumName  Lhs, EnumName Rhs); \
+	friend constexpr EnumName  operator& (EnumName  Lhs, EnumName Rhs); \
+	friend constexpr EnumName  operator^ (EnumName  Lhs, EnumName Rhs); \
+	friend constexpr bool  operator! (EnumName  E); \
+	friend constexpr EnumName  operator~ (EnumName  E);
+
+template<typename Enum>
+constexpr bool EnumHasAllFlags(Enum Flags, Enum Contains)
+{
+	using UnderlyingType = __underlying_type(Enum);
+	return ((UnderlyingType)Flags & (UnderlyingType)Contains) == (UnderlyingType)Contains;
+}
+
+template<typename Enum>
+constexpr bool EnumHasAnyFlags(Enum Flags, Enum Contains)
+{
+	using UnderlyingType = __underlying_type(Enum);
+	return ((UnderlyingType)Flags & (UnderlyingType)Contains) != 0;
+}
+
+template<typename Enum>
+void EnumAddFlags(Enum& Flags, Enum FlagsToAdd)
+{
+	using UnderlyingType = __underlying_type(Enum);
+	Flags = (Enum)((UnderlyingType)Flags | (UnderlyingType)FlagsToAdd);
+}
+
+template<typename Enum>
+void EnumRemoveFlags(Enum& Flags, Enum FlagsToRemove)
+{
+	using UnderlyingType = __underlying_type(Enum);
+	Flags = (Enum)((UnderlyingType)Flags & ~(UnderlyingType)FlagsToRemove);
+}
 
 using int8 = char;
 using int16 = short;
@@ -94,6 +128,7 @@ using InstanceID = uint64;
 using HConditionVariable = std::condition_variable;
 using HMutex = std::mutex;
 using HSharedMutex = std::shared_mutex;
+using HRecursiveMutex = std::recursive_mutex;
 
 template<class T>
 using HLockGuard = std::lock_guard<T>;

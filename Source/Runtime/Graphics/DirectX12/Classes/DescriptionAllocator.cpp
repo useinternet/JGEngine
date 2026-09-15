@@ -121,7 +121,7 @@ HDescriptionAllocation& HDescriptionAllocation::operator=(HDescriptionAllocation
 
 void HDescriptionAllocation::Reset()
 {
-	if (_ownerPage.IsValid())
+	if (IsValid())
 	{
 		_ownerPage.Pin()->Free(_CPU);
 		_CPU.ptr = 0;

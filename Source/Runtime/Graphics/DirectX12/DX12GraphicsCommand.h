@@ -1,14 +1,25 @@
 #pragma once
 #include "JGGraphicsCommand.h"
 
+class PDX12ConstantBuffer;
 class PRootSignature;
 class PGraphicsPipelineState;
 
-// ÇÑ ÇÁ·¹ÀÓ´ç ¿ä³ğ ÇÑ°³ ¸¸ »ç¿ë
+// í•œ í”„ë ˆì„ë‹¹ ìš”ë†ˆ í•œê°œ ë§Œ ì‚¬ìš©
 class PDX12GraphicsCommand : public IJGGraphicsCommand
 {
-	PSharedPtr<PRootSignature> _rootSignature;
-	PSharedPtr<PGraphicsPipelineState>    _graphicsPSO;
+	enum ERootParam : uint32
+	{
+		RootParam_RenderPassCB,
+		RootParam_ObjectCB,
+		RootParam_MaterialCB,
+		RootParam_Texture,
+		RootParam_TextureCube
+	};
+	
+	PSharedPtr<PRootSignature>		   _rootSignature;
+	PSharedPtr<PGraphicsPipelineState> _graphicsPSO;
+	PSharedPtr<PDX12ConstantBuffer>    _renderPassConstantBuffer;
 public:
 	virtual ~PDX12GraphicsCommand() = default;
 
@@ -19,12 +30,21 @@ public:
 	virtual void EndDraw() override;
 
 	virtual void SetRenderTarget(const HRenderTarget& inRenderTarget) override;
-	virtual void SetRenderPassData(const HRenderPassData& inData) override;
+	virtual void SetRenderPassData(const HRenderPassCBData& inData) override;
 	virtual void Draw(const HDrawArguments& inArgs) override;
 	virtual void Draw(const HSceneDrawArguments& inArgs) override;
 	
 	virtual void ClearTexture(PSharedPtr<IRawTexture> inTexture) const override;
 	virtual void ClearTexture(PSharedPtr<IRawTexture> inTexture, const HLinearColor& inClearColor) const override;
+
+
+private:
+	virtual void BindTextures(uint32 rootParam, HList<PSharedPtr<IRawTexture>> inTextures) override;
+	virtual void BindConstantBuffer(uint32 rootParam, PSharedPtr<IConstantBuffer> inConstantBuffer) override;
+	virtual void BindStructuredBuffer(uint32 rootParam, PSharedPtr<IStructuredBuffer> inStructuredBuffer) override;
+	virtual void BindVertexBuffer(PSharedPtr<IVertexBuffer> inVertexBuffer) override;
+	virtual void BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffer) override;
+	virtual void BindShader(PSharedPtr<IRawGraphicsShader> inGraphicsShader) override;
 
 private:
 	void createRootSignature();
@@ -57,9 +77,9 @@ private:
 
 	// Bind
 
-	// RootSig ¹ÙÀÎµå
-	// ÆÄÀÌÇÁ ¶óÀÎ ¹ÙÀÎµå
+	// RootSig ë°”ì¸ë“œ
+	// íŒŒì´í”„ ë¼ì¸ ë°”ì¸ë“œ
 
-	// ¸ÓÅÍ¸®¾ó = ÆÄÀÌÇÁ¶óÀÎ
-	// ÀÓÀÇ·Î ¼³Á¤ÇÑ ÅØ½ºÃÄ³ª °¢Á¾ ¸®¼Ò½º¸¦ ÀÎµ¦½ºÈ­ ½ÃÅ²´Ù.
+	// ë¨¸í„°ë¦¬ì–¼ = íŒŒì´í”„ë¼ì¸
+	// ì„ì˜ë¡œ ì„¤ì •í•œ í…ìŠ¤ì³ë‚˜ ê°ì¢… ë¦¬ì†ŒìŠ¤ë¥¼ ì¸ë±ìŠ¤í™” ì‹œí‚¨ë‹¤.
 };

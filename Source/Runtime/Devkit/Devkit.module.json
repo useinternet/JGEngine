@@ -1,0 +1,32 @@
+{
+  "ModuleInfo": {
+    "ModuleFormat": "SharedLib",
+    "ModuleDependencies": [
+      "Core",
+      "Graphics",
+      "Asset",
+      "GUI"
+    ],
+    "ModuleName": "Devkit",
+    "ModulePath": "Source/Runtime/Devkit/",
+    "Defines": [
+      "_DEVKIT"
+    ],
+    "DevelopEngine": {
+      "Config": "DebugConfig",
+      "Defines": []
+    },
+    "DevelopGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ConfirmGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ReleaseGame": {
+      "Config": "ReleaseConfig",
+      "Defines": []
+    }
+  }
+}

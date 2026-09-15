@@ -14,6 +14,29 @@ const HGuid& JGWidget::GetGUID() const
 	return NullGUID;
 }
 
+PSharedPtr<JGWidgetComponent> JGWidget::MakeWidgetComponent(PSharedPtr<JGClass> InClass)
+{
+	PSharedPtr<JGObject> Object = AllocateByClass(InClass);
+	PSharedPtr<JGWidgetComponent> WidgetComp = Cast<JGWidgetComponent>(Object);
+	if (WidgetComp.IsValid())
+	{
+		WidgetComponents.push_back(WidgetComp);
+	}
+	
+	return WidgetComp;
+}
+
+
+void JGWidget::SetupLayout()
+{
+	HWidgetLayout Layout;
+	ImVec2 ContentRegionMax  = ImGui::GetWindowContentRegionMax();
+	ImVec2 ContentRegionMin  = ImGui::GetWindowContentRegionMin();
+	
+	Layout.ContentSize = HVector2(ContentRegionMax.x - ContentRegionMin.x - ImGui::GetStyle().FramePadding.x, ContentRegionMax.y - ContentRegionMin.y);
+	OnLayout(Layout);
+}
+
 void JGWidget::GenerateGUI()
 {
 	if (IsOpen() == false)
@@ -25,6 +48,7 @@ void JGWidget::GenerateGUI()
 
 	ImGui::PushID((int32)GetGUID().GetHashCode());
 	ImGui::Begin(GetTitleName().GetCStr(), &bLocalOpen);
+	SetupLayout();
 	OnGenerateGUI();
 	ImGui::End();
 	ImGui::PopID();
@@ -32,6 +56,24 @@ void JGWidget::GenerateGUI()
 	if (bLocalOpen == false)
 	{
 		Close();
+	}
+}
+
+void JGWidget::Update()
+{
+	OnUpdate();
+	for (PSharedPtr<JGWidgetComponent> WidgetCom : WidgetComponents)
+	{
+		WidgetCom->OnUpdate();
+	}
+}
+
+void JGWidget::UpdateFrame()
+{
+	OnUpdateFrame();
+	for (PSharedPtr<JGWidgetComponent> WidgetCom : WidgetComponents)
+	{
+		WidgetCom->OnUpdateFrame();
 	}
 }
 
