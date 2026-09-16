@@ -3,7 +3,8 @@
 #include "JGGraphicsDefine.h"
 
 // 컴파일된 셰이더의 공통 인터페이스.
-class IRawShader
+// 메모리 시스템 규칙에 따라 IMemoryObject를 여기서 한 번만 상속한다. (구현 클래스는 이 사슬만 탄다)
+class IRawShader : public IMemoryObject
 {
 public:
 	virtual ~IRawShader() = default;

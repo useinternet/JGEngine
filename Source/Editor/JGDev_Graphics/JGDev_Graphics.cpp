@@ -88,6 +88,9 @@
 		});
 
 	GUIModule->AddMainMenuItem(MenuItem);
+
+	// 그래픽 테스트 모듈이므로 시작 시 DevFeature(씬 뷰)를 바로 연다. 메뉴 Dev/DevAI로도 열 수 있다.
+	GUIModule->OpenWidget<JGDevFeature>();
  }
 
  void HJGDev_GraphicsModule::ShutdownModule()

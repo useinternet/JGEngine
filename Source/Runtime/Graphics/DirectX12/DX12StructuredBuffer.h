@@ -5,8 +5,7 @@
 #include "DirectX12/Classes/DirectX12Helper.h"
 
 class PDX12StructuredBuffer
-	: public IMemoryObject
-	, public IStructuredBuffer
+	: public IStructuredBuffer
 {
 
 	PName _name;

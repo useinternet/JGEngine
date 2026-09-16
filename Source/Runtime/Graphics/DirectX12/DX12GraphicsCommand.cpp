@@ -34,17 +34,25 @@ void PDX12GraphicsCommand::BeginDraw()
 
 void PDX12GraphicsCommand::EndDraw()
 {
-	/*
-		void BindRootSignature(const PRootSignature& rootSig);
-	void BindRenderTarget(const HList<DXGI_FORMAT>& rtFormats, DXGI_FORMAT dvFormat = DXGI_FORMAT_UNKNOWN);
-	void BindInputLayout(const HInputLayout& inputLayout);
-	void BindShader(const HHashMap<EShaderDomain, HList<uint8>>& inShaderBtDatas);
-	void SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE type);
-	void SetSampleMask(uint32_t sampleMask);
-	void SetRasterizerState(const D3D12_RASTERIZER_DESC& desc);
-	void SetBlendState(const D3D12_BLEND_DESC& desc);
-	void SetDepthStencilState(const D3D12_DEPTH_STENCIL_DESC& desc);
-	*/
+	// 그린 렌더 타깃을 다음 소비자(GUI 표시, 다른 패스의 샘플링)가 읽을 수 있게 셰이더 리소스 상태로 넘긴다.
+	if (_boundRenderTextures.empty())
+	{
+		return;
+	}
+
+	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
+	JG_CHECK(cmdList != nullptr);
+
+	for (const PSharedPtr<PDX12Texture>& renderTexture : _boundRenderTextures)
+	{
+		if (renderTexture.IsValid() && renderTexture->IsValid())
+		{
+			cmdList->TransitionBarrier(renderTexture->Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+		}
+	}
+	cmdList->FlushResourceBarrier();
+
+	_boundRenderTextures.clear();
 }
 
 void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
@@ -56,6 +64,7 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 	HList<DXGI_FORMAT> rtFormats;
 	HList<HDX12Resource*> rtTextures;
 	HList<D3D12_CPU_DESCRIPTOR_HANDLE> rtvHandles;
+	_boundRenderTextures.clear();
 
 	for (int32 i = 0; i < MAX_RENDERTARGET; ++i)
 	{
@@ -74,6 +83,7 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 		rtFormats.push_back(HDirectX12Helper::ConvertDXGIFormat(renderTexture->GetTextureInfo().Format));
 		rtTextures.push_back(dx12Texture->Get());
 		rtvHandles.push_back(rtvHandle);
+		_boundRenderTextures.push_back(dx12Texture);
 	}
 
 	for (int32 i = (int32)rtFormats.size() + 1; i < MAX_RENDERTARGET; ++i)
@@ -101,6 +111,15 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 	}
 
 	_graphicsPSO->BindRenderTarget(rtFormats, dvFormat);
+
+	// 깊이 텍스처가 없는데 DepthEnable이 켜져 있으면(기본값) PSO 생성이 실패한다.
+	CD3DX12_DEPTH_STENCIL_DESC depthStencilDesc(D3D12_DEFAULT);
+	if (dvFormat == DXGI_FORMAT_UNKNOWN)
+	{
+		depthStencilDesc.DepthEnable   = FALSE;
+		depthStencilDesc.StencilEnable = FALSE;
+	}
+	_graphicsPSO->SetDepthStencilState(depthStencilDesc);
 
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
 	cmdList->SetViewports(inRenderTarget.Viewports);

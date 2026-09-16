@@ -1,0 +1,179 @@
+
+  CoreSystem.cpp
+  FileHelper.cpp
+  Json.cpp
+  BBox.cpp
+  Frustum.cpp
+  Math.cpp
+  Matrix.cpp
+  Plane.cpp
+  Quaternion.cpp
+  Vector.cpp
+  Allocator.cpp
+  Memory.cpp
+  MemoryPool.cpp
+  DateTime.cpp
+  DevelopUnit.cpp
+  Guid.cpp
+  Log.cpp
+  Module.cpp
+  SequentialIDGenerator.cpp
+  Timer.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  Timespan.cpp
+  JGObject.cpp
+  ObjectGlobalSystem.cpp
+  ObjectGlobals.cpp
+  JWindow.cpp
+  Platform.cpp
+  WindowsJWindow.cpp
+  Name.cpp
+  String.cpp
+  StringTable.cpp
+  Scheduler.cpp
+  Task.cpp
+  Thread.cpp
+  코드를 생성하고 있습니다...
+  Core.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Core.lib
+  Main.cpp
+  Main.cpp
+  Asset.cpp
+  BuildTool.cpp
+  Main.cpp
+  HeaderTool.cpp
+  AssetDatabase.cpp
+  Main.cpp
+  GameFrameWorks.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GameFrameWorks.lib
+  Main.cpp
+  Main.cpp
+  JGConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  JGLauncher.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  AssetImporter.cpp
+  코드를 생성하고 있습니다...
+  Game.codegen.generate.cpp
+  코드를 생성하고 있습니다...
+  JGBuildTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  코드를 생성하고 있습니다...
+  JGHeaderTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  Game.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Game.dll
+  AssetModule.cpp
+  AssetPath.cpp
+  Asset.codegen.generate.cpp
+  Asset.generation.cpp
+  AssetImporter.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Asset.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Asset.exp 개체를 생성하고 있습니다.
+  Asset.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Asset.dll
+  ShaderLibrary.cpp
+  StaticMesh.cpp
+  Texture.cpp
+  CommandList.cpp
+  CommandQueue.cpp
+  DX12Shader.cpp
+  DescriptionAllocator.cpp
+  DirectX12Helper.cpp
+  DynamicDescriptionAllocator.cpp
+  Fence.cpp
+  PipelineState.cpp
+  ResourceStateTracker.cpp
+  RootSignature.cpp
+  UploadAllocator.cpp
+  DX12ConstantBuffer.cpp
+  DX12FrameBuffer.cpp
+  DX12GraphicsCommand.cpp
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.cpp(255,45): warning C4244: '=': 'uint64'에서 'UINT'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.cpp(274,43): warning C4244: '=': 'uint64'에서 'UINT'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp'을(를) 컴파일하는 중)
+  
+  DX12IndexBuffer.cpp
+  DX12Material.cpp
+  DX12StructuredBuffer.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  DX12Texture.cpp
+  DX12VertexBuffer.cpp
+  DirectX12API.cpp
+  FBXAssetImporter.cpp
+  JGGraphics.cpp
+  JGGraphicsAPI.cpp
+  JGGraphicsCommand.cpp
+  JGGraphicsHelper.cpp
+  Main.cpp
+  FBXAssetImporter.generation.cpp
+  Graphics.codegen.generate.cpp
+  JGGraphicsDefine.generation.cpp
+  StaticMesh.generation.cpp
+  Texture.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Graphics.dll
+  Main.cpp
+  DX12GUIBackend.cpp
+  AI.codegen.generate.cpp
+  GUIBackend.cpp
+  코드를 생성하고 있습니다...
+  AI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\AI.dll
+  GUIBackends.cpp
+  GUI.cpp
+  GUIModule.cpp
+  MenuTree.cpp
+  Widget.cpp
+  WidgetComponent.cpp
+  GUI.codegen.generate.cpp
+  Widget.generation.cpp
+  WidgetComponent.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\GUI.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GUI.exp 개체를 생성하고 있습니다.
+  GUI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GUI.dll
+  JGEditor.cpp
+  DevFeature.cpp
+  DevStatistics.cpp
+  DevConsole.cpp
+  JGEditor.codegen.generate.cpp
+  DevScene.cpp
+  MemoryStatistics.cpp
+  DevConsoleModule.cpp
+C:\Develop\JGEngine\Source\Editor\DevStatistics\MemoryStatistics.cpp(40,21): warning C4244: '초기화 중': 'unsigned __int64'에서 'float32'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\DevStatistics.vcxproj]
+  (소스 파일 '/Source/Editor/DevStatistics/MemoryStatistics.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Editor\DevStatistics\MemoryStatistics.cpp(59,81): warning C4244: '인수': 'uint64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\DevStatistics.vcxproj]
+  (소스 파일 '/Source/Editor/DevStatistics/MemoryStatistics.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Editor\DevStatistics\MemoryStatistics.cpp(60,85): warning C4244: '인수': 'uint64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\DevStatistics.vcxproj]
+  (소스 파일 '/Source/Editor/DevStatistics/MemoryStatistics.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Editor\DevStatistics\MemoryStatistics.cpp(61,85): warning C4244: '인수': 'uint64'에서 'double'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\DevStatistics.vcxproj]
+  (소스 파일 '/Source/Editor/DevStatistics/MemoryStatistics.cpp'을(를) 컴파일하는 중)
+  
+  코드를 생성하고 있습니다...
+  DevSettings.cpp
+     ..\..\Bin\DevelopEngine\JGEditor.lib 라이브러리 및 ..\..\Bin\DevelopEngine\JGEditor.exp 개체를 생성하고 있습니다.
+  DevStatistics.codegen.generate.cpp
+  DevConsole.codegen.generate.cpp
+  JGEditor.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  MemoryStatistics.generation.cpp
+  DevkitModule.cpp
+  DevConsole.generation.cpp
+  DevFeature.generation.cpp
+  코드를 생성하고 있습니다...
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\DevStatistics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\DevStatistics.exp 개체를 생성하고 있습니다.
+     ..\..\Bin\DevelopEngine\DevConsole.lib 라이브러리 및 ..\..\Bin\DevelopEngine\DevConsole.exp 개체를 생성하고 있습니다.
+  DevStatistics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  DevConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  DevScene.generation.cpp
+  DevSettings.generation.cpp
+  Devkit.codegen.generate.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  Devkit.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Devkit.dll
+  JGDevGraphicsTest.cpp
+  JGDev_Graphics.cpp
+  JGDev_Graphics.codegen.generate.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\JGDev_Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\JGDev_Graphics.exp 개체를 생성하고 있습니다.
+  JGDev_Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll

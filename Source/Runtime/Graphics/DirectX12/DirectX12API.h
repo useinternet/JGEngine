@@ -36,6 +36,10 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 	bool _bIsSupportedRayTracing;
 	
 	void createDefaultResources();
+#ifdef _DEBUG
+	// 디버거 없이 실행할 때도 디버그 레이어 메시지를 볼 수 있게 InfoQueue를 비워 로그로 옮긴다. (EndFrame마다)
+	void flushDebugLayerMessages();
+#endif
 public:
 	virtual ~PDirectX12API() = default;
 

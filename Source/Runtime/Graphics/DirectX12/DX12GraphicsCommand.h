@@ -4,6 +4,7 @@
 class PDX12ConstantBuffer;
 class PRootSignature;
 class PGraphicsPipelineState;
+class PDX12Texture;
 
 // 한 프레임당 요놈 한개 만 사용
 class PDX12GraphicsCommand : public IJGGraphicsCommand
@@ -20,6 +21,8 @@ class PDX12GraphicsCommand : public IJGGraphicsCommand
 	PSharedPtr<PRootSignature>		   _rootSignature;
 	PSharedPtr<PGraphicsPipelineState> _graphicsPSO;
 	PSharedPtr<PDX12ConstantBuffer>    _renderPassConstantBuffer;
+	// SetRenderTarget에서 바인드한 렌더 타깃. EndDraw에서 셰이더 리소스 상태로 넘긴다.
+	HList<PSharedPtr<PDX12Texture>>    _boundRenderTextures;
 public:
 	virtual ~PDX12GraphicsCommand() = default;
 

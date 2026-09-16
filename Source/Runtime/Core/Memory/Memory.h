@@ -609,11 +609,11 @@ public:
 	template<class T>
 	PSharedPtr<T> Wrap(const T* fromThis) const
 	{
-		if (std::is_class<T>::value == true &&
-			std::is_base_of<IMemoryObject, T>::value == false)
-		{
-			JG_ASSERT(false);
-		}
+		// 규칙: 스마트 포인터로 다루는 클래스(인터페이스 포함)는 IMemoryObject 파생이어야 하고,
+		// IMemoryObject 뿌리가 정확히 하나(오프셋 0)여야 한다. 그래야 인터페이스 타입 포인터도 할당 주소와 같아
+		// 아래 블록 조회가 성립한다. 위반은 실행 시점이 아니라 컴파일 시점에 잡는다.
+		static_assert(std::is_class<T>::value == false || std::is_base_of<IMemoryObject, T>::value,
+			"Wrap<T>: T must derive from IMemoryObject (interfaces held by PSharedPtr/PWeakPtr must be rooted at IMemoryObject)");
 
 		if (fromThis == nullptr)
 		{

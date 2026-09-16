@@ -2,6 +2,7 @@
 #include "Misc/Module.h"
 #include "JGGraphics.h"
 #include "DirectX12API.h"
+#include <d3d12sdklayers.h>
 #include "Classes/CommandQueue.h"
 #include "Classes/ResourceStateTracker.h"
 #include "Classes/DescriptionAllocator.h"
@@ -148,7 +149,52 @@ void PDirectX12API::EndFrame()
 	_csuAllocator->UpdatePage();
 	_rtvAllocator->UpdatePage();
 	_dsvAllocator->UpdatePage();
+
+#ifdef _DEBUG
+	flushDebugLayerMessages();
+#endif
 }
+
+#ifdef _DEBUG
+void PDirectX12API::flushDebugLayerMessages()
+{
+	HDX12ComPtr<ID3D12InfoQueue> infoQueue;
+	if (_dx12Device == nullptr || FAILED(_dx12Device.As(&infoQueue)))
+	{
+		return;
+	}
+
+	const uint64 messageCount = infoQueue->GetNumStoredMessages();
+	for (uint64 i = 0; i < messageCount; ++i)
+	{
+		SIZE_T messageLength = 0;
+		if (FAILED(infoQueue->GetMessage(i, nullptr, &messageLength)) || messageLength == 0)
+		{
+			continue;
+		}
+
+		HList<uint8> buffer(messageLength);
+		D3D12_MESSAGE* message = reinterpret_cast<D3D12_MESSAGE*>(buffer.data());
+		if (FAILED(infoQueue->GetMessage(i, message, &messageLength)))
+		{
+			continue;
+		}
+
+		ELogLevel level = ELogLevel::Info;
+		switch (message->Severity)
+		{
+		case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+		case D3D12_MESSAGE_SEVERITY_ERROR:   level = ELogLevel::Error;   break;
+		case D3D12_MESSAGE_SEVERITY_WARNING: level = ELogLevel::Warning; break;
+		default:                             level = ELogLevel::Info;    break;
+		}
+
+		JG_LOG(Graphics, level, "D3D12 DebugLayer [%d] %s", (int32)message->ID, PString(message->pDescription));
+	}
+
+	infoQueue->ClearStoredMessages();
+}
+#endif
 
 void PDirectX12API::SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture)
 {

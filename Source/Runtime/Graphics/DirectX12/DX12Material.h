@@ -8,8 +8,7 @@ class PGraphicsPipelineState;
 class PDX12GraphicsShader;
 
 class PDX12Material
-	: public IMemoryObject
-	, public IRawMaterial
+	: public IRawMaterial
 {
 	// 구현 할거
 	// 데이터 셋팅

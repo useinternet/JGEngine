@@ -111,10 +111,9 @@ public:
 // 그래픽스 셰이더 한 벌(VS/DS/HS/GS/PS)의 컴파일된 바이트코드를 소유한다.
 // 컴파일은 이 객체의 연산이다. 컴파일러는 Compile() 안에서만 쓰고 결과 바이트코드만 남기므로
 // 바이트코드의 원천은 _byteCodes 하나다. PSO 바인드 시 GetByteCodes()를 PGraphicsPipelineState::BindShader에 넘긴다.
-// 다른 DX12 리소스와 같은 패턴으로 IMemoryObject를 함께 상속해야 Allocate<>로 생성할 수 있다.
+// IMemoryObject는 IRawShader 사슬을 통해 한 번만 상속한다. (메모리 시스템 규칙: 뿌리 하나, 오프셋 0)
 class PDX12GraphicsShader
-	: public IMemoryObject
-	, public IRawGraphicsShader
+	: public IRawGraphicsShader
 {
 private:
 	HHashMap<EShaderDomain, HList<uint8>> _byteCodes;

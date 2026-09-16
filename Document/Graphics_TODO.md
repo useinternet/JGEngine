@@ -100,18 +100,18 @@
 
 ## Phase 3. 첫 드로우 · Scene 도메인 풀스크린
 
-- [ ] **3-1. 테스트 머터리얼 생성** — `Source/Runtime/Devkit/DevScene.cpp`
+- [x] **3-1. 테스트 머터리얼 생성** — `Source/Runtime/Devkit/DevScene.cpp` — 완료 2026-09-16 18:40. `JGDevScene::OnInitialize`에서 Scene 도메인 머터리얼 생성·컴파일(`_output.final = float4(1.0f, 0.5f, 0.0f, 1.0f);`). 컴파일 실패 로그 없음.
   `HRawMaterialConstructArguments{ Name, Domain = Scene, 빈 정의기 }` → `GetGraphicsAPI().CreateRawMaterial()` → `Compile({ ShaderCode: "_output.final = float4(1.0, 0.5, 0.0, 1.0);" })`.
   완료 조건: `Compile()`이 true 반환, 실패 시 로그의 FXC 오류 메시지로 템플릿 수정.
 
-- [ ] **3-2. 매 프레임 드로우 시퀀스** — `DevScene.cpp`
+- [x] **3-2. 매 프레임 드로우 시퀀스** — `DevScene.cpp` — 완료 2026-09-16 18:40. `JGDevScene::RenderScene()`을 `OnGenerateGUI` 안에서 매 프레임 호출: ClearTexture → BeginDraw → SetRenderTarget(1920×1080 뷰포트/시저) → SetRenderPassData(항등 행렬) → Draw(HSceneDrawArguments) → EndDraw. `GraphicsCommand`는 OnInitialize에서 한 번 받아 보관.
   `OnUpdate` 등 매 프레임 지점에서: `ClearTexture(SceneTexture)` → `BeginDraw()` → `SetRenderTarget({ RenderTextures[0] = SceneTexture, Viewports, ScissorRects })` → `SetRenderPassData(단위 행렬)` → `Draw(HSceneDrawArguments{ material })` → `EndDraw()`.
   `GetGraphicsCommand()`가 호출마다 새 `PDX12GraphicsCommand`를 만들므로(`DirectX12API.cpp:108-112`) DevScene에서 한 번 받아 보관하거나 API 쪽에서 캐싱.
 
-- [ ] **3-3. 결과 확인**
+- [x] **3-3. 결과 확인** — 완료 2026-09-16 18:40. 런처를 띄워 창을 캡처해 확인: DevScene 이미지가 빨강(클리어)이 아닌 머터리얼 출력색으로 채워짐. 로그 error 0, critical 0, D3D12 디버그 레이어 메시지 0건(EndFrame마다 InfoQueue를 로그로 비우는 코드 추가). 증거: `Document/Memory/2026-09-16_first_draw_scene_domain.png`. 색이 주황보다 노랗게 보이는 것은 FP16 스왑체인이 선형(scRGB)으로 해석되어 0.5가 밝게 표시되기 때문(5-14 참고).
   완료 조건: DevScene 이미지가 클리어 컬러(빨강)가 아닌 머터리얼 출력색(주황)으로 보임. 디버그 레이어 경고 없음. 막히면 PIX 캡처.
 
-- [ ] **3-4. 커밋** — "Scene 도메인 첫 드로우"
+- [ ] **3-4. 커밋** — "Scene 도메인 첫 드로우" (사용자가 직접 커밋하는 중. 포함되어야 할 변경: Devkit/DevScene, JGDev_Graphics 자동 열기, DX12GraphicsCommand EndDraw·깊이 비활성, ResourceStateTracker 수정, DirectX12API 디버그 레이어 로그, Core/Memory.h `PWeakPtr::Pin` 수정)
 
 ---
 
@@ -158,4 +158,8 @@
 - [ ] **5-10.** PSO 캐시 해시 개선 — `DirectX12/Classes/PipelineState.cpp:154`. `HHash::HashState(&_desc)`가 `VS/PS.pShaderBytecode` 포인터 값을 그대로 해시에 넣는다. 같은 바이트코드라도 주소가 다르면 캐시 미스, 해제 후 같은 주소에 다른 셰이더가 오면 잘못된 PSO 재사용 가능. 바이트코드 내용(또는 셰이더 객체의 콘텐츠 해시)으로 키를 만들 것. 루트 시그니처 포인터도 같은 성격.
 - [ ] **5-12.** 버퍼 재설정 버그 — `DX12VertexBuffer.cpp`, `DX12IndexBuffer.cpp`, `DX12StructuredBuffer.cpp`. 크기가 바뀌면 `Reset()`이 `_elementCount/_elementSize/_indexCount`를 0으로 지운 뒤 재생성하므로 `GetVertexCount()` 등이 0을 반환. `DX12StructuredBuffer::SetDatas`는 `_elementSize`를 아예 저장하지 않아 항상 0바이트 버퍼. (`DX12ConstantBuffer`는 2-5에서 수정)
 - [ ] **5-13.** `JG_LOG`의 `%s`에 `PName`을 넘기면 빈 문자열로 찍힘(런타임 로그의 ' : Fail Compile' 등). 포맷터에 PName 지원 추가 또는 호출부에서 `.ToString()`.
+- [ ] **5-14.** 스왑체인 색 공간 결정 — `DirectX12API.cpp`의 스왑체인 포맷이 `R16G16B16A16_Float`라 DWM이 scRGB 선형으로 해석해 0.5가 밝게(감마 보정된 것처럼) 보인다. 최종 출력은 8비트 sRGB 스왑체인으로 바꾸거나, 톤매핑/감마 패스를 두고 FP16을 유지할지 결정.
+- [ ] **5-15.** 간헐적 에셋 로드 실패 — 런처 실행 시 `[Asset] /JGEngine//TempAsset/Sample.jgasset : Failed Load Asset, Loaded Asset is nullptr`이 실행에 따라 나타났다 사라짐(워커 스레드 로드, 3회 중 1~2회). 경로 문자열의 `//`와 스레드 타이밍 의심. Asset 모듈 범위.
+- [x] **설계 규칙 (2026-09-16 결정).** 스마트 포인터(`PSharedPtr`/`PWeakPtr`)로 다루는 클래스와 인터페이스는 `IMemoryObject`를 뿌리로 정확히 하나(오프셋 0) 가져야 한다. `Wrap<T>`/`Pin()`은 의도적으로 `IMemoryObject` 파생만 받으며(`static_assert`로 컴파일 시점 검사), 그래픽 인터페이스는 `IJGGraphicsObject`·`IRawShader`·`IMesh`가 `IMemoryObject`를 상속하고 구현 클래스(PDX12*)는 그 사슬만 탄다. 새 인터페이스/구현 클래스를 만들 때 이 규칙을 지킬 것.
+- [ ] **5-16.** 디버그 레이어 로그 드레인 동작 검증 — `PDirectX12API::flushDebugLayerMessages()`가 메시지를 0건 보고했다. 실제로 메시지가 없는지, 의도적으로 잘못된 호출을 넣어 로그에 찍히는지 한 번 확인.
 - [ ] **5-11.** 링크 경고 LNK4098(MSVCRT/MSVCRTD 충돌) 원인 정리 — Debug 구성에 릴리스 CRT로 빌드된 서드파티 정적 라이브러리가 섞여 있음(pragma comment(lib) 목록 확인). 서드파티 Debug 빌드 준비 또는 `/NODEFAULTLIB` 정리.

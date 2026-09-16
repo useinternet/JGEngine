@@ -6,8 +6,7 @@
 #include "Classes/DescriptionAllocator.h"
 
 class PDX12VertexBuffer 
-	: public IMemoryObject
-	, public IVertexBuffer
+	: public IVertexBuffer
 {
 
 	PName _name;

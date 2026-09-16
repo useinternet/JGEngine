@@ -7,8 +7,7 @@
 #include "Classes/DescriptionAllocator.h"
 
 class PDX12Texture 
-	: public IMemoryObject 
-	, public IRawTexture
+	: public IRawTexture
 {
 	friend class PDirectX12API;
 

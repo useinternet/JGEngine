@@ -6,8 +6,7 @@
 #include "Classes/DescriptionAllocator.h"
 
 class PDX12IndexBuffer
-	: public IMemoryObject
-	, public IIndexBuffer
+	: public IIndexBuffer
 {
 
 	PName _name;

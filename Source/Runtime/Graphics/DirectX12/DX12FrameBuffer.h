@@ -8,8 +8,7 @@
 
 class PDX12Texture;
 class PDX12FrameBuffer
-	: public IMemoryObject
-	, public IFrameBuffer
+	: public IFrameBuffer
 {
 	friend class PDirectX12API;
 

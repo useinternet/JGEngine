@@ -148,7 +148,10 @@ void PResourceStateTracker::CommitResourceState()
 		resourceRefMap[stateMap.first].State = stateMap.second;
 	}
 
-	resourceRefMap.clear();
+	// 커밋한 뒤 비우는 것은 이 커맨드 리스트의 상태 기록이다.
+	// (이전 코드는 전역 리소스 맵(resourceRefMap)을 통째로 지워 등록 이름·참조 수·마지막 상태가 매번 사라졌고,
+	//  그 결과 다른 리스트에서 시작하는 보류 배리어가 이전 상태를 찾지 못해 전이가 생략됐다.)
+	_resourceStates.clear();
 }
 
 void PResourceStateTracker::Reset()

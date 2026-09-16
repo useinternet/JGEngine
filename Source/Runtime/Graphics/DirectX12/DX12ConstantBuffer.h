@@ -6,8 +6,7 @@
 #include "Classes/DescriptionAllocator.h"
 
 class PDX12ConstantBuffer
-	: public IMemoryObject
-	, public IConstantBuffer
+	: public IConstantBuffer
 {
 
 	PName _name;
