@@ -4,6 +4,7 @@
 
 
 class IRawGraphicsShader;
+class IConstantBuffer;
 
 enum class GRAPHICS_API EMaterialDomain
 {

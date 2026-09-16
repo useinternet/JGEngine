@@ -108,11 +108,34 @@ public:
 	}
 };
 
-class PDX12GraphicsShader : public IRawGraphicsShader
+// 그래픽스 셰이더 한 벌(VS/DS/HS/GS/PS)의 컴파일된 바이트코드를 소유한다.
+// 컴파일은 이 객체의 연산이다. 컴파일러는 Compile() 안에서만 쓰고 결과 바이트코드만 남기므로
+// 바이트코드의 원천은 _byteCodes 하나다. PSO 바인드 시 GetByteCodes()를 PGraphicsPipelineState::BindShader에 넘긴다.
+// 다른 DX12 리소스와 같은 패턴으로 IMemoryObject를 함께 상속해야 Allocate<>로 생성할 수 있다.
+class PDX12GraphicsShader
+	: public IMemoryObject
+	, public IRawGraphicsShader
 {
 private:
-	PDX12GraphicsShaderCompiler Compiler;
+	HHashMap<EShaderDomain, HList<uint8>> _byteCodes;
 
 public:
-	PDX12GraphicsShaderCompiler* GetCompiler();
+	virtual ~PDX12GraphicsShader() = default;
+
+	// IRawShader / IRawGraphicsShader
+	virtual bool IsValid() const override;
+	virtual bool Compile(const HGraphicsShaderCompileArguments& inArgs, PString* outError) override;
+	// ~IRawShader / IRawGraphicsShader
+
+	// 외부(캐시 파일 등)에서 가져온 바이트코드를 직접 넣는다.
+	void SetByteCode(EShaderDomain inDomain, const void* inData, uint64 inSize);
+
+	const HHashMap<EShaderDomain, HList<uint8>>& GetByteCodes() const;
+	const HList<uint8>* GetByteCode(EShaderDomain inDomain) const;
+	bool HasByteCode(EShaderDomain inDomain) const;
+
+	void Reset();
+
+private:
+	void storeByteCode(EShaderDomain inDomain, HDX12Blob* inBlob);
 };

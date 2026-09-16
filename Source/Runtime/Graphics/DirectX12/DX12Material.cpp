@@ -10,13 +10,12 @@ PDX12Material::PDX12Material()
 {
 	_graphicsPSO = Allocate<PGraphicsPipelineState>();
 	_materialConstantBuffer = Allocate<PDX12ConstantBuffer>();
-	_graphicsShader = Allocate<PDX12GraphicsShaderCompiler>();
+	_graphicsShader = Allocate<PDX12GraphicsShader>();
 
 	_shaderCode.Reset();
 	_fullShaderCode.Reset();
 	_propertyDefinitionist.Reset();
 
-	_shaderBtDatas.clear();
 	_bNeedCompile = true;
 }
 
@@ -300,7 +299,7 @@ HList<PSharedPtr<IRawTexture>> PDX12Material::GetTextures() const
 
 bool PDX12Material::IsValid() const
 {
-	return _shaderBtDatas.empty();
+	return _materialConstantBuffer.IsValid() && _materialConstantBuffer->IsValid();
 }
 
 PWeakPtr<IConstantBuffer> PDX12Material::GetConstantBuffer() const
@@ -414,28 +413,19 @@ bool PDX12Material::generateShaderCode()
 
 bool PDX12Material::compileShader(const HMaterialCompileArguments& inArgs)
 {
-	PString errorCode;
-
 	// 머터리얼 옵션에 따른 디파인 주기 ( 수동 )
 	// 조합별 바이트 코드 가지고있기
 
-	PDX12GraphicsShaderCompiler* shaderCompiler = _graphicsShader->GetCompiler();
+	HGraphicsShaderCompileArguments compileArgs;
+	compileArgs.SourceCode = GetFullShaderCode();
+	compileArgs.Flags      = EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader;
 
-	shaderCompiler->Compile(GetFullShaderCode(), EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader, HList<HPair<PName, PName>>(), &errorCode);
-	if (shaderCompiler->IsSuccessed() == false)
+	PString errorCode;
+	if (_graphicsShader->Compile(compileArgs, &errorCode) == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Compile, %s", GetName(), errorCode);
 		return false;
 	}
-
-	uint64 vsDataSize = shaderCompiler->GetVSData()->GetBufferSize();
-	uint64 psDataSize = shaderCompiler->GetPSData()->GetBufferSize();
-
-	_shaderBtDatas[EShaderDomain::Vertex].resize(vsDataSize);
-	_shaderBtDatas[EShaderDomain::Pixel].resize(psDataSize);
-
-	memcpy(_shaderBtDatas[EShaderDomain::Vertex].data(), shaderCompiler->GetVSData()->GetBufferPointer(), vsDataSize);
-	memcpy(_shaderBtDatas[EShaderDomain::Pixel].data(), shaderCompiler->GetPSData()->GetBufferPointer(), psDataSize);
 
 	return true;
 }

@@ -5,15 +5,7 @@
 #include "DX12ConstantBuffer.h"
 class PDX12ConstantBuffer;
 class PGraphicsPipelineState;
-class PDX12GraphicsShaderCompiler;
 class PDX12GraphicsShader;
-
-struct HDX12CompileConfig
-{
-	PString Entry;
-	PString Target;
-	HDX12CompileConfig(const PString& entry, const PString& target) : Entry(entry), Target(target) {}
-};
 
 class PDX12Material
 	: public IMemoryObject
@@ -30,7 +22,7 @@ class PDX12Material
 	mutable bool _bNeedCompile;
 
 
-	// 임시 데이터 ( 컴파일 용 )
+	// 컴파일된 셰이더. 바이트코드는 이 객체가 소유하고 머터리얼은 참조만 한다.
 	PSharedPtr<PDX12GraphicsShader> _graphicsShader;
 
 	PString _shaderCode;
@@ -49,9 +41,6 @@ class PDX12Material
 	
 	
 	HList<PName>					      _materialConstantPropertyList;
-
-	// 나중에 컴파일된 바이트 데이터 가져와서 바로 구동할수있도록 따로 뺀거입니다.
-	HHashMap<EShaderDomain, HList<uint8>> _shaderBtDatas;
 
 	// 머터리얼 컴파일 단계
 	// 템플릿 셰이더 코드 가져옴

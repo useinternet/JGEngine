@@ -9,24 +9,28 @@
 
 ## Phase 0. 준비 · 안전장치
 
-- [ ] **0-1. WIP 커밋으로 현재 상태 고정**
+- [x] **0-1. WIP 커밋으로 현재 상태 고정** — 완료 (사용자가 직접 커밋: `bd98a67` 2026-09-15 "다시한번 해보자." 스테이징 77개 파일, `04d9247` 2026-09-16 "현황 파악" CLAUDE.md·Document/)
   스테이징된 77개 파일(Graphics 21, Devkit 신규, GUI ImPlot, Core 메모리, Shader 1)과 `CLAUDE.md` 2개, `Document/`를 커밋한다. 7개월치 작업이 워킹 트리에만 있다.
   완료 조건: `git status`에 의도하지 않은 변경이 남지 않음.
 
-- [ ] **0-2. 프로젝트 파일 재생성 후 현재 상태 그대로 빌드 시도**
+- [x] **0-2. 프로젝트 파일 재생성 후 현재 상태 그대로 빌드 시도** — 완료 (2026-09-16 16:00). JGHeaderTool·JGBuildTool로 코드젠·프로젝트 파일 갱신 후 DevelopEngine x64 전체 빌드.
+  결과: Graphics 오류 10건(예측 4건 + Material.h 전방 선언 누락 1건과 그 파생 4건), 경고 6건(C4819 ×4, C4244 ×2). Core·Asset·Game·GameFrameWorks·프로그램 4종은 빌드 성공, Graphics 실패로 GUI·Devkit·DevConsole·DevStatistics·JGDev_Graphics·JGEditor·AI는 건너뜀. Devkit 자체 오류 여부는 Graphics 복구 후 확인. 로그: `Document/Memory/build_2026-09-16_DevelopEngine_console.log`
   `GenerateProjectFiles.bat` → `Temp/ProjectFiles/JGEngine.sln`을 DevelopEngine 구성으로 빌드해 실제 오류 목록을 받는다. 예측한 컴파일 오류 4건 외에 다른 오류가 있는지 확인한다. Devkit도 2025-05-07(DevScene.cpp), 2025-11-01(DevFeature.h, DevSettings.h) 수정분이 마지막 빌드(2025-04-08) 이후라 함께 확인한다.
   완료 조건: 오류 목록 확보. 이 문서의 Phase 1 항목과 대조.
 
 ---
 
-## Phase 1. 빌드 복구 (컴파일 오류 4건)
+## Phase 1. 빌드 복구 (컴파일 오류 10건 · 실제 빌드로 확인)
 
-- [ ] **1-1. `PDX12GraphicsShader` 재설계** — `DirectX12/Classes/DX12Shader.h:111-118`
+- [x] **1-0. `IConstantBuffer` 전방 선언 추가** — `Classes/Material.h:7` — 완료 2026-09-16 16:20. Graphics 빌드에서 Material.h 169행·DX12Material.h 103행 오류 4건 소멸 확인.
+  `IRawMaterial::GetConstantBuffer()`가 `PWeakPtr<IConstantBuffer>`를 반환하는데 Material.h에 `class IConstantBuffer;`가 없다. DX12Material.h가 Material.h를 먼저 포함해 C2065/C2923/C2955(169행)와 DX12Material.h:103 C2555(공변 반환 불일치)가 연쇄 발생. 전방 선언 한 줄로 4건 해소.
+
+- [x] **1-1. `PDX12GraphicsShader` 재설계** — `DirectX12/Classes/DX12Shader.h:111-145`, `DX12Shader.cpp:163-236` — 완료 2026-09-16 16:20. `IMemoryObject` + `IRawGraphicsShader` 다중 상속, `_byteCodes` 맵과 `StoreCompiledByteCodes()`/`SetByteCode()`/`GetByteCodes()`/`GetByteCode()`/`HasByteCode()`/`IsValid()`/`Reset()` 추가. 보조 변경: `Classes/Shader.h`의 `IRawShader`에 가상 소멸자와 `IsValid()` 순수 가상 추가(`Cast<>`의 dynamic_cast를 위해 다형 타입 필요). Graphics 빌드에서 DX12Shader.cpp 컴파일 통과, 남은 오류 6건은 1-2~1-5 항목.
   `IMemoryObject` 상속 추가(현재 `IRawGraphicsShader`만 상속해 `Allocate<>` 내부 assert에 걸림, `Core/Memory/Memory.h:567`).
   컴파일 결과 바이트코드 `HHashMap<EShaderDomain, HList<uint8>>`를 보관하는 멤버와 Getter 추가. 컴파일러 멤버는 유지.
   완료 조건: `Allocate<PDX12GraphicsShader>()`가 가능하고 바이트코드를 꺼낼 수 있음.
 
-- [ ] **1-2. `PDX12Material` 생성자와 컴파일 결과 저장 수정** — `DirectX12/DX12Material.cpp:13`, `:415-441`
+- [x] **1-2. `PDX12Material` 생성자와 컴파일 결과 저장 수정** — 완료 2026-09-16 16:45. 설계 변경 포함: `GetCompiler()`(생 포인터 반환)와 `StoreCompiledByteCodes()`를 제거하고 컴파일을 셰이더 객체의 연산으로 이동. `IRawGraphicsShader::Compile(const HGraphicsShaderCompileArguments&, PString*)` 순수 가상 추가(`Classes/Shader.h`), `PDX12GraphicsShader::Compile()`이 지역 컴파일러로 컴파일 후 `_byteCodes`만 남김. 머터리얼의 `_shaderBtDatas`·`HDX12CompileConfig`·컴파일러 전방 선언 제거, `compileShader()`는 `_graphicsShader->Compile(args, &error)` 한 줄로 정리. 함께 고친 것: `PDX12ShaderCompiler::compile()`의 매크로 문자열 수명(임시 PString 포인터 댕글링)과 `{nullptr,nullptr}` 종료 항목, `error`가 null일 때 실패를 true로 반환하던 버그, `errorData` null 역참조. Graphics 빌드 결과 오류 5건 잔존(DX12GraphicsCommand.cpp 74, 91, 132, 137, 143행) = 1-3~1-5.
   `_graphicsShader = Allocate<PDX12GraphicsShaderCompiler>()` → `Allocate<PDX12GraphicsShader>()`.
   `compileShader()`에서 VS/PS 바이트코드를 `_graphicsShader`에도 저장(또는 `_shaderBtDatas`를 셰이더 객체로 옮기고 머터리얼은 참조만).
   완료 조건: `GetShader().Pin()`으로 바이트코드 접근 가능.
@@ -41,7 +45,10 @@
 - [ ] **1-5. 디스크립터 핸들 비교 수정** — `DirectX12/DX12GraphicsCommand.cpp:74, 91`
   `JG_CHECK(rtvHandle != 0)` → `JG_CHECK(rtvHandle.ptr != 0)`. dsvHandle도 동일.
 
-- [ ] **1-6. 빌드 성공 확인**
+- [ ] **1-6. 소스 인코딩 경고(C4819) 정리** — `Source/Programs/JGBuildTool/Template/BuildTemplate.lua`
+  DX12GraphicsCommand.cpp/.h, DX12Material.cpp/.h가 BOM 없는 UTF-8이라 컴파일러가 CP949로 읽는다. 템플릿의 세 Config 함수에 `buildoptions { "/utf-8" }`를 추가하고 JGBuildTool로 jgengine.lua를 재생성한다(jgengine.lua는 생성물이므로 직접 고치지 않음). 대안은 네 파일을 UTF-8 BOM으로 저장.
+
+- [ ] **1-7. 빌드 성공 확인**
   완료 조건: DevelopEngine 구성 빌드 error 0, `Bin/DevelopEngine/Graphics.dll` 갱신. 실행해서 기존처럼 DevScene 빨간 렌더 타깃이 뜨는지 확인(회귀 없음).
 
 ---
@@ -57,13 +64,13 @@
   164행 `float Depth = SV_TARGET3;` → `float Depth : SV_TARGET3;`. 51행의 cbuffer 밖 중복 플레이스홀더 제거.
   (선택) `scene_shader.hlsl`은 템플릿 53~113행과 중복이므로 삭제 또는 용도 결정.
 
-- [ ] **2-3. 머터리얼 도메인 저장과 매크로 전달** — `DX12Material.h/.cpp`, `DirectX12/Classes/DX12Shader.cpp:5-38`
+- [ ] **2-3. 머터리얼 도메인 저장과 매크로 전달** — `DX12Material.h/.cpp` (매크로 배열 종료 항목·문자열 수명은 1-2에서 처리 완료, 남은 것은 도메인 저장과 `compileArgs.Macros`에 `MATERIAL_DOMAIN_SCENE=1` 전달)
   `HRawMaterialConstructArguments::Domain`을 `PDX12Material::Initialize()`에서 멤버로 저장(현재 무시됨).
   `compileShader()`에서 Domain이 Scene이면 매크로 `MATERIAL_DOMAIN_SCENE=1` 전달.
   `PDX12ShaderCompiler::compile()`의 `D3D_SHADER_MACRO` 배열 끝에 `{nullptr, nullptr}` 종료 항목 추가(현재 없음).
   완료 조건: Scene 도메인 머터리얼이 `#if MATERIAL_DOMAIN_SCENE` 분기로 컴파일됨.
 
-- [ ] **2-4. `IsValid()` 의미 수정** — `DX12Material.cpp:301-304`
+- [x] **2-4. `IsValid()` 의미 수정** — 1-2에서 함께 처리 완료 2026-09-16. `_materialConstantBuffer.IsValid() && _materialConstantBuffer->IsValid()`로 변경. 셰이더 컴파일 여부는 `GetShader()->IsValid()`로 분리. `SetName()` 조건은 중복이지만 무해하여 유지.
   `_shaderBtDatas.empty()` 반환(반전)을 `_materialConstantBuffer.IsValid() && _materialConstantBuffer->IsValid()` 등 리소스 유효성 기준으로 바꾼다.
   `Compile()`이 `_bNeedCompile`로 재컴파일 가능한지 확인. `SetName()`의 조건도 함께 점검.
 
