@@ -8,7 +8,7 @@
 
 ////// struct, class, interface, enum, enumflags
 ////
-//////		+ Field  : º¯¼ö, ÇÔ¼ö Á¤º¸, »çÀÌÁî
+//////		+ Field  : ë³€ìˆ˜, í•¨ìˆ˜ ì •ë³´, ì‚¬ì´ì¦ˆ
 ////
 //
 //
@@ -28,7 +28,7 @@
 //
 //
 //
-//// -- Gen ÆÄÀÏ¿¡ »ı¼ºµÇ¾ßÇÒ °Íµé
+//// -- Gen íŒŒì¼ì— ìƒì„±ë˜ì•¼í•  ê²ƒë“¤
 //// -- TestStruct.Gen.ixx
 //
 //#define AUTO_GENERATED_MACRO_JGTESTSTRUCT_CLASS_NAME "JGTestStruct";
@@ -86,11 +86,11 @@
 //		_struct.StructPtr = nullptr;
 //
 //		// "Reflection"
-//		// ->SetMeta(var Name, data) ·Î ½Ç½Ã°£ º¯È¯ °¡´É
-//		// ->CallFunction("Name") À¸·Î ÇÔ¼ö È£Ãâ °¡´É
+//		// ->SetMeta(var Name, data) ë¡œ ì‹¤ì‹œê°„ ë³€í™˜ ê°€ëŠ¥
+//		// ->CallFunction("Name") ìœ¼ë¡œ í•¨ìˆ˜ í˜¸ì¶œ ê°€ëŠ¥
 //
-//		// "enumÀÇ °æ¿ì"
-//		// ToString, ToInt ÀÚÀ¯·Ó°Ô °¡´É
+//		// "enumì˜ ê²½ìš°"
+//		// ToString, ToInt ììœ ë¡­ê²Œ ê°€ëŠ¥
 //	};
 //	// 
 //	//PStruct* GetStaticStruct()

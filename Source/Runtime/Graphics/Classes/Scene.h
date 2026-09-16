@@ -16,8 +16,8 @@ public:
 	//PSharedPtr<IMaterial> AddMaterial();
 	//PSh
 
-	// Scene¿¡ ¿ÜºÎ¿¡¼­ ¸ÓÅÍ¸®¾ó Ãß°¡
-	// Scene¿¡ ¿ÜºÎ¿¡¼­ ¸Ş½Ã Ãß°¡
+	// Sceneì— ì™¸ë¶€ì—ì„œ ë¨¸í„°ë¦¬ì–¼ ì¶”ê°€
+	// Sceneì— ì™¸ë¶€ì—ì„œ ë©”ì‹œ ì¶”ê°€
 
 	void AddMaterial(PSharedPtr<IRawMaterial> inMaterial);
 	void RemoveMaterial(PSharedPtr<IRawMaterial> inMaterial);
@@ -27,7 +27,7 @@ public:
 	HList<PSharedPtr<IJGGraphicsObject>> _graphicsObjectPool;
 
 
-	// scene¿¡ vertex ÅëÇÕ
+	// sceneì— vertex í†µí•©
 
 
 };

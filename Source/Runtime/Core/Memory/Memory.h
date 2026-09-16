@@ -576,7 +576,7 @@ public:
 
 
 		// @NOTE
-		// ¾Æ·¡ Ç×¸ñ HMemoryPool ·Î ÀÌµ¿
+		// ì•„ë˜ í•­ëª© HMemoryPool ë¡œ ì´ë™
 		HMemoryBlock memoryBlock;
 		memoryBlock.Ptr = Result._ptr;
 		memoryBlock.bIsClass = std::is_class<T>::value;
@@ -621,14 +621,14 @@ public:
 		}
 
 		// @NOTE
-		// ¾Æ·¡ Ç×¸ñ MemoryPool ·Î ÀÌµ¿
+		// ì•„ë˜ í•­ëª© MemoryPool ë¡œ ì´ë™
 		HLockGuard<HRecursiveMutex> lock(Mutex);
 		if (AllocatedMemoryBlocks.find(fromThis) == AllocatedMemoryBlocks.end())
 		{
 			return PSharedPtr<T>();
 		}
 		HMemoryBlock& memoryBlock = AllocatedMemoryBlocks[(const void*)fromThis];
-		// ¿©±â ±îÁö
+		// ì—¬ê¸° ê¹Œì§€
 
 
 		PSharedPtr<T> Result;

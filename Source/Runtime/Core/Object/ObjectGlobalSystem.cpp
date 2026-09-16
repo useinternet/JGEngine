@@ -289,7 +289,7 @@ bool GObjectGlobalSystem::auditClassMultipleInheritance() const
 
 		HHashSet<JGType> typeVisitor;
 
-		// °Ë»ç Å¸ÀÔ
+		// ê²€ì‚¬ íƒ€ìž…
 		for (const JGType& type : Class->ParentTypeSet)
 		{
 			if (typeVisitor.contains(type) == true)

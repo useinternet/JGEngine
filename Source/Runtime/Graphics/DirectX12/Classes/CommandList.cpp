@@ -516,7 +516,7 @@ void PGraphicsCommandList::Draw(uint32 vertexPerInstance, uint32 instanceCount, 
 //{
 //	SharedPtr<ComputeCommandList> result = CreateSharedPtr<ComputeCommandList>();
 //
-//	// °øÀ¯ÇÒ°Ç °øÀ¯ÇÏ°í µû·Î ¸¸µé°Ç µû·Î ¸¸µé±â
+//	// ê³µìœ í• ê±´ ê³µìœ í•˜ê³  ë”°ë¡œ ë§Œë“¤ê±´ ë”°ë¡œ ë§Œë“¤ê¸°
 //	result->mD3DType = mD3DType;
 //	result->mD3DCommandList = mD3DCommandList;
 //	result->mD3DAllocator = mD3DAllocator;

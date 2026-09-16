@@ -54,6 +54,9 @@ workspace "JGEngine"
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)
+        -- 소스/실행 문자 집합을 UTF-8로 고정. 한글 주석이 있는 UTF-8 파일의 C4819를 없앤다.
+        -- (모든 소스 파일은 UTF-8이어야 한다. CP949 파일이 남아 있으면 C4828이 난다.)
+        buildoptions { "/utf-8" }
         if defined ~= nil then
             defines {defined}
         end
@@ -77,6 +80,9 @@ workspace "JGEngine"
         objdir(OBJECT_PATH)
         pchheader (PCH_HEADER)
         pchsource (PCH_CPP_PATH)
+        -- 소스/실행 문자 집합을 UTF-8로 고정. 한글 주석이 있는 UTF-8 파일의 C4819를 없앤다.
+        -- (모든 소스 파일은 UTF-8이어야 한다. CP949 파일이 남아 있으면 C4828이 난다.)
+        buildoptions { "/utf-8" }
         if defined ~= nil then
             defines {defined}
         end

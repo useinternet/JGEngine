@@ -18,14 +18,14 @@ protected:
 	HDX12ComPtr<HDX12RootSignature>  _bindedComputeRootSig  = nullptr;
 	HDX12ComPtr<HDX12DescriptorHeap> _bindedDescriptorHeap  = nullptr;
 
-	D3D12_COMMAND_LIST_TYPE				_commandListType;            // °ø¿ë
-	HDX12ComPtr<HDX12CommandList>		_dx12CommandList;     // °ø¿ë
-	HDX12ComPtr<HDX12CommandAllocator>  _dx12Allocator;       // °ø¿ë
+	D3D12_COMMAND_LIST_TYPE				_commandListType;            // ê³µìš©
+	HDX12ComPtr<HDX12CommandList>		_dx12CommandList;     // ê³µìš©
+	HDX12ComPtr<HDX12CommandAllocator>  _dx12Allocator;       // ê³µìš©
 
-	HList<HDX12ComPtr<HDX12Object>>     _tempObjectList;       // °ø¿ë
-	PSharedPtr<PResourceStateTracker> _resourceStateTracker; // °ø¿ë
-	PSharedPtr<PUploadAllocator>      _uploadAllocator;      // °ø¿ë
-	PSharedPtr<PDynamicDescriptionAllocator> _dynamicDescriptionAllocator; // µû·Î
+	HList<HDX12ComPtr<HDX12Object>>     _tempObjectList;       // ê³µìš©
+	PSharedPtr<PResourceStateTracker> _resourceStateTracker; // ê³µìš©
+	PSharedPtr<PUploadAllocator>      _uploadAllocator;      // ê³µìš©
+	PSharedPtr<PDynamicDescriptionAllocator> _dynamicDescriptionAllocator; // ë”°ë¡œ
 
 public:
 	PCommandList() = default;

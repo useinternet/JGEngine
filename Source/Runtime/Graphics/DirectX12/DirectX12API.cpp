@@ -21,7 +21,7 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 
 	ComPtr<ID3D12Debug> debugController;
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
-		debugController->EnableDebugLayer(); // ²À device ¸¸µé±â Àü¿¡ È£Ãâ!
+		debugController->EnableDebugLayer(); // ê¼­ device ë§Œë“¤ê¸° ì „ì— í˜¸ì¶œ!
 	}
 
 	DXGI_ADAPTER_DESC1 adapterDesc = {};

@@ -22,7 +22,7 @@ class IModuleInterface
 public:
 	virtual ~IModuleInterface() = default;
 protected:
-// ½ÃÀÛ/³¡ ÇÔ¼ö
+// ì‹œì‘/ë í•¨ìˆ˜
 	virtual JGType GetModuleType() const = 0;
 	virtual void StartupModule()  = 0;
 	virtual void ShutdownModule() = 0;

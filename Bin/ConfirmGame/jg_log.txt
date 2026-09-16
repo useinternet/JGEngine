@@ -1,99 +1,354 @@
-[:23092:][info][Core]: Active Thread: [2720991330]
-[:23092:][info][Core]: Active Thread: [3736443604]
-[:23092:][info][Core]: Active Thread: [1235129160]
-[:23092:][info][Core]: Active Thread: [1052829533]
-[:23092:][info][Core]: Active Thread: [3135897004]
-[:23092:][info][Core]: Active Thread: [3776360909]
-[:23092:][info][Core]: Active Thread: [2092353488]
-[:23092:][info][Core]: Active Thread: [1013123087]
-[:23092:][info][Core]: Active Thread: [72777187]
-[:23092:][info][Core]: Active Thread: [1824243165]
-[:23092:][info][Core]: Active Thread: [736475826]
-[:23092:][info][Core]: Active Thread: [391324365]
-[:23092:][info][Core]: Active Thread: [1898175624]
-[:23092:][info][Core]: Active Thread: [3536913579]
-[:23092:][info][Core]: Active Thread: [3685850227]
-[:23092:][info][Core]: Active Thread: [343576634]
-[:23092:][info][Core]: Active Thread: [4095403740]
-[:23092:][info][Core]: Active Thread: [2709139180]
-[:23092:][info][Core]: Active Thread: [3718743640]
-[:23092:][info][Core]: Active Thread: [4213090456]
-[:23092:][info][Core]: Active Thread: [2262670530]
-[:23092:][info][Core]: Active Thread: [117001010]
-[:23092:][info][Core]: Active Thread: [2312272601]
-[:23092:][info][Core]: Active Thread: [1942582056]
-[:23092:][info][Core]: Active Thread: [2083503506]
-[:23092:][info][Core]: Active Thread: [2306737831]
-[:23092:][info][Core]: Active Thread: [3914619322]
-[:23092:][info][Core]: Active Thread: [4115114566]
-[:23092:][info][Core]: Active Thread: [1431683104]
-[:23092:][info][Core]: Active Thread: [3023692884]
-[:23092:][info][Core]: Active Thread: [1831395329]
-[:23092:][info][Core]: Active Thread: [3021995066]
-[:23092:][info][Core]: Active Thread Totoal Count: 32 
-[:23092:][info][Core]: Recognized Class List...
-[:23092:][info][BuildTool]: Step 1. Engine Collection Module Infos..
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: Programs Category Module List
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: JGBuildTool
-[:23092:][trace][BuildTool]: JGConsole
-[:23092:][trace][BuildTool]: JGHeaderTool
-[:23092:][trace][BuildTool]: JGLauncher
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: Editor Category Module List
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: JGDev_Graphics
-[:23092:][trace][BuildTool]: JGEditor
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: Runtime Category Module List
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: Asset
-[:23092:][trace][BuildTool]: Core
-[:23092:][trace][BuildTool]: Game
-[:23092:][trace][BuildTool]: GameFrameWorks
-[:23092:][trace][BuildTool]: Graphics
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][trace][BuildTool]: Editor: 2
-[:23092:][trace][BuildTool]: Programs: 4
-[:23092:][trace][BuildTool]: Runtime: 5
-[:23092:][trace][BuildTool]: Total: 11
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][info][BuildTool]: Step 2. User Collection Module Infos..
-[:23092:][trace][BuildTool]: Total: 0
-[:23092:][trace][BuildTool]: ----------------------------------------------------
-[:23092:][info][BuildTool]: Step 3. Generate Build Script..
-[:23092:][trace][BuildTool]: Module: JGBuildTool: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGBuildTool: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGConsole: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGConsole: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGHeaderTool: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGHeaderTool: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGLauncher: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGLauncher: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGDev_Graphics: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGDev_Graphics: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: JGEditor: Start Generate Build Script
-[:23092:][error][BuildTool]: Module: JGEditor: is not exists dependency module(GUI)
-[:23092:][trace][BuildTool]: Module: JGEditor: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: Asset: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: Asset: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: Core: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: Core: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: Game: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: Game: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: GameFrameWorks: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: GameFrameWorks: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Module: Graphics: Start Generate Build Script
-[:23092:][trace][BuildTool]: Module: Graphics: Compelete Generate Build Script
-[:23092:][trace][BuildTool]: Generate Build Script: ../../Source/Programs/JGBuildTool/jgengine.lua
-[:23092:][info][BuildTool]: Step 4. Insert Include PCH..
-[:23092:][info][BuildTool]: Step 5. Make Project Files..
-[:23092:][info][BuildTool]: Recognize CodeGenable Module : Asset
-[:23092:][info][BuildTool]: Recognize CodeGenable Module : JGDev_Graphics
-[:23092:][info][BuildTool]: Recognize CodeGenable Module : Game
-[:23092:][info][BuildTool]: Recognize CodeGenable Module : JGEditor
-[:23092:][info][BuildTool]: Recognize CodeGenable Module : Graphics
-[:23092:][info][BuildTool]: Compelete Build Tool Run..
+[:11456:][info][Memory]: [ID: 2822465041] Memory Chunk Initizlie. TotalMemory : 103108.750
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0070
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 16 byte, address : 68ad0050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0080
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b700e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70170
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b200a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0090
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af00b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70200
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad00b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af00e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0110
+[:11456:][info][Core]: Active Thread: [1366235409]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8160
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad00d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b200f0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af00e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0140
+[:11456:][info][Core]: Active Thread: [3923286695]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8270
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad00f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70290
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b200f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0170
+[:11456:][info][Core]: Active Thread: [1311124655]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8380
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0110
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70320
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70290
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af01a0
+[:11456:][info][Core]: Active Thread: [739477994]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8490
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0130
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb85a0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70320
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af01d0
+[:11456:][info][Core]: Active Thread: [1660113068]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb86b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0150
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0200
+[:11456:][info][Core]: Active Thread: [266772442]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb87c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0170
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 512 byte, address : 68c40050
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 256 byte, address : 68bb85a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0230
+[:11456:][info][Core]: Active Thread: [1114596798]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb88d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0190
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0260
+[:11456:][info][Core]: Active Thread: [1950962472]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb89e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad01b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0290
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 1024 byte, address : 68d48050
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70200
+[:11456:][info][Core]: Active Thread: [1774954138]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8af0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad01d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 512 byte, address : 68c40260
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 512 byte, address : 68c40050
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af02c0
+[:11456:][info][Core]: Active Thread: [1136344573]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8c00
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad01f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af02f0
+[:11456:][info][Core]: Active Thread: [3194349057]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8d10
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0210
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0320
+[:11456:][info][Core]: Active Thread: [339922291]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8e20
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0230
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0350
+[:11456:][info][Core]: Active Thread: [4179231824]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb8f30
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0250
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 1024 byte, address : 68d48460
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 512 byte, address : 68c40260
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0380
+[:11456:][info][Core]: Active Thread: [3007792923]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9040
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0270
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af03b0
+[:11456:][info][Core]: Active Thread: [2536811276]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9150
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0290
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af03e0
+[:11456:][info][Core]: Active Thread: [586704394]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9260
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad02b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0410
+[:11456:][info][Core]: Active Thread: [3412205134]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9370
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad02d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0440
+[:11456:][info][Core]: Active Thread: [870321210]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9480
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad02f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0470
+[:11456:][info][Core]: Active Thread: [2948845217]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9590
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0310
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 1024 byte, address : 68d48870
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 1024 byte, address : 68d48460
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af04a0
+[:11456:][info][Core]: Active Thread: [2689245745]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb96a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0330
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af04d0
+[:11456:][info][Core]: Active Thread: [67894592]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb97b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0350
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0500
+[:11456:][info][Core]: Active Thread: [3853817276]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb98c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0370
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0530
+[:11456:][info][Core]: Active Thread: [3856662922]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb99d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0390
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0560
+[:11456:][info][Core]: Active Thread: [2792912927]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9ae0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad03b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0590
+[:11456:][info][Core]: Active Thread: [2231081467]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9bf0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad03d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af05c0
+[:11456:][info][Core]: Active Thread: [1001766590]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9d00
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad03f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af05f0
+[:11456:][info][Core]: Active Thread: [1308435531]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9e10
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0410
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0620
+[:11456:][info][Core]: Active Thread: [3614580805]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bb9f20
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0430
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 2048 byte, address : 68f50050
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 1024 byte, address : 68d48870
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0650
+[:11456:][info][Core]: Active Thread: [4132318877]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba030
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0450
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0680
+[:11456:][info][Core]: Active Thread: [1907521259]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba140
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0470
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af06b0
+[:11456:][info][Core]: Active Thread: [2912819201]
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba250
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0490
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af06e0
+[:11456:][info][Core]: Active Thread: [776182272]
+[:11456:][info][Core]: Active Thread Totoal Count: 32 
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0710
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0740
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0770
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af07a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af07d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b703b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad04b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0800
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70440
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad04d0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 16 byte, address : 68ad04b0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 1024 byte, address : 68d48050
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af01a0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af03e0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0110
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0140
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0260
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0500
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0200
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0230
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0170
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0410
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af01d0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0290
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af02c0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af02f0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0320
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0350
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af04a0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0380
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af03b0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0440
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0470
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af04d0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0530
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0560
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0590
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0650
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af05c0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af05f0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0620
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0680
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af06b0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af06e0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af00b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b704d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70560
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad04f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20140
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b705f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70680
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70710
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b707a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70830
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b708c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70950
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b709e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70a70
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70b00
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70b90
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70c20
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70cb0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20190
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70d40
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b201e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20230
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20280
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b202d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20320
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20370
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b203c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20410
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20460
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 1024 byte, address : 68d48c80
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70d40
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b204b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20500
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70dd0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20500
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70dd0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70e60
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20550
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0510
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba360
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b205a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70ef0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0830
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b205f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b70f80
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b205f0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70f80
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71010
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0530
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba470
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20640
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b710a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20690
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 32 byte, address : 68af0830
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b206e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71130
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b206e0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b71130
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b711c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0550
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 256 byte, address : 68bba580
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20730
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71250
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b712e0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20690
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20780
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71370
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20780
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b71370
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71400
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0570
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b207d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20820
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71490
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20820
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b71490
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71520
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 512 byte, address : 68c40470
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20870
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b715b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b208c0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71640
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b716d0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71760
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b717f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71880
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20910
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71910
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b719a0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b207d0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b712e0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71a30
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20960
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71ac0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71b50
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71be0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71c70
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b209b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20a00
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71d00
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20a00
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b71d00
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71d90
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 1024 byte, address : 68d49090
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 128 byte, address : 68b70560
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 16 byte, address : 68ad0590
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 512 byte, address : 68c40680
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20a50
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71e20
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20aa0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71eb0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71f40
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b71fd0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b72060
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b720f0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20af0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b72180
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b209b0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b72210
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20b40
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b722a0
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b72330
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b723c0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 1024 byte, address : 68d48c80
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b201e0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b202d0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20320
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20280
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20230
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b203c0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20370
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20410
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20460
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b204b0
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20190
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 128 byte, address : 68b72450
+[:11456:][error][Core]: Fail Connect Module:JGDev_Graphics
+[:11456:][error][Core]: Fail Launch Module:JGDev_Graphics
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 64 byte, address : 68b20b90
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0860
+[:11456:][info][Memory]: [ID: 2822465041] Allocated 32 byte, address : 68af0890
+[:11456:][info][Core]: Recognized Class List...
+[:11456:][debug][Core]: - JGAsset
+[:11456:][debug][Core]: - JGAssetImporter
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20960
+[:11456:][info][Memory]: [ID: 2822465041] Deallocated 64 byte, address : 68b20b40

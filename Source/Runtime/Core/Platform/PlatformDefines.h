@@ -1,13 +1,13 @@
 #pragma once
 
 
-// Platform º° Include
+// Platform ë³„ Include
 // Window
 #ifdef _PLATFORM_WINDOWS
 #include <Windows.h>
 #endif
 
-// Platform º° Define
+// Platform ë³„ Define
 
 #ifdef _PLATFORM_WINDOWS
 

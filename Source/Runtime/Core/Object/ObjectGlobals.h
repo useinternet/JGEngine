@@ -229,10 +229,10 @@ public:
 };
 
 /* JGClass
-* ÇÁ·ÎÆÛÆ¼ Á¤º¸¸¸ ÀúÀå / °ü¸® ( Struct ±â´É )
-* ÇÔ¼ö Invoke ±â´É Ãß°¡ -> ÇÔ¼ö ÀúÀå / °ü¸®
-* VTable °ü¸® -> VTable¿¡´Â Class, Interface¸¸ »ó¼ÓÇÒ ¼ö ÀÖÀ½.
-* »ó¼Ó °Ë»ç ½Ã Áßº¹ »ó¼Ó ½Ã ¿¡·¯ °ËÃâ
+* í”„ë¡œí¼í‹° ì •ë³´ë§Œ ì €ì¥ / ê´€ë¦¬ ( Struct ê¸°ëŠ¥ )
+* í•¨ìˆ˜ Invoke ê¸°ëŠ¥ ì¶”ê°€ -> í•¨ìˆ˜ ì €ì¥ / ê´€ë¦¬
+* VTable ê´€ë¦¬ -> VTableì—ëŠ” Class, Interfaceë§Œ ìƒì†í•  ìˆ˜ ìˆìŒ.
+* ìƒì† ê²€ì‚¬ ì‹œ ì¤‘ë³µ ìƒì† ì‹œ ì—ëŸ¬ ê²€ì¶œ
 */
 class JGClass : public JGField
 {
@@ -243,7 +243,7 @@ protected:
 	PSharedPtr<JGType>  Type;
 	PSharedPtr<JGMeta>  MetaData;
 
-	HHashSet<JGType> ParentTypeSet; // 1Â÷ÀûÀ¸·Î »ó¼Ó¹ŞÀº Å¸ÀÔµé
+	HHashSet<JGType> ParentTypeSet; // 1ì°¨ì ìœ¼ë¡œ ìƒì†ë°›ì€ íƒ€ì…ë“¤
 	HHashSet<JGType> ChildTypeSet;
 	//HHash
 public:

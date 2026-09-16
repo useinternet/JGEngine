@@ -45,7 +45,7 @@ private:
 	HList<PSharedPtr<JGWidgetComponent>> WidgetComponents;
 
 	
-	// Flags ¹× À©µµ¿ì »çÀÌÁî 
+	// Flags ë° ìœˆë„ìš° ì‚¬ì´ì¦ˆ 
 	EWidgetFlags WidgetFlags;
 
 protected:

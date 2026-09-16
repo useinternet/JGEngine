@@ -2,7 +2,7 @@
 #include "Widget.h"
 #include "WidgetComponent.h"
 #include "DevConsoleDefines.h"
-// PString <= Ύξ¶² Έν
+// PString <= μ–΄λ–¤ λª…
 //
 
 #include "DevConsole.generation.h"

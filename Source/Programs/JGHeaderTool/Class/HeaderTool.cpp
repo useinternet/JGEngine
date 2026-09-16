@@ -71,13 +71,13 @@ bool PHeaderTool::Run()
 	const HModuleSystemInfo& moduleSystemInfo = HModuleSystemInfo::Get();
 	_engineModuleSet = moduleSystemInfo.CodeGenableModuleSet;
 
-	// header file ¼öÁı
+	// header file ìˆ˜ì§‘
 	collectionHeaderFiles();
 	extractReflectionDatas();
 	generateCodeGenFiles();
-	// ºĞ¼® ( meta, ÇÔ¼ö, º¯¼ö µîµî )
+	// ë¶„ì„ ( meta, í•¨ìˆ˜, ë³€ìˆ˜ ë“±ë“± )
 
-	// codeGen .cpp ÆÄÀÏ »ı¼º
+	// codeGen .cpp íŒŒì¼ ìƒì„±
 	return true;
 }
 
@@ -891,7 +891,7 @@ bool PHeaderTool::generateCodeGenFiles()
 
 	for (const HHeaderInfo& headerInfo : _userHeaderInfos)
 	{
-		// ¾ÆÁ÷
+		// ì•„ì§
 	}
 
 
@@ -903,7 +903,7 @@ bool PHeaderTool::generateCodeGenFiles()
 
 bool PHeaderTool::generateCodeGenHeaderSourceCode(const HHeaderInfo& headerInfo, PString* outCode)
 {	
-	// ÇöÀç´Â ÇÊ¿ä ¾ø¾îº¸ÀÓ
+	// í˜„ì¬ëŠ” í•„ìš” ì—†ì–´ë³´ì„
 	if (outCode == nullptr)
 	{
 		return false;

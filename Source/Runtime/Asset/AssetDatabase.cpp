@@ -61,14 +61,14 @@ PWeakPtr<JGAsset> GAssetDatabase::GetLoadedAsset(const HAssetPath& inAssetPath) 
 bool GAssetDatabase::LoadAssetAsync(const HAssetPath& inAssetPath, const POnLoadCompelete& OnLoadCompelete)
 {
 	PName AssetPath = inAssetPath.GetAssetPath();
-	// ÀÌ¹Ì ·ÎµùÁßÀÌ¸é ¹Ù·Î Äİ¹éÇÔ¼ö È£Ãâ
+	// ì´ë¯¸ ë¡œë”©ì¤‘ì´ë©´ ë°”ë¡œ ì½œë°±í•¨ìˆ˜ í˜¸ì¶œ
 	if (_assetsByAssetPath.contains(AssetPath))
 	{
 		OnLoadCompelete.ExecuteIfBound(_assetsByAssetPath[AssetPath]);
 		return true;
 	}
 
-	// ·Îµù ÁßÀÌ¶ó¸é, Äİ¹éÇÔ¼ö Ãß°¡
+	// ë¡œë”© ì¤‘ì´ë¼ë©´, ì½œë°±í•¨ìˆ˜ ì¶”ê°€
 	if (_loadingAssets.contains(AssetPath))
 	{
 		if (OnLoadCompelete.IsBound())

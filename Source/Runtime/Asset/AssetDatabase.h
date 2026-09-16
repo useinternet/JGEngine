@@ -9,7 +9,7 @@ JG_DECLARE_DELEGATE(POnLoadCompelete, PWeakPtr<JGAsset>);
 
 class ASSET_API GAssetDatabase final : public GGlobalSystemInstance<GAssetDatabase>
 {
-	// AssetÀ» ³ª´©Áö
+	// Assetì„ ë‚˜ëˆ„ì§€
 	struct HLoadingThreadData
 	{
 		HAssetPath       AssetPath;

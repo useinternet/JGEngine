@@ -204,7 +204,7 @@ void GScheduleGlobalSystem::assignNamedThread()
 
 int32 GScheduleGlobalSystem::getRecommandThreadIndex(ENamedThread inNamedThread)
 {
-	// Ã³À½ µ¹¶§´Â ÇöÀç ´ë±âÁßÀÎ thread ÇÒ´ç
+	// ì²˜ìŒ ëŒë•ŒëŠ” í˜„ì¬ ëŒ€ê¸°ì¤‘ì¸ thread í• ë‹¹
 	int32 fixedThreadIndex = INDEX_NONE;
 	int32 threadCount = (int32)_threads.size();
 	int32 remindThreadCount = threadCount - _mappedThreadIndexOffset;

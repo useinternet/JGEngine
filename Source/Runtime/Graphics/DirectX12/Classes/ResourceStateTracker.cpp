@@ -10,7 +10,7 @@ void PResourceStateTracker::TransitionBarrier(HDX12ComPtr<HDX12Resource> d3dReso
 {
 	JG_ASSERT_IF(d3dResource != nullptr, "ResourceStateTracker::TransitionBarrier resource is null");
 
-	// Ã³À½ º¯°æÇÏ·¯¿Â ¸®¼Ò½º º¯°æÀº º¸·ùÇÑ´Ù.
+	// ì²˜ìŒ ë³€ê²½í•˜ëŸ¬ì˜¨ ë¦¬ì†ŒìŠ¤ ë³€ê²½ì€ ë³´ë¥˜í•œë‹¤.
 	if (_resourceStates.find(d3dResource.Get()) == _resourceStates.end())
 	{
 		_pendingResourceBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
@@ -18,7 +18,7 @@ void PResourceStateTracker::TransitionBarrier(HDX12ComPtr<HDX12Resource> d3dReso
 	}
 	else
 	{
-		// SubResource ¿¡µû¶ó »óÅÂ º¯°æ
+		// SubResource ì—ë”°ë¼ ìƒíƒœ ë³€ê²½
 		const HResourceState& resourceState = _resourceStates[d3dResource.Get()];
 		if (subResource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES &&
 			!resourceState.StateMap.empty())

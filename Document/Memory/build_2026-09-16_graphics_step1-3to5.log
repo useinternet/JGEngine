@@ -1,0 +1,24 @@
+
+  Core.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Core.lib
+  Asset.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Asset.dll
+  DX12GraphicsCommand.cpp
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.cpp(1,1): warning C4819: 현재 코드 페이지(949)에서 표시할 수 없는 문자가 파일에 들어 있습니다. 데이터가 손실되지 않게 하려면 해당 파일을 유니코드 형식으로 저장하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.h(1,1): warning C4819: 현재 코드 페이지(949)에서 표시할 수 없는 문자가 파일에 들어 있습니다. 데이터가 손실되지 않게 하려면 해당 파일을 유니코드 형식으로 저장하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.cpp(223,45): warning C4244: '=': 'uint64'에서 'UINT'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp'을(를) 컴파일하는 중)
+  
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12GraphicsCommand.cpp(242,43): warning C4244: '=': 'uint64'에서 'UINT'(으)로 변환하면서 데이터가 손실될 수 있습니다. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp'을(를) 컴파일하는 중)
+  
+  DX12Material.cpp
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12Material.cpp(1,1): warning C4819: 현재 코드 페이지(949)에서 표시할 수 없는 문자가 파일에 들어 있습니다. 데이터가 손실되지 않게 하려면 해당 파일을 유니코드 형식으로 저장하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+C:\Develop\JGEngine\Source\Runtime\Graphics\DirectX12\DX12Material.h(1,1): warning C4819: 현재 코드 페이지(949)에서 표시할 수 없는 문자가 파일에 들어 있습니다. 데이터가 손실되지 않게 하려면 해당 파일을 유니코드 형식으로 저장하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  (소스 파일 '/Source/Runtime/Graphics/DirectX12/DX12Material.cpp'을(를) 컴파일하는 중)
+  
+  DirectX12API.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Graphics.dll

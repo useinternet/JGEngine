@@ -48,7 +48,7 @@ public:
 		return (float32*)m_Data.m;
 	}
 
-public: // ¿¬»êÀÚ
+public: // ì—°ì‚°ì
 	HMatrix& operator=(const HMatrix& rhs) = default;
 	HMatrix& operator=(HMatrix&& rhs)	   = default;
 

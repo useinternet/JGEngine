@@ -46,21 +46,21 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(inArgs->SrcPath.GetCStr(),
-		aiProcess_JoinIdenticalVertices |     // µ¿ÀÏÇÑ ²ÀÁöÁ¡ °áÇÕ, ÀÎµ¦½Ì ÃÖÀûÈ­
-		aiProcess_ValidateDataStructure |     // ·Î´õÀÇ Ãâ·ÂÀ» °ËÁõ
-		aiProcess_ImproveCacheLocality |      // Ãâ·Â Á¤Á¡ÀÇ Ä³½¬À§Ä¡¸¦ °³¼±
-		aiProcess_RemoveRedundantMaterials |  // Áßº¹µÈ ¸ÅÅÍ¸®¾ó Á¦°Å
-		aiProcess_GenUVCoords |               // ±¸Çü, ¿øÅëÇü, »óÀÚ ¹× Æò¸é ¸ÅÇÎÀ» ÀûÀıÇÑ UV·Î º¯È¯
-		aiProcess_TransformUVCoords |         // UV º¯È¯ Ã³¸®±â (½ºÄÉÀÏ¸µ, º¯È¯...)
-		aiProcess_FindInstances |             // ÀÎ½ºÅÏ½ºµÈ ¸Å½¬¸¦ °Ë»öÇÏ¿© ÇÏ³ªÀÇ ¸¶½ºÅÍ¿¡ ´ëÇÑ ÂüÁ¶·Î Á¦°Å
-		aiProcess_LimitBoneWeights |          // Á¤Á¡´ç »ÀÀÇ °¡ÁßÄ¡¸¦ ÃÖ´ë 4°³·Î Á¦ÇÑ
-		aiProcess_OptimizeMeshes |            // °¡´ÉÇÑ °æ¿ì ÀÛÀº ¸Å½¬¸¦ Á¶ÀÎ
-		aiProcess_GenSmoothNormals |          // ºÎµå·¯¿î ³ë¸»º¤ÅÍ(¹ı¼±º¤ÅÍ) »ı¼º
-		aiProcess_SplitLargeMeshes |          // °Å´ëÇÑ ÇÏ³ªÀÇ ¸Å½¬¸¦ ÇÏÀ§¸Å½¬µé·Î ºĞÈ°(³ª´®)
-		aiProcess_Triangulate |               // 3°³ ÀÌ»óÀÇ ¸ğ¼­¸®¸¦ °¡Áø ´Ù°¢Çü ¸éÀ» »ï°¢ÇüÀ¸·Î ¸¸µë(³ª´®)
-		aiProcess_ConvertToLeftHanded |       // D3DÀÇ ¿Ş¼ÕÁÂÇ¥°è·Î º¯È¯
-		aiProcess_SortByPType |               // ´ÜÀÏÅ¸ÀÔÀÇ  ÇÁ¸®¹ÌÆ¼ºê·Î ±¸¼ºµÈ '±ú²ıÇÑ' ¸Å½¬¸¦ ¸¸µë
-		aiProcess_CalcTangentSpace            // ÅºÁ¨Æ® °ø°£ °è»ê )
+		aiProcess_JoinIdenticalVertices |     // ë™ì¼í•œ ê¼­ì§€ì  ê²°í•©, ì¸ë±ì‹± ìµœì í™”
+		aiProcess_ValidateDataStructure |     // ë¡œë”ì˜ ì¶œë ¥ì„ ê²€ì¦
+		aiProcess_ImproveCacheLocality |      // ì¶œë ¥ ì •ì ì˜ ìºì‰¬ìœ„ì¹˜ë¥¼ ê°œì„ 
+		aiProcess_RemoveRedundantMaterials |  // ì¤‘ë³µëœ ë§¤í„°ë¦¬ì–¼ ì œê±°
+		aiProcess_GenUVCoords |               // êµ¬í˜•, ì›í†µí˜•, ìƒì ë° í‰ë©´ ë§¤í•‘ì„ ì ì ˆí•œ UVë¡œ ë³€í™˜
+		aiProcess_TransformUVCoords |         // UV ë³€í™˜ ì²˜ë¦¬ê¸° (ìŠ¤ì¼€ì¼ë§, ë³€í™˜...)
+		aiProcess_FindInstances |             // ì¸ìŠ¤í„´ìŠ¤ëœ ë§¤ì‰¬ë¥¼ ê²€ìƒ‰í•˜ì—¬ í•˜ë‚˜ì˜ ë§ˆìŠ¤í„°ì— ëŒ€í•œ ì°¸ì¡°ë¡œ ì œê±°
+		aiProcess_LimitBoneWeights |          // ì •ì ë‹¹ ë¼ˆì˜ ê°€ì¤‘ì¹˜ë¥¼ ìµœëŒ€ 4ê°œë¡œ ì œí•œ
+		aiProcess_OptimizeMeshes |            // ê°€ëŠ¥í•œ ê²½ìš° ì‘ì€ ë§¤ì‰¬ë¥¼ ì¡°ì¸
+		aiProcess_GenSmoothNormals |          // ë¶€ë“œëŸ¬ìš´ ë…¸ë§ë²¡í„°(ë²•ì„ ë²¡í„°) ìƒì„±
+		aiProcess_SplitLargeMeshes |          // ê±°ëŒ€í•œ í•˜ë‚˜ì˜ ë§¤ì‰¬ë¥¼ í•˜ìœ„ë§¤ì‰¬ë“¤ë¡œ ë¶„í™œ(ë‚˜ëˆ”)
+		aiProcess_Triangulate |               // 3ê°œ ì´ìƒì˜ ëª¨ì„œë¦¬ë¥¼ ê°€ì§„ ë‹¤ê°í˜• ë©´ì„ ì‚¼ê°í˜•ìœ¼ë¡œ ë§Œë“¬(ë‚˜ëˆ”)
+		aiProcess_ConvertToLeftHanded |       // D3Dì˜ ì™¼ì†ì¢Œí‘œê³„ë¡œ ë³€í™˜
+		aiProcess_SortByPType |               // ë‹¨ì¼íƒ€ì…ì˜  í”„ë¦¬ë¯¸í‹°ë¸Œë¡œ êµ¬ì„±ëœ 'ê¹¨ë—í•œ' ë§¤ì‰¬ë¥¼ ë§Œë“¬
+		aiProcess_CalcTangentSpace            // íƒ„ì  íŠ¸ ê³µê°„ ê³„ì‚° )
 	);
 	if (scene != nullptr)
 	{
@@ -409,7 +409,7 @@ void JGFBXAssetImporter::WriteMesh(const HMeshStock& inStock)
 	PString destPath;
 	HFileHelper::CombinePath(_args.DestPath, inStock.Name + JG_ASSET_FORMAT, &destPath);
 
-	// Mesh ¸¸µé±â
+	// Mesh ë§Œë“¤ê¸°
 	const bool bIsSkelMesh = inStock.BoneVertices.empty() == false;
 	if (bIsSkelMesh == false)
 	{

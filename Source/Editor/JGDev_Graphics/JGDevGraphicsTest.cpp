@@ -19,7 +19,7 @@ void HJGDevGraphicsTest::Init()
 	TexInfo.ClearColor = HLinearColor(1.0F, 0.0F, 0.0F, 1.0F);
 
 	//auto tex = GetGraphicsAPI().CreateRawTexture(TexInfo);
-	// GraphicsCommand : ÇÏ³ª ¸¸µå´Â°Å <= ÇÏ³ªÀÇ ºÎÇ°
+	// GraphicsCommand : í•˜ë‚˜ ë§Œë“œëŠ”ê±° <= í•˜ë‚˜ì˜ ë¶€í’ˆ
 	// GraphicsBuilder :
 	//GetGraphicsAPI().GetGraphicsCommand()->ClearTexture(tex);
 	//GetGraphicsAPI().SubmitFinalTexture(tex);

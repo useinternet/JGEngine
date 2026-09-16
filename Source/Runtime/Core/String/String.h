@@ -39,7 +39,7 @@ public:
 
 		snprintf(result._rawString.data(), len, string.GetRawString().c_str(), convert(args) ...);
 
-		result._rawString.resize(len - 1); // '\0' ¸Ç³¡ Á¦°Å
+		result._rawString.resize(len - 1); // '\0' ë§¨ë ì œê±°
 		return result;
 	}
 

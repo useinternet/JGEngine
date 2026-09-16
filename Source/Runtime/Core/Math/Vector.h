@@ -367,7 +367,7 @@ public:
 		assert(false && "Vector Index exceed..");
 		return FLT_MAX;
 	}
-public: // static ±â´É
+public: // static ê¸°ëŠ¥
 	static float32 Length(const HVector4& v) 
 	{
 		DirectX::XMVECTOR length = DirectX::XMVector4Length(GetSIMD(v));
@@ -421,7 +421,7 @@ class HVector3
 public:
 	float32 x, y, z;
 
-public: // »ý¼ºÀÚ ¹× ¼Ò¸êÀÚ
+public: // ìƒì„±ìž ë° ì†Œë©¸ìž
 	HVector3() : x(0), y(0), z(0) {}
 	HVector3(float32 init_value) : x(init_value), y(init_value), z(init_value) {}
 	HVector3(float32 x, float32 y, float32 z) : x(x), y(y), z(z) {}
@@ -431,7 +431,7 @@ public: // »ý¼ºÀÚ ¹× ¼Ò¸êÀÚ
 	HVector3(const HVector3& v) = default;
 	HVector3(HVector3&& v) = default;
 
-public: // ¿¬»êÀÚ
+public: // ì—°ì‚°ìž
 	HVector3& operator=(const HVector3& v) = default;
 	HVector3& operator=(HVector3&& v) = default;
 
@@ -523,7 +523,7 @@ public:
 		return (v.x != x || v.y != y || v.z != z);
 	}
 
-public: // ±â´Éµé
+public: // ê¸°ëŠ¥ë“¤
 	void  Set(float32 x, float32 y, float32 z)
 	{
 		this->x = x;
@@ -536,7 +536,7 @@ public: // ±â´Éµé
 		return PString::Format("[ %.3f, %3.f, %3.f ]", x, y, z);
 	}
 
-public: // static ±â´É
+public: // static ê¸°ëŠ¥
 	static float32 Length(const HVector3& v) 
 	{
 		DirectX::XMVECTOR length = DirectX::XMVector3Length(GetSIMD(v));

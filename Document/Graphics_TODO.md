@@ -35,17 +35,17 @@
   `compileShader()`에서 VS/PS 바이트코드를 `_graphicsShader`에도 저장(또는 `_shaderBtDatas`를 셰이더 객체로 옮기고 머터리얼은 참조만).
   완료 조건: `GetShader().Pin()`으로 바이트코드 접근 가능.
 
-- [ ] **1-3. 상수 버퍼 다운캐스트 수정** — `DirectX12/DX12GraphicsCommand.cpp:132`
+- [x] **1-3. 상수 버퍼 다운캐스트 수정** — 완료 2026-09-16 16:30. `PSharedPtr<IConstantBuffer>`로 받아 캐스트 없이 `BindConstantBuffer`에 전달.
   `Pin()` 결과는 `PSharedPtr<IConstantBuffer>`. `Cast<PDX12ConstantBuffer>(...)`로 바꾸거나, `BindConstantBuffer`가 `IConstantBuffer`를 받으므로 캐스트 없이 그대로 넘긴다.
 
-- [ ] **1-4. `BindShader` 호출과 본문 완성** — `DirectX12/DX12GraphicsCommand.cpp:137`, `:245-251`
+- [x] **1-4. `BindShader` 호출과 본문 완성** — 완료 2026-09-16 16:30. `Draw(HSceneDrawArguments)`가 `GetShader().Pin()`을 `BindShader`에 넘기고, `BindShader`는 `Cast<PDX12GraphicsShader>` 후 `_graphicsPSO->BindShader(GetByteCodes())`. 셰이더가 PSO 설명에 들어가므로 `Finalize()`를 BindShader 뒤로 이동하고 assert 밖으로 분리(2-7의 첫 항목 처리).
   137행을 `BindShader(dx12Material->GetShader().Pin())` 형태로 완성.
   `BindShader()` 본문에서 `_graphicsPSO->BindShader(바이트코드)` 호출. 입력 레이아웃과 토폴로지는 Phase 2에서 도메인별로 처리.
 
-- [ ] **1-5. 디스크립터 핸들 비교 수정** — `DirectX12/DX12GraphicsCommand.cpp:74, 91`
+- [x] **1-5. 디스크립터 핸들 비교 수정** — 완료 2026-09-16 16:30. `.ptr != 0`. `dsvHandle`을 `{}`로 초기화(깊이 없을 때 nullptr 전달은 2-6에 남음). 이 시점에 Graphics 프로젝트 단독 빌드 오류 0건, Graphics.dll 생성.
   `JG_CHECK(rtvHandle != 0)` → `JG_CHECK(rtvHandle.ptr != 0)`. dsvHandle도 동일.
 
-- [ ] **1-6. 소스 인코딩 경고(C4819) 정리** — `Source/Programs/JGBuildTool/Template/BuildTemplate.lua`
+- [x] **1-6. 소스 인코딩 경고(C4819) 정리** — 완료 2026-09-16 17:10. `BuildTemplate.lua`의 두 Set*ProjectConfig에 `buildoptions { "/utf-8" }` 추가 → JGBuildTool로 `jgengine.lua`·vcxproj 재생성(`AdditionalOptions=/utf-8`). CP949로 남아 있던 소스 27개(Core 11, Graphics 6, Devkit 2, GUI 2, Asset 2, Programs 2, Editor 2)를 cp949 엄격 디코딩 → UTF-8(BOM 없음, 줄바꿈 유지)로 변환. 한글 문자열 리터럴 0개라 실행 시 바이트 변화 없음. Graphics+Core+Asset 재빌드에서 C4819/C4828 0건. 부작용 메모: JGBuildTool.exe가 작업 완료 후 종료 시점에 세그폴트(결과물은 정상).
   DX12GraphicsCommand.cpp/.h, DX12Material.cpp/.h가 BOM 없는 UTF-8이라 컴파일러가 CP949로 읽는다. 템플릿의 세 Config 함수에 `buildoptions { "/utf-8" }`를 추가하고 JGBuildTool로 jgengine.lua를 재생성한다(jgengine.lua는 생성물이므로 직접 고치지 않음). 대안은 네 파일을 UTF-8 BOM으로 저장.
 
 - [ ] **1-7. 빌드 성공 확인**
@@ -81,12 +81,12 @@
 
 - [ ] **2-6. 렌더 타깃 포맷 개수와 DSV 처리** — `DX12GraphicsCommand.cpp:49-100`, `DirectX12/Classes/PipelineState.cpp:25-49`
   `SetRenderTarget`이 빈 슬롯까지 8개 포맷을 넣어 `BindRenderTarget`의 `cnt >= 8` 오류 로그가 매번 찍힌다. 유효한 RT 수만큼만 채운다.
-  깊이 텍스처가 없으면 미초기화 `dsvHandle` 주소 대신 `nullptr`을 넘긴다(58, 99행).
+  깊이 텍스처가 없으면 `dsvHandle` 주소 대신 `nullptr`을 넘긴다(99행). 초기화(`= {}`)는 1-5에서 처리했으므로 쓰레기 값은 아니지만 0 핸들 주소가 넘어가는 상태.
 
 - [ ] **2-7. 드로우 호출 정리** — `DX12GraphicsCommand.cpp:110-147`
   `Draw(4)` → `Draw(6)`(템플릿 `gTexCoords` 6개).
   `cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST)` 호출 추가. Scene 도메인은 `SV_VertexID`만 쓰므로 입력 레이아웃 없음.
-  `JG_CHECK(_graphicsPSO->Finalize())`(122행)를 `bool ok = Finalize(); JG_CHECK(ok);`로 분리(Release에서 assert가 사라짐).
+  ~~`JG_CHECK(_graphicsPSO->Finalize())`를 분리~~ → 1-4에서 처리 완료. 남은 것은 `Draw(6)`과 토폴로지.
 
 - [ ] **2-8. 기본 텍스처 · 기본 머터리얼 생성** — `JGGraphicsAPI.h:34-39`, `DirectX12/DirectX12API.cpp:16-71`
   `_defaultTexture`, `_defaultMaterial`이 `PJGGraphicsAPI`의 private 멤버라 파생 클래스에서 대입할 수 없다. `protected`로 바꾼다.
@@ -155,3 +155,5 @@
 - [ ] **5-7.** `PCamera`, `PScene` 설계와 구현(`Classes/Camera.h`, `Classes/Scene.h` 현재 스텁).
 - [ ] **5-8.** `EndDraw()` 정리, `_renderPassConstantBuffer` 제거 또는 사용.
 - [ ] **5-9.** 커밋 정리: WIP 커밋을 의미 단위로 나눌지 결정.
+- [ ] **5-10.** PSO 캐시 해시 개선 — `DirectX12/Classes/PipelineState.cpp:154`. `HHash::HashState(&_desc)`가 `VS/PS.pShaderBytecode` 포인터 값을 그대로 해시에 넣는다. 같은 바이트코드라도 주소가 다르면 캐시 미스, 해제 후 같은 주소에 다른 셰이더가 오면 잘못된 PSO 재사용 가능. 바이트코드 내용(또는 셰이더 객체의 콘텐츠 해시)으로 키를 만들 것. 루트 시그니처 포인터도 같은 성격.
+- [ ] **5-11.** 링크 경고 LNK4098(MSVCRT/MSVCRTD 충돌) 원인 정리 — Debug 구성에 릴리스 CRT로 빌드된 서드파티 정적 라이브러리가 섞여 있음(pragma comment(lib) 목록 확인). 서드파티 Debug 빌드 준비 또는 `/NODEFAULTLIB` 정리.

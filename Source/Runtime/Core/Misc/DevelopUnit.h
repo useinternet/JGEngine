@@ -33,7 +33,7 @@ public:
 	virtual void Update() {};
 	virtual void Shutdown() {};
 
-	// À§Á¬
+	// ìœ„ì ¯
 	virtual PSharedPtr<WWidgetComponent> CreateContentWidgetComponent() { return nullptr; }
 	const HGuid& GetGuid() const { return _guid; }
 

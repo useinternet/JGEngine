@@ -6,11 +6,11 @@
 /*
 DevFeature
 
-DevFeatureÀº ±âº»ÀûÀ¸·Î ¾Æ·¡ ±â´ÉÀ» °¡Áö°í ÀÖÀ½.
+DevFeatureì€ ê¸°ë³¸ì ìœ¼ë¡œ ì•„ëž˜ ê¸°ëŠ¥ì„ ê°€ì§€ê³  ìžˆìŒ.
 
-Scene => DataClass¿Í Widget ³ª´©±â
-Setting => DataClass¿Í Widget ³ª´©±â
-Log Ãâ·Â (DevConsole ±â´Éµµ) => LogData¿Í Widget ³ª´©±â
+Scene => DataClassì™€ Widget ë‚˜ëˆ„ê¸°
+Setting => DataClassì™€ Widget ë‚˜ëˆ„ê¸°
+Log ì¶œë ¥ (DevConsole ê¸°ëŠ¥ë„) => LogDataì™€ Widget ë‚˜ëˆ„ê¸°
 */
 class IRawTexture;
 

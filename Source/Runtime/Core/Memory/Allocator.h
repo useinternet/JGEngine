@@ -14,7 +14,7 @@ public:
 	template<typename Other>
 	HAllocator(const HAllocator<Other>&) {}
 
-	//ÃÊ±âÈ­µÇÁö ¾ÊÀº ¸Ş¸ğ¸® °ø°£À» ÇÒ´çÇÏ¿© ±× ½ÃÀÛ ÁÖ¼Ò¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+	//ì´ˆê¸°í™”ë˜ì§€ ì•Šì€ ë©”ëª¨ë¦¬ ê³µê°„ì„ í• ë‹¹í•˜ì—¬ ê·¸ ì‹œì‘ ì£¼ì†Œë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
 	T* allocate(std::size_t count)
 	{
 		if (GMemoryGlobalSystem::IsValid() == false)
@@ -28,7 +28,7 @@ public:
 		return (T*)Result;
 	}
 
-	//  ¸Ş¸ğ¸® °ø°£À» ÇØÁ¦ÇÏ´Â ÇÔ¼ö
+	//  ë©”ëª¨ë¦¬ ê³µê°„ì„ í•´ì œí•˜ëŠ” í•¨ìˆ˜
 	void deallocate(T* ptr, size_t count)
 	{
 		if (GMemoryGlobalSystem::IsValid())

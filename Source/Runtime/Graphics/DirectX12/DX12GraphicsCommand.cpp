@@ -5,6 +5,7 @@
 #include "DX12VertexBuffer.h"
 #include "DX12IndexBuffer.h"
 #include "DX12Material.h"
+#include "Classes/DX12Shader.h"
 #include "Classes/CommandList.h"
 #include "Classes/ConstantBuffer.h"
 #include "Classes/StructuredBuffer.h"
@@ -55,7 +56,7 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 	HList<HDX12Resource*> rtTextures;
 	HDX12Resource* depthTexture = nullptr;
 	HList<D3D12_CPU_DESCRIPTOR_HANDLE> rtvHandles;
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
 	
 	for (int32 i = 0; i < MAX_RENDERTARGET; ++i)
 	{
@@ -71,7 +72,7 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 			rtTextures.push_back(dx12Texture->Get());
 
 			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = dx12Texture->GetRTV();
-			JG_CHECK(rtvHandle != 0);
+			JG_CHECK(rtvHandle.ptr != 0);
 			rtvHandles.push_back(rtvHandle);
 		}
 
@@ -88,7 +89,7 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 		depthTexture = dx12Texture->Get();
 
 		dsvHandle = dx12Texture->GetDSV();
-		JG_CHECK(dsvHandle != 0);
+		JG_CHECK(dsvHandle.ptr != 0);
 	}
 	
 	_graphicsPSO->BindRenderTarget(rtFormats, dvFormat);
@@ -119,8 +120,7 @@ void PDX12GraphicsCommand::Draw(const HDrawArguments& inArgs)
 void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 {
 	JG_CHECK(_graphicsPSO != nullptr);
-	JG_CHECK(_graphicsPSO->Finalize());
-	
+
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
 
 	PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(inArgs.Material);
@@ -129,20 +129,22 @@ void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 	HList<PSharedPtr<IRawTexture>> materialTextures = dx12Material->GetTextures();
 	BindTextures(RootParam_Texture, materialTextures);
 
-	PSharedPtr<PDX12ConstantBuffer> materialCB = dx12Material->GetConstantBuffer().Pin();
+	// BindConstantBuffer가 인터페이스를 받으므로 구현체로 내려받을 필요가 없다.
+	PSharedPtr<IConstantBuffer> materialCB = dx12Material->GetConstantBuffer().Pin();
 	JG_CHECK(materialCB.IsValid());
 	BindConstantBuffer(RootParam_MaterialCB, materialCB);
-	
 
-	BindShader(dx12Material->get)
-	//dx12Material->get
-	// Texture
-	// Shader
-	// BindTextures();
-	// BindShader(cmdList)
+	// 셰이더 바이트코드는 PSO 설명에 들어가므로 Finalize보다 먼저 바인드해야 한다.
+	PSharedPtr<IRawGraphicsShader> graphicsShader = dx12Material->GetShader().Pin();
+	BindShader(graphicsShader);
+
+	// assert 안에서 호출하면 NDEBUG 빌드에서 Finalize 호출 자체가 사라진다.
+	const bool bFinalized = _graphicsPSO->Finalize();
+	JG_CHECK(bFinalized);
+
 	cmdList->BindPipelineState(_graphicsPSO);
 
-	
+	// TODO(Phase 2-7): 템플릿의 풀스크린 정점은 6개이고, 토폴로지 설정도 아직 없다.
 	cmdList->Draw(4);
 }
 
@@ -245,9 +247,14 @@ void PDX12GraphicsCommand::BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffe
 void PDX12GraphicsCommand::BindShader(PSharedPtr<IRawGraphicsShader> inGraphicsShader)
 {
 	JG_CHECK(_graphicsPSO != nullptr);
+	JG_CHECK(inGraphicsShader.IsValid() && inGraphicsShader->IsValid());
 
-	//const HHashMap<EShaderDomain, HList<uint8>>& inShaderBtDatas
-	//_graphicsPSO->BindShader();
+	PSharedPtr<PDX12GraphicsShader> dx12Shader = Cast<PDX12GraphicsShader>(inGraphicsShader);
+	JG_CHECK(dx12Shader != nullptr);
+
+	// 셰이더 객체가 소유한 도메인별 바이트코드를 PSO 설명에 연결한다.
+	// 입력 레이아웃과 토폴로지는 도메인(Scene/Surface)에 따라 다르므로 Draw 쪽에서 설정한다(Phase 2-7, 4-2).
+	_graphicsPSO->BindShader(dx12Shader->GetByteCodes());
 }
 
 void PDX12GraphicsCommand::createRootSignature()

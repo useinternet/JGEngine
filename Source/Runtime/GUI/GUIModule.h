@@ -25,13 +25,13 @@ protected:
     void GenerateWidgetGUI();
 
 public:
-    // ¸Ş´º Ãß°¡
+    // ë©”ë‰´ ì¶”ê°€
     void AddMainMenuItem(const HMainMenuItem& InMainMenuItem);
 
-    // ÀÌ¸§ / Action
-    // Context ¸Ş´º Ãß°¡
+    // ì´ë¦„ / Action
+    // Context ë©”ë‰´ ì¶”ê°€
 
-    // À§Á¬ Ãß°¡
+    // ìœ„ì ¯ ì¶”ê°€
     template<class T>
     bool OpenWidget()
     {
