@@ -48,8 +48,6 @@ SamplerState _PointClamp_  : register(s3);
 SamplerState _LinearClamp_ : register(s4);
 SamplerState _AnisotropicClamp_ : register(s5);
 
-__PS_CONSTANT_BUFFER_CONTENTS_SCRIPT__
-		
 #if MATERIAL_DOMAIN_SCENE
 static const float2 gTexCoords[6] =
 {
@@ -88,7 +86,7 @@ PS_SCENE_OUTPUT PS_SCENE_FUNCTION(PS_SCENE_INPUT _input)
 	__PS_SCENE_CONTENTS_SCRIPT__
 
 	return _output;
-};
+}
 
 VS_OUT vs_main(uint vid : SV_VertexID)
 {
@@ -161,7 +159,7 @@ struct PS_OUT
 	float4 Albedo : SV_TARGET0;
 	float4 Normal_Metallic    : SV_TARGET1;
 	float4 Specular_Roughness : SV_TARGET2;
-    float Depth = SV_TARGET3;
+	float Depth : SV_TARGET3;
 };
 
 PS_SURFACE_OUTPUT PS_SURFACE_FUNCTION(PS_SURFACE_INPUT _input)
@@ -177,16 +175,16 @@ PS_SURFACE_OUTPUT PS_SURFACE_FUNCTION(PS_SURFACE_INPUT _input)
 
 	__PS_SURFACE_CONTENTS_SCRIPT__
 	return _output;
-};
+}
 
 VS_OUT vs_main(VS_IN vin)
 {
 	VS_OUT vout;
 	vout.posL = vin.posL;
-	float3 posW = mul(float4(vin.posL, 1.0f), _WorldMatrix);
-	float3 normalW = mul(float4(vin.normalL, 0.0f), _WorldMatrix);
-	float3 tanW =  mul(float4(vin.tanL, 0.0f), _WorldMatrix);
-	float3 bitW =  mul(float4(vin.bitL, 0.0f), _WorldMatrix);
+	float3 posW = mul(float4(vin.posL, 1.0f), _WorldMatrix).xyz;
+	float3 normalW = mul(float4(vin.normalL, 0.0f), _WorldMatrix).xyz;
+	float3 tanW =  mul(float4(vin.tanL, 0.0f), _WorldMatrix).xyz;
+	float3 bitW =  mul(float4(vin.bitL, 0.0f), _WorldMatrix).xyz;
 	vout.posH = mul(float4(posW, 1.0f), _ViewProjMatrix);
 	vout.posW = posW;
 	vout.normalW = normalize(normalW);
@@ -197,7 +195,7 @@ VS_OUT vs_main(VS_IN vin)
 	return vout;
 }
 
-PS_OUT ps_main(VS_OUT pin) : SV_TARGET
+PS_OUT ps_main(VS_OUT pin)
 {
 	PS_SURFACE_INPUT input;
 	input.position = pin.posW;

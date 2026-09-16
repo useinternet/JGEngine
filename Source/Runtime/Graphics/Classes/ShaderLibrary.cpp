@@ -2,11 +2,45 @@
 #include "ShaderLibrary.h"
 
 PString GShaderLibrary::GraphicsShaderTemplate = "graphics_shader_template";
-PString GShaderLibrary::MaterialSurfaceContentcript = "__PS_SURFACE_Content_SCRIPT__";
-PString GShaderLibrary::MaterialConstantBufferContentcript = "__PS_CONSTANT_BUFFER_Content_SCRIPT__";
+PString GShaderLibrary::MaterialConstantBufferContentsScript = "__PS_CONSTANT_BUFFER_CONTENTS_SCRIPT__";
+PString GShaderLibrary::MaterialSurfaceContentsScript        = "__PS_SURFACE_CONTENTS_SCRIPT__";
+PString GShaderLibrary::MaterialSceneContentsScript          = "__PS_SCENE_CONTENTS_SCRIPT__";
 
 void GShaderLibrary::Start()
 {
+	loadTemplates();
+}
+
+void GShaderLibrary::Destroy()
+{
+	_shaderTemplates.clear();
+	_bLoaded = false;
+}
+
+const PString& GShaderLibrary::GetGraphicsShaderTemplateCode() const
+{
+	if (_bLoaded == false)
+	{
+		loadTemplates();
+	}
+
+	if (_shaderTemplates.contains(GraphicsShaderTemplate))
+	{
+		return _shaderTemplates.at(GraphicsShaderTemplate);
+	}
+
+	static PString nullCode;
+	return nullCode;
+}
+
+void GShaderLibrary::loadTemplates() const
+{
+	if (_bLoaded)
+	{
+		return;
+	}
+	_bLoaded = true;
+
 	const PString& shaderDirPath = HFileHelper::EngineShaderDirectory();
 	JG_LOG(Graphics, ELogLevel::Info, "Start Collect Shader in (%s)", shaderDirPath);
 
@@ -30,22 +64,5 @@ void GShaderLibrary::Start()
 		}
 	}
 
-
 	JG_LOG(Graphics, ELogLevel::Info, "Complete Collect Shader");
-}
-
-void GShaderLibrary::Destroy()
-{
-	_shaderTemplates.clear();
-}
-
-const PString& GShaderLibrary::GetGraphicsShaderTemplateCode() const
-{
-	if (_shaderTemplates.contains(GraphicsShaderTemplate))
-	{
-		return _shaderTemplates.at(GraphicsShaderTemplate);
-	}
-
-	static PString nullCode;
-	return nullCode;
 }

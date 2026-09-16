@@ -34,6 +34,8 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 
 	HJGGraphicsArguments _arguments;
 	bool _bIsSupportedRayTracing;
+	
+	void createDefaultResources();
 public:
 	virtual ~PDirectX12API() = default;
 

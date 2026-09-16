@@ -23,13 +23,17 @@ void PDX12ConstantBuffer::SetName(const PName& inName)
 
 void PDX12ConstantBuffer::SetData(const void* inData, uint64 elementSize)
 {
-	uint64 originBtSize = _elementSize;
-	_elementSize = elementSize;
+	if (elementSize == 0)
+	{
+		Reset();
+		return;
+	}
 
-	if (IsValid() && (originBtSize != _elementSize))
+	if (IsValid() && (_elementSize != elementSize))
 	{
 		Reset();
 	}
+	_elementSize = elementSize;
 
 	if (IsValid() == false)
 	{
@@ -44,6 +48,13 @@ void PDX12ConstantBuffer::SetData(const void* inData, uint64 elementSize)
 			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr
 		);
+
+		if (_dx12Resource == nullptr)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Create ConstantBuffer (%d bytes)", GetName(), (int32)_elementSize);
+			_elementSize = 0;
+			return;
+		}
 
 		_dx12Resource->Map(0, nullptr, &_cpuData);
 

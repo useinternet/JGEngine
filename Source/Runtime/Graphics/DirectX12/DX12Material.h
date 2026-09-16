@@ -20,6 +20,7 @@ class PDX12Material
 
 	PName _name;
 	mutable bool _bNeedCompile;
+	EMaterialDomain _domain = EMaterialDomain::Surface;
 
 
 	// 컴파일된 셰이더. 바이트코드는 이 객체가 소유하고 머터리얼은 참조만 한다.
@@ -71,6 +72,7 @@ public:
 
 	virtual const PString& GetShaderCode() const override;
 	virtual const PString& GetFullShaderCode() const override;
+	virtual EMaterialDomain GetDomain() const override;
 
 
 	virtual const HMaterialPropertyDefinitionist& GetPropertyDefinitionist() const override;
@@ -104,6 +106,8 @@ private:
 	bool updateMaterialConstantData();
 	bool generateShaderCode();
 	bool compileShader(const HMaterialCompileArguments& inArgs);
+	// 프로퍼티 총 크기를 256바이트 단위로 올린 상수 버퍼 크기 (최소 256). 루트 CBV와 디스크립터 CBV 모두 만족.
+	uint64 getConstantBufferSize() const;
 
 	template<class T>
 	bool setData(const PName& inName, const T& inData)

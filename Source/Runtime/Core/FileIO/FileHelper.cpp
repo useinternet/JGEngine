@@ -476,7 +476,9 @@ const PString& HFileHelper::EngineShaderDirectory()
 	static PString engineShaderDirectory;
 	if (engineShaderDirectory.Empty())
 	{
-		CombinePath(EngineDirectory(), "Shader", &engineShaderDirectory);
+		// 셰이더 템플릿(.hlsl)은 런타임에 소스 텍스트로 읽으므로 Source/Shader를 직접 본다.
+		// (루트 Shader/는 이 함수가 자동 생성만 해 두던 빈 폴더였다. 배포 단계가 생기면 복사 대상으로 되돌릴 수 있다.)
+		CombinePath(EngineSourceDirectory(), "Shader", &engineShaderDirectory);
 		if (Exists(engineShaderDirectory) == false)
 		{
 			CreateDirectory(engineShaderDirectory);

@@ -21,10 +21,10 @@ PDX12Material::PDX12Material()
 
 void PDX12Material::Initialize(const HRawMaterialConstructArguments& inArgs)
 {
+	_domain = inArgs.Domain;
 	_propertyDefinitionist = inArgs.PropertyDefinitionist;
 
-	uint64 totalPropertyByteSize = _propertyDefinitionist.GetTotalDataSize();
-	_materialConstantBuffer->SetData(nullptr, totalPropertyByteSize);
+	_materialConstantBuffer->SetData(nullptr, getConstantBufferSize());
 
 	SetName(inArgs.Name);
 
@@ -53,6 +53,11 @@ const PString& PDX12Material::GetShaderCode() const
 const PString& PDX12Material::GetFullShaderCode() const
 {
 	return _fullShaderCode;
+}
+
+EMaterialDomain PDX12Material::GetDomain() const
+{
+	return _domain;
 }
 
 const HMaterialPropertyDefinitionist& PDX12Material::GetPropertyDefinitionist() const
@@ -314,19 +319,17 @@ PWeakPtr<IRawGraphicsShader> PDX12Material::GetShader() const
 
 bool PDX12Material::updateMaterialConstantData()
 {
-	uint64 totalPropertyByteSize = _propertyDefinitionist.GetTotalDataSize();
-
-	_materialConstantBuffer->SetData(nullptr, totalPropertyByteSize);
+	_materialConstantBuffer->SetData(nullptr, getConstantBufferSize());
 	JG_CHECK(_materialConstantBuffer->IsValid());
 
+	// 재컴파일마다 누적되지 않도록 둘 다 비운다.
 	_materialConstantDataOffsetMap.clear();
+	_materialConstantPropertyList.clear();
 
-	const uint32 alignByteSize = 16;
+	// 오프셋은 정의 순서대로 쌓는다. 16바이트 경계 패딩은 정의기(HMaterialPropertyDefinitionist::Define)가 넣어 둔 상태.
 	uint64 dataOffset = 0;
 
 	const HList<HMaterialDefineInfo>& defineInfos = _propertyDefinitionist.GetDefineInfos();
-	uint64 propertyDefineDataSize = _propertyDefinitionist.GetTotalDataSize();
-	JG_CHECK(HMath::IsAligned(propertyDefineDataSize, alignByteSize));
 
 	for (const HMaterialDefineInfo& info : defineInfos)
 	{
@@ -346,10 +349,15 @@ bool PDX12Material::updateMaterialConstantData()
 
 bool PDX12Material::generateShaderCode()
 {
-	PString templateShaderCode = GShaderLibrary::GetInstance().GetGraphicsShaderTemplateCode();
+	PString fullShaderCode = GShaderLibrary::GetInstance().GetGraphicsShaderTemplateCode();
+	if (fullShaderCode.Empty())
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Compile, Shader Template(%s) Not Found", GetName(), GShaderLibrary::GraphicsShaderTemplate);
+		return false;
+	}
+
 	PString constantBufferShaderCode;
 	PString materialShaderCode = _shaderCode;
-	PString fullShaderCode = std::move(templateShaderCode);
 
 	// 상수버퍼 코드 작성
 	
@@ -403,8 +411,17 @@ bool PDX12Material::generateShaderCode()
 		}
 	}
 
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialConstantBufferContentcript, constantBufferShaderCode);
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentcript, materialShaderCode);
+	// 프로퍼티가 없으면 cbuffer가 비게 되므로 패딩 하나를 둔다. (상수 버퍼 최소 크기 256바이트와도 맞는다)
+	if (constantBufferShaderCode.Empty())
+	{
+		constantBufferShaderCode.AppendLine("\tfloat4 _MaterialPadding;");
+	}
+
+	// 활성 도메인 자리에 머터리얼 코드를 넣고, 비활성 도메인 자리는 비운다.
+	const bool bSceneDomain = (_domain == EMaterialDomain::Scene);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialConstantBufferContentsScript, constantBufferShaderCode);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentsScript, bSceneDomain ? PString() : materialShaderCode);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSceneContentsScript,   bSceneDomain ? materialShaderCode : PString());
 
 	_fullShaderCode = std::move(fullShaderCode);
 
@@ -419,6 +436,8 @@ bool PDX12Material::compileShader(const HMaterialCompileArguments& inArgs)
 	HGraphicsShaderCompileArguments compileArgs;
 	compileArgs.SourceCode = GetFullShaderCode();
 	compileArgs.Flags      = EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader;
+	// 템플릿의 #if MATERIAL_DOMAIN_SCENE 분기 선택. Surface는 0으로 명시해 미정의 매크로에 의존하지 않는다.
+	compileArgs.Macros.push_back(HPair<PName, PName>(PName("MATERIAL_DOMAIN_SCENE"), PName(_domain == EMaterialDomain::Scene ? "1" : "0")));
 
 	PString errorCode;
 	if (_graphicsShader->Compile(compileArgs, &errorCode) == false)
@@ -428,6 +447,18 @@ bool PDX12Material::compileShader(const HMaterialCompileArguments& inArgs)
 	}
 
 	return true;
+}
+
+uint64 PDX12Material::getConstantBufferSize() const
+{
+	const uint64 alignByteSize = 256;
+	uint64 totalPropertyByteSize = _propertyDefinitionist.GetTotalDataSize();
+	if (totalPropertyByteSize == 0)
+	{
+		// 프로퍼티가 없어도 0바이트 버퍼는 만들 수 없다. 셰이더 쪽 _MaterialPadding(float4)과 짝.
+		totalPropertyByteSize = alignByteSize;
+	}
+	return HMath::AlignUp(totalPropertyByteSize, alignByteSize);
 }
 
 void PDX12Material::getSampleStateName(PSharedPtr<IRawTexture> inTexture, PString& outSampleStateName) const

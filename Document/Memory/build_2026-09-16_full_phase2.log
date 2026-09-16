@@ -1,0 +1,18 @@
+
+  FileHelper.cpp
+  Core.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Core.lib
+  GameFrameWorks.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GameFrameWorks.lib
+  JGConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  JGBuildTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  Game.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Game.dll
+  Asset.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Asset.dll
+  JGHeaderTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  JGLauncher.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GUI.dll
+  DevStatistics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  JGEditor.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  Devkit.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Devkit.dll
+  DevConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  JGDev_Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll

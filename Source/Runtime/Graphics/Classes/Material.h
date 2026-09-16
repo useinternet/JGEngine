@@ -135,7 +135,7 @@ private:
 struct GRAPHICS_API HRawMaterialConstructArguments
 {
 	PName Name;
-	EMaterialDomain Domain;
+	EMaterialDomain Domain = EMaterialDomain::Surface;
 	HMaterialPropertyDefinitionist PropertyDefinitionist;
 };
 
@@ -144,6 +144,7 @@ class GRAPHICS_API IRawMaterial : public IJGGraphicsObject
 public:
 	virtual const PString& GetShaderCode() const = 0;
 	virtual const PString& GetFullShaderCode() const = 0;
+	virtual EMaterialDomain GetDomain() const = 0;
 
 	virtual const HMaterialPropertyDefinitionist& GetPropertyDefinitionist() const = 0;
 

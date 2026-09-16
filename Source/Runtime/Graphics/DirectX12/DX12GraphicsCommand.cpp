@@ -50,40 +50,48 @@ void PDX12GraphicsCommand::EndDraw()
 void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 {
 	JG_CHECK(_graphicsPSO != nullptr);
-	
+
+	// 렌더 타깃은 슬롯 0부터 연속으로 채워져야 한다.
+	// OMSetRenderTargets의 핸들 배열과 PSO의 RTVFormats 인덱스가 같이 움직이므로 빈 슬롯을 만나면 거기서 끝낸다.
 	HList<DXGI_FORMAT> rtFormats;
-	DXGI_FORMAT dvFormat = DXGI_FORMAT_UNKNOWN;
 	HList<HDX12Resource*> rtTextures;
-	HDX12Resource* depthTexture = nullptr;
 	HList<D3D12_CPU_DESCRIPTOR_HANDLE> rtvHandles;
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
-	
+
 	for (int32 i = 0; i < MAX_RENDERTARGET; ++i)
 	{
-		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
-		if (inRenderTarget.RenderTextures[i].IsValid() && inRenderTarget.RenderTextures[i]->IsValid())
+		const PSharedPtr<IRawTexture>& renderTexture = inRenderTarget.RenderTextures[i];
+		if (renderTexture.IsValid() == false || renderTexture->IsValid() == false)
 		{
-			const HTextureInfo& texInfo = inRenderTarget.RenderTextures[i]->GetTextureInfo();
-			format = HDirectX12Helper::ConvertDXGIFormat(texInfo.Format);
-
-			
-			PSharedPtr<PDX12Texture> dx12Texture = Cast<PDX12Texture>(inRenderTarget.RenderTextures[i]);
-			JG_CHECK(dx12Texture != nullptr);
-			rtTextures.push_back(dx12Texture->Get());
-
-			D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = dx12Texture->GetRTV();
-			JG_CHECK(rtvHandle.ptr != 0);
-			rtvHandles.push_back(rtvHandle);
+			break;
 		}
 
-		rtFormats.push_back(format);
+		PSharedPtr<PDX12Texture> dx12Texture = Cast<PDX12Texture>(renderTexture);
+		JG_CHECK(dx12Texture != nullptr);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = dx12Texture->GetRTV();
+		JG_CHECK(rtvHandle.ptr != 0);
+
+		rtFormats.push_back(HDirectX12Helper::ConvertDXGIFormat(renderTexture->GetTextureInfo().Format));
+		rtTextures.push_back(dx12Texture->Get());
+		rtvHandles.push_back(rtvHandle);
 	}
 
+	for (int32 i = (int32)rtFormats.size() + 1; i < MAX_RENDERTARGET; ++i)
+	{
+		if (inRenderTarget.RenderTextures[i].IsValid())
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "SetRenderTarget : RenderTextures must be contiguous from slot 0. slot %d is ignored", i);
+		}
+	}
+
+	DXGI_FORMAT dvFormat = DXGI_FORMAT_UNKNOWN;
+	HDX12Resource* depthTexture = nullptr;
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = {};
 	if (inRenderTarget.DepthTexture.IsValid() && inRenderTarget.DepthTexture->IsValid())
 	{
 		const HTextureInfo& texInfo = inRenderTarget.DepthTexture->GetTextureInfo();
 		dvFormat = HDirectX12Helper::ConvertDXGIFormat(texInfo.Format);
-		
+
 		PSharedPtr<PDX12Texture> dx12Texture = Cast<PDX12Texture>(inRenderTarget.DepthTexture);
 		JG_CHECK(dx12Texture != nullptr);
 		depthTexture = dx12Texture->Get();
@@ -91,13 +99,13 @@ void PDX12GraphicsCommand::SetRenderTarget(const HRenderTarget& inRenderTarget)
 		dsvHandle = dx12Texture->GetDSV();
 		JG_CHECK(dsvHandle.ptr != 0);
 	}
-	
+
 	_graphicsPSO->BindRenderTarget(rtFormats, dvFormat);
 
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
 	cmdList->SetViewports(inRenderTarget.Viewports);
 	cmdList->SetScissorRects(inRenderTarget.ScissorRects);
-	cmdList->SetRenderTarget(rtTextures.data(), rtvHandles.data(), rtvHandles.size(), depthTexture, &dsvHandle);
+	cmdList->SetRenderTarget(rtTextures.data(), rtvHandles.data(), rtvHandles.size(), depthTexture, depthTexture != nullptr ? &dsvHandle : nullptr);
 }
 
 void PDX12GraphicsCommand::SetRenderPassData(const HRenderPassCBData& inData)
@@ -125,27 +133,32 @@ void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 
 	PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(inArgs.Material);
 	JG_CHECK(dx12Material != nullptr);
+	if (dx12Material->GetDomain() != EMaterialDomain::Scene)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Draw(HSceneDrawArguments) requires a Scene domain material", dx12Material->GetName());
+		return;
+	}
 
 	HList<PSharedPtr<IRawTexture>> materialTextures = dx12Material->GetTextures();
 	BindTextures(RootParam_Texture, materialTextures);
-
-	// BindConstantBuffer가 인터페이스를 받으므로 구현체로 내려받을 필요가 없다.
+	
 	PSharedPtr<IConstantBuffer> materialCB = dx12Material->GetConstantBuffer().Pin();
 	JG_CHECK(materialCB.IsValid());
 	BindConstantBuffer(RootParam_MaterialCB, materialCB);
-
-	// 셰이더 바이트코드는 PSO 설명에 들어가므로 Finalize보다 먼저 바인드해야 한다.
+	
 	PSharedPtr<IRawGraphicsShader> graphicsShader = dx12Material->GetShader().Pin();
 	BindShader(graphicsShader);
-
-	// assert 안에서 호출하면 NDEBUG 빌드에서 Finalize 호출 자체가 사라진다.
+	
+	_graphicsPSO->BindInputLayout(HInputLayout());
+	_graphicsPSO->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+	
 	const bool bFinalized = _graphicsPSO->Finalize();
 	JG_CHECK(bFinalized);
 
 	cmdList->BindPipelineState(_graphicsPSO);
-
-	// TODO(Phase 2-7): 템플릿의 풀스크린 정점은 6개이고, 토폴로지 설정도 아직 없다.
-	cmdList->Draw(4);
+	cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
+	cmdList->Draw(6);
 }
 
 void PDX12GraphicsCommand::ClearTexture(PSharedPtr<IRawTexture> inTexture) const

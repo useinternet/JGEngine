@@ -35,6 +35,8 @@ class GRAPHICS_API PJGGraphicsAPI : public IMemoryObject
 {
 	friend class HJGGraphicsModule;
 
+protected:
+	// 백엔드 구현이 Initialize()에서 채운다. 머터리얼이 비어 있는 서브메시 등이 이걸 참조한다.
 	PSharedPtr<IRawTexture>  _defaultTexture = nullptr;
 	PSharedPtr<IRawMaterial> _defaultMaterial = nullptr;
 public:

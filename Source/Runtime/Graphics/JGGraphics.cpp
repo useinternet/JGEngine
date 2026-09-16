@@ -39,8 +39,9 @@ void HJGGraphicsModule::StartupModule()
 	arguments.ClearColor = HLinearColor(0, 0, 0, 0);
 	arguments.BufferCount = 3;
 	
-	_graphicsAPI->Initialize(arguments);
+	// 기본 머터리얼 컴파일에 템플릿이 필요하므로 셰이더 라이브러리를 먼저 올린다.
 	GCoreSystem::GetInstance().RegisterSystemInstance<GShaderLibrary>();
+	_graphicsAPI->Initialize(arguments);
 
 	GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::GraphicsBegin, PTaskDelegate::CreateRaw(this, &HJGGraphicsModule::BeginFrame));
 	GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::GraphicsEnd, PTaskDelegate::CreateRaw(this, &HJGGraphicsModule::EndFrame));

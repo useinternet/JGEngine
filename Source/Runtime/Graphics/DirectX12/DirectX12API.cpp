@@ -67,12 +67,17 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	_frameBuffer = Allocate<PDX12FrameBuffer>();
 	_frameBuffer->Initialize(frameBufferInfo);
 
+	JG_LOG(Graphics, ELogLevel::Trace, "Create Default Resources...");
+	createDefaultResources();
+
 	JG_LOG(Graphics, ELogLevel::Trace, "DirectX12 Init End");
 }
 
 void PDirectX12API::Destroy()
 {
 	_commandQueue->Flush();
+	_defaultMaterial = nullptr;
+	_defaultTexture  = nullptr;
 	_frameBuffer = nullptr;
 	_csuAllocator = nullptr;
 	_rtvAllocator = nullptr;
@@ -83,6 +88,51 @@ void PDirectX12API::Destroy()
 	_computePSOCache.clear();
 	_resourceRefCache.clear();
 
+}
+
+void PDirectX12API::createDefaultResources()
+{
+	// 1x1 흰색 텍스처. 텍스처 프로퍼티가 비어 있을 때의 대체값.
+	{
+		HTextureInfo texInfo;
+		texInfo.Name       = "DefaultTexture";
+		texInfo.Width      = 1;
+		texInfo.Height     = 1;
+		texInfo.Format     = ETextureFormat::R8G8B8A8_Unorm;
+		texInfo.Flags      = ETextureFlags::None;
+		texInfo.MipLevel   = 1;
+		texInfo.ArraySize  = 1;
+		texInfo.FilterMode = ETextureFilterMode::Point;
+		texInfo.WrapMode   = ETextureWrapMode::Clamp;
+
+		const uint8 whitePixel[4] = { 255, 255, 255, 255 };
+		_defaultTexture = CreateRawTexture(whitePixel, texInfo);
+		if (_defaultTexture.IsValid() == false || _defaultTexture->IsValid() == false)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "Fail Create Default Texture");
+			_defaultTexture = nullptr;
+		}
+	}
+
+	// 프로퍼티 없는 Surface 머터리얼. 템플릿의 기본 출력(알베도 흰색)을 그대로 쓴다.
+	{
+		HRawMaterialConstructArguments materialArgs;
+		materialArgs.Name   = PName("DefaultMaterial");
+		materialArgs.Domain = EMaterialDomain::Surface;
+
+		PSharedPtr<IRawMaterial> material = CreateRawMaterial(materialArgs);
+
+		HMaterialCompileArguments compileArgs;
+		compileArgs.ShaderCode = "";
+		if (material.IsValid() && material->Compile(compileArgs))
+		{
+			_defaultMaterial = material;
+		}
+		else
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "Fail Create Default Material (shader compile failed)");
+		}
+	}
 }
 
 void PDirectX12API::BeginFrame()

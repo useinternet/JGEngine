@@ -48,23 +48,23 @@
 - [x] **1-6. 소스 인코딩 경고(C4819) 정리** — 완료 2026-09-16 17:10. `BuildTemplate.lua`의 두 Set*ProjectConfig에 `buildoptions { "/utf-8" }` 추가 → JGBuildTool로 `jgengine.lua`·vcxproj 재생성(`AdditionalOptions=/utf-8`). CP949로 남아 있던 소스 27개(Core 11, Graphics 6, Devkit 2, GUI 2, Asset 2, Programs 2, Editor 2)를 cp949 엄격 디코딩 → UTF-8(BOM 없음, 줄바꿈 유지)로 변환. 한글 문자열 리터럴 0개라 실행 시 바이트 변화 없음. Graphics+Core+Asset 재빌드에서 C4819/C4828 0건. 부작용 메모: JGBuildTool.exe가 작업 완료 후 종료 시점에 세그폴트(결과물은 정상).
   DX12GraphicsCommand.cpp/.h, DX12Material.cpp/.h가 BOM 없는 UTF-8이라 컴파일러가 CP949로 읽는다. 템플릿의 세 Config 함수에 `buildoptions { "/utf-8" }`를 추가하고 JGBuildTool로 jgengine.lua를 재생성한다(jgengine.lua는 생성물이므로 직접 고치지 않음). 대안은 네 파일을 UTF-8 BOM으로 저장.
 
-- [ ] **1-7. 빌드 성공 확인**
+- [x] **1-7. 빌드 성공 확인** — 완료 2026-09-16 17:50. 2-9와 함께 처리. 전체 16개 프로젝트 빌드 오류 0건, 런처 20초 실행 오류 0건.
   완료 조건: DevelopEngine 구성 빌드 error 0, `Bin/DevelopEngine/Graphics.dll` 갱신. 실행해서 기존처럼 DevScene 빨간 렌더 타깃이 뜨는지 확인(회귀 없음).
 
 ---
 
 ## Phase 2. 첫 드로우 전 필수 수정 (Scene 도메인 기준)
 
-- [ ] **2-1. 플레이스홀더 상수 통일** — `Classes/ShaderLibrary.cpp:4-6`, `Classes/ShaderLibrary.h:8-10`
+- [x] **2-1. 플레이스홀더 상수 통일** — `Classes/ShaderLibrary.cpp:4-6`, `Classes/ShaderLibrary.h:8-10` — 완료 2026-09-16 17:50. `GShaderLibrary` 상수를 `MaterialConstantBufferContentsScript`/`MaterialSurfaceContentsScript`/`MaterialSceneContentsScript`로 통일하고 `generateShaderCode()`가 도메인에 따라 활성 자리만 채움(비활성 자리는 빈 문자열).
   `__PS_SURFACE_Content_SCRIPT__` → `__PS_SURFACE_CONTENTS_SCRIPT__`, `__PS_CONSTANT_BUFFER_Content_SCRIPT__` → `__PS_CONSTANT_BUFFER_CONTENTS_SCRIPT__`. Scene용 `__PS_SCENE_CONTENTS_SCRIPT__` 상수 추가.
   `PDX12Material::generateShaderCode()`(`DX12Material.cpp:348`)에서 도메인에 따라 Surface/Scene 플레이스홀더를 선택해 치환.
   완료 조건: 생성된 `_fullShaderCode`에 `__PS_` 문자열이 남지 않음(로그로 덤프해 확인).
 
-- [ ] **2-2. 템플릿 HLSL 오류 수정** — `Source/Shader/graphics_shader_template.hlsl`
+- [x] **2-2. 템플릿 HLSL 오류 수정** — `Source/Shader/graphics_shader_template.hlsl` — 완료 2026-09-16 17:50. 164행 `:` 수정, 51행 중복 플레이스홀더 제거, 함수 뒤 `};`→`}` 2곳, Surface `ps_main`의 함수 수준 `SV_TARGET` 제거(구조체 멤버 시맨틱과 충돌), `vs_main`의 float4→float3 암시적 절삭에 `.xyz` 명시. `scene_shader.hlsl` 중복은 그대로 둠(용도 결정 필요).
   164행 `float Depth = SV_TARGET3;` → `float Depth : SV_TARGET3;`. 51행의 cbuffer 밖 중복 플레이스홀더 제거.
   (선택) `scene_shader.hlsl`은 템플릿 53~113행과 중복이므로 삭제 또는 용도 결정.
 
-- [ ] **2-3. 머터리얼 도메인 저장과 매크로 전달** — `DX12Material.h/.cpp` (매크로 배열 종료 항목·문자열 수명은 1-2에서 처리 완료, 남은 것은 도메인 저장과 `compileArgs.Macros`에 `MATERIAL_DOMAIN_SCENE=1` 전달)
+- [x] **2-3. 머터리얼 도메인 저장과 매크로 전달** — `DX12Material.h/.cpp` (매크로 배열 종료 항목·문자열 수명은 1-2에서 처리 완료, 남은 것은 도메인 저장과 `compileArgs.Macros`에 `MATERIAL_DOMAIN_SCENE=1` 전달) — 완료 2026-09-16 17:50. `PDX12Material::_domain` 저장, `IRawMaterial::GetDomain()` 추가, `compileShader()`가 `MATERIAL_DOMAIN_SCENE=1/0` 매크로를 항상 전달(Surface는 0으로 명시).
   `HRawMaterialConstructArguments::Domain`을 `PDX12Material::Initialize()`에서 멤버로 저장(현재 무시됨).
   `compileShader()`에서 Domain이 Scene이면 매크로 `MATERIAL_DOMAIN_SCENE=1` 전달.
   `PDX12ShaderCompiler::compile()`의 `D3D_SHADER_MACRO` 배열 끝에 `{nullptr, nullptr}` 종료 항목 추가(현재 없음).
@@ -74,26 +74,26 @@
   `_shaderBtDatas.empty()` 반환(반전)을 `_materialConstantBuffer.IsValid() && _materialConstantBuffer->IsValid()` 등 리소스 유효성 기준으로 바꾼다.
   `Compile()`이 `_bNeedCompile`로 재컴파일 가능한지 확인. `SetName()`의 조건도 함께 점검.
 
-- [ ] **2-5. 상수 버퍼 크기 처리** — `Classes/Material.h:66-132`, `DX12Material.cpp:316-346`
+- [x] **2-5. 상수 버퍼 크기 처리** — `Classes/Material.h:66-132`, `DX12Material.cpp:316-346` — 완료 2026-09-16 17:50. `getConstantBufferSize()` = 256바이트 정렬(최소 256), 16바이트 정렬 assert 제거, `_materialConstantPropertyList` 재컴파일 시 clear, 프로퍼티 0개면 셰이더 cbuffer에 `float4 _MaterialPadding` 삽입. `PDX12ConstantBuffer::SetData`의 0바이트 방어와 `Reset()` 후 `_elementSize` 복구도 처리.
   프로퍼티 총 크기를 16의 배수로 올림(정의기 마무리 패딩 또는 `AlignUp`). `updateMaterialConstantData()`의 `IsAligned` assert(330행)가 float 하나로도 걸리는 문제 해결.
   프로퍼티가 0개일 때 크기 0 버퍼를 만들지 않도록 최소 크기(256바이트) 보장. 현재는 `CD3DX12_RESOURCE_DESC::Buffer(0)` 생성 실패 후 null `Map`으로 크래시한다.
   `_materialConstantPropertyList`가 재컴파일마다 누적되는 것도 `clear()`로 정리.
 
-- [ ] **2-6. 렌더 타깃 포맷 개수와 DSV 처리** — `DX12GraphicsCommand.cpp:49-100`, `DirectX12/Classes/PipelineState.cpp:25-49`
+- [x] **2-6. 렌더 타깃 포맷 개수와 DSV 처리** — `DX12GraphicsCommand.cpp:49-100`, `DirectX12/Classes/PipelineState.cpp:25-49` — 완료 2026-09-16 17:50. 슬롯 0부터 연속된 RT만 포맷/핸들에 넣고 뒤쪽 비연속 슬롯은 오류 로그. 깊이 없으면 `nullptr` 전달. `PipelineState.cpp`의 `cnt >= 8`을 `> 8`로.
   `SetRenderTarget`이 빈 슬롯까지 8개 포맷을 넣어 `BindRenderTarget`의 `cnt >= 8` 오류 로그가 매번 찍힌다. 유효한 RT 수만큼만 채운다.
   깊이 텍스처가 없으면 `dsvHandle` 주소 대신 `nullptr`을 넘긴다(99행). 초기화(`= {}`)는 1-5에서 처리했으므로 쓰레기 값은 아니지만 0 핸들 주소가 넘어가는 상태.
 
-- [ ] **2-7. 드로우 호출 정리** — `DX12GraphicsCommand.cpp:110-147`
+- [x] **2-7. 드로우 호출 정리** — `DX12GraphicsCommand.cpp:110-147` — 완료 2026-09-16 17:50. `Draw(6)`, `SetPrimitiveTopology(TRIANGLELIST)`, PSO에 빈 입력 레이아웃과 TRIANGLE 토폴로지 타입 명시. Scene 도메인이 아닌 머터리얼은 오류 로그 후 반환.
   `Draw(4)` → `Draw(6)`(템플릿 `gTexCoords` 6개).
   `cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST)` 호출 추가. Scene 도메인은 `SV_VertexID`만 쓰므로 입력 레이아웃 없음.
   ~~`JG_CHECK(_graphicsPSO->Finalize())`를 분리~~ → 1-4에서 처리 완료. 남은 것은 `Draw(6)`과 토폴로지.
 
-- [ ] **2-8. 기본 텍스처 · 기본 머터리얼 생성** — `JGGraphicsAPI.h:34-39`, `DirectX12/DirectX12API.cpp:16-71`
+- [x] **2-8. 기본 텍스처 · 기본 머터리얼 생성** — `JGGraphicsAPI.h:34-39`, `DirectX12/DirectX12API.cpp:16-71` — 완료 2026-09-16 17:50. `_defaultTexture`/`_defaultMaterial`을 protected로, `PDirectX12API::createDefaultResources()`에서 1×1 흰색 텍스처와 프로퍼티 없는 Surface 머터리얼 생성·컴파일, `Destroy()`에서 먼저 해제. 런타임 로그에서 컴파일 성공 확인.
   `_defaultTexture`, `_defaultMaterial`이 `PJGGraphicsAPI`의 private 멤버라 파생 클래스에서 대입할 수 없다. `protected`로 바꾼다.
   `PDirectX12API::Initialize()` 끝에서 1×1 흰색 텍스처(`InitializeByMemory`)와 프로퍼티 없는 Surface 머터리얼을 생성·컴파일해 대입.
   완료 조건: `GetDefaultMaterial()`, `GetDefaultTexture()`가 null이 아님.
 
-- [ ] **2-9. 빌드 · 실행 회귀 확인**
+- [x] **2-9. 빌드 · 실행 회귀 확인** — 완료 2026-09-16 17:50. 전체 빌드 16/16 오류 0(C4244 6, LNK4098 1). 런처 20초 실행: error/critical 0, 크래시 없음, 템플릿 3개 수집, 기본 머터리얼 컴파일 성공. 추가로 고친 것: `GShaderLibrary` 템플릿 지연 로드(시스템 `Start()`가 모듈 시작 뒤에 불려 기본 머터리얼 컴파일 시점에 템플릿이 없었음), `HFileHelper::EngineShaderDirectory()`를 루트의 빈 `Shader/`가 아닌 `Source/Shader`로 변경(Core 한 줄).
   완료 조건: 빌드 error 0, 실행 시 DevScene 표시 정상, D3D12 디버그 레이어 오류 없음.
 
 ---
@@ -156,4 +156,6 @@
 - [ ] **5-8.** `EndDraw()` 정리, `_renderPassConstantBuffer` 제거 또는 사용.
 - [ ] **5-9.** 커밋 정리: WIP 커밋을 의미 단위로 나눌지 결정.
 - [ ] **5-10.** PSO 캐시 해시 개선 — `DirectX12/Classes/PipelineState.cpp:154`. `HHash::HashState(&_desc)`가 `VS/PS.pShaderBytecode` 포인터 값을 그대로 해시에 넣는다. 같은 바이트코드라도 주소가 다르면 캐시 미스, 해제 후 같은 주소에 다른 셰이더가 오면 잘못된 PSO 재사용 가능. 바이트코드 내용(또는 셰이더 객체의 콘텐츠 해시)으로 키를 만들 것. 루트 시그니처 포인터도 같은 성격.
+- [ ] **5-12.** 버퍼 재설정 버그 — `DX12VertexBuffer.cpp`, `DX12IndexBuffer.cpp`, `DX12StructuredBuffer.cpp`. 크기가 바뀌면 `Reset()`이 `_elementCount/_elementSize/_indexCount`를 0으로 지운 뒤 재생성하므로 `GetVertexCount()` 등이 0을 반환. `DX12StructuredBuffer::SetDatas`는 `_elementSize`를 아예 저장하지 않아 항상 0바이트 버퍼. (`DX12ConstantBuffer`는 2-5에서 수정)
+- [ ] **5-13.** `JG_LOG`의 `%s`에 `PName`을 넘기면 빈 문자열로 찍힘(런타임 로그의 ' : Fail Compile' 등). 포맷터에 PName 지원 추가 또는 호출부에서 `.ToString()`.
 - [ ] **5-11.** 링크 경고 LNK4098(MSVCRT/MSVCRTD 충돌) 원인 정리 — Debug 구성에 릴리스 CRT로 빌드된 서드파티 정적 라이브러리가 섞여 있음(pragma comment(lib) 목록 확인). 서드파티 Debug 빌드 준비 또는 `/NODEFAULTLIB` 정리.

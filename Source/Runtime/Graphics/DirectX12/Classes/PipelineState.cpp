@@ -27,7 +27,7 @@ void PGraphicsPipelineState::BindRenderTarget(const HList<DXGI_FORMAT>& rtFormat
 	_bDirty = true;
 
 	uint64 cnt = rtFormats.size();
-	if (cnt >= MAX_RENDERTARGET)
+	if (cnt > MAX_RENDERTARGET)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "RenderTarget Num can not exceed 8");
 		cnt = MAX_RENDERTARGET;
