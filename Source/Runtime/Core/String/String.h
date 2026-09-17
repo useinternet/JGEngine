@@ -28,7 +28,7 @@ public:
 			return PString();
 		}
 
-		uint64 len = (uint64)snprintf(nullptr, 0, string.GetRawString().c_str(), convert(args) ...) + 1; // Extra space for '\0'
+		uint64 len = (uint64)snprintf(nullptr, 0, string.GetRawString().c_str(), toCArg(convert(args)) ...) + 1; // Extra space for '\0'
 		if (len <= 0)
 		{
 			return PString();
@@ -37,7 +37,7 @@ public:
 		PString result;
 		result._rawString.resize(len);
 
-		snprintf(result._rawString.data(), len, string.GetRawString().c_str(), convert(args) ...);
+		snprintf(result._rawString.data(), len, string.GetRawString().c_str(), toCArg(convert(args)) ...);
 
 		result._rawString.resize(len - 1); // '\0' 맨끝 제거
 		return result;
@@ -59,21 +59,26 @@ public:
 	static PString ToLower(const PString& inStr);
 
 private:
+	// convert: PName은 PString 임시 객체로 바꾼다. 임시 객체는 snprintf 전체 식이 끝날 때까지 살아 있으므로
+	// toCArg에서 꺼낸 c-string이 유효하다. (이전 코드는 convert 안에서 만든 임시 PString의 포인터를 반환해 댕글링 -> 빈 문자열로 찍혔다)
 	template<class T>
-	static auto convert(const T& arg)
+	static const T& convert(const T& arg)
 	{
 		return arg;
 	}
-	template<>
-	static auto convert(const PString& arg)
+	static PString convert(const PName& arg)
 	{
-		return arg.GetCStr();
+		return arg.ToString();
 	}
 
-	template<>
-	static auto convert(const PName& arg)
+	template<class T>
+	static const T& toCArg(const T& arg)
 	{
-		return arg.ToString().GetCStr();
+		return arg;
+	}
+	static const char* toCArg(const PString& arg)
+	{
+		return arg.GetCStr();
 	}
 public:
 	PString() = default;

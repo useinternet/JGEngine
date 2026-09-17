@@ -167,7 +167,10 @@ public:
 	virtual bool GetTexture(const PName& inName, PSharedPtr<IRawTexture>& outValue) const = 0;
 	virtual bool Compile(const HMaterialCompileArguments& inArgs) = 0;
 
+	// Texture 프로퍼티 슬롯 순서대로의 텍스처. 셰이더의 _globalTexture[슬롯]과 1:1. 비어 있는 슬롯은 기본 텍스처.
 	virtual HList<PSharedPtr<IRawTexture>> GetTextures() const = 0;
+	// TextureCube 프로퍼티 슬롯. 기본 큐브 텍스처가 없어 비어 있는 슬롯은 null일 수 있다.
+	virtual HList<PSharedPtr<IRawTexture>> GetTextureCubes() const = 0;
 	virtual PWeakPtr<IConstantBuffer> GetConstantBuffer() const = 0;
 	virtual PWeakPtr<IRawGraphicsShader> GetShader() const = 0;
 	virtual bool IsValid() const = 0;

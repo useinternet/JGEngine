@@ -49,19 +49,21 @@ enum class ETextureFormat
 	D24_Unorm_S8_Uint,		JGENUMMETA(Channels = 2)
 };
 
+// JGENUMMETA()가 없는 항목은 헤더 툴이 이름 목록에 넣지 않아 StaticEnum<>()->GetEnumNameByValue()가 NAME_NONE을 돌려준다.
+// 머터리얼 샘플러 이름(_PointClamp_ 등)이 이 이름으로 만들어지므로 모든 항목에 붙인다.
 JGENUM()
 enum class ETextureFilterMode
 {
-	Point,
-	Linear,
-	Anisotropic
+	Point,			JGENUMMETA()
+	Linear,			JGENUMMETA()
+	Anisotropic,	JGENUMMETA()
 };
 
 JGENUM()
 enum class ETextureWrapMode
 {
-	Wrap,
-	Clamp,
+	Wrap,			JGENUMMETA()
+	Clamp,			JGENUMMETA()
 	//Border
 };
 
@@ -180,28 +182,42 @@ public:
 	}
 };
 
-class HVertex : public IJsonable
+// GPU 정점 버퍼에 올라가는 순수 데이터(POD). 가상 함수가 없어 입력 레이아웃 오프셋과 1:1로 맞는다.
+// HVertex는 여기에 IJsonable(vptr 8바이트)을 얹은 직렬화용 타입이다. GPU에는 항상 이 타입만 올린다.
+//
+// GetInputLayout()은 값으로 돌려준다. 함수 지역 static으로 두면 안 된다:
+// HList는 엔진 메모리 풀 할당자(HAllocator)를 쓰므로 static 컨테이너는 메모리 시스템이 내려간 뒤 DLL 언로드 시점에
+// 소멸되면서 이미 free된 풀 메모리를 읽는다. (2026-09-17 종료 크래시 원인) 레이아웃이 필요한 객체(PStaticMesh 등)가 멤버로 보관한다.
+struct HVertexData
 {
-public:
 	HVector3 Position;
 	HVector2 Texcoord;
 	HVector3 Normal;
 	HVector3 Tangent;
 	HVector3 Bitangent;
 
+	static HInputLayout GetInputLayout() {
+		HInputLayout layout;
+		layout.Add(EShaderDataType::Float3, "POSITION", 0);
+		layout.Add(EShaderDataType::Float2, "TEXCOORD", 0);
+		layout.Add(EShaderDataType::Float3, "NORMAL", 0);
+		layout.Add(EShaderDataType::Float3, "TANGENT", 0);
+		layout.Add(EShaderDataType::Float3, "BITANGENT", 0);
+		return layout;
+	}
+};
+static_assert(sizeof(HVertexData) == 56, "HVertexData must match the input layout (float3 + float2 + float3 x3 = 56 bytes)");
+
+class HVertex : public HVertexData, public IJsonable
+{
 public:
+	HVertex() = default;
+	HVertex(const HVertexData& inData) : HVertexData(inData) {}
 	virtual ~HVertex() = default;
 
 public:
-	static const HInputLayout& GetInputLayout() {
-		static HInputLayout inputLayout;
-		inputLayout.Add(EShaderDataType::Float3, "POSITION", 0);
-		inputLayout.Add(EShaderDataType::Float2, "TEXCOORD", 0);
-		inputLayout.Add(EShaderDataType::Float3, "NORMAL", 0);
-		inputLayout.Add(EShaderDataType::Float3, "TANGENT", 0);
-		inputLayout.Add(EShaderDataType::Float3, "BITANGENT", 0);
-
-		return inputLayout;
+	static HInputLayout GetInputLayout() {
+		return HVertexData::GetInputLayout();
 	}
 protected:
 	// IJsonable
@@ -235,12 +251,11 @@ public:
 	virtual ~HQuadVertex() = default;
 
 public:
-	static const HInputLayout& GetInputLayout() {
-		static HInputLayout inputLayout;
-		inputLayout.Add(EShaderDataType::Float3, "POSITION", 0);
-		inputLayout.Add(EShaderDataType::Float2, "TEXCOORD", 0);
-
-		return inputLayout;
+	static HInputLayout GetInputLayout() {
+		HInputLayout layout;
+		layout.Add(EShaderDataType::Float3, "POSITION", 0);
+		layout.Add(EShaderDataType::Float2, "TEXCOORD", 0);
+		return layout;
 	}
 protected:
 	// IJsonable
@@ -264,11 +279,10 @@ struct HDebugVertex
 	HDebugVertex(float32 x, float32 y, float32 z) : Position(x, y, z) {}
 	HDebugVertex(const HVector3& p) : Position(p) {}
 public:
-	static const HInputLayout& GetInputLayout() {
-		static HInputLayout inputLayout;
-		inputLayout.Add(EShaderDataType::Float3, "POSITION", 0);
-
-		return inputLayout;
+	static HInputLayout GetInputLayout() {
+		HInputLayout layout;
+		layout.Add(EShaderDataType::Float3, "POSITION", 0);
+		return layout;
 	}
 };
 

@@ -48,31 +48,36 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 {
 	if (inAssetPath.StartWidth(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN))
 	{
-		PString rawAssetPathStr = inAssetPath;
-		rawAssetPathStr.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
-		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), rawAssetPathStr, &rawAssetPathStr);
+		// 토큰 뒤의 상대 경로를 정규화한다: 역슬래시 -> 슬래시, 앞쪽 슬래시 제거, 확장자 보정.
+		// 같은 파일을 가리키는 문자열("/JGEngine//A/B", "/JGEngine/A/B.jgasset")이 AssetDatabase에서 같은 키가 되어야 한다.
+		PString relativePath = inAssetPath;
+		relativePath.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
+		relativePath.ReplaceAll("\\", "/");
+		while (relativePath.Empty() == false && relativePath[0] == '/')
+		{
+			relativePath.Remove(0, 1);
+		}
 
 		PString FileExtension;
-		HFileHelper::FileExtension(rawAssetPathStr, &FileExtension);
+		HFileHelper::FileExtension(relativePath, &FileExtension);
 		if (FileExtension.Empty())
 		{
-			rawAssetPathStr += JG_ASSET_FORMAT;
+			relativePath += JG_ASSET_FORMAT;
 		}
-
-		if (FileExtension.Equal(JG_ASSET_FORMAT) == false)
+		else if (FileExtension.Equal(JG_ASSET_FORMAT) == false)
 		{
-			JG_LOG(Asset, ELogLevel::Warning, "NOT Support Format");
+			JG_LOG(Asset, ELogLevel::Warning, "NOT Support Format : %s", inAssetPath);
 		}
-	
 
-		AssetPath = inAssetPath;
+		PString rawAssetPathStr;
+		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), relativePath, &rawAssetPathStr);
 
 		PString AssetNameStr;
-		HFileHelper::FileNameOnly(inAssetPath, &AssetNameStr);
+		HFileHelper::FileNameOnly(relativePath, &AssetNameStr);
 
-
+		AssetPath    = PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN) + relativePath;
 		RawAssetPath = rawAssetPathStr;
-		AssetName = AssetNameStr;
+		AssetName    = AssetNameStr;
 		bIsValid = true;
 	}
 	else if (inAssetPath.StartWidth(JG_ASSET_GAME_PATH_RECOGNITION_TOEKN))

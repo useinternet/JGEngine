@@ -22,58 +22,23 @@ public:
 	// Render Setting
 	virtual void SetRenderTarget(const HRenderTarget& inRenderTarget) = 0;
 	virtual void SetRenderPassData(const HRenderPassCBData& inData) = 0;
+	// Surface 도메인: 메시의 서브메시를 순회해 각 머터리얼로 그린다. SetRenderTarget에 깊이 텍스처가 있으면 깊이 테스트한다.
 	virtual void Draw(const HDrawArguments& inArgs) = 0;
+	// Scene 도메인: 풀스크린 삼각형 2개.
 	virtual void Draw(const HSceneDrawArguments& inArgs) = 0;
+
 	// Util
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture) const = 0;
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture, const HLinearColor& InClearColor) const = 0;
+	// 깊이 텍스처(Allow_DepthStencil)를 HTextureInfo의 ClearDepth/ClearStencil 또는 지정한 값으로 지운다.
+	virtual void ClearDepthTexture(PSharedPtr<IRawTexture> InTexture) const = 0;
+	virtual void ClearDepthTexture(PSharedPtr<IRawTexture> InTexture, float32 InClearDepth, uint8 InClearStencil) const = 0;
 
 	// Bind
-	// 
 	virtual void BindTextures(uint32 rootParam, HList<PSharedPtr<IRawTexture>> inTextures) = 0;
 	virtual void BindConstantBuffer(uint32 rootParam, PSharedPtr<IConstantBuffer> inConstantBuffer) = 0;
 	virtual void BindStructuredBuffer(uint32 rootParam, PSharedPtr<IStructuredBuffer> inStructuredBuffer) = 0;
 	virtual void BindVertexBuffer(PSharedPtr<IVertexBuffer> inVertexBuffer) = 0;
 	virtual void BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffer) = 0;
 	virtual void BindShader(PSharedPtr<IRawGraphicsShader> inGraphicsShader) = 0;
-
-	// Bind Data
-protected:
-
-
-	//
-
-//void BindConstantBuffer(uint32 rootParam, PUploadAllocator::HAllocation alloc);
-//void BindConstantBuffer(uint32 rootParam, const void* data, uint64 dataSize);
-//void BindConstantBuffer(uint32 rootParam, D3D12_GPU_VIRTUAL_ADDRESS gpu, ID3D12Resource* backUpResource = nullptr);
-//void BindStructuredBuffer(uint32 rootParam, PUploadAllocator::HAllocation alloc);
-//void BindStructuredBuffer(uint32 rootParam, const void* data, uint64 elementCount, uint64 elementSize);
-//void BindStructuredBuffer(uint32 rootParam, D3D12_GPU_VIRTUAL_ADDRESS gpu, ID3D12Resource* backUpResource = nullptr);
-//void BindConstants(uint32 rootparam, uint32 btSize, const void* data, uint32 offset = 0);
-//void BindVertexBuffer(const D3D12_VERTEX_BUFFER_VIEW& view, bool bFlush = true);
-
-
-	//void ClearRenderTargetTexture(HDX12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle, const HColor& clearColor);
-	//void ClearDepthTexture(HDX12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle,
-	//	float32 clearDepth = 1.0f, uint8 clearStencil = 0, D3D12_CLEAR_FLAGS clearFlags = D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL);
-	//void ClearUAVUint(D3D12_CPU_DESCRIPTOR_HANDLE handle, HDX12Resource* resource);
-	//void ClearUAVFloat(D3D12_CPU_DESCRIPTOR_HANDLE handle, HDX12Resource* resource);
-	//void SetRenderTarget(
-	//	HDX12Resource** rtTextures, D3D12_CPU_DESCRIPTOR_HANDLE* rtvHandles, uint64 rtTextureCount,
-	//	HDX12Resource* depthTexture, D3D12_CPU_DESCRIPTOR_HANDLE* dsvHandle);
-
-	//void BindRootSignature(PSharedPtr<PRootSignature> rootSig);
-	//void BindPipelineState(PSharedPtr<PGraphicsPipelineState> pso);
-
-	//void BindTextures(uint32 rootParam, HList<D3D12_CPU_DESCRIPTOR_HANDLE> handles);
-	//void BindConstantBuffer(uint32 rootParam, PUploadAllocator::HAllocation alloc);
-	//void BindConstantBuffer(uint32 rootParam, const void* data, uint64 dataSize);
-	//void BindConstantBuffer(uint32 rootParam, D3D12_GPU_VIRTUAL_ADDRESS gpu, ID3D12Resource* backUpResource = nullptr);
-	//void BindStructuredBuffer(uint32 rootParam, PUploadAllocator::HAllocation alloc);
-	//void BindStructuredBuffer(uint32 rootParam, const void* data, uint64 elementCount, uint64 elementSize);
-	//void BindStructuredBuffer(uint32 rootParam, D3D12_GPU_VIRTUAL_ADDRESS gpu, ID3D12Resource* backUpResource = nullptr);
-	//void BindConstants(uint32 rootparam, uint32 btSize, const void* data, uint32 offset = 0);
-	//void BindVertexBuffer(const D3D12_VERTEX_BUFFER_VIEW& view, bool bFlush = true);
-
-	// Bind
 };

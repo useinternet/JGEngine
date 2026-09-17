@@ -7,20 +7,23 @@ class PDX12ConstantBuffer;
 class PGraphicsPipelineState;
 class PDX12GraphicsShader;
 
+// 머터리얼 = 프로퍼티 정의(상수 버퍼 레이아웃 + 텍스처 슬롯) + 머터리얼 코드가 삽입된 템플릿 셰이더.
+//
+// 수명
+//  Initialize : 프로퍼티 레이아웃을 한 번 만든다. (상수 버퍼 오프셋, 텍스처 슬롯, 슬롯 인덱스를 CB에 기록)
+//               이 뒤로 Set*/SetTexture는 컴파일 전에도 동작한다.
+//  Compile    : 템플릿에 상수 버퍼 선언과 머터리얼 코드를 삽입해 VS/PS를 컴파일한다.
+//               텍스처 프로퍼티 토큰은 _globalTexture[슬롯].Sample(샘플러, uv)로 치환되는데 샘플러 이름이
+//               텍스처의 필터/랩 모드에서 정해지므로, 컴파일 뒤 다른 샘플러 상태의 텍스처를 넣으면 재컴파일(_bNeedCompile)이 필요하다.
+//
+// 렌더링 단계(PDX12GraphicsCommand::bindMaterial)
+//  GetTextures()/GetTextureCubes() -> 디스크립터 테이블, GetConstantBuffer() -> 루트 CBV, GetShader() -> PSO
 class PDX12Material
 	: public IRawMaterial
 {
-	// 구현 할거
-	// 데이터 셋팅
-	// PSO 에 Shader 바인딩
-	// 하고 임포트할수있는 간단한 거 준비해서 렌더링해보기
-
-	// 미리 Shader 컴파일
-
 	PName _name;
 	mutable bool _bNeedCompile;
 	EMaterialDomain _domain = EMaterialDomain::Surface;
-
 
 	// 컴파일된 셰이더. 바이트코드는 이 객체가 소유하고 머터리얼은 참조만 한다.
 	PSharedPtr<PDX12GraphicsShader> _graphicsShader;
@@ -28,43 +31,25 @@ class PDX12Material
 	PString _shaderCode;
 	PString _fullShaderCode;
 
-
-	// 아래 데이터만 있으면 동작하도록 구성
 	HMaterialPropertyDefinitionist        _propertyDefinitionist;
 	PSharedPtr<PGraphicsPipelineState>    _graphicsPSO;
 	PSharedPtr<PDX12ConstantBuffer>       _materialConstantBuffer;
 	HHashMap<PName, uint64>               _materialConstantDataOffsetMap;
-	HList<PSharedPtr<IRawTexture>>        _materialTextures;
-	HList<PSharedPtr<IRawTexture>>        _materialTextureCubes;
-	HHashMap<PName, uint64> _materialTextureNameMap;
-	HHashMap<PName, uint64> _materialTextureCubeNameMap;
-	
-	
 	HList<PName>					      _materialConstantPropertyList;
 
-	// 머터리얼 컴파일 단계
-	// 템플릿 셰이더 코드 가져옴
-	// 소스코드 삽입
-	// 매크로 삽입
-	// 셰이더 컴파일
-
-
-	// 렌더링 단계
-	// Scene에서 통합 렌더링 전용 RootSignature 바인드
-	// Scene에서 텍스쳐 인덱스 할당
-	// 리소스 및 공용 버퍼 바인드
-	// --------------------------- 반복
-	// 파이프라인 바인드
-	// 머터리얼 상수버퍼 바인드
-	// Mesh 바인드
-	// 렌더링
-	//---------------------------
+	// 텍스처 슬롯. 인덱스 = 셰이더 _globalTexture[] / _globalTextureCube[] 의 인덱스 = CB에 기록된 int 값.
+	PSharedPtr<IRawTexture>               _defaultTexture;
+	HList<PSharedPtr<IRawTexture>>        _materialTextures;
+	HList<PSharedPtr<IRawTexture>>        _materialTextureCubes;
+	HHashMap<PName, uint64>               _materialTextureNameMap;
+	HHashMap<PName, uint64>               _materialTextureCubeNameMap;
 
 public:
 	PDX12Material();
 	virtual ~PDX12Material() = default;
 public:
-	void Initialize(const HRawMaterialConstructArguments& inArgs);
+	// inDefaultTexture: 비어 있는 Texture 슬롯을 채우는 대체 텍스처 (PJGGraphicsAPI::GetDefaultTexture)
+	void Initialize(const HRawMaterialConstructArguments& inArgs, PSharedPtr<IRawTexture> inDefaultTexture);
 
 	virtual const PName& GetName() const override;
 	virtual void SetName(const PName& inName) override;
@@ -72,7 +57,6 @@ public:
 	virtual const PString& GetShaderCode() const override;
 	virtual const PString& GetFullShaderCode() const override;
 	virtual EMaterialDomain GetDomain() const override;
-
 
 	virtual const HMaterialPropertyDefinitionist& GetPropertyDefinitionist() const override;
 
@@ -97,16 +81,21 @@ public:
 	virtual bool Compile(const HMaterialCompileArguments& inArgs) override;
 
 	virtual HList<PSharedPtr<IRawTexture>> GetTextures() const override;
-	
+	virtual HList<PSharedPtr<IRawTexture>> GetTextureCubes() const override;
+
 	virtual bool IsValid() const override;
 	virtual PWeakPtr<IConstantBuffer> GetConstantBuffer() const override;
 	virtual PWeakPtr<IRawGraphicsShader> GetShader() const override;
 private:
-	bool updateMaterialConstantData();
+	// 프로퍼티 정의 -> 상수 버퍼 오프셋 맵 + 텍스처 슬롯. Initialize에서 한 번.
+	bool buildPropertyLayout();
 	bool generateShaderCode();
 	bool compileShader(const HMaterialCompileArguments& inArgs);
 	// 프로퍼티 총 크기를 256바이트 단위로 올린 상수 버퍼 크기 (최소 256). 루트 CBV와 디스크립터 CBV 모두 만족.
 	uint64 getConstantBufferSize() const;
+
+	// 머터리얼 코드에서 식별자 토큰(앞뒤가 식별자 문자가 아닌 경우)만 치환한다. 부분 일치("Albedo" in "AlbedoTex")는 건드리지 않는다.
+	static PString replaceIdentifier(const PString& inSource, const PString& inIdentifier, const PString& inReplacement);
 
 	template<class T>
 	bool setData(const PName& inName, const T& inData)

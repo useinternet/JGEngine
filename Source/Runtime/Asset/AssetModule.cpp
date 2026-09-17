@@ -18,5 +18,8 @@ void HAssetModule::StartupModule()
 
 void HAssetModule::ShutdownModule()
 {
+	// StartupModule에서 등록한 짝. 여기서 내려야 보유 에셋(메시/텍스처)이 Graphics 모듈보다 먼저 해제된다.
+	GCoreSystem::UnRegisterSystemInstance<GAssetDatabase>();
+
 	JG_LOG(Asset, ELogLevel::Trace, "Shutdown Asset Module...");
 }

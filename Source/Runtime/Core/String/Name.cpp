@@ -124,6 +124,12 @@ void PName::set(const PString& str)
 
 void PName::copy(const PName& name)
 {
+	// 자기 대입 보호. reset()이 먼저 _id를 지우므로 guard가 없으면 자기 자신을 대입할 때 NAME_NONE이 된다.
+	if (this == &name)
+	{
+		return;
+	}
+
 	reset();
 
 	_id = name._id;
@@ -136,6 +142,11 @@ void PName::copy(const PName& name)
 
 void PName::move(PName&& name)
 {
+	if (this == &name)
+	{
+		return;
+	}
+
 	reset();
 
 	_id        = name._id;

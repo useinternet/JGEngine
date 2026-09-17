@@ -11,6 +11,7 @@
 #include "Classes/StructuredBuffer.h"
 #include "Classes/VertexBuffer.h"
 #include "Classes/IndexBuffer.h"
+#include "Classes/Mesh.h"
 #include "Classes/RootSignature.h"
 #include "Classes/PipelineState.h"
 
@@ -23,7 +24,7 @@ void PDX12GraphicsCommand::BeginDraw()
 	{
 		_graphicsPSO = Allocate<PGraphicsPipelineState>();
 	}
-	
+
 
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
 	JG_CHECK(cmdList != nullptr);
@@ -137,11 +138,63 @@ void PDX12GraphicsCommand::SetRenderPassData(const HRenderPassCBData& inData)
 
 void PDX12GraphicsCommand::Draw(const HDrawArguments& inArgs)
 {
-	// PSO 셋팅
-	// 리소스 바인딩
+	JG_CHECK(_graphicsPSO != nullptr);
+
+	if (inArgs.Mesh.IsValid() == false || inArgs.Mesh->IsValid() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "Draw(HDrawArguments) : Mesh is invalid");
+		return;
+	}
 
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
+	JG_CHECK(cmdList != nullptr);
+
+	// 오브젝트 상수(월드 행렬)는 모든 서브메시가 공유한다.
 	cmdList->BindConstantBuffer(RootParam_ObjectCB, &inArgs.ObjectCBData, sizeof(HObjectCBData));
+
+	const PString meshName = inArgs.Mesh->GetName().ToString();
+	const uint32 subMeshCount = inArgs.Mesh->GetSubMeshCount();
+	for (uint32 i = 0; i < subMeshCount; ++i)
+	{
+		PSharedPtr<IVertexBuffer> vertexBuffer = inArgs.Mesh->GetVertexBuffer(i);
+		PSharedPtr<IIndexBuffer>  indexBuffer  = inArgs.Mesh->GetIndexBuffer(i);
+		if (vertexBuffer.IsValid() == false || vertexBuffer->IsValid() == false ||
+			indexBuffer.IsValid()  == false || indexBuffer->IsValid()  == false || indexBuffer->GetIndexCount() == 0)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : SubMesh(%d) has no vertex/index buffer", meshName, (int32)i);
+			continue;
+		}
+
+		// 서브메시 머터리얼. IMesh::GetMaterial이 없으면 기본 머터리얼을 돌려주므로 null은 오지 않는다.
+		PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(inArgs.Mesh->GetMaterial(i));
+		if (dx12Material == nullptr || dx12Material->GetDomain() != EMaterialDomain::Surface)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : SubMesh(%d) requires a Surface domain material", meshName, (int32)i);
+			continue;
+		}
+
+		if (bindMaterial(dx12Material) == false)
+		{
+			continue;
+		}
+
+		// Surface 도메인: 메시의 정점 입력 레이아웃 + 삼각형 리스트
+		_graphicsPSO->BindInputLayout(inArgs.Mesh->GetInputLayout());
+		_graphicsPSO->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+		if (_graphicsPSO->Finalize() == false)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Finalize PSO for SubMesh(%d), Material(%s)", meshName, (int32)i, dx12Material->GetName().ToString());
+			continue;
+		}
+
+		cmdList->BindPipelineState(_graphicsPSO);
+		cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		BindVertexBuffer(vertexBuffer);
+		BindIndexBuffer(indexBuffer);
+
+		cmdList->DrawIndexed((uint32)indexBuffer->GetIndexCount());
+	}
 }
 
 void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
@@ -154,29 +207,29 @@ void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 	JG_CHECK(dx12Material != nullptr);
 	if (dx12Material->GetDomain() != EMaterialDomain::Scene)
 	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : Draw(HSceneDrawArguments) requires a Scene domain material", dx12Material->GetName());
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Draw(HSceneDrawArguments) requires a Scene domain material", dx12Material->GetName().ToString());
 		return;
 	}
 
-	HList<PSharedPtr<IRawTexture>> materialTextures = dx12Material->GetTextures();
-	BindTextures(RootParam_Texture, materialTextures);
-	
-	PSharedPtr<IConstantBuffer> materialCB = dx12Material->GetConstantBuffer().Pin();
-	JG_CHECK(materialCB.IsValid());
-	BindConstantBuffer(RootParam_MaterialCB, materialCB);
-	
-	PSharedPtr<IRawGraphicsShader> graphicsShader = dx12Material->GetShader().Pin();
-	BindShader(graphicsShader);
-	
+	if (bindMaterial(dx12Material) == false)
+	{
+		return;
+	}
+
+	// Scene 도메인은 SV_VertexID로 풀스크린을 그리므로 입력 레이아웃이 없다.
 	_graphicsPSO->BindInputLayout(HInputLayout());
 	_graphicsPSO->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
-	
-	const bool bFinalized = _graphicsPSO->Finalize();
-	JG_CHECK(bFinalized);
+
+	if (_graphicsPSO->Finalize() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Finalize PSO", dx12Material->GetName().ToString());
+		return;
+	}
 
 	cmdList->BindPipelineState(_graphicsPSO);
 	cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	
+
+	// 템플릿 gTexCoords 6개 = 삼각형 2개
 	cmdList->Draw(6);
 }
 
@@ -201,6 +254,40 @@ void PDX12GraphicsCommand::ClearTexture(PSharedPtr<IRawTexture> inTexture, const
 	cmdList->ClearRenderTargetTexture(dx12Texture->Get(), dx12Texture->GetRTV(), inClearColor);
 }
 
+void PDX12GraphicsCommand::ClearDepthTexture(PSharedPtr<IRawTexture> inTexture) const
+{
+	JG_CHECK(inTexture.IsValid() && inTexture->IsValid());
+
+	const HTextureInfo& texInfo = inTexture->GetTextureInfo();
+	ClearDepthTexture(inTexture, texInfo.ClearDepth, texInfo.ClearStencil);
+}
+
+void PDX12GraphicsCommand::ClearDepthTexture(PSharedPtr<IRawTexture> inTexture, float32 inClearDepth, uint8 inClearStencil) const
+{
+	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
+	JG_CHECK(cmdList != nullptr);
+	JG_CHECK(inTexture.IsValid() && inTexture->IsValid());
+
+	PSharedPtr<PDX12Texture> dx12Texture = Cast<PDX12Texture>(inTexture);
+	JG_CHECK(dx12Texture != nullptr);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dx12Texture->GetDSV();
+	if (dsvHandle.ptr == 0)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : ClearDepthTexture requires ETextureFlags::Allow_DepthStencil", inTexture->GetName().ToString());
+		return;
+	}
+
+	// 스텐실이 없는 깊이 포맷에 STENCIL 플래그를 주면 디버그 레이어 오류다. 지원 포맷 중 스텐실이 있는 것은 D24S8 하나.
+	D3D12_CLEAR_FLAGS clearFlags = D3D12_CLEAR_FLAG_DEPTH;
+	if (inTexture->GetTextureInfo().Format == ETextureFormat::D24_Unorm_S8_Uint)
+	{
+		clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+	}
+
+	cmdList->ClearDepthTexture(dx12Texture->Get(), dsvHandle, inClearDepth, inClearStencil, clearFlags);
+}
+
 void PDX12GraphicsCommand::BindTextures(uint32 rootParam, HList<PSharedPtr<IRawTexture>> inTextures)
 {
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
@@ -222,7 +309,7 @@ void PDX12GraphicsCommand::BindConstantBuffer(uint32 rootParam, PSharedPtr<ICons
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
 	JG_CHECK(cmdList != nullptr);
 	JG_CHECK(inConstantBuffer.IsValid() && inConstantBuffer->IsValid());
-	
+
 	cmdList->BindConstantBuffer(rootParam, inConstantBuffer->GetData(), inConstantBuffer->GetDataSize());
 }
 
@@ -247,13 +334,14 @@ void PDX12GraphicsCommand::BindVertexBuffer(PSharedPtr<IVertexBuffer> inVertexBu
 
 	PSharedPtr<PDX12VertexBuffer> dxVertexBuffer = Cast<PDX12VertexBuffer>(inVertexBuffer);
 
-	uint64 vertexCount = inVertexBuffer->GetVertexCount();
-	uint64 vertexSize  = inVertexBuffer->GetVertexSize();
+	const uint64 vertexCount = inVertexBuffer->GetVertexCount();
+	const uint64 vertexSize  = inVertexBuffer->GetVertexSize();
 
+	// 스트라이드는 정점 하나의 크기. (이전 코드는 0이라 모든 정점이 첫 정점을 읽었다)
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
 	vertexBufferView.BufferLocation = dxVertexBuffer->Get()->GetGPUVirtualAddress();
-	vertexBufferView.SizeInBytes = vertexCount * vertexSize;
-	vertexBufferView.StrideInBytes = 0;
+	vertexBufferView.SizeInBytes    = (UINT)(vertexCount * vertexSize);
+	vertexBufferView.StrideInBytes  = (UINT)vertexSize;
 
 	cmdList->BindVertexBuffer(vertexBufferView);
 }
@@ -266,12 +354,12 @@ void PDX12GraphicsCommand::BindIndexBuffer(PSharedPtr<IIndexBuffer> inIndexBuffe
 
 	PSharedPtr<PDX12IndexBuffer> dx12IndexBuffer = Cast<PDX12IndexBuffer>(inIndexBuffer);
 
-	uint64 indexCount = inIndexBuffer->GetIndexCount();
+	const uint64 indexCount = inIndexBuffer->GetIndexCount();
 
 	D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
 	indexBufferView.BufferLocation = dx12IndexBuffer->Get()->GetGPUVirtualAddress();
-	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	indexBufferView.SizeInBytes = indexCount * sizeof(uint32);
+	indexBufferView.Format         = DXGI_FORMAT_R32_UINT;
+	indexBufferView.SizeInBytes    = (UINT)(indexCount * sizeof(uint32));
 
 	cmdList->BindIndexBuffer(indexBufferView);
 }
@@ -285,8 +373,59 @@ void PDX12GraphicsCommand::BindShader(PSharedPtr<IRawGraphicsShader> inGraphicsS
 	JG_CHECK(dx12Shader != nullptr);
 
 	// 셰이더 객체가 소유한 도메인별 바이트코드를 PSO 설명에 연결한다.
-	// 입력 레이아웃과 토폴로지는 도메인(Scene/Surface)에 따라 다르므로 Draw 쪽에서 설정한다(Phase 2-7, 4-2).
+	// 입력 레이아웃과 토폴로지는 도메인(Scene/Surface)에 따라 다르므로 Draw 쪽에서 설정한다.
 	_graphicsPSO->BindShader(dx12Shader->GetByteCodes());
+}
+
+bool PDX12GraphicsCommand::bindMaterial(PSharedPtr<PDX12Material> inMaterial)
+{
+	JG_CHECK(inMaterial != nullptr);
+
+	PSharedPtr<IRawGraphicsShader> graphicsShader = inMaterial->GetShader().Pin();
+	if (graphicsShader.IsValid() == false || graphicsShader->IsValid() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Material shader is not compiled", inMaterial->GetName().ToString());
+		return false;
+	}
+
+	PSharedPtr<IConstantBuffer> materialCB = inMaterial->GetConstantBuffer().Pin();
+	if (materialCB.IsValid() == false || materialCB->IsValid() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Material constant buffer is invalid", inMaterial->GetName().ToString());
+		return false;
+	}
+
+	// 텍스처 슬롯 -> 디스크립터 테이블. 셰이더의 _globalTexture[슬롯]은 이 테이블을 가리킨다.
+	BindTextures(RootParam_Texture, inMaterial->GetTextures());
+
+	// 큐브 텍스처는 기본값이 없어 빈 슬롯(null)이 있을 수 있다. 하나라도 비어 있으면 테이블을 올리지 않는다.
+	HList<PSharedPtr<IRawTexture>> textureCubes = inMaterial->GetTextureCubes();
+	if (textureCubes.empty() == false)
+	{
+		bool bAllValid = true;
+		for (const PSharedPtr<IRawTexture>& textureCube : textureCubes)
+		{
+			if (textureCube.IsValid() == false || textureCube->IsValid() == false)
+			{
+				bAllValid = false;
+				break;
+			}
+		}
+
+		if (bAllValid)
+		{
+			BindTextures(RootParam_TextureCube, textureCubes);
+		}
+		else
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : TextureCube slot is empty. Skip binding cube textures", inMaterial->GetName().ToString());
+		}
+	}
+
+	BindConstantBuffer(RootParam_MaterialCB, materialCB);
+	BindShader(graphicsShader);
+
+	return true;
 }
 
 void PDX12GraphicsCommand::createRootSignature()

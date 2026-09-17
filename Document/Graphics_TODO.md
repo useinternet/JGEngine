@@ -117,29 +117,29 @@
 
 ## Phase 4. Surface 도메인 메시 드로우
 
-- [ ] **4-1. `IMesh` 인터페이스 확정** — `Classes/Mesh.h`, `Classes/StaticMesh.h`
+- [x] **4-1. `IMesh` 인터페이스 확정** — `Classes/Mesh.h`, `Classes/StaticMesh.h` — 완료 2026-09-17. 설계 변경: `JGStaticMesh`(JGObject 뿌리)가 `IMesh`(IMemoryObject 뿌리)를 직접 상속하면 메모리 규칙(뿌리 하나·오프셋 0) 위반이라, 에셋과 렌더 메시를 분리했다. `IMesh : IJGGraphicsObject`에 서브메시 수/VB/IB/머터리얼/입력 레이아웃 접근 API 정의, 구현체 `PStaticMesh : IMesh`(서브메시 버퍼를 에셋과 공유), `JGStaticMesh::GetMesh()`가 지연 생성해 돌려준다. 정점은 POD `HVertexData`(56바이트)만 GPU에 올리고 `HVertex : HVertexData, IJsonable`은 직렬화용으로 남김(이전에는 vptr 8바이트가 정점 버퍼 앞에 섞여 있었다). `GetInputLayout()`의 static 누적 버그도 수정.
   `JGStaticMesh`가 `IMesh`를 구현하도록 하고(현재 미구현이라 `HDrawArguments::Mesh`에 담을 수 없음) 서브메시 수, 서브메시별 VB/IB/머터리얼 접근 API를 `IMesh`에 정의.
 
-- [ ] **4-2. `Draw(HDrawArguments)` 구현** — `DX12GraphicsCommand.cpp:110-117`, `:208-225`
+- [x] **4-2. `Draw(HDrawArguments)` 구현** — `DX12GraphicsCommand.cpp` — 완료 2026-09-17. 서브메시 순회 → Surface 도메인 머터리얼 검사 → `bindMaterial`(텍스처/큐브 테이블, CB, 셰이더) → 입력 레이아웃·토폴로지 → PSO Finalize → VB/IB 바인드 → `DrawIndexed`. `BindVertexBuffer` 스트라이드 0 → `GetVertexSize()`. 행렬 규약: `D3DCOMPILE_PACK_MATRIX_ROW_MAJOR`로 컴파일해 HMatrix(행 우선)를 전치 없이 올린다(`DX12Shader.cpp`).
   서브메시 순회: `BindVertexBuffer`(스트라이드 0 → `vertexSize`, 222행), `BindIndexBuffer`, 머터리얼 텍스처/CB 바인드, `BindShader`, `_graphicsPSO->BindInputLayout(HVertex::GetInputLayout())`, `SetPrimitiveTopology`, `cmdList->DrawIndexed(indexCount)`.
 
-- [ ] **4-3. 깊이 텍스처와 클리어 API** — `DevScene.cpp`, `JGGraphicsCommand.h`
+- [x] **4-3. 깊이 텍스처와 클리어 API** — `DevScene.cpp`, `JGGraphicsCommand.h` — 완료 2026-09-17. `IJGGraphicsCommand::ClearDepthTexture` 2종 추가(D24S8이 아니면 STENCIL 플래그 제외). DevScene이 `D24_Unorm_S8_Uint` + `Allow_DepthStencil` 텍스처를 만들어 지오메트리 패스에 바인드.
   `D24_Unorm_S8_Uint` + `Allow_DepthStencil` 텍스처를 만들어 `HRenderTarget.DepthTexture`에 설정. `IJGGraphicsCommand`에 깊이 클리어 API가 없으므로 `ClearDepthTexture` 추가(`PGraphicsCommandList::ClearDepthTexture`는 이미 있음).
 
-- [ ] **4-4. 임시 카메라** — `DevScene.cpp`
+- [x] **4-4. 임시 카메라** — `DevScene.cpp` — 완료 2026-09-17. `LookAtLH`/`PerspectiveFovLH`(45°)로 `HRenderPassCBData` 전체를 채우고, 메시 로드 시 `JGStaticMesh::CalculateBounds()`로 경계 구에 맞춰 -Z에서 프레이밍(`FitCameraToMesh`).
   `PCamera`가 빈 클래스라 DevScene에서 LookAt/Perspective로 View/Proj를 계산해 `HRenderPassCBData` 전체(역행렬, 해상도, Near/Far, EyePosition)를 채운다.
 
-- [ ] **4-5. Surface 출력 대상 결정**
+- [x] **4-5. Surface 출력 대상 결정** — 완료 2026-09-17. (a) 채택: G버퍼 4장(Albedo R8G8B8A8, Normal_Metallic R16G16B16A16F, Specular_Roughness R8G8B8A8, Depth R32F, 배경 깊이 1.0) + 깊이 텍스처에 지오메트리 패스, Scene 도메인 합성 머터리얼(텍스처 프로퍼티 GAlbedo/GNormal/GDepth)이 SceneTexture에 풀스크린 합성(배경 단색, 메시는 알베도×램버트).
   템플릿 Surface 경로는 MRT 4장(Albedo, Normal_Metallic, Specular_Roughness, Depth)을 출력한다. 선택지: (a) G버퍼 4장을 만들고 Scene 도메인 머터리얼로 Albedo를 SceneTexture에 합성(디퍼드 초석), (b) 테스트용 매크로로 SV_TARGET0만 출력. (a)를 권장하되 첫 확인은 (b)로 빨리 가도 된다.
 
-- [ ] **4-6. 메시 에셋 로드**
+- [x] **4-6. 메시 에셋 로드** — 완료 2026-09-17. `GAssetDatabase::LoadAssetAsync("/JGEngine/TempAsset/Sample.jgasset", 콜백)`으로 로드(2 서브메시, 정점 28,464, 인덱스 147,336). Asset 모듈에서 고친 것: 로드 스레드가 결과를 버리던 버그(항상 "Loaded Asset is nullptr"), `HTaskHandle::IsCompelete()` 의존 제거(작업 객체 파괴 후 영구 false → 완료 플래그 `bCompleted`로 교체), `_loadingAssets` 뮤텍스, 엔트리 등록 후 작업 예약 순서, 실패 시에도 콜백 호출, `HAssetPath` 정규화(`/JGEngine//A//B`·확장자 유무를 같은 키로), `HAssetModule::ShutdownModule`에서 `GAssetDatabase` 해제(안 하면 종료 크래시, 아래 Memory 기록 참고).
   `Content/TempAsset/Sample.jgasset`(X Bot, 36MB JSON)을 AssetDatabase로 로드하거나 `Content/RawResources/X Bot.fbx`를 `JGFBXAssetImporter`로 재임포트. 로드 API 확인 필요.
 
-- [ ] **4-7. 텍스처 프로퍼티 슬롯 할당** — `DX12Material.cpp:383-404`, `:141-153`, `:232-242`
+- [x] **4-7. 텍스처 프로퍼티 슬롯 할당** — `DX12Material.cpp` — 완료 2026-09-17. `Initialize`에서 `buildPropertyLayout()`이 CB 오프셋·텍스처 슬롯(기본 텍스처 채움)·슬롯 인덱스 CB 기록을 한 번에 만들어 컴파일 전에도 `Set*`/`SetTexture`가 동작. `SetTexture`/`GetTexture`/`GetTextureCubes` 구현, 머터리얼 코드의 텍스처 토큰 치환을 식별자 경계 기반(`replaceIdentifier`)으로 교체(이전 "이름+공백" 방식). 샘플러 이름은 컴파일 시 박히므로 컴파일 뒤 다른 필터/랩 모드 텍스처를 넣으면 `_bNeedCompile`만 켜진다(재컴파일 API는 5-21). 디스크립터 힙 1024 vs 범위 10240 불일치는 그대로(실사용 텍스처 수가 적어 문제 없음, 5-17 메모).
   `@TODO` 구현: Texture/TextureCube 프로퍼티마다 `_materialTextures`에 기본 텍스처를 넣고 NameMap 등록, CB의 `int` 필드에 인덱스 기록. `SetTexture`/`GetTexture` 구현.
   동적 디스크립터 힙 크기(`PDynamicDescriptionAllocator` 기본 1024)가 루트 시그니처 테이블 범위(10240)보다 작다. 텍스처를 실제로 쓰기 시작하면 힙 크기를 맞춘다.
 
-- [ ] **4-8. 결과 확인 · 커밋**
+- [x] **4-8. 결과 확인 · 커밋** — 결과 확인 완료 2026-09-17 (커밋은 사용자가 직접). 전체 빌드 16/16 오류 0, 런처 실행 후 WM_CLOSE 종료 코드 0, 로그 error/critical 0, D3D12 디버그 레이어 메시지 0. 증거: `Document/Memory/2026-09-17_phase4_capture.png`(X Bot이 배경 위에 램버트 음영으로, 팔·다리 겹침이 깊이 순서대로 보임). 상세 기록: `Document/Memory/2026-09-17_Phase4_Surface메시드로우.md`.
   완료 조건: X Bot 메시가 DevScene에 깊이 테스트된 상태로 보임.
 
 ---
@@ -157,9 +157,16 @@
 - [ ] **5-9.** 커밋 정리: WIP 커밋을 의미 단위로 나눌지 결정.
 - [ ] **5-10.** PSO 캐시 해시 개선 — `DirectX12/Classes/PipelineState.cpp:154`. `HHash::HashState(&_desc)`가 `VS/PS.pShaderBytecode` 포인터 값을 그대로 해시에 넣는다. 같은 바이트코드라도 주소가 다르면 캐시 미스, 해제 후 같은 주소에 다른 셰이더가 오면 잘못된 PSO 재사용 가능. 바이트코드 내용(또는 셰이더 객체의 콘텐츠 해시)으로 키를 만들 것. 루트 시그니처 포인터도 같은 성격.
 - [ ] **5-12.** 버퍼 재설정 버그 — `DX12VertexBuffer.cpp`, `DX12IndexBuffer.cpp`, `DX12StructuredBuffer.cpp`. 크기가 바뀌면 `Reset()`이 `_elementCount/_elementSize/_indexCount`를 0으로 지운 뒤 재생성하므로 `GetVertexCount()` 등이 0을 반환. `DX12StructuredBuffer::SetDatas`는 `_elementSize`를 아예 저장하지 않아 항상 0바이트 버퍼. (`DX12ConstantBuffer`는 2-5에서 수정)
-- [ ] **5-13.** `JG_LOG`의 `%s`에 `PName`을 넘기면 빈 문자열로 찍힘(런타임 로그의 ' : Fail Compile' 등). 포맷터에 PName 지원 추가 또는 호출부에서 `.ToString()`.
+- [x] **5-13.** `JG_LOG`의 `%s`에 `PName`을 넘기면 빈 문자열로 찍힘 — 완료 2026-09-17. 원인은 `PString::Format`의 `convert(PName)`이 함수 안 임시 PString의 c-string 포인터를 반환해 댕글링. `convert`가 PString을 값으로 돌려주고 `toCArg`가 c-string을 꺼내는 2단계로 바꿔 임시 객체가 snprintf 전체 식까지 살도록 함(`Core/String/String.h`). 함께 고친 것: `PName::copy/move` 자기 대입 보호(`Name.cpp`, 없으면 `a = a`가 NAME_NONE이 됨).
 - [ ] **5-14.** 스왑체인 색 공간 결정 — `DirectX12API.cpp`의 스왑체인 포맷이 `R16G16B16A16_Float`라 DWM이 scRGB 선형으로 해석해 0.5가 밝게(감마 보정된 것처럼) 보인다. 최종 출력은 8비트 sRGB 스왑체인으로 바꾸거나, 톤매핑/감마 패스를 두고 FP16을 유지할지 결정.
-- [ ] **5-15.** 간헐적 에셋 로드 실패 — 런처 실행 시 `[Asset] /JGEngine//TempAsset/Sample.jgasset : Failed Load Asset, Loaded Asset is nullptr`이 실행에 따라 나타났다 사라짐(워커 스레드 로드, 3회 중 1~2회). 경로 문자열의 `//`와 스레드 타이밍 의심. Asset 모듈 범위.
+- [x] **5-15.** 간헐적 에셋 로드 실패 — 완료 2026-09-17 (4-6에서 처리). 실제 원인 둘: `loadAsset_Thread`가 로드 결과를 `LoadedAsset`에 넣지 않았고(그래서 완료가 감지되면 항상 nullptr), 완료 감지가 `HTaskHandle::IsCompelete()`에 의존해 작업 객체가 GC되면 영구 false(감지 자체가 안 되는 쪽이 "사라짐"). 경로의 `//`는 별건으로 `HAssetPath` 정규화로 해결.
 - [x] **설계 규칙 (2026-09-16 결정).** 스마트 포인터(`PSharedPtr`/`PWeakPtr`)로 다루는 클래스와 인터페이스는 `IMemoryObject`를 뿌리로 정확히 하나(오프셋 0) 가져야 한다. `Wrap<T>`/`Pin()`은 의도적으로 `IMemoryObject` 파생만 받으며(`static_assert`로 컴파일 시점 검사), 그래픽 인터페이스는 `IJGGraphicsObject`·`IRawShader`·`IMesh`가 `IMemoryObject`를 상속하고 구현 클래스(PDX12*)는 그 사슬만 탄다. 새 인터페이스/구현 클래스를 만들 때 이 규칙을 지킬 것.
 - [ ] **5-16.** 디버그 레이어 로그 드레인 동작 검증 — `PDirectX12API::flushDebugLayerMessages()`가 메시지를 0건 보고했다. 실제로 메시지가 없는지, 의도적으로 잘못된 호출을 넣어 로그에 찍히는지 한 번 확인.
 - [ ] **5-11.** 링크 경고 LNK4098(MSVCRT/MSVCRTD 충돌) 원인 정리 — Debug 구성에 릴리스 CRT로 빌드된 서드파티 정적 라이브러리가 섞여 있음(pragma comment(lib) 목록 확인). 서드파티 Debug 빌드 준비 또는 `/NODEFAULTLIB` 정리.
+- [x] **설계 규칙 (2026-09-17 결정).** 엔진 할당자 컨테이너(`HList`/`HHashMap`/`HMap`/`HHashSet`, 전부 `HAllocator` = 메모리 풀)는 **static 저장소에 두지 않는다**(전역·함수 지역 static·클래스 static 모두). 메모리 시스템이 내려간 뒤 DLL 언로드 시점의 atexit 소멸자가 이미 `free`된 풀 메모리(디버그 이터레이터 프록시)를 읽어 AV가 난다. 2026-09-17 종료 크래시(`HVertexData::GetInputLayout()`의 static `HInputLayout`)의 원인. 레이아웃·테이블 같은 상수 데이터는 GC 객체의 멤버로 들고 있거나 값으로 돌려준다.
+- [ ] **5-17.** 위 규칙 위반이 남은 곳: `DirectX12/DirectX12API.cpp:414-434`의 `HDirectXAPI` 폴백 함수 지역 static `HHashMap` 4개(종료 크래시 P0 수정 때 추가). 폴백 경로가 한 번이라도 실행되면(API 파괴 후 늦은 GC에서 `UnRegisterResource` 등) static이 생성되고 DLL 언로드에서 같은 방식으로 죽는다. std 컨테이너로 바꾸거나 새지 않는 힙 객체(의도적 leak)로 바꿀 것. 같은 이유로 동적 디스크립터 힙(1024) vs 루트 테이블 범위(10240) 항목은 텍스처를 많이 쓰기 시작할 때 함께 정리.
+- [ ] **5-18.** `HTaskHandle::IsCompelete()`가 작업 객체(`PTask`)가 파괴되면 영구 false — 핸들이 `PWeakPtr<PTask>` + 원자 변수 raw 포인터를 들고 있어 작업 완료 직후 GC되면 상태를 잃는다. 완료 상태를 핸들이 공유 소유(shared 카운터)하도록 바꿀 것. `GAssetDatabase`는 4-6에서 자체 플래그로 우회했다. 관련: `garbageCollectionInternal`이 WeakCount를 무시하고 블록을 erase(Memory.cpp:92) — 약참조가 남은 채 카운터가 해제되는 근본 문제.
+- [ ] **5-19.** JGHeaderTool: `JGENUMMETA()`가 없는 열거자는 이름 목록에 들어가지 않아 `GetEnumNameByValue()`가 NAME_NONE("(null)")을 돌려준다(4-7에서 `ETextureFilterMode`/`ETextureWrapMode`에 `JGENUMMETA()`를 붙여 우회, `Temp/CodeGen` 재생성 필요). 툴이 메타 없는 열거자도 이름을 내보내도록 고칠 것. 참고: JGHeaderTool·JGBuildTool 모두 산출물을 다 쓴 뒤 종료 시점에 세그폴트(exit 139)로 끝난다.
+- [ ] **5-20.** `Content/TempAsset/Sample.jgasset`의 `"AssetPath": "(null)"` — 임포트 당시 `JGAsset::AssetPath`가 비어 저장돼 로드마다 `[warning][Asset] NOT Support Asset Path`가 찍힌다. `HAssetPath::ReadJson`이 빈 값/"(null)"을 조용히 미설정으로 다루게 하고, FBX 재임포트 시 경로가 채워지는지 확인.
+- [ ] **5-21.** 머터리얼 재컴파일 API — 텍스처 프로퍼티의 샘플러 이름이 컴파일 시 코드에 박히므로 `Compile()` 뒤 `SetTexture`로 필터/랩 모드가 다른 텍스처를 넣으면 `_bNeedCompile`만 켜지고 갱신되지 않는다. 저장한 `_shaderCode`로 다시 컴파일하는 `Recompile()`(또는 샘플러 배열 동적 인덱싱)을 둘 것.
+- [ ] **5-22.** DevScene 합성 패스 정리 — 지금은 DevScene이 G버퍼/깊이/합성 머터리얼/카메라를 모두 직접 들고 있다(디퍼드 초석 검증용). `PScene`/`PCamera`(5-7) 설계 시 렌더 패스(지오메트리·합성)와 G버퍼 소유를 Graphics 쪽으로 옮길 것. 종료 크래시 조사용 미니 디버거 소스는 `Document/Memory/tools/crashwalk/` 참고.

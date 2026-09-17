@@ -25,6 +25,10 @@ bool PDX12ShaderCompiler::compile(HDX12ComPtr<HDX12Blob>& blob, const PString& s
 	}
 	d3dMacros.push_back(D3D_SHADER_MACRO{ nullptr, nullptr });
 
+	// HMatrix(DirectXMath)는 행 우선(row-major)이고 템플릿 HLSL은 mul(v, M) 행 벡터 규약을 쓴다.
+	// HLSL 기본값(열 우선 패킹)이면 CPU에서 전치해 올려야 하므로, 컴파일 단계에서 행 우선 패킹으로 통일해 memcpy 그대로 쓴다.
+	UINT compileFlags = D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
+
 	ComPtr<ID3DBlob> errorData;
 	HRESULT hr = D3DCompile2(
 		sourceCode.GetCStr(),
@@ -34,7 +38,7 @@ bool PDX12ShaderCompiler::compile(HDX12ComPtr<HDX12Blob>& blob, const PString& s
 		nullptr,
 		config.Entry.GetCStr(),
 		config.Target.GetCStr(),
-		0, 0, 0, nullptr, 0,
+		compileFlags, 0, 0, nullptr, 0,
 		blob.GetAddressOf(),
 		errorData.GetAddressOf());
 
