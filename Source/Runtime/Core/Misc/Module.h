@@ -44,6 +44,7 @@ class GModuleGlobalSystem : public GGlobalSystemInstance<GModuleGlobalSystem>
 {
 	HHashMap<PName, IModuleInterface*>  _modulesByName;
 	HHashMap<JGType, IModuleInterface*> _modulesByType;
+	HList<IModuleInterface*> _moduleOrder;
 
 	mutable HMutex _mutex;
 public:
@@ -65,4 +66,9 @@ public:
 
 protected:
 	virtual void Destroy() override;
+
+private:
+	// _modulesByType / _modulesByName / _moduleOrder 에서 모듈을 제거한다.
+	// _mutex 를 이미 잡은 상태에서 호출할 것. (자체적으로 잠그지 않는다)
+	void unregisterModule(IModuleInterface* moduleIf);
 };

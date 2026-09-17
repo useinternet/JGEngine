@@ -14,8 +14,17 @@
 #include "DirectX12/DX12IndexBuffer.h"
 #include "DirectX12/DX12Material.h"
 
+PDirectX12API::~PDirectX12API()
+{
+	// Destroy() 를 거치지 않고 파괴되는 경로가 생기더라도 캐시는 반드시 끊는다.
+	HDirectXAPI::invalidateCache(this);
+}
+
 void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 {
+	// 이전 인스턴스가 남긴 차단 상태를 푼다. (모듈 재연결 대응)
+	HDirectXAPI::resetCache();
+
 	JG_LOG(Graphics, ELogLevel::Trace, "DirectX12 Init Start");
 	_arguments   = args;
 	_dx12Factory = HDirectX12Helper::CreateDXGIFactory();
@@ -89,6 +98,10 @@ void PDirectX12API::Destroy()
 	_computePSOCache.clear();
 	_resourceRefCache.clear();
 
+	// 반드시 마지막에. 이 시점부터 HDirectXAPI 의 모든 조회가 nullptr 로 떨어져서,
+	// 뒤늦게 GC 되는 텍스처/버퍼의 소멸자가 이 객체를 건드리지 않는다.
+	// (위 정리 작업들은 아직 this 를 써야 하므로 앞에서 부르면 안 된다.)
+	HDirectXAPI::invalidateCache(this);
 }
 
 void PDirectX12API::createDefaultResources()
@@ -364,132 +377,311 @@ PSharedPtr<PDX12FrameBuffer> PDirectX12API::GetFrameBuffer() const
 	return _frameBuffer;
 }
 
-HDX12Device* HDirectXAPI::GetDevice()
+// ----------------------------------------------------------------------------
+// HDirectXAPI
+//
+// @NOTE
+// 아래 정적 래퍼들은 전부 PDirectX12API 인스턴스를 거쳐 동작한다.
+// 그런데 PDirectX12API 는 GC(GMemoryGlobalSystem) 가 관리하는 객체다.
+// 모듈 Shutdown 이 참조를 끊으면 곧바로 이어지는 GC Flush 에서 파괴되는데,
+// 텍스처/버퍼 같은 GPU 리소스도 같은 Flush 에서 파괴된다.
+// 할당 큐가 FIFO 라서 먼저 할당된 PDirectX12API 가 리소스들보다 항상 먼저 죽는다.
+// 즉 "그래픽스 API 가 이미 없는 상태에서 리소스 소멸자가 도는" 구간이 반드시 생긴다.
+//
+// 그래서 두 가지를 지킨다.
+//   1. 캐시는 PDirectX12API 가 죽기 전에 스스로 비운다. (resetCache / invalidateCache)
+//   2. 모든 래퍼는 getDX12API() 가 nullptr 을 줄 수 있다고 보고 방어한다.
+// 둘 중 하나만 해서는 안 된다. 1 만 하면 nullptr 역참조로 죽고, 2 만 하면 캐시가 썩는다.
+// ----------------------------------------------------------------------------
+
+static std::atomic<PDirectX12API*> GCachedDX12API{ nullptr };
+static HAtomicBool GIsDX12APIAvailable{ true };
+
+// 참조를 반환해야 하는 래퍼용 폴백. nullptr 을 돌려줄 수 없으니 빈 인스턴스를 내준다.
+// 조회는 전부 없음으로 떨어지고, 쓰기는 버려진다.
+//
+// 함수 지역 static 인 이유
+//  - 폴백 경로를 한 번도 타지 않으면 아예 생성되지 않는다. (정상 실행에서는 만들지 않는다)
+//  - 파일 스코프 static 컨테이너의 초기화 순서 문제를 피한다.
+// const / non-const 게터가 같은 인스턴스를 봐야 하므로 접근자로 감싼다.
+static HJGGraphicsArguments& fallbackArguments()
 {
-	return getDX12API()->GetDevice();
+	static HJGGraphicsArguments arguments;
+	return arguments;
 }
 
-HDX12Factory* HDirectXAPI::GetFactory()
+static HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& fallbackRootSignatureCache()
 {
-	return getDX12API()->GetFactory();
+	static HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>> cache;
+	return cache;
 }
 
-const HJGGraphicsArguments& HDirectXAPI::GetArguments()
+static HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& fallbackGraphicsPSOCache()
 {
-	return getDX12API()->GetArguments();
+	static HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>> cache;
+	return cache;
 }
 
-HDX12ComPtr<HDX12Resource> HDirectXAPI::CreateCommittedResource(const PString& name, const D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_HEAP_FLAGS heapFlags, const D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES initialResourceState, const D3D12_CLEAR_VALUE* pOptimizedClearValue)
+static HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& fallbackComputePSOCache()
 {
-	return getDX12API()->CreateCommittedResource(name, pHeapProperties, heapFlags, pDesc, initialResourceState, pOptimizedClearValue);
+	static HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>> cache;
+	return cache;
 }
 
-void HDirectXAPI::DestroyCommittedResource(HDX12ComPtr<HDX12Resource> resource)
+static HHashMap<HDX12Resource*, HResourceInfo>& fallbackResourceRefCache()
 {
-	return getDX12API()->DestroyCommittedResource(resource);
+	static HHashMap<HDX12Resource*, HResourceInfo> cache;
+	return cache;
 }
 
-const HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& HDirectXAPI::GetRootSignatureCache()
+// 종료 시 리소스 수천 개가 이 경로를 타므로 한 번만 남긴다.
+static void logFallbackOnce(const char* funcName)
 {
-	return getDX12API()->GetRootSignatureCache();
-}
-
-HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& HDirectXAPI::GetRootSignatureCacheRef()
-{
-	return getDX12API()->GetRootSignatureCacheRef();
-}
-
-const HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetGraphicsPSOCache()
-{
-	return getDX12API()->GetGraphicsPSOCache();
-}
-
-HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetGraphicsPSOCacheRef()
-{
-	return getDX12API()->GetGraphicsPSOCacheRef();
-}
-
-const HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetComputePSOCache()
-{
-	return getDX12API()->GetComputePSOCache();
-}
-
-HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetComputePSOCacheRef()
-{
-	return getDX12API()->GetComputePSOCacheRef();
-}
-
-const HHashMap<HDX12Resource*, HResourceInfo>& HDirectXAPI::GetResourceRefCache()
-{
-	return getDX12API()->GetResourceRefCache();
-}
-
-HHashMap<HDX12Resource*, HResourceInfo>& HDirectXAPI::GetResourceRefCacheRef()
-{
-	return getDX12API()->GetResourceRefCacheRef();
-}
-
-PSharedPtr<PGraphicsCommandList> HDirectXAPI::RequestGraphicsCommandList()
-{
-	return getDX12API()->RequestGraphicsCommandList();
-}
-
-PSharedPtr<PComputeCommandList> HDirectXAPI::RequestComputeCommandList()
-{
-	return getDX12API()->RequestComputeCommandList();
-}
-
-PSharedPtr<PCommandList> HDirectXAPI::RequestCommandList()
-{
-	return getDX12API()->RequestCommandList();
-}
-
-HDescriptionAllocation HDirectXAPI::RTVAllocate()
-{
-	return std::move(getDX12API()->RTVAllocate());
-}
-
-HDescriptionAllocation HDirectXAPI::DSVAllocate()
-{
-	return std::move(getDX12API()->DSVAllocate());
-}
-
-HDescriptionAllocation HDirectXAPI::CSUAllocate()
-{
-	return std::move(getDX12API()->CSUAllocate());
-}
-
-PSharedPtr<PCommandQueue> HDirectXAPI::GetCommandQueue()
-{
-	return getDX12API()->GetCommandQueue();
-}
-
-PSharedPtr<PDX12FrameBuffer> HDirectXAPI::GetFrameBuffer()
-{
-	return getDX12API()->GetFrameBuffer();
+	static HAtomicBool bLogged{ false };
+	if (bLogged.exchange(true) == true)
+	{
+		return;
+	}
+	JG_LOG(Graphics, ELogLevel::Trace, "DirectX12 API is not available. HDirectXAPI::%s falls back.", PString(funcName));
 }
 
 PDirectX12API* HDirectXAPI::getDX12API()
 {
-	static PDirectX12API* cachedAPI = nullptr;
-
-	if (cachedAPI == nullptr)
+	if (GIsDX12APIAvailable.load(std::memory_order_relaxed) == false)
 	{
-		HJGGraphicsModule* GraphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>();
-		if (GraphicsModule == nullptr)
-		{
-			return nullptr;
-		}
-
-		PSharedPtr<PJGGraphicsAPI> GraphicsAPI = GraphicsModule->GetGraphicsAPI();
-		PSharedPtr<PDirectX12API>  Dx12API = RawFastCast<PDirectX12API>(GraphicsAPI);
-		if (Dx12API.IsValid() == false)
-		{
-			return nullptr;
-		}
-
-		cachedAPI = Dx12API.GetRawPointer();
+		return nullptr;
 	}
 
+	PDirectX12API* cachedAPI = GCachedDX12API.load(std::memory_order_relaxed);
+	if (cachedAPI != nullptr)
+	{
+		return cachedAPI;
+	}
+
+	HJGGraphicsModule* graphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>();
+	if (graphicsModule == nullptr)
+	{
+		return nullptr;
+	}
+
+	PSharedPtr<PDirectX12API> dx12API = RawFastCast<PDirectX12API>(graphicsModule->GetGraphicsAPI());
+	if (dx12API.IsValid() == false)
+	{
+		return nullptr;
+	}
+
+	cachedAPI = dx12API.GetRawPointer();
+	GCachedDX12API.store(cachedAPI, std::memory_order_relaxed);
+
 	return cachedAPI;
+}
+
+void HDirectXAPI::resetCache()
+{
+	GCachedDX12API.store(nullptr, std::memory_order_relaxed);
+	GIsDX12APIAvailable.store(true, std::memory_order_relaxed);
+}
+
+void HDirectXAPI::invalidateCache(const PDirectX12API* owner)
+{
+	// 죽는 인스턴스가 이미 교체된 새 인스턴스의 캐시까지 지우지 않도록 확인한다.
+	PDirectX12API* cachedAPI = GCachedDX12API.load(std::memory_order_relaxed);
+	if (owner != nullptr && cachedAPI != nullptr && cachedAPI != owner)
+	{
+		return;
+	}
+
+	GCachedDX12API.store(nullptr, std::memory_order_relaxed);
+	GIsDX12APIAvailable.store(false, std::memory_order_relaxed);
+}
+
+HDX12Device* HDirectXAPI::GetDevice()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetDevice() : nullptr;
+}
+
+HDX12Factory* HDirectXAPI::GetFactory()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetFactory() : nullptr;
+}
+
+const HJGGraphicsArguments& HDirectXAPI::GetArguments()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetArguments");
+		return fallbackArguments();
+	}
+	return dx12API->GetArguments();
+}
+
+HDX12ComPtr<HDX12Resource> HDirectXAPI::CreateCommittedResource(const PString& name, const D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_HEAP_FLAGS heapFlags, const D3D12_RESOURCE_DESC* pDesc, D3D12_RESOURCE_STATES initialResourceState, const D3D12_CLEAR_VALUE* pOptimizedClearValue)
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		return nullptr;
+	}
+	return dx12API->CreateCommittedResource(name, pHeapProperties, heapFlags, pDesc, initialResourceState, pOptimizedClearValue);
+}
+
+void HDirectXAPI::DestroyCommittedResource(HDX12ComPtr<HDX12Resource> resource)
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		return;
+	}
+	dx12API->DestroyCommittedResource(resource);
+}
+
+const HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& HDirectXAPI::GetRootSignatureCache()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetRootSignatureCache");
+		return fallbackRootSignatureCache();
+	}
+	return dx12API->GetRootSignatureCache();
+}
+
+HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& HDirectXAPI::GetRootSignatureCacheRef()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetRootSignatureCacheRef");
+		return fallbackRootSignatureCache();
+	}
+	return dx12API->GetRootSignatureCacheRef();
+}
+
+const HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetGraphicsPSOCache()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetGraphicsPSOCache");
+		return fallbackGraphicsPSOCache();
+	}
+	return dx12API->GetGraphicsPSOCache();
+}
+
+HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetGraphicsPSOCacheRef()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetGraphicsPSOCacheRef");
+		return fallbackGraphicsPSOCache();
+	}
+	return dx12API->GetGraphicsPSOCacheRef();
+}
+
+const HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetComputePSOCache()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetComputePSOCache");
+		return fallbackComputePSOCache();
+	}
+	return dx12API->GetComputePSOCache();
+}
+
+HHashMap<uint64, HDX12ComPtr<HDX12Pipeline>>& HDirectXAPI::GetComputePSOCacheRef()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetComputePSOCacheRef");
+		return fallbackComputePSOCache();
+	}
+	return dx12API->GetComputePSOCacheRef();
+}
+
+const HHashMap<HDX12Resource*, HResourceInfo>& HDirectXAPI::GetResourceRefCache()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetResourceRefCache");
+		return fallbackResourceRefCache();
+	}
+	return dx12API->GetResourceRefCache();
+}
+
+HHashMap<HDX12Resource*, HResourceInfo>& HDirectXAPI::GetResourceRefCacheRef()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		logFallbackOnce("GetResourceRefCacheRef");
+		return fallbackResourceRefCache();
+	}
+	return dx12API->GetResourceRefCacheRef();
+}
+
+PSharedPtr<PGraphicsCommandList> HDirectXAPI::RequestGraphicsCommandList()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->RequestGraphicsCommandList() : nullptr;
+}
+
+PSharedPtr<PComputeCommandList> HDirectXAPI::RequestComputeCommandList()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->RequestComputeCommandList() : nullptr;
+}
+
+PSharedPtr<PCommandList> HDirectXAPI::RequestCommandList()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->RequestCommandList() : nullptr;
+}
+
+HDescriptionAllocation HDirectXAPI::RTVAllocate()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		return HDescriptionAllocation();
+	}
+	return dx12API->RTVAllocate();
+}
+
+HDescriptionAllocation HDirectXAPI::DSVAllocate()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		return HDescriptionAllocation();
+	}
+	return dx12API->DSVAllocate();
+}
+
+HDescriptionAllocation HDirectXAPI::CSUAllocate()
+{
+	PDirectX12API* dx12API = getDX12API();
+	if (dx12API == nullptr)
+	{
+		return HDescriptionAllocation();
+	}
+	return dx12API->CSUAllocate();
+}
+
+PSharedPtr<PCommandQueue> HDirectXAPI::GetCommandQueue()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetCommandQueue() : nullptr;
+}
+
+PSharedPtr<PDX12FrameBuffer> HDirectXAPI::GetFrameBuffer()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetFrameBuffer() : nullptr;
 }

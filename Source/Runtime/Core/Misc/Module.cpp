@@ -145,29 +145,72 @@ bool GModuleGlobalSystem::ConnectModule(const PString& moduleName)
 	}
 
 	moduleIf->StartupModule();
+
+	{
+		HLockGuard<HMutex> lock(_mutex);
+		_moduleOrder.push_back(moduleIf);
+	}
+
 	GCoreSystem::RegisterDll(dllIns);
 	return true;
 }
 
-bool GModuleGlobalSystem::DisconnectModule(const PString& moduleName)
+void GModuleGlobalSystem::unregisterModule(IModuleInterface* moduleIf)
 {
-	HLockGuard<HMutex> lock(_mutex);
-
-	if (_modulesByName.find(moduleName) == _modulesByName.end())
-	{
-		return true;
-	}
-
-	IModuleInterface* moduleIf = _modulesByName[moduleName];
 	if (moduleIf == nullptr)
 	{
-		return false;
+		return;
+	}
+
+	_modulesByType.erase(moduleIf->GetModuleType());
+
+	for (HHashMap<PName, IModuleInterface*>::iterator iter = _modulesByName.begin();
+		iter != _modulesByName.end(); ++iter)
+	{
+		if (iter->second == moduleIf)
+		{
+			_modulesByName.erase(iter);
+			break;
+		}
+	}
+
+	for (HList<IModuleInterface*>::iterator iter = _moduleOrder.begin();
+		iter != _moduleOrder.end(); ++iter)
+	{
+		if (*iter == moduleIf)
+		{
+			_moduleOrder.erase(iter);
+			break;
+		}
+	}
+}
+
+bool GModuleGlobalSystem::DisconnectModule(const PString& moduleName)
+{
+	IModuleInterface* moduleIf = nullptr;
+
+	{
+		HLockGuard<HMutex> lock(_mutex);
+
+		HHashMap<PName, IModuleInterface*>::iterator iter = _modulesByName.find(PName(moduleName));
+		if (iter == _modulesByName.end())
+		{
+			return true;
+		}
+
+		moduleIf = iter->second;
+		if (moduleIf == nullptr)
+		{
+			return false;
+		}
 	}
 
 	moduleIf->ShutdownModule();
 
-	_modulesByType.erase(moduleIf->GetModuleType());
-	_modulesByName.erase(moduleName);
+	{
+		HLockGuard<HMutex> lock(_mutex);
+		unregisterModule(moduleIf);
+	}
 
 	GMemoryGlobalSystem::GetInstance().Flush();
 
@@ -184,18 +227,44 @@ bool GModuleGlobalSystem::ReconnectModule(const PString& moduleName)
 
 void GModuleGlobalSystem::Destroy()
 {
-	for (HPair<const JGType, IModuleInterface*>& pair : _modulesByType)
+	HList<IModuleInterface*> shutdownedModules;
+
+	while (true)
 	{
-		pair.second->ShutdownModule();
+		IModuleInterface* moduleIf = nullptr;
+		{
+			HLockGuard<HMutex> lock(_mutex);
+			if (_moduleOrder.empty())
+			{
+				break;
+			}
+
+			moduleIf = _moduleOrder.back();
+			if (moduleIf == nullptr)
+			{
+				_moduleOrder.pop_back();
+				continue;
+			}
+		}
+
+		moduleIf->ShutdownModule();
+
+		{
+			HLockGuard<HMutex> lock(_mutex);
+			unregisterModule(moduleIf);
+		}
+
+		shutdownedModules.push_back(moduleIf);
 	}
 
 	GMemoryGlobalSystem::GetInstance().Flush();
 
-	for (HPair<const JGType, IModuleInterface*>& pair : _modulesByType)
+	for (IModuleInterface* moduleIf : shutdownedModules)
 	{
-		HPlatform::Deallocate(pair.second);
+		HPlatform::Deallocate(moduleIf);
 	}
 
 	_modulesByType.clear();
 	_modulesByName.clear();
+	_moduleOrder.clear();
 }

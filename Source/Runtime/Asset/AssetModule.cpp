@@ -11,12 +11,12 @@ JGType HAssetModule::GetModuleType() const
 
 void HAssetModule::StartupModule()
 {
-	JG_LOG(Graphics, ELogLevel::Trace, "Start Graphics Module...");
+	JG_LOG(Asset, ELogLevel::Trace, "Startup Asset Module...");
 
 	GCoreSystem::RegisterSystemInstance<GAssetDatabase>();
 }
 
 void HAssetModule::ShutdownModule()
 {
-	JG_LOG(Graphics, ELogLevel::Trace, "Shutdown Graphics Module...");
+	JG_LOG(Asset, ELogLevel::Trace, "Shutdown Asset Module...");
 }

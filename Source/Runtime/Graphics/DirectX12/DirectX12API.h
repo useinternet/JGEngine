@@ -41,7 +41,8 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 	void flushDebugLayerMessages();
 #endif
 public:
-	virtual ~PDirectX12API() = default;
+	// = default 가 아니다. 파괴될 때 HDirectXAPI 캐시를 비워야 한다. (DirectX12API.cpp)
+	virtual ~PDirectX12API();
 
 protected:
 	virtual void Initialize(const HJGGraphicsArguments& args) override;
@@ -136,5 +137,18 @@ public:
 	static PSharedPtr<PCommandQueue> GetCommandQueue();
 	static PSharedPtr<PDX12FrameBuffer> GetFrameBuffer();
 private:
+	// 캐시 수명은 PDirectX12API 자신만 조작한다. (resetCache / invalidateCache)
+	friend class PDirectX12API;
+
 	static PDirectX12API* getDX12API();
+
+	// PDirectX12API::Initialize 에서 호출. 캐시를 비우고 조회를 다시 허용한다.
+	static void resetCache();
+
+	// PDirectX12API::Destroy 와 소멸자에서 호출. 캐시를 버리고 이후 조회를 전부 막는다.
+	// PDirectX12API 는 GC(GMemoryGlobalSystem) 관리 객체라 모듈 Shutdown 직후
+	// GC Flush 에서 파괴된다. 그때까지 캐시가 남아 있으면 파괴된 객체에 접근하게 된다.
+	// owner 를 주면 캐시가 그 인스턴스를 가리킬 때만 비운다.
+	// (교체된 새 인스턴스의 캐시를 죽는 인스턴스가 지우는 것을 막는다)
+	static void invalidateCache(const PDirectX12API* owner = nullptr);
 };

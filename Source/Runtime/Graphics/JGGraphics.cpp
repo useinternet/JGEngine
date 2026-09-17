@@ -52,8 +52,11 @@ void HJGGraphicsModule::StartupModule()
 void HJGGraphicsModule::ShutdownModule()
 {
 	GCoreSystem::GetInstance().UnRegisterSystemInstance<GShaderLibrary>();
-	_graphicsAPI->Destroy();
-	_graphicsAPI = nullptr;
+	if (_graphicsAPI != nullptr)
+	{
+		_graphicsAPI->Destroy();
+		_graphicsAPI = nullptr;
+	}
 
 	JG_LOG(Graphics, ELogLevel::Trace, "Shutdown Graphics Module...");
 }
@@ -86,11 +89,17 @@ PSharedPtr<PJGGraphicsAPI> HJGGraphicsModule::GetGraphicsAPI() const
 
 PJGGraphicsAPI& GetGraphicsAPI()
 {
-	static PJGGraphicsAPI* API = nullptr;
-	if (API == nullptr)
+	PJGGraphicsAPI* graphicsAPI = nullptr;
+	if (HJGGraphicsModule* graphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>())
 	{
-		API = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>()->GetGraphicsAPI().GetRawPointer();
+		graphicsAPI = graphicsModule->GetGraphicsAPI().GetRawPointer();
 	}
 
-	return *API;
+	if (graphicsAPI == nullptr)
+	{
+		JG_LOG(Graphics, ELogLevel::Critical, "GetGraphicsAPI() called while GraphicsAPI is not available");
+	}
+
+	JG_CHECK(graphicsAPI != nullptr);
+	return *graphicsAPI;
 }
