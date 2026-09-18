@@ -19,11 +19,10 @@ PDX12Material::PDX12Material()
 	_bNeedCompile = true;
 }
 
-void PDX12Material::Initialize(const HRawMaterialConstructArguments& inArgs, PSharedPtr<IRawTexture> inDefaultTexture)
+void PDX12Material::Initialize(const HRawMaterialConstructArguments& inArgs)
 {
 	_domain = inArgs.Domain;
 	_propertyDefinitionist = inArgs.PropertyDefinitionist;
-	_defaultTexture = inDefaultTexture;
 
 	// 상수 버퍼를 만들기 전에 이름을 준다. (D3D 리소스 이름이 이 이름으로 붙는다)
 	_name = inArgs.Name;
@@ -162,7 +161,7 @@ bool PDX12Material::SetTexture(const PName& inName, PSharedPtr<IRawTexture> inVa
 	if (_materialTextureNameMap.contains(inName))
 	{
 		textures = &_materialTextures;
-		fallbackTexture = _defaultTexture;
+		fallbackTexture = HDirectXAPI::GetDefaultTexture();
 		slot = _materialTextureNameMap.at(inName);
 	}
 	else if (_materialTextureCubeNameMap.contains(inName))
@@ -372,6 +371,14 @@ bool PDX12Material::buildPropertyLayout()
 	_materialTextureNameMap.clear();
 	_materialTextureCubeNameMap.clear();
 
+	// 빈 Texture 슬롯의 대체 텍스처. API 소유 리소스라 멤버로 들지 않고 필요할 때 접근자로 얻는다.
+	// (기본 머터리얼을 만드는 시점에도 기본 텍스처는 먼저 만들어져 있다. createDefaultResources 순서)
+	PSharedPtr<IRawTexture> defaultTexture = HDirectXAPI::GetDefaultTexture();
+	if (defaultTexture.IsValid() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Warning, "%s : Default texture is not available. Empty texture slots stay null until SetTexture", GetName());
+	}
+
 	// 오프셋은 정의 순서대로 쌓는다. 16바이트 경계 패딩은 정의기(HMaterialPropertyDefinitionist::Define)가 넣어 둔 상태.
 	uint64 dataOffset = 0;
 
@@ -393,7 +400,7 @@ bool PDX12Material::buildPropertyLayout()
 		{
 			const int32 slot = (int32)_materialTextures.size();
 			_materialTextureNameMap[info.Name] = (uint64)slot;
-			_materialTextures.push_back(_defaultTexture);
+			_materialTextures.push_back(defaultTexture);
 			setData(info.Name, slot);
 		}
 		else if (info.Type == EMaterialPropertyType::TextureCube)

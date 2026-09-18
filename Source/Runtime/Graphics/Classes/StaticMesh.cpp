@@ -19,10 +19,7 @@ bool HStaticSubMesh::IsValid() const
 
 void HStaticSubMesh::SetName(const PName& inName)
 {
-	if (&inName != &Name)
-	{
-		Name = inName;
-	}
+	Name = inName;
 
 	if (IsValid() == false)
 	{

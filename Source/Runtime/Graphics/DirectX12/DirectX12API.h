@@ -136,6 +136,8 @@ public:
 	static HDescriptionAllocation CSUAllocate();
 	static PSharedPtr<PCommandQueue> GetCommandQueue();
 	static PSharedPtr<PDX12FrameBuffer> GetFrameBuffer();
+	// API가 소유한 기본 텍스처(1x1 흰색). 머터리얼의 빈 Texture 슬롯 대체값. API가 없으면 nullptr.
+	static PSharedPtr<IRawTexture> GetDefaultTexture();
 private:
 	// 캐시 수명은 PDirectX12API 자신만 조작한다. (resetCache / invalidateCache)
 	friend class PDirectX12API;

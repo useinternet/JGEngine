@@ -255,8 +255,7 @@ PSharedPtr<IIndexBuffer>  PDirectX12API::CreateIndexBuffer(const HIndexBufferCon
 PSharedPtr<IRawMaterial> PDirectX12API::CreateRawMaterial(const HRawMaterialConstructArguments& inArgs)
 {
 	PSharedPtr<PDX12Material> material = Allocate<PDX12Material>();
-	// 텍스처 프로퍼티의 빈 슬롯을 채울 기본 텍스처. 기본 머터리얼을 만드는 시점에는 이미 만들어져 있다. (createDefaultResources 순서)
-	material->Initialize(inArgs, _defaultTexture);
+	material->Initialize(inArgs);
 
 	return material;
 }
@@ -685,4 +684,10 @@ PSharedPtr<PDX12FrameBuffer> HDirectXAPI::GetFrameBuffer()
 {
 	PDirectX12API* dx12API = getDX12API();
 	return (dx12API != nullptr) ? dx12API->GetFrameBuffer() : nullptr;
+}
+
+PSharedPtr<IRawTexture> HDirectXAPI::GetDefaultTexture()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetDefaultTexture() : nullptr;
 }

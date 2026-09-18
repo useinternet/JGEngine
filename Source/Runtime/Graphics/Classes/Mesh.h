@@ -7,9 +7,6 @@ class IVertexBuffer;
 class IIndexBuffer;
 class IRawMaterial;
 
-// 렌더러가 소비하는 메시 인터페이스. 서브메시 단위로 정점/인덱스 버퍼와 머터리얼을 노출한다.
-// 메모리 규칙: IMemoryObject는 IJGGraphicsObject 사슬을 통해 한 번만 상속하고, 구현 클래스(PStaticMesh)는 이 사슬만 탄다.
-// 에셋(JGStaticMesh)은 JGObject 뿌리를 따로 가지므로 이 인터페이스를 직접 구현하지 않고 IMesh 구현체를 소유한다.
 class GRAPHICS_API IMesh : public IJGGraphicsObject
 {
 public:

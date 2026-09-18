@@ -38,7 +38,6 @@ class PDX12Material
 	HList<PName>					      _materialConstantPropertyList;
 
 	// 텍스처 슬롯. 인덱스 = 셰이더 _globalTexture[] / _globalTextureCube[] 의 인덱스 = CB에 기록된 int 값.
-	PSharedPtr<IRawTexture>               _defaultTexture;
 	HList<PSharedPtr<IRawTexture>>        _materialTextures;
 	HList<PSharedPtr<IRawTexture>>        _materialTextureCubes;
 	HHashMap<PName, uint64>               _materialTextureNameMap;
@@ -48,8 +47,7 @@ public:
 	PDX12Material();
 	virtual ~PDX12Material() = default;
 public:
-	// inDefaultTexture: 비어 있는 Texture 슬롯을 채우는 대체 텍스처 (PJGGraphicsAPI::GetDefaultTexture)
-	void Initialize(const HRawMaterialConstructArguments& inArgs, PSharedPtr<IRawTexture> inDefaultTexture);
+	void Initialize(const HRawMaterialConstructArguments& inArgs);
 
 	virtual const PName& GetName() const override;
 	virtual void SetName(const PName& inName) override;

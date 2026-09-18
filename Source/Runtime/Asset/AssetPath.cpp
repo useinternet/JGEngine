@@ -48,8 +48,6 @@ void HAssetPath::setupAssetPath(const PString& inAssetPath)
 {
 	if (inAssetPath.StartWidth(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN))
 	{
-		// 토큰 뒤의 상대 경로를 정규화한다: 역슬래시 -> 슬래시, 앞쪽 슬래시 제거, 확장자 보정.
-		// 같은 파일을 가리키는 문자열("/JGEngine//A/B", "/JGEngine/A/B.jgasset")이 AssetDatabase에서 같은 키가 되어야 한다.
 		PString relativePath = inAssetPath;
 		relativePath.Remove(0, PString(JG_ASSET_ENGINE_PATH_RECOGNITION_TOEKN).Length());
 		relativePath.ReplaceAll("\\", "/");

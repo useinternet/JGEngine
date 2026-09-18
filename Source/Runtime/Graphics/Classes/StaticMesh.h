@@ -43,7 +43,7 @@ protected:
 	virtual void ReadJson(const PJsonData& json) override;
 };
 
-// 렌더러가 그리는 정적 메시(IMesh 구현). JGStaticMesh 에셋이 소유하고 서브메시 버퍼는 에셋과 공유한다.
+
 class GRAPHICS_API PStaticMesh : public IMesh
 {
 	PName _name;

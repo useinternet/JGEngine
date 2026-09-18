@@ -395,24 +395,35 @@ bool PDX12GraphicsCommand::bindMaterial(PSharedPtr<PDX12Material> inMaterial)
 		return false;
 	}
 
-	// 텍스처 슬롯 -> 디스크립터 테이블. 셰이더의 _globalTexture[슬롯]은 이 테이블을 가리킨다.
-	BindTextures(RootParam_Texture, inMaterial->GetTextures());
+	// 슬롯 목록에 빈 항목(null)이 있으면 테이블을 올리지 않는다. BindTextures는 무효 텍스처에 assert를 걸기 때문이다.
+	// 2D 슬롯은 기본 텍스처로 채워지므로 보통 비지 않고(기본 텍스처 생성 실패 시에만), 큐브 슬롯은 기본값이 없어 비어 있을 수 있다.
+	auto isAllValid = [](const HList<PSharedPtr<IRawTexture>>& inTextures)
+	{
+		for (const PSharedPtr<IRawTexture>& texture : inTextures)
+		{
+			if (texture.IsValid() == false || texture->IsValid() == false)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
 
-	// 큐브 텍스처는 기본값이 없어 빈 슬롯(null)이 있을 수 있다. 하나라도 비어 있으면 테이블을 올리지 않는다.
+	// 텍스처 슬롯 -> 디스크립터 테이블. 셰이더의 _globalTexture[슬롯]은 이 테이블을 가리킨다.
+	HList<PSharedPtr<IRawTexture>> textures = inMaterial->GetTextures();
+	if (isAllValid(textures))
+	{
+		BindTextures(RootParam_Texture, textures);
+	}
+	else
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Texture slot is empty. Skip binding textures", inMaterial->GetName().ToString());
+	}
+
 	HList<PSharedPtr<IRawTexture>> textureCubes = inMaterial->GetTextureCubes();
 	if (textureCubes.empty() == false)
 	{
-		bool bAllValid = true;
-		for (const PSharedPtr<IRawTexture>& textureCube : textureCubes)
-		{
-			if (textureCube.IsValid() == false || textureCube->IsValid() == false)
-			{
-				bAllValid = false;
-				break;
-			}
-		}
-
-		if (bAllValid)
+		if (isAllValid(textureCubes))
 		{
 			BindTextures(RootParam_TextureCube, textureCubes);
 		}
