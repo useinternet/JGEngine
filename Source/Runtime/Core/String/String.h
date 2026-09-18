@@ -40,6 +40,8 @@ public:
 		snprintf(result._rawString.data(), len, string.GetRawString().c_str(), toCArg(convert(args)) ...);
 
 		result._rawString.resize(len - 1); // '\0' 맨끝 제거
+		// _rawString에 직접 썼으므로 해시 코드를 갱신한다. 없으면 PName 변환이 NAME_NONE("(null)")이 되고 operator==도 항상 참이 된다.
+		result.updateHashCode();
 		return result;
 	}
 

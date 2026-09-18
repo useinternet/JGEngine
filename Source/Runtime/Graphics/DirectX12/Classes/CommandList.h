@@ -50,6 +50,16 @@ public:
 	void CopyBuffer(HDX12Resource* buffer, const void* data, uint64 elementSize, uint64 elementCount);
 	void CopyBufferRegion(HDX12Resource* dest, uint64 destOffset, HDX12Resource* src, uint64 srcOffset, uint64 byteSize);
 	void CopyTextureRegion(HDX12Resource* dest, HDX12Resource* src, const HRect& srcBox, D3D12_RESOURCE_STATES inDestState, D3D12_RESOURCE_STATES inSrcState);
+
+	// -- 전송 관리자용 (PTransferManager) --
+	// 스테이징(UPLOAD 힙) -> 버퍼 복사 뒤 finalState로 전이한다. 스테이징은 UPLOAD 힙이라 배리어를 걸지 않는다.
+	// 복사와 같은 제출 안에서 바로 쓸 수 있도록 마지막 전이를 명시한다. (버퍼는 제출이 끝나면 COMMON으로 자연 감쇠하지만 같은 제출 안에서는 아니다)
+	void UploadBuffer(HDX12Resource* dest, HDX12Resource* stagingBuffer, uint64 byteSize, D3D12_RESOURCE_STATES finalState);
+	// 스테이징(UPLOAD 힙, 풋프린트 배치) -> 텍스처 서브리소스 복사 뒤 finalState로 전이한다.
+	void UploadTexture(HDX12Resource* dest, HDX12Resource* stagingBuffer, const HList<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>& footprints, const HList<uint32>& subresources, D3D12_RESOURCE_STATES finalState);
+	// 텍스처 서브리소스 -> 스테이징(READBACK 힙, 풋프린트 배치) 복사. 소스는 COPY_SOURCE로 전이하고,
+	// restoreState가 주어지면 복사 뒤 그 상태로 되돌린다. (즉시 경로: 열려 있는 프레임 리스트의 상태 계산을 어긋나게 하지 않기 위해)
+	void ReadbackTexture(HDX12Resource* stagingBuffer, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& footprint, HDX12Resource* src, uint32 subresource, const D3D12_RESOURCE_STATES* restoreState);
 };
 
 class PGraphicsCommandList : public PCommandList

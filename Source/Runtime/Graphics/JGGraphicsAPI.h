@@ -31,6 +31,9 @@ struct HIndexBufferConstructArguments;
 struct HStaticMeshConstructArguments;
 struct HTextureConstructArguments;
 
+// 리드백 완료 콜백. 실패해도 한 번은 불리며 그때는 HTexturePixels::IsValid()가 false다.
+JG_DECLARE_DELEGATE(HOnReadPixelsComplete, const HTexturePixels&)
+
 class GRAPHICS_API PJGGraphicsAPI : public IMemoryObject
 {
 	friend class HJGGraphicsModule;
@@ -62,6 +65,14 @@ public:
 	virtual PSharedPtr<IVertexBuffer> CreateVertexBuffer(const HVertexBufferConstructArguments& inArgs) = 0;
 	virtual PSharedPtr<IIndexBuffer>  CreateIndexBuffer(const HIndexBufferConstructArguments& inArgs)  = 0;
 	virtual PSharedPtr<IRawMaterial> CreateRawMaterial(const HRawMaterialConstructArguments& inArgs) = 0;
+
+	// -- Transfer (GPU <-> CPU) --
+	// 비동기 리드백. 어디서 불러도 된다. 복사는 이번 프레임 제출의 마지막(드로우 뒤)에 기록되고,
+	// 완료 콜백은 다음 BeginFrame에 메인 스레드에서 불린다. 깊이 포맷은 지원하지 않는다.
+	virtual bool RequestReadPixels(PSharedPtr<IRawTexture> inTexture, const HOnReadPixelsComplete& inOnComplete) = 0;
+	// 동기 리드백(도구 전용). 전용 커맨드 리스트를 따로 제출하고 GPU 완료까지 기다린다. 프레임 리스트는 건드리지 않는다.
+	// 결과는 GPU가 마지막으로 완료한 내용(렌더 타깃이면 지난 프레임)이고, 같은 텍스처의 대기 업로드는 먼저 반영된다. 메인 스레드 전용.
+	virtual bool ReadPixelsImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels) = 0;
 
 	// -- Asset Data --
 

@@ -23,7 +23,7 @@ PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType comm
 
 	std::thread::id curr_thread_id = std::this_thread::get_id();
 	uint64 hash = std::hash<std::thread::id>()(curr_thread_id);
-	
+
 	return RequestCommandList(commandListType, hash, priority);
 }
 
@@ -62,7 +62,7 @@ void PCommandQueue::End()
 			SetCommandListState(pendCmdList, ECommandListState::Close);
 		}
 	}
-	
+
 	PResourceStateTracker::UnLock();
 	_dx12CommandQueue->ExecuteCommandLists((uint32_t)d3dCmdLists.size(), d3dCmdLists.data());
 
@@ -85,6 +85,53 @@ void PCommandQueue::Flush()
 	_fence->IncreaseValue();
 	_dx12CommandQueue->Signal(_fence->Get(), _fence->GetValue());
 	_fence->WaitForFenceValue(_fence->GetValue());
+}
+
+void PCommandQueue::ExecuteImmediate(PSharedPtr<PCommandList> cmdList, PSharedPtr<PCommandList> pendCmdList)
+{
+	if (cmdList == nullptr || pendCmdList == nullptr)
+	{
+		return;
+	}
+
+	// End()와 같은 절차를 이 두 리스트에만 적용한다. 프레임 리스트(_excuteCmdLists)는 건드리지 않는다.
+	HLockGuard<HMutex> lock(_mutex);
+	_bCommandListExcute = true;
+
+	HList<ID3D12CommandList*> d3dCmdLists;
+
+	PResourceStateTracker::Lock();
+	const bool bHasPendingBarrier = cmdList->Close(pendCmdList.GetRawPointer());
+	pendCmdList->Close();
+	PResourceStateTracker::UnLock();
+
+	if (bHasPendingBarrier)
+	{
+		d3dCmdLists.push_back(pendCmdList->Get());
+	}
+	d3dCmdLists.push_back(cmdList->Get());
+
+	_dx12CommandQueue->ExecuteCommandLists((uint32_t)d3dCmdLists.size(), d3dCmdLists.data());
+
+	// 같은 큐라서 이 신호는 앞서 제출된 모든 작업이 끝난 뒤에 도달한다. 프레임 펜스 값(_fenceValue)은 바꾸지 않는다.
+	_fence->IncreaseValue();
+	_dx12CommandQueue->Signal(_fence->Get(), _fence->GetValue());
+	_fence->WaitForFenceValue(_fence->GetValue());
+
+	// 완료를 기다렸으므로 할당자를 바로 되감아 다음 즉시 호출에 쓸 수 있게 열어 둔다.
+	cmdList->Reset();
+	pendCmdList->Reset();
+
+	_bCommandListExcute = false;
+}
+
+bool PCommandQueue::IsFenceComplete(uint64 fenceValue) const
+{
+	if (_fence == nullptr || _fence->Get() == nullptr)
+	{
+		return true;
+	}
+	return _fence->Get()->GetCompletedValue() >= fenceValue;
 }
 
 PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType commandListType, uint64 commandID, uint64 priority)

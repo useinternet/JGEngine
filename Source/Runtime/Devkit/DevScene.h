@@ -44,6 +44,11 @@ private:
 	float32  CameraNearZ;
 	float32  CameraFarZ;
 
+	// 리드백 검증(Phase 5-1). 메시가 로드된 뒤 일정 프레임이 지나면 한 번만 알베도 G버퍼(비동기)와 씬 텍스처(동기)를 읽어 PNG로 저장한다.
+	int32   FramesSinceMeshLoaded;
+	bool    bReadbackDumped;
+	PString ReadbackStatus;
+
 public:
 	virtual void OnInitialize() override;
 	virtual void OnShutdown() override;
@@ -62,4 +67,8 @@ private:
 	void RenderScene();
 	void RenderGeometryPass();
 	void RenderCompositePass();
+
+	// 리드백 검증. 실행 폴더에 DevScene_Readback_*.png 를 쓴다.
+	void DumpReadbackOnce();
+	void OnAlbedoReadback(const HTexturePixels& InPixels);
 };

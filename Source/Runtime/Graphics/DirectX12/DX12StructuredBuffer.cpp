@@ -24,6 +24,7 @@ void PDX12StructuredBuffer::SetName(const PName& inName)
 void PDX12StructuredBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint64 inElementCount)
 {
 	uint64 originBtSize = _elementSize * _elementCount;
+	_elementSize  = inElementSize;   // 이전에는 저장하지 않아 항상 0바이트 버퍼가 만들어졌다. (5-12)
 	_elementCount = inElementCount;
 	uint64 btSize = _elementSize * _elementCount;
 

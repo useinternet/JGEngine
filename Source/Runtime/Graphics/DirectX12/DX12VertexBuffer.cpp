@@ -1,6 +1,7 @@
 #include "PCH/PCH.h"
 #include "DX12VertexBuffer.h"
 #include "DirectX12API.h"
+#include "Classes/TransferManager.h"
 
 PDX12VertexBuffer::~PDX12VertexBuffer()
 {
@@ -23,29 +24,48 @@ void PDX12VertexBuffer::SetName(const PName& inName)
 
 void PDX12VertexBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint64 inElementCount)
 {
-	uint64 originBtSize = _elementSize * _elementCount;
-	_elementSize  = inElementSize; 
-	_elementCount = inElementCount;
-	uint64 btSize = inElementSize * _elementCount;
+	const uint64 btSize = inElementSize * inElementCount;
+	if (btSize == 0)
+	{
+		// 0바이트 리소스는 만들 수 없다. 빈 버퍼로 둔다.
+		Reset();
+		return;
+	}
 
-	if (IsValid() && ((originBtSize != btSize) || _cpuData == nullptr))
+	const uint64 originBtSize = _elementSize * _elementCount;
+	const bool   bGPULoad     = (_loadMethod == EBufferLoadMethod::GPULoad);
+	if (IsValid() && (originBtSize != btSize || (bGPULoad == false && _cpuData == nullptr)))
 	{
 		Reset();
 	}
 
+	// Reset()이 개수를 0으로 지우므로 그 뒤에 넣는다. (이전에는 크기가 바뀌면 GetVertexCount()가 0을 돌려줬다. 5-12)
+	_elementSize  = inElementSize;
+	_elementCount = inElementCount;
+
 	if (IsValid() == false)
 	{
-		CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(btSize);
+		// GPULoad: DEFAULT 힙, COMMON. 전송 관리자가 스테이징으로 올리고 VERTEX_AND_CONSTANT_BUFFER로 전이한다.
+		// CPULoad: UPLOAD 힙, GENERIC_READ, 상시 매핑.
+		CD3DX12_HEAP_PROPERTIES heapProperties(bGPULoad ? D3D12_HEAP_TYPE_DEFAULT : D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC   resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(btSize);
 
 		_dx12Resource = HDirectXAPI::CreateCommittedResource(
-			GetName().ToString().GetCStr(),
+			GetName().ToString(),
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
+			bGPULoad ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr
 		);
+
+		if (_dx12Resource == nullptr)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Create VertexBuffer (%d bytes)", GetName(), (int32)btSize);
+			_elementSize  = 0;
+			_elementCount = 0;
+			return;
+		}
 
 		{
 			std::lock_guard<std::mutex> lock(_mutex);
@@ -53,10 +73,23 @@ void PDX12VertexBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint
 			_uav.Reset();
 		}
 
-		_dx12Resource->Map(0, nullptr, &_cpuData);
+		if (bGPULoad == false)
+		{
+			_dx12Resource->Map(0, nullptr, &_cpuData);
+		}
 	}
 
-	if (_cpuData != nullptr && inDatas != nullptr)
+	if (inDatas == nullptr)
+	{
+		return;
+	}
+
+	if (bGPULoad)
+	{
+		_shadowData.assign((const uint8*)inDatas, (const uint8*)inDatas + btSize);
+		requestUpload();
+	}
+	else if (_cpuData != nullptr)
 	{
 		memcpy(_cpuData, inDatas, btSize);
 	}
@@ -64,22 +97,41 @@ void PDX12VertexBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint
 
 void PDX12VertexBuffer::SetData(const void* inData, uint64 inIndex)
 {
-	memcpy(GetData(inIndex), inData, _elementSize);
+	void* dataPos = GetData(inIndex);
+	if (dataPos == nullptr || inData == nullptr)
+	{
+		return;
+	}
+
+	memcpy(dataPos, inData, _elementSize);
+
+	if (_loadMethod == EBufferLoadMethod::GPULoad)
+	{
+		// CPU 사본만 고쳤으므로 GPU에 다시 올린다. 같은 대상의 대기 요청은 하나로 합쳐진다.
+		requestUpload();
+	}
 }
 
 void* PDX12VertexBuffer::GetDatas() const
 {
+	if (_loadMethod == EBufferLoadMethod::GPULoad)
+	{
+		return _shadowData.empty() ? nullptr : (void*)_shadowData.data();
+	}
 	return _cpuData;
 }
 
 void* PDX12VertexBuffer::GetData(uint64 inIndex) const
 {
-	JG_CHECK(inIndex < _elementCount && IsValid() && _cpuData != nullptr);
+	JG_CHECK(inIndex < _elementCount && IsValid());
 
-	uint64 dataOffset = HMath::AlignUp(inIndex * _elementSize, _elementSize);
+	uint8* datas = (uint8*)GetDatas();
+	if (datas == nullptr || inIndex >= _elementCount)
+	{
+		return nullptr;
+	}
 
-	void* dataPos = (void*)((uint64)_cpuData + dataOffset);
-	return dataPos;
+	return datas + inIndex * _elementSize;
 }
 
 uint64 PDX12VertexBuffer::GetVertexCount() const
@@ -92,13 +144,35 @@ uint64 PDX12VertexBuffer::GetVertexSize() const
 	return _elementSize;
 }
 
+EBufferLoadMethod PDX12VertexBuffer::GetLoadMethod() const
+{
+	return _loadMethod;
+}
+
+void PDX12VertexBuffer::SetLoadMethod(EBufferLoadMethod inLoadMethod)
+{
+	if (_loadMethod == inLoadMethod)
+	{
+		return;
+	}
+
+	_loadMethod = inLoadMethod;
+	if (IsValid())
+	{
+		Reset();
+	}
+}
+
 void PDX12VertexBuffer::Reset()
 {
+	_shadowData.clear();
+
 	if (_dx12Resource == nullptr)
 	{
 		return;
 	}
 
+	// 대기 중인 업로드 요청이 있어도 된다. 등록이 풀린 대상은 기록 시점에 버려진다. (PTransferManager::recordUpload)
 	HDirectXAPI::DestroyCommittedResource(_dx12Resource);
 
 	_dx12Resource.Reset();
@@ -157,4 +231,21 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12VertexBuffer::GetUAV() const
 
 	_uav = std::move(alloc);
 	return _uav.CPU();
+}
+
+void PDX12VertexBuffer::requestUpload()
+{
+	if (IsValid() == false || _shadowData.empty())
+	{
+		return;
+	}
+
+	PSharedPtr<PTransferManager> transferManager = HDirectXAPI::GetTransferManager();
+	if (transferManager == nullptr)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : TransferManager is not available. vertex data is not uploaded", GetName());
+		return;
+	}
+
+	transferManager->RequestUploadBuffer(_dx12Resource, _shadowData.data(), _shadowData.size(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, _name);
 }

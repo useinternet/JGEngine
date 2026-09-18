@@ -3,6 +3,7 @@
 #include "JGGraphicsHelper.h"
 #include "DirectX12/DirectX12API.h"
 #include "Classes/CommandList.h"
+#include "Classes/TransferManager.h"
 
 PDX12Texture::~PDX12Texture()
 {
@@ -26,9 +27,6 @@ void PDX12Texture::SetName(const PName& inName)
 uint64 PDX12Texture::GetTextureID() const
 {
 
-
-
-
 	return GetSRV().ptr;
 	//D3D12_SHADER_RESOURCE_VIEW_DESC;
 	//HDirectXAPI::GetDevice()->CreateShaderResourceView()
@@ -37,19 +35,6 @@ uint64 PDX12Texture::GetTextureID() const
 const HTextureInfo& PDX12Texture::GetTextureInfo() const
 {
 	return _textureInfo;
-}
-
-void PDX12Texture::AccessPixels(HOnAccessTexturePixels onAccessTexturePixels) const
-{
-	if (IsValid() == false)
-	{
-		return;
-	}
-
-	void* result = nullptr;
-	_dx12Resource->Map(0, nullptr, &result);
-	onAccessTexturePixels.ExecuteIfBound(result);
-	_dx12Resource->Unmap(0, nullptr);
 }
 
 void PDX12Texture::Reset()
@@ -294,16 +279,6 @@ void PDX12Texture::Initialize(const HTextureInfo& inTextureInfo)
 	SetName(_textureInfo.Name);
 }
 
-void PDX12Texture::InitializeByMemory(const uint8* pixels, const HTextureInfo& inTextureInfo)
-{
-	Initialize(inTextureInfo);
-
-	uint8 channels = HJGGraphicsHelper::GetTextureFormatChannels(_textureInfo.Format);
-
-	PSharedPtr<PCommandList> commandList = HDirectXAPI::RequestCommandList();
-	commandList->CopyTextrueFromMemory(_dx12Resource.Get(), pixels, _textureInfo.Width, _textureInfo.Height, channels, _textureInfo.ArraySize);
-}
-
 bool PDX12Texture::createSRVDesc(ETextureFlags inTextureFlags, D3D12_SHADER_RESOURCE_VIEW_DESC& outDesc) const
 {
 	JG_CHECK(IsValid());
@@ -335,4 +310,26 @@ bool PDX12Texture::createRTVDesc(ETextureFlags inTextureFlags, D3D12_RENDER_TARG
 bool PDX12Texture::createDSVDesc(ETextureFlags inTextureFlags, D3D12_DEPTH_STENCIL_VIEW_DESC& outDesc) const
 {
 	return true;
+}
+
+void PDX12Texture::InitializeByMemory(const uint8* pixels, const HTextureInfo& inTextureInfo)
+{
+	Initialize(inTextureInfo);
+	if (IsValid() == false || pixels == nullptr)
+	{
+		return;
+	}
+
+	// 업로드는 전송 관리자에 요청만 한다. 프레임 제출의 맨 앞(Upload 우선순위)에 기록되어 같은 프레임의 드로우보다 먼저 실행된다.
+	// 올린 뒤에는 셰이더 리소스 상태로 두어 첫 샘플링 전에 별도 전이가 필요 없다. (이전에는 COPY_DEST에 머문 채 샘플링됐다)
+	PSharedPtr<PTransferManager> transferManager = HDirectXAPI::GetTransferManager();
+	if (transferManager == nullptr)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : TransferManager is not available. pixels are not uploaded", _textureInfo.Name);
+		return;
+	}
+
+	const uint32 pixelSize = HJGGraphicsHelper::GetTextureFormatPixelSize(_textureInfo.Format);
+	transferManager->RequestUploadTexture(_dx12Resource, pixels, _textureInfo.Width, _textureInfo.Height, pixelSize,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, _name);
 }

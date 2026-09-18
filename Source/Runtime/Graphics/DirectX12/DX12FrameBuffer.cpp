@@ -63,7 +63,7 @@ void PDX12FrameBuffer::Update()
 	HDX12ComPtr<HDX12Resource>& backBuffer = _dx12BackBuffers[index];
 
 	PSharedPtr<PCommandQueue> commandQueue = HDirectXAPI::GetCommandQueue();
-	PSharedPtr<PCommandList>  commandList  = commandQueue->RequestCommandList(ECommandListType::Base, JG_UINT64_MAX);
+	PSharedPtr<PCommandList>  commandList  = commandQueue->RequestCommandList(ECommandListType::Base, ECommandListPriority::Present);
 
 	CD3DX12_RESOURCE_BARRIER resourceBarrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->Get()->ResourceBarrier(1, &resourceBarrier);

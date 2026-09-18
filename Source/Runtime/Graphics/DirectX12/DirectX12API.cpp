@@ -13,6 +13,7 @@
 #include "DirectX12/DX12VertexBuffer.h"
 #include "DirectX12/DX12IndexBuffer.h"
 #include "DirectX12/DX12Material.h"
+#include "Classes/TransferManager.h"
 
 PDirectX12API::~PDirectX12API()
 {
@@ -66,6 +67,9 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	JG_LOG(Graphics, ELogLevel::Trace, "Create CommandQueue...");
 	_commandQueue = Allocate<PCommandQueue>(D3D12_COMMAND_LIST_TYPE_DIRECT);
 
+	JG_LOG(Graphics, ELogLevel::Trace, "Create TransferManager...");
+	_transferManager = Allocate<PTransferManager>();
+
 	JG_LOG(Graphics, ELogLevel::Trace, "Create FrameBuffer...");
 	HFrameBufferInfo frameBufferInfo;
 	frameBufferInfo.Handle = args.Handle;
@@ -86,6 +90,12 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 void PDirectX12API::Destroy()
 {
 	_commandQueue->Flush();
+	// 대기 중인 전송 요청과 스테이징을 버린다. 큐를 비운 뒤라 GPU가 쓰고 있는 스테이징은 없다.
+	if (_transferManager != nullptr)
+	{
+		_transferManager->Destroy();
+		_transferManager = nullptr;
+	}
 	_defaultMaterial = nullptr;
 	_defaultTexture  = nullptr;
 	_frameBuffer = nullptr;
@@ -152,12 +162,16 @@ void PDirectX12API::createDefaultResources()
 void PDirectX12API::BeginFrame()
 {
 	_commandQueue->Begin();
+	_transferManager->BeginFrame();   // 지난 제출의 리드백 완료 처리(콜백은 여기서, 메인 스레드)
 }
 
 void PDirectX12API::EndFrame()
 {
+	_transferManager->RecordUploads();     // 대기 업로드 -> Upload 우선순위 리스트. 드로우보다 먼저 실행된다.
 	_frameBuffer->Update();
+	_transferManager->RecordReadbacks();   // 대기 리드백 -> Readback 우선순위 리스트. 드로우 뒤에 실행된다.
 	_commandQueue->End();
+	_transferManager->OnFrameSubmitted(_commandQueue->GetSubmittedFenceValue());
 	_frameBuffer->Present();
 	_csuAllocator->UpdatePage();
 	_rtvAllocator->UpdatePage();
@@ -240,6 +254,7 @@ PSharedPtr<IVertexBuffer> PDirectX12API::CreateVertexBuffer(const HVertexBufferC
 {
 	PSharedPtr<PDX12VertexBuffer> vertexBuffer = Allocate<PDX12VertexBuffer>();
 	vertexBuffer->SetName(inArgs.Name);
+	vertexBuffer->SetLoadMethod(inArgs.LoadMethod);
 
 	return vertexBuffer;
 }
@@ -248,6 +263,7 @@ PSharedPtr<IIndexBuffer>  PDirectX12API::CreateIndexBuffer(const HIndexBufferCon
 {
 	PSharedPtr<PDX12IndexBuffer> indexBuffer = Allocate<PDX12IndexBuffer>();
 	indexBuffer->SetName(inArgs.Name);
+	indexBuffer->SetLoadMethod(inArgs.LoadMethod);
 
 	return indexBuffer;
 }
@@ -690,4 +706,36 @@ PSharedPtr<IRawTexture> HDirectXAPI::GetDefaultTexture()
 {
 	PDirectX12API* dx12API = getDX12API();
 	return (dx12API != nullptr) ? dx12API->GetDefaultTexture() : nullptr;
+}
+PSharedPtr<PTransferManager> HDirectXAPI::GetTransferManager()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetTransferManager() : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+// PDirectX12API : Transfer
+// ----------------------------------------------------------------------------
+
+bool PDirectX12API::RequestReadPixels(PSharedPtr<IRawTexture> inTexture, const HOnReadPixelsComplete& inOnComplete)
+{
+	if (_transferManager == nullptr)
+	{
+		return false;
+	}
+	return _transferManager->RequestReadPixels(Cast<PDX12Texture>(inTexture), inOnComplete);
+}
+
+bool PDirectX12API::ReadPixelsImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels)
+{
+	if (_transferManager == nullptr)
+	{
+		return false;
+	}
+	return _transferManager->ReadPixelsImmediate(Cast<PDX12Texture>(inTexture), outPixels);
+}
+
+PSharedPtr<PTransferManager> PDirectX12API::GetTransferManager() const
+{
+	return _transferManager;
 }

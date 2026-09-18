@@ -711,3 +711,72 @@ void PComputeCommandList::DispatchRays(const D3D12_DISPATCH_RAYS_DESC& desc)
 	_dx12CommandList->DispatchRays(&desc);
 
 }
+// ---------------------------------------------------------------- 전송 관리자용 (PTransferManager)
+
+void PCommandList::UploadBuffer(HDX12Resource* dest, HDX12Resource* stagingBuffer, uint64 byteSize, D3D12_RESOURCE_STATES finalState)
+{
+	if (dest == nullptr || stagingBuffer == nullptr || byteSize == 0)
+	{
+		return;
+	}
+
+	TransitionBarrier(dest, D3D12_RESOURCE_STATE_COPY_DEST);
+	FlushResourceBarrier();
+
+	_dx12CommandList->CopyBufferRegion(dest, 0, stagingBuffer, 0, byteSize);
+
+	TransitionBarrier(dest, finalState);
+	FlushResourceBarrier();
+
+	BackupResource(dest);
+	BackupResource(stagingBuffer);
+}
+
+void PCommandList::UploadTexture(HDX12Resource* dest, HDX12Resource* stagingBuffer, const HList<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>& footprints, const HList<uint32>& subresources, D3D12_RESOURCE_STATES finalState)
+{
+	if (dest == nullptr || stagingBuffer == nullptr || footprints.empty() || footprints.size() != subresources.size())
+	{
+		return;
+	}
+
+	TransitionBarrier(dest, D3D12_RESOURCE_STATE_COPY_DEST);
+	FlushResourceBarrier();
+
+	for (uint64 i = 0; i < footprints.size(); ++i)
+	{
+		CD3DX12_TEXTURE_COPY_LOCATION copyDest(dest, subresources[i]);
+		CD3DX12_TEXTURE_COPY_LOCATION copySrc(stagingBuffer, footprints[i]);
+		_dx12CommandList->CopyTextureRegion(&copyDest, 0, 0, 0, &copySrc, nullptr);
+	}
+
+	TransitionBarrier(dest, finalState);
+	FlushResourceBarrier();
+
+	BackupResource(dest);
+	BackupResource(stagingBuffer);
+}
+
+void PCommandList::ReadbackTexture(HDX12Resource* stagingBuffer, const D3D12_PLACED_SUBRESOURCE_FOOTPRINT& footprint, HDX12Resource* src, uint32 subresource, const D3D12_RESOURCE_STATES* restoreState)
+{
+	if (stagingBuffer == nullptr || src == nullptr)
+	{
+		return;
+	}
+
+	// READBACK 힙 버퍼는 COPY_DEST로 만들어져 그 상태로만 쓰이므로 배리어를 걸지 않는다.
+	TransitionBarrier(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	FlushResourceBarrier();
+
+	CD3DX12_TEXTURE_COPY_LOCATION copyDest(stagingBuffer, footprint);
+	CD3DX12_TEXTURE_COPY_LOCATION copySrc(src, subresource);
+	_dx12CommandList->CopyTextureRegion(&copyDest, 0, 0, 0, &copySrc, nullptr);
+
+	if (restoreState != nullptr)
+	{
+		TransitionBarrier(src, *restoreState);
+		FlushResourceBarrier();
+	}
+
+	BackupResource(stagingBuffer);
+	BackupResource(src);
+}

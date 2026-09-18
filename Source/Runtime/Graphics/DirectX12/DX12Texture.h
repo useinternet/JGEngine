@@ -35,7 +35,6 @@ public:
 public:
 	virtual uint64 GetTextureID() const override;
 	virtual const HTextureInfo& GetTextureInfo() const override;
-	virtual void AccessPixels(HOnAccessTexturePixels onAccessTexturePixels) const;
 
 	virtual void Reset() override;
 	virtual bool IsValid() const override;

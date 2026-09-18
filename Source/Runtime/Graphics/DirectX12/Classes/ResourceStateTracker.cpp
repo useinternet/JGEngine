@@ -254,3 +254,29 @@ void PResourceStateTracker::UnRegisterResource(HDX12Resource* d3dResource)
 		}
 	}
 }
+bool PResourceStateTracker::GetResourceState(HDX12Resource* d3dResource, D3D12_RESOURCE_STATES& outState)
+{
+	if (d3dResource == nullptr) return false;
+
+	std::shared_lock<HSharedMutex> lock(RESOURCE_MUTEX);
+	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
+
+	auto iter = resourceRefMap.find(d3dResource);
+	if (iter == resourceRefMap.end())
+	{
+		return false;
+	}
+
+	outState = (*iter).second.State.Get(D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+	return true;
+}
+
+bool PResourceStateTracker::IsRegistered(HDX12Resource* d3dResource)
+{
+	if (d3dResource == nullptr) return false;
+
+	std::shared_lock<HSharedMutex> lock(RESOURCE_MUTEX);
+	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
+
+	return resourceRefMap.find(d3dResource) != resourceRefMap.end();
+}

@@ -1,6 +1,7 @@
 #include "PCH/PCH.h"
 #include "DX12IndexBuffer.h"
 #include "DirectX12API.h"
+#include "Classes/TransferManager.h"
 
 PDX12IndexBuffer::~PDX12IndexBuffer()
 {
@@ -23,29 +24,46 @@ void PDX12IndexBuffer::SetName(const PName& inName)
 
 void PDX12IndexBuffer::SetDatas(const uint32* inDatas, uint64 inCount)
 {
-	uint64 originBtSize = sizeof(uint32) * _indexCount;
-	_indexCount = inCount;
-	uint64 btSize = sizeof(uint32) * _indexCount;
+	const uint64 btSize = sizeof(uint32) * inCount;
+	if (btSize == 0)
+	{
+		// 0바이트 리소스는 만들 수 없다. 빈 버퍼로 둔다.
+		Reset();
+		return;
+	}
 
-	// Create
-	if (IsValid() && ((originBtSize != btSize) || _cpuData == nullptr))
+	const uint64 originBtSize = sizeof(uint32) * _indexCount;
+	const bool   bGPULoad     = (_loadMethod == EBufferLoadMethod::GPULoad);
+	if (IsValid() && (originBtSize != btSize || (bGPULoad == false && _cpuData == nullptr)))
 	{
 		Reset();
 	}
 
+	// Reset()이 개수를 0으로 지우므로 그 뒤에 넣는다. (이전에는 크기가 바뀌면 GetIndexCount()가 0을 돌려줬다. 5-12)
+	_indexCount = inCount;
+
 	if (IsValid() == false)
 	{
-		CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-		CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(btSize);
+		// GPULoad: DEFAULT 힙, COMMON. 전송 관리자가 스테이징으로 올리고 INDEX_BUFFER로 전이한다.
+		// CPULoad: UPLOAD 힙, GENERIC_READ, 상시 매핑.
+		CD3DX12_HEAP_PROPERTIES heapProperties(bGPULoad ? D3D12_HEAP_TYPE_DEFAULT : D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC   resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(btSize);
 
 		_dx12Resource = HDirectXAPI::CreateCommittedResource(
 			GetName().ToString(),
 			&heapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
+			bGPULoad ? D3D12_RESOURCE_STATE_COMMON : D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr
 		);
+
+		if (_dx12Resource == nullptr)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Create IndexBuffer (%d bytes)", GetName(), (int32)btSize);
+			_indexCount = 0;
+			return;
+		}
 
 		{
 			std::lock_guard<std::mutex> lock(_mutex);
@@ -53,10 +71,23 @@ void PDX12IndexBuffer::SetDatas(const uint32* inDatas, uint64 inCount)
 			_uav.Reset();
 		}
 
-		_dx12Resource->Map(0, nullptr, (void**)&_cpuData);
+		if (bGPULoad == false)
+		{
+			_dx12Resource->Map(0, nullptr, (void**)&_cpuData);
+		}
 	}
 
-	if (_cpuData != nullptr && inDatas != nullptr)
+	if (inDatas == nullptr)
+	{
+		return;
+	}
+
+	if (bGPULoad)
+	{
+		_shadowData.assign(inDatas, inDatas + inCount);
+		requestUpload();
+	}
+	else if (_cpuData != nullptr)
 	{
 		memcpy(_cpuData, inDatas, btSize);
 	}
@@ -64,27 +95,43 @@ void PDX12IndexBuffer::SetDatas(const uint32* inDatas, uint64 inCount)
 
 void PDX12IndexBuffer::SetData(uint32 inData, uint64 inIndex)
 {
-	JG_CHECK(inIndex < _indexCount && IsValid() && _cpuData != nullptr);
+	JG_CHECK(inIndex < _indexCount && IsValid());
 
-	uint64  dataOffset = HMath::AlignUp(inIndex * sizeof(uint32), sizeof(uint32));
-	uint32* dataPos = (uint32*)((uint64)_cpuData + dataOffset);
+	uint32* datas = GetDatas();
+	if (datas == nullptr || inIndex >= _indexCount)
+	{
+		return;
+	}
 
-	*dataPos = inData;
+	datas[inIndex] = inData;
+
+	if (_loadMethod == EBufferLoadMethod::GPULoad)
+	{
+		// CPU 사본만 고쳤으므로 GPU에 다시 올린다. 같은 대상의 대기 요청은 하나로 합쳐진다.
+		requestUpload();
+	}
 }
 
 uint32* PDX12IndexBuffer::GetDatas() const
 {
+	if (_loadMethod == EBufferLoadMethod::GPULoad)
+	{
+		return _shadowData.empty() ? nullptr : (uint32*)_shadowData.data();
+	}
 	return _cpuData;
 }
 
 uint32 PDX12IndexBuffer::GetData(uint64 inIndex) const
 {
-	JG_CHECK(inIndex < _indexCount && IsValid() && _cpuData != nullptr);
+	JG_CHECK(inIndex < _indexCount && IsValid());
 
-	uint64 dataOffset = HMath::AlignUp(inIndex * sizeof(uint32), sizeof(uint32));
-	uint32 data = *((uint32*)((uint64)_cpuData + dataOffset));
+	const uint32* datas = GetDatas();
+	if (datas == nullptr || inIndex >= _indexCount)
+	{
+		return INDEX_NONE;
+	}
 
-	return data;
+	return datas[inIndex];
 }
 
 uint64 PDX12IndexBuffer::GetIndexCount() const
@@ -92,14 +139,35 @@ uint64 PDX12IndexBuffer::GetIndexCount() const
 	return _indexCount;
 }
 
+EBufferLoadMethod PDX12IndexBuffer::GetLoadMethod() const
+{
+	return _loadMethod;
+}
+
+void PDX12IndexBuffer::SetLoadMethod(EBufferLoadMethod inLoadMethod)
+{
+	if (_loadMethod == inLoadMethod)
+	{
+		return;
+	}
+
+	_loadMethod = inLoadMethod;
+	if (IsValid())
+	{
+		Reset();
+	}
+}
 
 void PDX12IndexBuffer::Reset()
 {
+	_shadowData.clear();
+
 	if (_dx12Resource == nullptr)
 	{
 		return;
 	}
 
+	// 대기 중인 업로드 요청이 있어도 된다. 등록이 풀린 대상은 기록 시점에 버려진다. (PTransferManager::recordUpload)
 	HDirectXAPI::DestroyCommittedResource(_dx12Resource);
 
 	_dx12Resource.Reset();
@@ -157,4 +225,21 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12IndexBuffer::GetUAV() const
 
 	_uav = std::move(alloc);
 	return _uav.CPU();
+}
+
+void PDX12IndexBuffer::requestUpload()
+{
+	if (IsValid() == false || _shadowData.empty())
+	{
+		return;
+	}
+
+	PSharedPtr<PTransferManager> transferManager = HDirectXAPI::GetTransferManager();
+	if (transferManager == nullptr)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : TransferManager is not available. index data is not uploaded", GetName());
+		return;
+	}
+
+	transferManager->RequestUploadBuffer(_dx12Resource, _shadowData.data(), _shadowData.size() * sizeof(uint32), D3D12_RESOURCE_STATE_INDEX_BUFFER, _name);
 }
