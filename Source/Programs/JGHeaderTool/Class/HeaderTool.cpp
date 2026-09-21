@@ -357,6 +357,16 @@ bool PHeaderTool::extractReflectionDatasInternal(HList<HHeaderInfo>& inHeaderInf
 						// Error Log
 					}
 
+					// 열거형 본문이 닫히면 분석을 끝낸다. 이전에는 다음 JGENUM()/JGCLASS()가 나올 때까지 모든 줄을 계속 읽어서,
+					// 뒤따르는 리플렉션 없는 enum class 선언이 이름을 덮어썼다. (EShaderDataType 블록이 ECommandQueueType 이름으로 생성돼
+					//  StaticEnum<EShaderDataType>()가 비어 있었고 입력 레이아웃 오프셋이 전부 0이 됐다)
+					if (pEnum->Name.Length() > 0 && line.Contains("};") == true)
+					{
+						headerInfo.Enums.push_back(*pEnum);
+						HPlatform::Deallocate(pEnum);
+						pEnum = nullptr;
+						Mode &= ~EAnalysisCommand::AnalysisEnum;
+					}
 				}
 			}
 		}
@@ -617,7 +627,8 @@ bool PHeaderTool::analysisMetaDatas(const PString& line, const PString& analysis
 
 	PString metaStr;
 	line.SubString(&metaStr, defineStart, defineEnd - defineStart);
-	metaStr.ReplaceAll(analysisToken, "").ReplaceAll("(", "").ReplaceAll(")", "").ReplaceAll(" ", "").Trim();
+	// 탭도 지운다. 쉼표 뒤 탭 정렬(JGENUMMETA(A = 1,<tab>B = 2)) 때문에 두 번째 키가 "\t\tB"로 생성돼 런타임 조회가 실패했다. (EShaderDataType의 DataSize)
+	metaStr.ReplaceAll(analysisToken, "").ReplaceAll("(", "").ReplaceAll(")", "").ReplaceAll(" ", "").ReplaceAll("\t", "").Trim();
 
 	PString token;
 	PString key_token;

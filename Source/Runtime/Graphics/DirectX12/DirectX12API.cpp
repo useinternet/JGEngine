@@ -13,7 +13,7 @@
 #include "DirectX12/DX12VertexBuffer.h"
 #include "DirectX12/DX12IndexBuffer.h"
 #include "DirectX12/DX12Material.h"
-#include "Classes/TransferManager.h"
+#include "Classes/ResourceStagingManager.h"
 
 PDirectX12API::~PDirectX12API()
 {
@@ -67,8 +67,8 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	JG_LOG(Graphics, ELogLevel::Trace, "Create CommandQueue...");
 	_commandQueue = Allocate<PCommandQueue>(D3D12_COMMAND_LIST_TYPE_DIRECT);
 
-	JG_LOG(Graphics, ELogLevel::Trace, "Create TransferManager...");
-	_transferManager = Allocate<PTransferManager>();
+	JG_LOG(Graphics, ELogLevel::Trace, "Create ResourceStagingManager...");
+	_resourceStagingManager = Allocate<PResourceStagingManager>();
 
 	JG_LOG(Graphics, ELogLevel::Trace, "Create FrameBuffer...");
 	HFrameBufferInfo frameBufferInfo;
@@ -91,10 +91,10 @@ void PDirectX12API::Destroy()
 {
 	_commandQueue->Flush();
 	// 대기 중인 전송 요청과 스테이징을 버린다. 큐를 비운 뒤라 GPU가 쓰고 있는 스테이징은 없다.
-	if (_transferManager != nullptr)
+	if (_resourceStagingManager != nullptr)
 	{
-		_transferManager->Destroy();
-		_transferManager = nullptr;
+		_resourceStagingManager->Destroy();
+		_resourceStagingManager = nullptr;
 	}
 	_defaultMaterial = nullptr;
 	_defaultTexture  = nullptr;
@@ -162,16 +162,16 @@ void PDirectX12API::createDefaultResources()
 void PDirectX12API::BeginFrame()
 {
 	_commandQueue->Begin();
-	_transferManager->BeginFrame();   // 지난 제출의 리드백 완료 처리(콜백은 여기서, 메인 스레드)
+	_resourceStagingManager->BeginFrame();   // 지난 제출의 리드백 완료 처리(콜백은 여기서, 메인 스레드)
 }
 
 void PDirectX12API::EndFrame()
 {
-	_transferManager->RecordUploads();     // 대기 업로드 -> Upload 우선순위 리스트. 드로우보다 먼저 실행된다.
+	_resourceStagingManager->RecordUploads();     // 대기 업로드 -> Upload 우선순위 리스트. 드로우보다 먼저 실행된다.
 	_frameBuffer->Update();
-	_transferManager->RecordReadbacks();   // 대기 리드백 -> Readback 우선순위 리스트. 드로우 뒤에 실행된다.
+	_resourceStagingManager->RecordReadbacks();   // 대기 리드백 -> Readback 우선순위 리스트. 드로우 뒤에 실행된다.
 	_commandQueue->End();
-	_transferManager->OnFrameSubmitted(_commandQueue->GetSubmittedFenceValue());
+	_resourceStagingManager->OnFrameSubmitted(_commandQueue->GetSubmittedFenceValue());
 	_frameBuffer->Present();
 	_csuAllocator->UpdatePage();
 	_rtvAllocator->UpdatePage();
@@ -707,35 +707,35 @@ PSharedPtr<IRawTexture> HDirectXAPI::GetDefaultTexture()
 	PDirectX12API* dx12API = getDX12API();
 	return (dx12API != nullptr) ? dx12API->GetDefaultTexture() : nullptr;
 }
-PSharedPtr<PTransferManager> HDirectXAPI::GetTransferManager()
+PSharedPtr<PResourceStagingManager> HDirectXAPI::GetResourceStagingManager()
 {
 	PDirectX12API* dx12API = getDX12API();
-	return (dx12API != nullptr) ? dx12API->GetTransferManager() : nullptr;
+	return (dx12API != nullptr) ? dx12API->GetResourceStagingManager() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 // PDirectX12API : Transfer
 // ----------------------------------------------------------------------------
 
-bool PDirectX12API::RequestReadPixels(PSharedPtr<IRawTexture> inTexture, const HOnReadPixelsComplete& inOnComplete)
+bool PDirectX12API::RequestTextureReadback(PSharedPtr<IRawTexture> inTexture, const HOnTextureReadbackComplete& inOnComplete)
 {
-	if (_transferManager == nullptr)
+	if (_resourceStagingManager == nullptr)
 	{
 		return false;
 	}
-	return _transferManager->RequestReadPixels(Cast<PDX12Texture>(inTexture), inOnComplete);
+	return _resourceStagingManager->RequestTextureReadback(Cast<PDX12Texture>(inTexture), inOnComplete);
 }
 
-bool PDirectX12API::ReadPixelsImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels)
+bool PDirectX12API::ReadbackTextureImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels)
 {
-	if (_transferManager == nullptr)
+	if (_resourceStagingManager == nullptr)
 	{
 		return false;
 	}
-	return _transferManager->ReadPixelsImmediate(Cast<PDX12Texture>(inTexture), outPixels);
+	return _resourceStagingManager->ReadbackTextureImmediate(Cast<PDX12Texture>(inTexture), outPixels);
 }
 
-PSharedPtr<PTransferManager> PDirectX12API::GetTransferManager() const
+PSharedPtr<PResourceStagingManager> PDirectX12API::GetResourceStagingManager() const
 {
-	return _transferManager;
+	return _resourceStagingManager;
 }

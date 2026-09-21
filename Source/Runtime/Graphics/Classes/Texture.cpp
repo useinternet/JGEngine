@@ -38,11 +38,11 @@ void JGTexture::WriteJson(PJsonData& json) const
 	json.AddMember("ClearDepth", texInfo.ClearDepth);
 	json.AddMember("ClearStencil", texInfo.ClearStencil);
 
-	// 픽셀은 GPU에서 읽어 온다. 저장은 도구 경로라 동기 리드백(ReadPixelsImmediate)을 쓴다.
+	// 픽셀은 GPU에서 읽어 온다. 저장은 도구 경로라 동기 리드백(ReadbackTextureImmediate)을 쓴다.
 	// (DEFAULT 힙 텍스처는 Map할 수 없다. 이전 코드는 Map 실패로 널 포인터를 압축해 깨진 데이터를 저장했다. 5-1)
 	HList<uint8> compressedPixels;
 	HTexturePixels pixels;
-	if (GetGraphicsAPI().ReadPixelsImmediate(_texture, pixels) && pixels.IsValid())
+	if (GetGraphicsAPI().ReadbackTextureImmediate(_texture, pixels) && pixels.IsValid())
 	{
 		// 압축 작업 버퍼는 std 할당자. 엔진 풀은 블록 하나가 최대 2MB라 큰 텍스처를 HList에 담을 수 없다. (5-23)
 		uLongf compressedSize = compressBound((uLong)pixels.Data.size());
@@ -154,22 +154,22 @@ void JGTexture::ReadJson(const PJsonData& json)
 	}
 
 	// 픽셀 크기는 포맷에서 바로 구한다. (이전에는 채널 수를 바이트 수로 써서 16비트 포맷의 크기가 틀렸다)
-	const uint64 pixelSize = (uint64)texInfo.Width * texInfo.Height * HJGGraphicsHelper::GetTextureFormatPixelSize(texInfo.Format);
-	if (compressedPixels.empty() || pixelSize == 0)
+	const uint64 pixelDataSize = (uint64)texInfo.Width * texInfo.Height * HJGGraphicsHelper::GetTextureFormatBytesPerPixel(texInfo.Format);
+	if (compressedPixels.empty() || pixelDataSize == 0)
 	{
 		JG_LOG(Graphics, ELogLevel::Warning, "%s : Texture asset has no pixel data. an empty texture is created", texInfo.Name);
 		_texture = GetGraphicsAPI().CreateRawTexture(texInfo);
 		return;
 	}
 
-	std::vector<uint8> pixels(pixelSize);   // 풀 블록 한도(2MB) 때문에 std 할당자
+	std::vector<uint8> pixels(pixelDataSize);   // 풀 블록 한도(2MB) 때문에 std 할당자
 
-	uLongf destLength   = (uLongf)pixelSize;
+	uLongf destLength   = (uLongf)pixelDataSize;
 	uLong  sourceLength = (uLong)compressedPixels.size();
 	const int32 result = uncompress2((Bytef*)pixels.data(), &destLength, (const Bytef*)compressedPixels.data(), &sourceLength);
-	if (result != Z_OK || destLength != pixelSize)
+	if (result != Z_OK || destLength != pixelDataSize)
 	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail uncompress pixels (zlib %d, %d / %d bytes)", texInfo.Name, result, (int32)destLength, (int32)pixelSize);
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail uncompress pixels (zlib %d, %d / %d bytes)", texInfo.Name, result, (int32)destLength, (int32)pixelDataSize);
 		_texture = GetGraphicsAPI().CreateRawTexture(texInfo);
 		return;
 	}

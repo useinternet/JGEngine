@@ -38,7 +38,7 @@ void HStaticSubMesh::SetData(PName inName, const HList<HVertex>& inVertices, con
 	{
 		HVertexBufferConstructArguments vertexArgs;
 		vertexArgs.Name = inName;
-		vertexArgs.LoadMethod = EBufferLoadMethod::GPULoad;   // 정적 메시는 DEFAULT 힙. 전송 관리자가 올리고 CPU 사본은 버퍼가 든다. (5-6)
+		vertexArgs.LoadMethod = EBufferLoadMethod::GPULoad;   // 정적 메시는 DEFAULT 힙. 스테이징 관리자가 올리고 CPU 사본은 버퍼가 든다. (5-6)
 		VertexBuffer = GetGraphicsAPI().CreateVertexBuffer(vertexArgs);
 	}
 	if (IndexBuffer == nullptr)

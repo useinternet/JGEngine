@@ -1,94 +1,80 @@
 #include "PCH/PCH.h"
 #include "JGGraphicsHelper.h"
 
+namespace
+{
+	// 열거자 메타(JGENUMMETA)에서 값 하나를 읽는다. 열거형·열거자·키가 없거나 값이 비어 있으면 false.
+	// (이전 헬퍼들은 비어 있는 집합의 begin()을 역참조해 키가 없을 때 정의되지 않은 동작이었다)
+	template<class TEnum>
+	bool readEnumMeta(TEnum inValue, const PString& inKey, PName& outValue)
+	{
+		PSharedPtr<JGEnum> Enum = StaticEnum<TEnum>();
+		if (Enum == nullptr)
+		{
+			return false;
+		}
+
+		PSharedPtr<JGMeta> Meta = Enum->GetMetaDataByValue((int32)inValue);
+		if (Meta == nullptr)
+		{
+			return false;
+		}
+
+		HHashSet<PName> Values;
+		if (Meta->GetMetaValues(PName(inKey), Values) == false || Values.empty())
+		{
+			return false;
+		}
+
+		outValue = *Values.begin();
+		return true;
+	}
+
+	template<class TEnum>
+	int32 readEnumMetaInt(TEnum inValue, const PString& inKey)
+	{
+		PSharedPtr<JGEnum> Enum = StaticEnum<TEnum>();
+		if (Enum == nullptr)
+		{
+			return false;
+		}
+
+		PName value;
+		if (readEnumMeta(inValue, inKey, value) == false)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : enumerator %d has no '%s' meta. check JGENUMMETA and re-run JGHeaderTool", Enum->GetName(), static_cast<int32>(inValue), PString(inKey));
+			return 0;
+		}
+
+		return value.ToString().ToInt();
+	}
+}
+
 uint64 HJGGraphicsHelper::GetShaderDataTypeSize(EShaderDataType dataType)
 {
-	PSharedPtr<JGEnum> Enum = StaticEnum<EShaderDataType>();
-	if (Enum == nullptr)
-	{
-		return 0;
-	}
-
-	PSharedPtr<JGMeta> Meta = Enum->GetMetaDataByIndex((int32)dataType);
-	if (Meta == nullptr)
-	{
-		return 0;
-	}
-
-	HHashSet<PName> Values;
-	Meta->GetMetaValues(PName("DataSize"), Values);
-
-	PString sizeStr = (*Values.begin()).ToString();
-	int32 sizeInt   = sizeStr.ToInt();
-
-	return (uint64)sizeInt;
+	return static_cast<uint64>(readEnumMetaInt(dataType, "DataSize"));
 }
 
 PName HJGGraphicsHelper::GetShaderDataTypeHLSLName(EShaderDataType dataType)
 {
-	PSharedPtr<JGEnum> Enum = StaticEnum<EShaderDataType>();
-	if (Enum == nullptr)
+	PName value;
+	if (readEnumMeta(dataType, "HLSLName", value) == false)
 	{
+		JG_LOG(Graphics, ELogLevel::Error, "EShaderDataType : enumerator %d has no 'HLSLName' meta. check JGENUMMETA and re-run JGHeaderTool", (int32)dataType);
 		return NAME_NONE;
 	}
 
-	PSharedPtr<JGMeta> Meta = Enum->GetMetaDataByIndex((int32)dataType);
-	if (Meta == nullptr)
-	{
-		return NAME_NONE;
-	}
-
-	HHashSet<PName> Values;
-	Meta->GetMetaValues(PName("HLSLName"), Values);
-
-	return (*Values.begin());
+	return value;
 }
 
-uint8  HJGGraphicsHelper::GetTextureFormatChannels(ETextureFormat format)
+uint8 HJGGraphicsHelper::GetTextureFormatChannels(ETextureFormat format)
 {
-	PSharedPtr<JGEnum> Enum = StaticEnum<ETextureFormat>();
-	if (Enum == nullptr)
-	{
-		return 0;
-	}
-
-	PSharedPtr<JGMeta> Meta = Enum->GetMetaDataByIndex((int32)format);
-	if (Meta == nullptr)
-	{
-		return 0;
-	}
-
-	HHashSet<PName> Values;
-	Meta->GetMetaValues(PName("Channels"), Values);
-
-	PString sizeStr = (*Values.begin()).ToString();
-	int32   sizeInt = sizeStr.ToInt();
-
-	return (uint8)sizeInt;
+	return static_cast<uint8>(readEnumMetaInt(format, "Channels"));
 }
 
-uint32 HJGGraphicsHelper::GetTextureFormatPixelSize(ETextureFormat format)
+uint32 HJGGraphicsHelper::GetTextureFormatBytesPerPixel(ETextureFormat format)
 {
-	switch (format)
-	{
-	case ETextureFormat::R8_Unorm:
-	case ETextureFormat::R8_Uint:             return 1;
-	case ETextureFormat::R16_Float:
-	case ETextureFormat::R16_Uint:            return 2;
-	case ETextureFormat::R32_Float:
-	case ETextureFormat::R32_Uint:
-	case ETextureFormat::R16G16_Float:
-	case ETextureFormat::R8G8B8A8_Unorm:
-	case ETextureFormat::R11G11B10_Float:
-	case ETextureFormat::R24G8_TYPELESS:
-	case ETextureFormat::D24_Unorm_S8_Uint:   return 4;
-	case ETextureFormat::R16G16B16A16_Unorm:
-	case ETextureFormat::R16G16B16A16_Float:
-	case ETextureFormat::R16G16B16A16_Uint:   return 8;
-	case ETextureFormat::R32G32B32A32_Float:  return 16;
-	case ETextureFormat::None:
-	default:                                  return 0;
-	}
+	return static_cast<uint32>(readEnumMetaInt(format, "BytesPerPixel"));
 }
 
 bool HJGGraphicsHelper::IsDepthStencilFormat(ETextureFormat format)

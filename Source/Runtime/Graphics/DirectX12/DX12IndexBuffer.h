@@ -52,6 +52,6 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUAV() const;
 
 private:
-	// GPULoad: CPU 사본 전체를 전송 관리자에 업로드 요청한다.
+	// GPULoad: CPU 사본 전체를 스테이징 관리자에 업로드 요청한다.
 	void requestUpload();
 };

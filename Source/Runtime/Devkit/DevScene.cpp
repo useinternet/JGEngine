@@ -506,8 +506,8 @@ void JGDevScene::DumpReadbackOnce()
 
 	// 1. 비동기: 알베도 G버퍼. 복사는 이번 프레임 제출의 마지막(드로우 뒤)에 기록되고 콜백은 다음 BeginFrame에 온다.
 	PWeakPtr<JGDevScene> weakThis = SharedWrap(this);
-	const bool bRequested = GetGraphicsAPI().RequestReadPixels(GBufferTextures[GBuffer_Albedo],
-		HOnReadPixelsComplete::CreateLambda([weakThis](const HTexturePixels& InPixels)
+	const bool bRequested = GetGraphicsAPI().RequestTextureReadback(GBufferTextures[GBuffer_Albedo],
+		HOnTextureReadbackComplete::CreateLambda([weakThis](const HTexturePixels& InPixels)
 		{
 			PSharedPtr<JGDevScene> self = weakThis.Pin();
 			if (self.IsValid())
@@ -518,21 +518,21 @@ void JGDevScene::DumpReadbackOnce()
 
 	// 2. 동기: 씬 텍스처(R16G16B16A16_Float). 프레임 중간 호출이라 결과는 지난 프레임의 최종 이미지다.
 	HTexturePixels scenePixels;
-	const bool bRead = GetGraphicsAPI().ReadPixelsImmediate(SceneTexture, scenePixels);
+	const bool bRead = GetGraphicsAPI().ReadbackTextureImmediate(SceneTexture, scenePixels);
 	bool bSaved = false;
 	if (bRead)
 	{
 		bSaved = writePNG(DevSceneReadbackScenePath, scenePixels, false);
 
 		const uint16* center = (const uint16*)scenePixels.GetPixel(scenePixels.Width / 2, scenePixels.Height / 2);
-		JG_LOG(Devkit, ELogLevel::Info, "DevScene : ReadPixelsImmediate(Scene) %dx%d, %d bytes/pixel, %d bytes, center RGBA(%.3f, %.3f, %.3f, %.3f), saved %s -> %s",
-			(int32)scenePixels.Width, (int32)scenePixels.Height, (int32)scenePixels.PixelSize, (int32)scenePixels.Data.size(),
+		JG_LOG(Devkit, ELogLevel::Info, "DevScene : ReadbackTextureImmediate(Scene) %dx%d, %d bytes/pixel, %d bytes, center RGBA(%.3f, %.3f, %.3f, %.3f), saved %s -> %s",
+			(int32)scenePixels.Width, (int32)scenePixels.Height, (int32)scenePixels.BytesPerPixel, (int32)scenePixels.Data.size(),
 			halfToFloat(center[0]), halfToFloat(center[1]), halfToFloat(center[2]), halfToFloat(center[3]),
 			PString(bSaved ? "ok" : "fail"), PString(DevSceneReadbackScenePath));
 	}
 	else
 	{
-		JG_LOG(Devkit, ELogLevel::Error, "DevScene : ReadPixelsImmediate(Scene) failed");
+		JG_LOG(Devkit, ELogLevel::Error, "DevScene : ReadbackTextureImmediate(Scene) failed");
 	}
 
 	ReadbackStatus = PString::Format("Readback : async albedo %s, immediate scene %s",
@@ -543,7 +543,7 @@ void JGDevScene::OnAlbedoReadback(const HTexturePixels& InPixels)
 {
 	if (InPixels.IsValid() == false)
 	{
-		JG_LOG(Devkit, ELogLevel::Error, "DevScene : RequestReadPixels(Albedo) returned empty pixels");
+		JG_LOG(Devkit, ELogLevel::Error, "DevScene : RequestTextureReadback(Albedo) returned empty pixels");
 		ReadbackStatus += PString(" / async albedo: empty");
 		return;
 	}
@@ -565,8 +565,8 @@ void JGDevScene::OnAlbedoReadback(const HTexturePixels& InPixels)
 	const bool   bSaved = writePNG(DevSceneReadbackAlbedoPath, InPixels, true);   // 배경 알파 0을 불투명 검정으로
 	const float32 coveredPercent = (float32)coveredCount * 100.0f / (float32)((uint64)InPixels.Width * InPixels.Height);
 
-	JG_LOG(Devkit, ELogLevel::Info, "DevScene : RequestReadPixels(Albedo) %dx%d, %d bytes/pixel, covered %d px (%.1f%%), center RGBA(%d, %d, %d, %d), saved %s -> %s",
-		(int32)InPixels.Width, (int32)InPixels.Height, (int32)InPixels.PixelSize, (int32)coveredCount, coveredPercent,
+	JG_LOG(Devkit, ELogLevel::Info, "DevScene : RequestTextureReadback(Albedo) %dx%d, %d bytes/pixel, covered %d px (%.1f%%), center RGBA(%d, %d, %d, %d), saved %s -> %s",
+		(int32)InPixels.Width, (int32)InPixels.Height, (int32)InPixels.BytesPerPixel, (int32)coveredCount, coveredPercent,
 		(int32)center[0], (int32)center[1], (int32)center[2], (int32)center[3],
 		PString(bSaved ? "ok" : "fail"), PString(DevSceneReadbackAlbedoPath));
 

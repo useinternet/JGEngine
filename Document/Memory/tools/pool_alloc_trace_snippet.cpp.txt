@@ -1,0 +1,28 @@
+// 임시 진단: 특정 크기 클래스의 풀 블록 누수를 추적할 때 HMemoryChunk::Allocate(MemoryPool.cpp)에 넣는다.
+// 1) 파일 상단: #define JG_MEMORY_TRACE_SIZE 32  +  #include <Windows.h>
+// 2) 아래 블록을 'Allocated %u byte' JG_LOG 바로 뒤에 넣는다.
+// 3) 실행 뒤 jg_log.txt에서 Allocated/Deallocated 짝이 안 맞는 주소의 TRACE 줄을 모아 정렬하고,
+//    llvm-symbolizer --obj=Bin/DevelopEngine/<모듈>.dll --relative-address <RVA...> 로 함수 이름을 얻는다. (2026-09-21 PSO 캐시 누수 진단에 사용)
+
+#endif
+#if JG_MEMORY_TRACE_SIZE
+	if (AdjustedMemorySize == JG_MEMORY_TRACE_SIZE)
+	{
+		void* frames[12] = {};
+		USHORT frameCount = ::CaptureStackBackTrace(2, 12, frames, nullptr);
+		PString stack;
+		for (USHORT i = 0; i < frameCount; ++i)
+		{
+			HMODULE module = nullptr;
+			char moduleName[MAX_PATH] = {};
+			if (::GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)frames[i], &module) && module != nullptr)
+			{
+				::GetModuleFileNameA(module, moduleName, MAX_PATH);
+				const char* baseName = strrchr(moduleName, 92);   // '\'
+				baseName = (baseName != nullptr) ? baseName + 1 : moduleName;
+				stack += PString::Format("%s+0x%llx ", PString(baseName), (unsigned long long)((uint8*)frames[i] - (uint8*)module));
+			}
+		}
+		JG_LOG(Memory, ELogLevel::Info, "[ID: %u] TRACE32 %x : %s", GetID(), pResult, stack);
+	}
+#endif

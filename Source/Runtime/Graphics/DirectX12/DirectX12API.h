@@ -6,7 +6,7 @@
 
 
 class PCommandQueue;
-class PTransferManager;
+class PResourceStagingManager;
 class PDescriptionAllocator;
 class PGraphicsCommandList;
 class PComputeCommandList;
@@ -21,7 +21,7 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 
 	PSharedPtr<PCommandQueue> _commandQueue;
 	// GPU <-> CPU 전송(업로드/리드백). 큐 바로 뒤에 만들고 Destroy에서 큐 Flush 뒤 해제한다.
-	PSharedPtr<PTransferManager> _transferManager;
+	PSharedPtr<PResourceStagingManager> _resourceStagingManager;
 	PSharedPtr<PDescriptionAllocator> _csuAllocator;
 	PSharedPtr<PDescriptionAllocator> _rtvAllocator;
 	PSharedPtr<PDescriptionAllocator> _dsvAllocator;
@@ -63,8 +63,8 @@ public:
 	virtual PSharedPtr<IIndexBuffer>  CreateIndexBuffer(const HIndexBufferConstructArguments& inArgs) override;
 	virtual PSharedPtr<IRawMaterial> CreateRawMaterial(const HRawMaterialConstructArguments& inArgs) override;
 
-	virtual bool RequestReadPixels(PSharedPtr<IRawTexture> inTexture, const HOnReadPixelsComplete& inOnComplete) override;
-	virtual bool ReadPixelsImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels) override;
+	virtual bool RequestTextureReadback(PSharedPtr<IRawTexture> inTexture, const HOnTextureReadbackComplete& inOnComplete) override;
+	virtual bool ReadbackTextureImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels) override;
 
 
 public:
@@ -105,7 +105,7 @@ public:
 
 	PSharedPtr<PCommandQueue> GetCommandQueue() const;
 	PSharedPtr<PDX12FrameBuffer> GetFrameBuffer() const;
-	PSharedPtr<PTransferManager> GetTransferManager() const;
+	PSharedPtr<PResourceStagingManager> GetResourceStagingManager() const;
 };
 
 
@@ -143,8 +143,8 @@ public:
 	static HDescriptionAllocation CSUAllocate();
 	static PSharedPtr<PCommandQueue> GetCommandQueue();
 	static PSharedPtr<PDX12FrameBuffer> GetFrameBuffer();
-	// GPU <-> CPU 전송 관리자. 버퍼/텍스처가 업로드를 요청할 때 쓴다. API가 없으면 nullptr.
-	static PSharedPtr<PTransferManager> GetTransferManager();
+	// GPU <-> CPU 스테이징 관리자. 버퍼/텍스처가 업로드를 요청할 때 쓴다. API가 없으면 nullptr.
+	static PSharedPtr<PResourceStagingManager> GetResourceStagingManager();
 	// API가 소유한 기본 텍스처(1x1 흰색). 머터리얼의 빈 Texture 슬롯 대체값. API가 없으면 nullptr.
 	static PSharedPtr<IRawTexture> GetDefaultTexture();
 private:

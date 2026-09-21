@@ -31,22 +31,22 @@ enum class EShaderDomain
 JGENUM()
 enum class ETextureFormat
 {
-	None,					JGENUMMETA(Channels = 0)
-	R8_Unorm,				JGENUMMETA(Channels = 1)
-	R16_Float,				JGENUMMETA(Channels = 1)
-	R32_Float,				JGENUMMETA(Channels = 1)
-	R16G16_Float,			JGENUMMETA(Channels = 2)
-	R8G8B8A8_Unorm,			JGENUMMETA(Channels = 4)
-	R16G16B16A16_Unorm,		JGENUMMETA(Channels = 4)
-	R11G11B10_Float,		JGENUMMETA(Channels = 3)
-	R16G16B16A16_Float,		JGENUMMETA(Channels = 4)
-	R32G32B32A32_Float,		JGENUMMETA(Channels = 4)
-	R16G16B16A16_Uint,		JGENUMMETA(Channels = 4)
-	R8_Uint,				JGENUMMETA(Channels = 1)
-	R16_Uint,				JGENUMMETA(Channels = 1)
-	R32_Uint,				JGENUMMETA(Channels = 1)
-	R24G8_TYPELESS,			JGENUMMETA(Channels = 2)
-	D24_Unorm_S8_Uint,		JGENUMMETA(Channels = 2)
+	None,					JGENUMMETA(Channels = 0, BytesPerPixel = 0)
+	R8_Unorm,				JGENUMMETA(Channels = 1, BytesPerPixel = 1)
+	R16_Float,				JGENUMMETA(Channels = 1, BytesPerPixel = 2)
+	R32_Float,				JGENUMMETA(Channels = 1, BytesPerPixel = 4)
+	R16G16_Float,			JGENUMMETA(Channels = 2, BytesPerPixel = 4)
+	R8G8B8A8_Unorm,			JGENUMMETA(Channels = 4, BytesPerPixel = 4)
+	R16G16B16A16_Unorm,		JGENUMMETA(Channels = 4, BytesPerPixel = 8)
+	R11G11B10_Float,		JGENUMMETA(Channels = 3, BytesPerPixel = 4)
+	R16G16B16A16_Float,		JGENUMMETA(Channels = 4, BytesPerPixel = 8)
+	R32G32B32A32_Float,		JGENUMMETA(Channels = 4, BytesPerPixel = 16)
+	R16G16B16A16_Uint,		JGENUMMETA(Channels = 4, BytesPerPixel = 8)
+	R8_Uint,				JGENUMMETA(Channels = 1, BytesPerPixel = 1)
+	R16_Uint,				JGENUMMETA(Channels = 1, BytesPerPixel = 2)
+	R32_Uint,				JGENUMMETA(Channels = 1, BytesPerPixel = 4)
+	R24G8_TYPELESS,			JGENUMMETA(Channels = 2, BytesPerPixel = 4)
+	D24_Unorm_S8_Uint,		JGENUMMETA(Channels = 2, BytesPerPixel = 4)
 };
 
 // JGENUMMETA()가 없는 항목은 헤더 툴이 이름 목록에 넣지 않아 StaticEnum<>()->GetEnumNameByValue()가 NAME_NONE을 돌려준다.
@@ -356,20 +356,18 @@ struct HTextureInfo
 	}
 };
 
-// GPU 텍스처에서 CPU로 읽어 온 픽셀 (PJGGraphicsAPI::RequestReadPixels / ReadPixelsImmediate 결과).
-// 서브리소스 0(밉 0, 슬라이스 0)만 담고, 행은 빈틈없이(RowPitch = Width * PixelSize) 채워진다.
 struct HTexturePixels
 {
 	uint32 Width  = 0;
 	uint32 Height = 0;
-	uint32 PixelSize = 0;                          // 픽셀 하나의 바이트 수 (HJGGraphicsHelper::GetTextureFormatPixelSize)
+	uint32 BytesPerPixel = 0;
 	ETextureFormat Format = ETextureFormat::None;
-	// 엔진 메모리 풀은 블록 하나가 최대 2MB라 HList로는 1080p 한 장(16MB)도 담을 수 없다. 큰 픽셀 버퍼는 std 할당자를 쓴다.
+	// @TODO: HList로는 커버가 안되므로, 메모리 시스템 개선 필요. 임시로 큰 픽셀 버퍼는 std 할당자를 쓴다.
 	std::vector<uint8> Data;
 
-	uint64 GetRowPitch() const { return (uint64)Width * PixelSize; }
-	bool IsValid() const { return Width > 0 && Height > 0 && PixelSize > 0 && Data.size() == GetRowPitch() * Height; }
-	const uint8* GetPixel(uint32 x, uint32 y) const { return Data.data() + (uint64)y * GetRowPitch() + (uint64)x * PixelSize; }
+	uint64 GetRowPitch() const { return (uint64)Width * BytesPerPixel; }
+	bool IsValid() const { return Width > 0 && Height > 0 && BytesPerPixel > 0 && Data.size() == GetRowPitch() * Height; }
+	const uint8* GetPixel(uint32 x, uint32 y) const { return Data.data() + (uint64)y * GetRowPitch() + (uint64)x * BytesPerPixel; }
 };
 
 struct MeshInfo
@@ -389,7 +387,7 @@ struct MeshInfo
 // 버퍼 데이터를 GPU에 올리는 방식 (HVertexBufferConstructArguments / HIndexBufferConstructArguments)
 enum class EBufferLoadMethod
 {
-	GPULoad,   // DEFAULT 힙. 전송 관리자가 스테이징으로 올린다. 정적 데이터(메시 VB/IB). CPU 사본은 버퍼가 따로 든다.
+	GPULoad,   // DEFAULT 힙. 스테이징 관리자가 스테이징으로 올린다. 정적 데이터(메시 VB/IB). CPU 사본은 버퍼가 따로 든다.
 	CPULoad,   // UPLOAD 힙 + 상시 Map. 매 프레임 바뀌는 데이터.
 };
 

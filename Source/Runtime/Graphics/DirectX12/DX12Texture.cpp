@@ -3,7 +3,7 @@
 #include "JGGraphicsHelper.h"
 #include "DirectX12/DirectX12API.h"
 #include "Classes/CommandList.h"
-#include "Classes/TransferManager.h"
+#include "Classes/ResourceStagingManager.h"
 
 PDX12Texture::~PDX12Texture()
 {
@@ -320,16 +320,16 @@ void PDX12Texture::InitializeByMemory(const uint8* pixels, const HTextureInfo& i
 		return;
 	}
 
-	// 업로드는 전송 관리자에 요청만 한다. 프레임 제출의 맨 앞(Upload 우선순위)에 기록되어 같은 프레임의 드로우보다 먼저 실행된다.
+	// 업로드는 스테이징 관리자에 요청만 한다. 프레임 제출의 맨 앞(Upload 우선순위)에 기록되어 같은 프레임의 드로우보다 먼저 실행된다.
 	// 올린 뒤에는 셰이더 리소스 상태로 두어 첫 샘플링 전에 별도 전이가 필요 없다. (이전에는 COPY_DEST에 머문 채 샘플링됐다)
-	PSharedPtr<PTransferManager> transferManager = HDirectXAPI::GetTransferManager();
-	if (transferManager == nullptr)
+	PSharedPtr<PResourceStagingManager> stagingManager = HDirectXAPI::GetResourceStagingManager();
+	if (stagingManager == nullptr)
 	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : TransferManager is not available. pixels are not uploaded", _textureInfo.Name);
+		JG_LOG(Graphics, ELogLevel::Error, "%s : ResourceStagingManager is not available. pixels are not uploaded", _textureInfo.Name);
 		return;
 	}
 
-	const uint32 pixelSize = HJGGraphicsHelper::GetTextureFormatPixelSize(_textureInfo.Format);
-	transferManager->RequestUploadTexture(_dx12Resource, pixels, _textureInfo.Width, _textureInfo.Height, pixelSize,
+	const uint32 bytesPerPixel = HJGGraphicsHelper::GetTextureFormatBytesPerPixel(_textureInfo.Format);
+	stagingManager->RequestTextureUpload(_dx12Resource, pixels, _textureInfo.Width, _textureInfo.Height, bytesPerPixel,
 		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, _name);
 }

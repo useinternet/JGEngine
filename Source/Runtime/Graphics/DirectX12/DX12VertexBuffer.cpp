@@ -1,7 +1,7 @@
 #include "PCH/PCH.h"
 #include "DX12VertexBuffer.h"
 #include "DirectX12API.h"
-#include "Classes/TransferManager.h"
+#include "Classes/ResourceStagingManager.h"
 
 PDX12VertexBuffer::~PDX12VertexBuffer()
 {
@@ -45,7 +45,7 @@ void PDX12VertexBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint
 
 	if (IsValid() == false)
 	{
-		// GPULoad: DEFAULT 힙, COMMON. 전송 관리자가 스테이징으로 올리고 VERTEX_AND_CONSTANT_BUFFER로 전이한다.
+		// GPULoad: DEFAULT 힙, COMMON. 스테이징 관리자가 스테이징으로 올리고 VERTEX_AND_CONSTANT_BUFFER로 전이한다.
 		// CPULoad: UPLOAD 힙, GENERIC_READ, 상시 매핑.
 		CD3DX12_HEAP_PROPERTIES heapProperties(bGPULoad ? D3D12_HEAP_TYPE_DEFAULT : D3D12_HEAP_TYPE_UPLOAD);
 		CD3DX12_RESOURCE_DESC   resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(btSize);
@@ -172,7 +172,7 @@ void PDX12VertexBuffer::Reset()
 		return;
 	}
 
-	// 대기 중인 업로드 요청이 있어도 된다. 등록이 풀린 대상은 기록 시점에 버려진다. (PTransferManager::recordUpload)
+	// 대기 중인 업로드 요청이 있어도 된다. 등록이 풀린 대상은 기록 시점에 버려진다. (PResourceStagingManager::recordUpload)
 	HDirectXAPI::DestroyCommittedResource(_dx12Resource);
 
 	_dx12Resource.Reset();
@@ -240,12 +240,12 @@ void PDX12VertexBuffer::requestUpload()
 		return;
 	}
 
-	PSharedPtr<PTransferManager> transferManager = HDirectXAPI::GetTransferManager();
-	if (transferManager == nullptr)
+	PSharedPtr<PResourceStagingManager> stagingManager = HDirectXAPI::GetResourceStagingManager();
+	if (stagingManager == nullptr)
 	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : TransferManager is not available. vertex data is not uploaded", GetName());
+		JG_LOG(Graphics, ELogLevel::Error, "%s : ResourceStagingManager is not available. vertex data is not uploaded", GetName());
 		return;
 	}
 
-	transferManager->RequestUploadBuffer(_dx12Resource, _shadowData.data(), _shadowData.size(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, _name);
+	stagingManager->RequestBufferUpload(_dx12Resource, _shadowData.data(), _shadowData.size(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, _name);
 }

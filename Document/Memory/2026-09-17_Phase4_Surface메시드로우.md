@@ -69,3 +69,6 @@ Graphics_TODO.md의 "Phase 4. Surface 도메인 메시 드로우"(4-1 ~ 4-8) 진
 - `JGStaticMesh::SetMaterial`은 `_subMeshes`와 `_mesh` 양쪽을 갱신한다. 서브메시 목록을 바꾸는 새 API를 추가하면 `_bMeshDirty = true`를 잊지 말 것.
 - 텍스처 프로퍼티는 `Compile()` 전에 `SetTexture`로 넣는 것이 기본 사용법(샘플러 이름이 코드에 박힘).
 - 루트 `CLAUDE.md` 지침: 보고/분석 문서는 `Document/`, 인수인계는 `Document/Memory/`. 문서는 로컬 파일로만(외부 게시 금지). 커밋은 사용자가 직접.
+
+## 추기 (2026-09-21)
+이 기록의 캡처에서 "램버트 음영"으로 본 것은 실제로는 위치 기반 그라데이션이었다. JGHeaderTool 버그로 `EShaderDataType` 리플렉션 블록이 `ECommandQueueType` 이름으로 생성돼 `GetShaderDataTypeSize`가 항상 0을 돌려줬고, 입력 레이아웃 오프셋이 전부 0이라 NORMAL/TEXCOORD/TANGENT가 POSITION 데이터를 읽었다. 2026-09-21에 툴을 고쳐 정상 노멀로 그려진다. 상세는 `2026-09-18_Phase5_전송관리자.md`의 2026-09-21 절과 TODO 5-19.

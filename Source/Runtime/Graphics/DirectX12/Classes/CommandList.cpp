@@ -711,7 +711,7 @@ void PComputeCommandList::DispatchRays(const D3D12_DISPATCH_RAYS_DESC& desc)
 	_dx12CommandList->DispatchRays(&desc);
 
 }
-// ---------------------------------------------------------------- 전송 관리자용 (PTransferManager)
+// ---------------------------------------------------------------- 스테이징 관리자용 (PResourceStagingManager)
 
 void PCommandList::UploadBuffer(HDX12Resource* dest, HDX12Resource* stagingBuffer, uint64 byteSize, D3D12_RESOURCE_STATES finalState)
 {

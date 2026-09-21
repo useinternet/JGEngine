@@ -5,7 +5,7 @@
 
 
 // GPU 텍스처. 픽셀을 CPU로 읽는 일은 텍스처가 아니라 그래픽 API가 맡는다.
-// (PJGGraphicsAPI::RequestReadPixels / ReadPixelsImmediate. DEFAULT 힙은 Map할 수 없어 READBACK 스테이징을 거쳐야 한다)
+// (PJGGraphicsAPI::RequestTextureReadback / ReadbackTextureImmediate. DEFAULT 힙은 Map할 수 없어 READBACK 스테이징을 거쳐야 한다)
 class GRAPHICS_API IRawTexture : public IJGGraphicsObject
 {
 public:

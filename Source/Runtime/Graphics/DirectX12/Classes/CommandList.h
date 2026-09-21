@@ -51,7 +51,7 @@ public:
 	void CopyBufferRegion(HDX12Resource* dest, uint64 destOffset, HDX12Resource* src, uint64 srcOffset, uint64 byteSize);
 	void CopyTextureRegion(HDX12Resource* dest, HDX12Resource* src, const HRect& srcBox, D3D12_RESOURCE_STATES inDestState, D3D12_RESOURCE_STATES inSrcState);
 
-	// -- 전송 관리자용 (PTransferManager) --
+	// -- 스테이징 관리자용 (PResourceStagingManager) --
 	// 스테이징(UPLOAD 힙) -> 버퍼 복사 뒤 finalState로 전이한다. 스테이징은 UPLOAD 힙이라 배리어를 걸지 않는다.
 	// 복사와 같은 제출 안에서 바로 쓸 수 있도록 마지막 전이를 명시한다. (버퍼는 제출이 끝나면 COMMON으로 자연 감쇠하지만 같은 제출 안에서는 아니다)
 	void UploadBuffer(HDX12Resource* dest, HDX12Resource* stagingBuffer, uint64 byteSize, D3D12_RESOURCE_STATES finalState);

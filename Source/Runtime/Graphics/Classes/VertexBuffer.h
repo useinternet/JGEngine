@@ -5,7 +5,7 @@
 struct GRAPHICS_API HVertexBufferConstructArguments
 {
 	PName Name;
-	// GPULoad: DEFAULT 힙, 전송 관리자가 올린다(정적 메시). CPULoad: UPLOAD 힙 상시 매핑(매 프레임 갱신).
+	// GPULoad: DEFAULT 힙, 스테이징 관리자가 올린다(정적 메시). CPULoad: UPLOAD 힙 상시 매핑(매 프레임 갱신).
 	EBufferLoadMethod LoadMethod = EBufferLoadMethod::CPULoad;
 };
 
