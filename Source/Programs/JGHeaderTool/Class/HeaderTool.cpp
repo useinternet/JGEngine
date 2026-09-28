@@ -710,7 +710,10 @@ bool PHeaderTool::analysisEnum(const PString& line, HEnum* pEnum)
 
 	for (const PString& token : tokens)
 	{
-		if (token.Length() == 0) continue;
+		if (token.Length() == 0)
+		{
+			continue;
+		}
 
 		if (checkClassToken == true && checkEnumToken == true)
 		{

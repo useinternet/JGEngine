@@ -79,7 +79,10 @@ void PResourceStateTracker::AliasBarrier(HDX12ComPtr<HDX12Resource> beforeD3DRes
 
 void PResourceStateTracker::FlushResourceBarrier(HDX12CommandList* cmdList)
 {
-	if (_resourceBarriers.empty()) return;
+	if (_resourceBarriers.empty())
+	{
+		return;
+	}
 
 
 	cmdList->ResourceBarrier((uint32_t)_resourceBarriers.size(), _resourceBarriers.data());
@@ -88,7 +91,10 @@ void PResourceStateTracker::FlushResourceBarrier(HDX12CommandList* cmdList)
 
 bool PResourceStateTracker::FlushPendingResourceBarrier(HDX12CommandList* cmdList)
 {
-	if (_pendingResourceBarriers.empty()) return false;
+	if (_pendingResourceBarriers.empty())
+	{
+		return false;
+	}
 
 	HList<D3D12_RESOURCE_BARRIER> pendingBarriers;
 	for (D3D12_RESOURCE_BARRIER& pending_barrier : _pendingResourceBarriers)
@@ -130,7 +136,10 @@ bool PResourceStateTracker::FlushPendingResourceBarrier(HDX12CommandList* cmdLis
 			}
 		}
 	}
-	if (pendingBarriers.empty()) return false;
+	if (pendingBarriers.empty())
+	{
+		return false;
+	}
 
 
 
@@ -180,7 +189,10 @@ void PResourceStateTracker::UnLock()
 
 void PResourceStateTracker::RegisterResource(const PName& name, HDX12Resource* d3dResource, D3D12_RESOURCE_STATES initState)
 {
-	if (d3dResource == nullptr) return;
+	if (d3dResource == nullptr)
+	{
+		return;
+	}
 
 	HLockGuard<HSharedMutex> lock(RESOURCE_MUTEX);
 
@@ -236,7 +248,10 @@ PName PResourceStateTracker::GetResourceName(HDX12Resource* d3dResource)
 
 void PResourceStateTracker::UnRegisterResource(HDX12Resource* d3dResource)
 {
-	if (d3dResource == nullptr) return;
+	if (d3dResource == nullptr)
+	{
+		return;
+	}
 
 	HLockGuard<HSharedMutex> lock(RESOURCE_MUTEX);
 	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
@@ -256,7 +271,10 @@ void PResourceStateTracker::UnRegisterResource(HDX12Resource* d3dResource)
 }
 bool PResourceStateTracker::GetResourceState(HDX12Resource* d3dResource, D3D12_RESOURCE_STATES& outState)
 {
-	if (d3dResource == nullptr) return false;
+	if (d3dResource == nullptr)
+	{
+		return false;
+	}
 
 	std::shared_lock<HSharedMutex> lock(RESOURCE_MUTEX);
 	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
@@ -273,7 +291,10 @@ bool PResourceStateTracker::GetResourceState(HDX12Resource* d3dResource, D3D12_R
 
 bool PResourceStateTracker::IsRegistered(HDX12Resource* d3dResource)
 {
-	if (d3dResource == nullptr) return false;
+	if (d3dResource == nullptr)
+	{
+		return false;
+	}
 
 	std::shared_lock<HSharedMutex> lock(RESOURCE_MUTEX);
 	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();

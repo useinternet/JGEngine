@@ -67,7 +67,10 @@ HDX12Resource* PDX12Texture::Get() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetSRV() const
 {
-	if (IsValid() == false) return { 0 };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 
@@ -104,7 +107,10 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetSRV() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetUAV() const
 {
-	if (IsValid() == false) return { 0 };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc;
 
@@ -139,7 +145,10 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetUAV() const
 }
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetRTV() const
 {
-	if (IsValid() == false) return { 0 };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc;
 	if (EnumHasAnyFlags(_textureInfo.Flags, ETextureFlags::Allow_RenderTarget) == false)
@@ -179,7 +188,10 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetRTV() const
 }
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12Texture::GetDSV() const
 {
-	if (IsValid() == false) return { 0 };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
 	if (EnumHasAnyFlags(_textureInfo.Flags, ETextureFlags::Allow_DepthStencil) == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "not supported DepthStencil because does not include  ETextureFlags::Allow_DepthStencil Flag");

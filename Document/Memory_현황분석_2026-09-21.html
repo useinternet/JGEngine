@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html, body { margin: 0; }</style>
+<title>JGEngine 메모리 시스템 현황</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #F4F6F9;
+    --surface: #FFFFFF;
+    --surface-2: #EDF0F5;
+    --ink: #171E28;
+    --ink-2: #454F60;
+    --muted: #6E798A;
+    --line: #D7DDE6;
+    --line-2: #E6EAF0;
+    --accent: #3251C9;
+    --accent-ink: #2A44AE;
+    --accent-soft: #E6EAFB;
+    --good: #1E7F4B;  --good-soft: #E0F3E8;
+    --warn: #9A6712;  --warn-soft: #FBEFD3;
+    --crit: #B53434;  --crit-soft: #FBE2E2;
+    --neutral: #5F6B7A; --neutral-soft: #E8ECF1;
+    --code-bg: #0F1621;
+    --code-ink: #D9E1EC;
+    --code-muted: #6B7A90;
+    --viz-s1: #2a78d6;
+    --viz-s2: #eb6834;
+    --viz-deemph: #C5CDD8;
+    --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", Consolas, "D2Coding", "Cascadia Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1319; --surface: #151B23; --surface-2: #1B222C;
+      --ink: #E4E9F1; --ink-2: #B3BCC9; --muted: #7F8A9B;
+      --line: #2A3340; --line-2: #222A35;
+      --accent: #8EA3FF; --accent-ink: #A9B8FF; --accent-soft: #1C2545;
+      --good: #5CC489; --good-soft: #13301F;
+      --warn: #E2B45C; --warn-soft: #3A2D12;
+      --crit: #F28080; --crit-soft: #3D1B1B;
+      --neutral: #9AA5B4; --neutral-soft: #232C37;
+      --code-bg: #0A0F15; --code-ink: #D6DEE9; --code-muted: #5F6D82;
+      --viz-s1: #3987e5; --viz-s2: #d95926; --viz-deemph: #3B4553;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1319; --surface: #151B23; --surface-2: #1B222C;
+    --ink: #E4E9F1; --ink-2: #B3BCC9; --muted: #7F8A9B;
+    --line: #2A3340; --line-2: #222A35;
+    --accent: #8EA3FF; --accent-ink: #A9B8FF; --accent-soft: #1C2545;
+    --good: #5CC489; --good-soft: #13301F;
+    --warn: #E2B45C; --warn-soft: #3A2D12;
+    --crit: #F28080; --crit-soft: #3D1B1B;
+    --neutral: #9AA5B4; --neutral-soft: #232C37;
+    --code-bg: #0A0F15; --code-ink: #D6DEE9; --code-muted: #5F6D82;
+    --viz-s1: #3987e5; --viz-s2: #d95926; --viz-deemph: #3B4553;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.7;
+    padding-inline: 20px;
+    padding-block: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-ink); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { text-wrap: balance; line-height: 1.25; margin: 0; }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 22px; font-weight: 600; }
+  h3 { font-size: 16px; font-weight: 600; }
+  p { margin: 0; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .page { max-width: 1080px; margin: 0 auto; padding-block: 44px 96px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  @media (min-width: 1040px) {
+    .layout { grid-template-columns: 200px minmax(0, 800px); gap: 56px; align-items: start; }
+    .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 28px); }
+  }
+
+  /* ---- TOC ---- */
+  .toc { font-size: 13.5px; }
+  .toc .toc-title { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 8px; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .toc a { display: inline-block; color: var(--ink-2); padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  .toc a:hover { border-color: var(--accent); color: var(--accent-ink); text-decoration: none; }
+  @media (min-width: 1040px) {
+    .toc ol { flex-direction: column; gap: 0; border-left: 2px solid var(--line); }
+    .toc a { display: block; border: 0; background: transparent; border-radius: 0; padding: 6px 12px; margin-left: -2px; border-left: 2px solid transparent; }
+    .toc a:hover { border-left-color: var(--accent); }
+  }
+
+  /* ---- Header ---- */
+  .eyebrow { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); letter-spacing: .02em; }
+  .hero { display: grid; gap: 16px; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+  .lede { font-size: 17px; line-height: 1.75; color: var(--ink-2); max-width: 46em; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .verify { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); }
+
+  /* ---- Sections ---- */
+  main { display: grid; gap: 56px; }
+  section { display: grid; gap: 18px; scroll-margin-top: 24px; }
+  section > h2 { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .sub { color: var(--ink-2); max-width: 46em; }
+  .group-h { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+  .group-h .cnt { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+  /* ---- Chips / tags ---- */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 10px 2px 8px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; letter-spacing: .01em; line-height: 1.6; white-space: nowrap;
+  }
+  .chip .g { font-family: var(--font-mono); font-weight: 700; font-size: 11px; }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.crit { background: var(--crit-soft); color: var(--crit); }
+  .chip.neutral { background: var(--neutral-soft); color: var(--neutral); }
+  .chip.accent { background: var(--accent-soft); color: var(--accent-ink); }
+  .tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: var(--neutral-soft); color: var(--neutral); margin-left: 4px; vertical-align: 1px; white-space: nowrap; }
+
+  /* ---- Fact sheet ---- */
+  .facts {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }
+  @media (max-width: 820px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 440px) { .facts { grid-template-columns: 1fr; } }
+  .fact { background: var(--surface); padding: 14px 16px 15px; display: grid; gap: 4px; align-content: start; }
+  .fact .k { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .fact .v { font-size: 15.5px; font-weight: 600; line-height: 1.4; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fact .v.big { font-size: 22px; }
+  .fact .d { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+  /* ---- Summary / bug lists ---- */
+  .bugs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .bugs li { display: grid; grid-template-columns: 84px 1fr; gap: 12px; align-items: start; padding: 10px 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
+  .bugs li .chip { justify-self: start; margin-top: 3px; }
+  .bugs li .b { font-size: 14px; line-height: 1.65; }
+  .bugs li .b .t { font-weight: 600; }
+  .bugs li .b .m { color: var(--ink-2); }
+  @media (max-width: 480px) { .bugs li { grid-template-columns: 1fr; gap: 6px; } }
+
+  /* ---- Timeline ---- */
+  .tl { list-style: none; margin: 0 0 0 6px; padding: 4px 0; border-left: 2px solid var(--line); display: grid; gap: 2px; }
+  .tl li { position: relative; display: grid; grid-template-columns: 128px 1fr; gap: 14px; padding: 8px 0 8px 22px; }
+  .tl li::before {
+    content: ""; position: absolute; left: -7px; top: 16px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--muted);
+  }
+  .tl li.build::before { border-color: var(--good); background: var(--good); }
+  .tl li.now::before { border-color: var(--crit); background: var(--crit); }
+  .tl .when { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .tl .what { font-size: 14.5px; }
+  .tl .what .t { font-weight: 600; }
+  .tl .what .m { color: var(--ink-2); }
+  .tl li.now .what .t { color: var(--crit); }
+  @media (max-width: 560px) { .tl li { grid-template-columns: 1fr; gap: 2px; } }
+
+  /* ---- Figure / SVG ---- */
+  figure { margin: 0; display: grid; gap: 10px; }
+  .diagram { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 8px; overflow-x: auto; }
+  .diagram svg { display: block; width: 100%; max-width: 100%; height: auto; min-width: 680px; color: var(--ink); }
+  .diagram svg text { font-family: var(--font-body); fill: var(--ink); font-size: 13px; }
+  .diagram svg .mono { font-family: var(--font-mono); }
+  .diagram svg .t { font-weight: 600; font-size: 14px; }
+  .diagram svg .m { fill: var(--ink-2); font-size: 12px; }
+  .diagram svg .lbl { fill: var(--muted); font-size: 11.5px; }
+  .diagram svg .box { fill: var(--surface-2); stroke: var(--line); }
+  .diagram svg .box.main { fill: var(--accent-soft); stroke: var(--accent); }
+  .diagram svg .box.outside { fill: var(--surface); stroke: var(--line); }
+  .diagram svg .arrow { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+  .diagram svg .arrowhead { fill: var(--ink-2); }
+  figcaption { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ---- Tables ---- */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+  .tbl th {
+    text-align: left; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap;
+  }
+  .tbl td { padding: 11px 14px; border-bottom: 1px solid var(--line-2); vertical-align: top; line-height: 1.6; }
+  .tbl tr:last-child td { border-bottom: 0; }
+  .tbl td.mono, .tbl th.mono { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+  .tbl td.r, .tbl th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tbl td .t { font-weight: 600; display: block; }
+  .tbl td .m { color: var(--ink-2); font-size: 13.5px; }
+  .tbl tr.hl td { background: var(--crit-soft); }
+  .tbl.compact td, .tbl.compact th { padding: 7px 12px; }
+  .tbl.compact { font-size: 13px; }
+
+  /* ---- Cards / flow ---- */
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 900px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .flow { grid-template-columns: 1fr; } }
+  .phase { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px 16px; display: grid; gap: 8px; align-content: start; }
+  .phase .ph { font-family: var(--font-mono); font-size: 12px; color: var(--accent-ink); font-weight: 600; letter-spacing: .02em; }
+  .phase .who { font-size: 12.5px; color: var(--muted); margin-top: -6px; }
+  .phase ol { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 5px; }
+  .phase ol li::marker { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  .card { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 14px 16px 16px; display: grid; gap: 8px; align-content: start; }
+  .card h3 { font-size: 15px; }
+  .card ul { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); display: grid; gap: 4px; }
+  .note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 14px; color: var(--ink-2); }
+  .note strong { color: var(--warn); }
+  .note.crit { border-left-color: var(--crit); background: var(--crit-soft); }
+  .note.crit strong { color: var(--crit); }
+
+  /* ---- Steps ---- */
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 10px; }
+  .steps li { counter-increment: step; display: grid; grid-template-columns: 40px 1fr; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .steps li::before {
+    content: counter(step); font-family: var(--font-mono); font-weight: 600; font-size: 15px; color: var(--accent-ink);
+    background: var(--accent-soft); width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center;
+  }
+  .steps .t { font-weight: 600; display: block; }
+  .steps .m { color: var(--ink-2); font-size: 14px; }
+
+  /* ---- Sequence (frame order) ---- */
+  .seq { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  .seq li { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); color: var(--ink-2); }
+  .seq li.hl { border-color: var(--crit); background: var(--crit-soft); color: var(--crit); font-weight: 600; }
+  .seq li.fence { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+  .seq .arw { color: var(--muted); }
+
+  /* ---- Verified list ---- */
+  .ok { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+  .ok li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 13.5px; color: var(--ink-2); }
+  .ok li .g { color: var(--good); font-family: var(--font-mono); font-weight: 700; }
+
+  details { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  details summary { cursor: pointer; padding: 12px 16px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "펼치기"; font-size: 12px; color: var(--muted); font-weight: 500; }
+  details[open] summary::after { content: "접기"; }
+  details[open] summary { border-bottom: 1px solid var(--line-2); }
+  details .tbl-wrap { border: 0; border-radius: 0; }
+  details table.tbl { min-width: 520px; }
+
+  /* ---- Charts ---- */
+  .viz-wrap { display: grid; gap: 10px; }
+  .viz { position: relative; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 12px 6px; }
+  .viz svg { display: block; width: 100%; height: auto; color: var(--ink); font-family: var(--font-body); overflow: visible; }
+  .viz .grid { stroke: var(--line-2); stroke-width: 1; shape-rendering: crispEdges; }
+  .viz .axis { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
+  .viz .tick { fill: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
+  .viz .cat { fill: var(--ink-2); font-size: 12px; font-family: var(--font-mono); }
+  .viz .axis-title { fill: var(--muted); font-size: 12px; }
+  .viz .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .viz .line.s1 { stroke: var(--viz-s1); } .viz .line.s2 { stroke: var(--viz-s2); }
+  .viz .dot { stroke: var(--surface); stroke-width: 2; }
+  .viz .dot.s1 { fill: var(--viz-s1); } .viz .dot.s2 { fill: var(--viz-s2); }
+  .viz .thresh { stroke: var(--crit); stroke-width: 1; shape-rendering: crispEdges; }
+  .viz .thresh-label { fill: var(--ink-2); font-size: 12px; font-weight: 600; }
+  .viz .dlabel { fill: var(--ink-2); font-size: 12px; font-weight: 600; }
+  .viz .bar { fill: var(--viz-deemph); }
+  .viz .bar.emph { fill: var(--viz-s1); }
+  .viz .bar.lift { opacity: .7; }
+  .viz .vlabel { fill: var(--ink-2); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .viz .hit { fill: transparent; }
+  .viz .xhair { stroke: var(--ink-2); stroke-width: 1; shape-rendering: crispEdges; opacity: 0; }
+  .viz:focus-within .xhair, .viz:hover .xhair { opacity: 1; }
+  .tip {
+    position: absolute; pointer-events: none; display: none; z-index: 2; min-width: 150px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font-size: 12.5px; line-height: 1.5; box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+  }
+  .tip .h { color: var(--muted); font-size: 11.5px; margin-bottom: 4px; font-family: var(--font-mono); }
+  .tip .r { display: flex; align-items: center; gap: 8px; }
+  .tip .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; flex: none; }
+  .tip .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tip .k { color: var(--ink-2); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend .key { width: 18px; height: 2px; display: inline-block; border-radius: 1px; }
+  .legend .key.s1 { background: var(--viz-s1); } .legend .key.s2 { background: var(--viz-s2); }
+  .legend .key.thresh { background: var(--crit); height: 1px; }
+  .meter { display: grid; gap: 6px; }
+  .meter .track { height: 10px; border-radius: 5px; background: var(--accent-soft); overflow: hidden; position: relative; }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 5px; min-width: 3px; }
+  .meter .cap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--muted); }
+  .meter .cap strong { color: var(--ink-2); }
+
+  footer { color: var(--muted); font-size: 13px; line-height: 1.7; border-top: 1px solid var(--line); padding-top: 18px; display: grid; gap: 6px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="layout">
+    <nav class="toc" aria-label="목차">
+      <div class="toc-title">목차</div>
+      <ol>
+        <li><a href="#facts">핵심 사실</a></li>
+        <li><a href="#summary">요약</a></li>
+        <li><a href="#arch">구조</a></li>
+        <li><a href="#chunk">청크와 사용률</a></li>
+        <li><a href="#alloc">할당 경로</a></li>
+        <li><a href="#gc">GC 객체 수명</a></li>
+        <li><a href="#shutdown">종료 순서</a></li>
+        <li><a href="#strings">문자열 · 도구</a></li>
+        <li><a href="#measure">실측</a></li>
+        <li><a href="#issues">문제 목록</a></li>
+        <li><a href="#plan">개선 방향</a></li>
+        <li><a href="#appendix">부록</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <div class="eyebrow">JGEngine · Source/Runtime/Core/Memory · 2026-09-21 12:35 기준 분석</div>
+        <h1>메모리 시스템 현황</h1>
+        <p class="lede">
+          <strong>메모리 풀은 "고정 크기 클래스 × 고정 개수" 구조라 한 클래스가 차면 <code>nullptr</code>을 돌려주고, 그 자리의 assert는 절대 발동하지 않습니다.</strong>
+          오늘 11:57에 끝난 실행 로그가 정확히 그 상태(32바이트 클래스 4096/4096)에서 끊겼습니다. 채운 것은 PSO 캐시의 프레임당 3개 누수였고 이건 병렬 세션이 고치는 중이지만,
+          풀·GC·스마트 포인터 쪽 취약점은 그대로입니다. 이 문서는 개선 작업에 앞서 구조와 실측, 문제점, 손댈 순서를 정리합니다.
+        </p>
+        <div class="verify">
+          <span>표기 —</span>
+          <span><span class="tag">코드</span> 소스 확인</span>
+          <span><span class="tag">로그</span> 실행 로그 실측</span>
+          <span><span class="tag">재현</span> 별도 컴파일로 재현</span>
+          <span><span class="tag">추정</span> 근거는 있으나 직접 확인 못 함</span>
+        </div>
+      </header>
+
+      <!-- ===== 핵심 사실 ===== -->
+      <section id="facts">
+        <h2>핵심 사실</h2>
+        <div class="facts">
+          <div class="fact">
+            <div class="k">풀 예약 / 스레드</div>
+            <div class="v big">100.69 MB</div>
+            <div class="d">30,768 블록 · 헤더 16 B · 첫 할당 때 malloc, 전부 상주</div>
+          </div>
+          <div class="fact">
+            <div class="k">피크 사용 (메인 청크)</div>
+            <div class="v big">548 KB</div>
+            <div class="d">예약의 0.5% · 6,270 블록 · 실행 B 기준</div>
+          </div>
+          <div class="fact">
+            <div class="k">가장 빡빡한 클래스</div>
+            <div class="v"><span class="num">32 B · 4,096 / 4,096</span> <span class="chip crit"><span class="g">✕</span>한도 도달</span></div>
+            <div class="d">실행 B에서 프레임당 3개 누수 → 1,270프레임 뒤 고갈</div>
+          </div>
+          <div class="fact">
+            <div class="k">고갈 시 동작</div>
+            <div class="v"><span class="chip crit"><span class="g">✕</span>nullptr 반환</span></div>
+            <div class="d"><code>JG_ASSERT("문자열")</code>은 항상 참 · 호출자 무검사 · 로그 없이 크래시</div>
+          </div>
+          <div class="fact">
+            <div class="k">PSharedPtr = nullptr</div>
+            <div class="v"><span class="chip warn"><span class="g">!</span>no-op</span></div>
+            <div class="d">빈 포인터 대입은 참조를 안 놓음, 자기 대입은 참조 유실 · 대입 28곳</div>
+          </div>
+          <div class="fact">
+            <div class="k">프레임당 풀 연산</div>
+            <div class="v big">345회</div>
+            <div class="d">16 B 85 · 128 B 36 · 64 B 20 · 32 B 17 (할당 기준) · 대부분 임시 컨테이너</div>
+          </div>
+          <div class="fact">
+            <div class="k">로그 점유</div>
+            <div class="v big">99.97%</div>
+            <div class="d">할당·해제마다 Info 로그 + 매 줄 flush · 실행 B 469,347줄 중 469,222줄</div>
+          </div>
+          <div class="fact">
+            <div class="k">사용 규모</div>
+            <div class="v num">GC 타입 44 · Allocate ~50곳</div>
+            <div class="d">PSharedPtr 575회 · PWeakPtr 70회 · HList 301회 · HHashMap 120회</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 요약 ===== -->
+      <section id="summary">
+        <h2>요약</h2>
+        <ul class="bugs">
+          <li>
+            <span class="chip crit"><span class="g">P0</span>크래시</span>
+            <div class="b"><span class="t">풀 고갈은 무음 크래시로 나타난다.</span> <span class="m">크기 클래스가 다 차면 <code>nullptr</code>을 돌려주는데 <code>JG_ASSERT("no memory space left.")</code>는 문자열 리터럴 검사라 발동하지 않고, <code>GMemoryGlobalSystem::Allocate</code>도 <code>HAllocator::allocate</code>도 결과를 검사하지 않는다. 크래시 위치는 풀이 아니라 호출자의 <code>placement new</code>·<code>vector</code> 쓰기이고 원인을 알려주는 출력이 없다. 1 MB 초과 요청은 <code>out_of_range</code>로 죽는다.</span> <span class="tag">코드</span><span class="tag">로그</span></div>
+          </li>
+          <li>
+            <span class="chip crit"><span class="g">P0</span>누수 원인</span>
+            <div class="b"><span class="t">32 B 클래스를 채운 것은 PSO 캐시 노드 누수다.</span> <span class="m"><code>D3D12_GRAPHICS_PIPELINE_STATE_DESC</code>의 패딩 바이트까지 해시해 프레임마다 새 PSO를 만들고 캐시에 넣었다(프레임당 3개). 병렬 세션이 <code>PipelineState.cpp</code>에서 내용 기반 해시로 고치는 중이고(12:30 수정, 미커밋), 수정 후 실행 로그에서 PSO 생성 2회·누수 소멸을 확인했다. <strong>풀 쪽 취약점은 그대로 남아 있다.</strong></span> <span class="tag">코드</span><span class="tag">로그</span></div>
+          </li>
+          <li>
+            <span class="chip warn"><span class="g">P0</span>의미론</span>
+            <div class="b"><span class="t"><code>PSharedPtr</code>/<code>PWeakPtr</code> 대입이 표준과 다르다.</span> <span class="m"><code>p = nullptr</code>, <code>p = 빈포인터</code>, <code>p = std::move(빈포인터)</code>는 아무 일도 하지 않고, <code>p = p</code>는 참조를 잃는다. 스마트 포인터 멤버에 <code>= nullptr</code>을 대입하는 곳이 28곳이며 <code>HJGGraphicsModule::ShutdownModule</code>의 <code>_graphicsAPI = nullptr</code>도 해제되지 않는다.</span> <span class="tag">재현</span><span class="tag">코드</span></div>
+          </li>
+          <li>
+            <span class="chip warn"><span class="g">P1</span>GC 구조</span>
+            <div class="b"><span class="t">GC는 FIFO 큐를 매 프레임 두 번 순회하며 살아 있는 객체를 다시 넣는다.</span> <span class="m">파괴 순서가 할당 순서(부모 먼저)라 2026-09-17 종료 크래시의 구조적 원인이 남아 있고, 참조 카운터가 별도 힙 객체라 WeakCount를 무시하고 해제한다(TODO 5-18). GC는 프레임 시작, 펜스 대기 전에 돌아 GPU 리소스 파괴가 GPU 완료와 무관하다.</span> <span class="tag">코드</span></div>
+          </li>
+          <li>
+            <span class="chip neutral"><span class="g">P1</span>용량</span>
+            <div class="b"><span class="t">예약 대비 사용률이 0.5%다.</span> <span class="m">스레드별 청크 100.69 MB 두 개가 잡히는데 메인 청크의 피크 페이로드는 548 KB, 워커 청크는 5.5 MB다. 반대로 32 B 클래스는 정상 실행에서도 275개를 상시 쓰고, 누수가 있으면 4,096개를 넘긴다. 크기 클래스 개수 표가 실측 분포와 맞지 않는다.</span> <span class="tag">로그</span></div>
+          </li>
+          <li>
+            <span class="chip warn"><span class="g">P1</span>관측</span>
+            <div class="b"><span class="t">풀 할당·해제마다 Info 로그를 쓰고 매 줄 flush한다.</span> <span class="m">로그 469,347줄 중 469,222줄(99.97%)이 <code>[Memory]</code>이고 한 프레임에 풀 연산 345회가 돈다(16 B 할당 85회는 대부분 MSVC 디버그 이터레이터 프록시). 성능 측정과 로그 판독을 모두 방해한다.</span> <span class="tag">로그</span><span class="tag">코드</span></div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===== 구조 ===== -->
+      <section id="arch">
+        <h2>구조</h2>
+        <p class="sub">할당은 세 경로로 나뉩니다. GC 객체는 <code>GMemoryGlobalSystem</code>을 거쳐 풀로, 엔진 컨테이너는 <code>HAllocator</code>로 풀에 직접, 나머지 상당수는 풀 밖(CRT 힙·ComPtr·GPU 힙)에서 할당됩니다. 오른쪽 열은 통계 도구와 풀 로그에 보이지 않는 영역입니다.</p>
+        <figure>
+          <div class="diagram">
+            <svg viewBox="0 0 980 400" role="img" aria-label="메모리 계층 다이어그램. Allocate 호출은 GMemoryGlobalSystem을 거쳐 HMemoryPool로, 엔진 컨테이너는 HAllocator를 통해 풀로 직접 간다. 오른쪽에 풀 밖에서 할당되는 항목 목록.">
+              <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0 0 L10 5 L0 10 z" class="arrowhead"></path>
+                </marker>
+              </defs>
+
+              <rect x="20" y="20" width="330" height="72" rx="10" class="box main"></rect>
+              <text x="36" y="46" class="t mono">Allocate&lt;T&gt;()</text>
+              <text x="36" y="70" class="m">GC 객체 · IMemoryObject 파생 44종 · 호출 약 50곳</text>
+
+              <rect x="370" y="20" width="280" height="72" rx="10" class="box"></rect>
+              <text x="386" y="42" class="t mono">HList · HHashMap · HMap</text>
+              <text x="386" y="60" class="t mono">HHashSet · HQueue · HDeque</text>
+              <text x="386" y="80" class="m">HAllocator&lt;T&gt; · GC 추적 없음</text>
+
+              <rect x="20" y="132" width="330" height="118" rx="10" class="box main"></rect>
+              <text x="36" y="158" class="t mono">GMemoryGlobalSystem</text>
+              <text x="36" y="180" class="m mono">AllocatedMemoryBlocks (unordered_map, CRT)</text>
+              <text x="36" y="198" class="m mono">AllocatedMemoryBlockQueue (queue, CRT)</text>
+              <text x="36" y="216" class="m mono">RefCount·WeakCount unique_ptr ×2 (CRT)</text>
+              <text x="36" y="236" class="m">Update() → garbageCollection(1) · 매 프레임 큐 2회 순회</text>
+
+              <rect x="20" y="290" width="630" height="92" rx="10" class="box"></rect>
+              <text x="36" y="316" class="t mono">HMemoryPool → HMemoryChunk (스레드마다 1개)</text>
+              <text x="36" y="340" class="m">첫 할당 때 malloc 100.69 MB · 헤더를 전부 써서 즉시 상주 · 크기 클래스 19개(4 B ~ 1 MB) × 고정 개수 = 30,768 블록</text>
+              <text x="36" y="362" class="m">블록 앞 HMemoryHeader 16 B · 고갈 시 nullptr(assert 무효) · 1 MB 초과는 out_of_range</text>
+
+              <path d="M185 92 L185 128" class="arrow" marker-end="url(#arr)"></path>
+              <path d="M185 250 L185 286" class="arrow" marker-end="url(#arr)"></path>
+              <path d="M510 92 L510 286" class="arrow" marker-end="url(#arr)"></path>
+              <text x="522" y="192" class="lbl">GC를 거치지 않고 풀로 직접</text>
+
+              <rect x="670" y="20" width="290" height="362" rx="10" class="box outside"></rect>
+              <text x="686" y="46" class="t">풀 밖에서 할당되는 것</text>
+              <text x="686" y="76" class="m">PString → std::string (CRT 힙)</text>
+              <text x="686" y="100" class="m">PName → std::weak_ptr 제어 블록</text>
+              <text x="686" y="124" class="m">GStringTable RefCount → shared_ptr</text>
+              <text x="686" y="148" class="m">spdlog · rapidjson · imgui / implot</text>
+              <text x="686" y="172" class="m">HDelegate → malloc / free</text>
+              <text x="686" y="196" class="m">시스템·모듈 인터페이스 → new / delete</text>
+              <text x="686" y="220" class="m">D3D12 객체 → ComPtr</text>
+              <text x="686" y="244" class="m">GPU 힙 → UploadAllocator 2 MB 페이지,</text>
+              <text x="686" y="264" class="m">DescriptionAllocator 1,024개 페이지,</text>
+              <text x="686" y="284" class="m">스테이징 리소스, PSO / 루트서명 캐시</text>
+              <text x="686" y="322" class="lbl">→ 통계 도구와 [Memory] 로그에</text>
+              <text x="686" y="340" class="lbl">   보이지 않는 영역</text>
+            </svg>
+          </div>
+          <figcaption><code>IMemoryObject</code>(가상 소멸자 + <code>Construct()</code>/<code>Destruction()</code> 훅)를 상속한 타입만 <code>Allocate&lt;&gt;</code>·<code>Wrap&lt;&gt;</code> 대상입니다. <code>Construct()</code> 오버라이드는 <code>JGWidgetComponent</code> 1곳, <code>Destruction()</code>은 0곳. <code>PMemoryObject</code>, <code>TRawPtr</code>, <code>bProcessingGarbageCollection</code>은 선언만 있고 쓰는 곳이 없습니다.</figcaption>
+        </figure>
+
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>항목</th><th class="r">수치</th><th>비고</th></tr></thead>
+            <tbody>
+              <tr><td>IMemoryObject 계열 클래스</td><td class="r num">44</td><td>직접 상속 38 + JGObject 계열 6. 값 타입(<code>PString</code>, <code>PName</code>, <code>JGType</code>, <code>PSharedPtr</code>, <code>PWeakPtr</code>, <code>PJsonData</code>)도 포함 → vptr 8 B. <code>PSharedPtr&lt;T&gt;</code>는 32 B</td></tr>
+              <tr><td><code>Allocate&lt;&gt;</code> 호출 지점</td><td class="r num">≈ 50</td><td>Core 17 · Graphics 31 · GUI 3. 리플렉션 코드젠이 시작 시 <code>MakeStatic*</code> 78회(클래스 12, 열거형 6, 메타 53, 프로퍼티 7) 추가</td></tr>
+              <tr><td>스마트 포인터 사용</td><td class="r num">575 / 70</td><td><code>PSharedPtr&lt;</code> / <code>PWeakPtr&lt;</code>. <code>SharedWrap</code>·<code>Wrap</code> 12곳, <code>Pin()</code> 15곳</td></tr>
+              <tr><td>엔진 컨테이너 사용</td><td class="r num">301 / 120 / 43</td><td><code>HList</code> / <code>HHashMap</code> / <code>HHashSet</code>. 그 외 <code>HQueue</code> 19, <code>HMap</code> 12, <code>HDeque</code>·<code>HStack</code> 9, <code>HSet</code> 4</td></tr>
+              <tr><td>풀 밖 경로</td><td class="r num">12 / 6 / 9 / 3 / 2</td><td><code>std::vector</code>(대부분 5-23 우회 주석) / <code>std::shared_ptr</code> / <code>unique_ptr</code> / 생 <code>new</code>(<code>CoreSystem.cpp:32</code>, <code>CoreSystem.h:76</code>, <code>Platform.h:36</code>) / <code>malloc</code>(풀 자체, Delegate). D3D <code>ComPtr</code> 166회</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== 청크 ===== -->
+      <section id="chunk">
+        <h2>청크 레이아웃과 사용률</h2>
+        <p class="sub"><code>HMemoryPool::MakeMemoryChunk</code>(<code>MemoryPool.cpp:228-251</code>)가 스레드마다 아래 표대로 한 덩어리를 만듭니다. 합계는 로그의 <code>TotalMemory : 103108.750</code>과 일치합니다. 막대는 실행 B 메인 청크의 클래스별 피크 사용률입니다.</p>
+
+        <div class="card">
+          <h3>예약 대비 피크 사용 (메인 청크, 실행 B)</h3>
+          <div class="meter" role="img" aria-label="예약 105,583,360바이트 중 피크 사용 560,988바이트, 0.5%">
+            <div class="track"><div class="fill" style="width:0.53%"></div></div>
+            <div class="cap"><span><strong>피크 560,988 B (548 KB)</strong> · 6,270 블록</span><span>예약 <strong>105,583,360 B (100.69 MB)</strong> · 30,768 블록 · 사용률 0.5%</span></div>
+          </div>
+          <p class="sub" style="font-size:13.5px">워커(에셋 로드) 청크의 피크는 5.5 MB(1 MB 블록 4개 + 512 KB 2개 + 256 KB 2개 등)로, 대형 블록은 그쪽에서만 쓰입니다. 하드웨어 스레드 28개가 모두 할당하면 최대 2.8 GB가 잡히지만 실제로는 청크 두 개만 생깁니다.</p>
+        </div>
+
+        <div class="viz-wrap">
+          <div class="viz" id="chart-fill" aria-label="크기 클래스별 피크 사용률"></div>
+          <details>
+            <summary>표로 보기 — 클래스별 개수 · 크기 · 피크</summary>
+            <div class="tbl-wrap">
+              <table class="tbl compact">
+                <thead><tr><th>클래스</th><th class="r">개수</th><th class="r">블록당 (헤더 16 포함)</th><th class="r">소계 (B)</th><th class="r">피크 live (B)</th><th class="r">사용률</th></tr></thead>
+                <tbody id="chunk-rows"></tbody>
+                <tfoot><tr><td><strong>합계</strong></td><td class="r num"><strong>30,768</strong></td><td></td><td class="r num"><strong>105,583,360</strong></td><td class="r num"><strong>6,270</strong></td><td class="r num"><strong>0.5% (바이트 기준)</strong></td></tr></tfoot>
+              </table>
+            </div>
+          </details>
+          <figcaption>헤더 합계 492,288 B(0.47%). <code>Initialize</code>가 모든 블록 헤더에 값을 써서 100.69 MB 전부가 즉시 상주 메모리가 됩니다. 페이로드 정렬은 4 B 클래스 4, 8 B 클래스 8, 16 B 이상 16이며 각 구간 시작이 16의 배수인 것은 개수 표가 우연히 맞아서입니다(<code>1024×20 = 20480</code>). 16 초과 정렬(<code>alignas(32)</code> 등)은 지원하지 않고 <code>HAllocator::allocate</code>도 정렬 인자를 받지 않습니다. <span class="tag">코드</span><span class="tag">로그</span></figcaption>
+        </div>
+      </section>
+
+      <!-- ===== 할당 경로 ===== -->
+      <section id="alloc">
+        <h2>할당 경로</h2>
+        <p class="sub"><code>HMemoryChunk::Allocate</code>(<code>MemoryPool.cpp:78-116</code>)와 <code>GMemoryGlobalSystem::Allocate</code>(<code>Memory.h:565-600</code>)의 실제 동작 순서입니다.</p>
+        <ol class="steps">
+          <li><div><span class="t"><code>HMath::AlignPowerOfTwo(size)</code> → 올림 2의 제곱, 최소 4</span><span class="m"><code>1 &lt;&lt; Log2(value)</code>가 <code>int</code> 시프트라 1 GB 이상에서 넘치지만 현 한도 안에서는 무관합니다.</span></div></li>
+          <li><div><span class="t"><code>HasSpace()</code> → <code>MemoryQueues.at(class)</code> <span class="chip crit"><span class="g">✕</span>1 MB 초과 = out_of_range</span></span><span class="m"><code>_1_GB</code>(실제 값 2 MB) 열거자는 있지만 큐가 없어 1 MB를 넘는 요청은 모두 예외로 죽습니다(종료 코드 3, 로그 없음). 기존 기록(5-23)의 "2 MB 한도"는 정확히는 1 MB입니다.</span></div></li>
+          <li><div><span class="t">클래스가 비었으면 <code>JG_ASSERT("no memory space left.")</code> → <code>return nullptr</code> <span class="chip crit"><span class="g">✕</span>assert 무효</span></span><span class="m"><code>assert(문자열)</code>이라 항상 참입니다. <code>GMemoryGlobalSystem::Allocate</code>는 검사 없이 <code>new(MemPtr) T(...)</code>, <code>HAllocator::allocate</code>는 그대로 반환해 <code>std::vector</code>가 널에 씁니다. 크래시 위치는 풀이 아니라 호출자이고 원인을 알려주는 출력이 없습니다.</span></div></li>
+          <li><div><span class="t"><code>Deallocate</code>의 이중 해제 검사 = <code>JG_ASSERT(true)</code> <span class="chip warn"><span class="g">!</span>무효</span></span><span class="m">상태가 <code>Allocated</code>가 아니어도 그대로 큐에 되돌립니다.</span></div></li>
+          <li><div><span class="t">성공하면 <code>JG_LOG(Memory, Info, ...)</code></span><span class="m">포맷이 <code>%u</code>(uint64 ID)·<code>%x</code>(포인터)라 ID와 주소가 32비트로 절단돼 찍힙니다. 이 한 줄이 매 할당·해제마다 파일·콘솔 두 싱크에 flush됩니다.</span></div></li>
+        </ol>
+      </section>
+
+      <!-- ===== GC ===== -->
+      <section id="gc">
+        <h2>GC 객체 수명</h2>
+        <p class="sub"><code>Memory.cpp</code>의 <code>garbageCollection</code>/<code>garbageCollectionInternal</code> 기준입니다.</p>
+        <ul class="bugs">
+          <li><span class="chip neutral">비용</span><div class="b"><span class="t">객체 하나에 힙 할당 4번, 전역 재귀 뮤텍스 1회.</span> <span class="m">풀 블록 + <code>HMemoryBlock</code>(맵 노드, atomic 2개 → CRT 힙 3회) + 큐 push.</span></div></li>
+          <li><span class="chip warn">순회</span><div class="b"><span class="t">참조 0이 되어도 즉시 파괴하지 않는다.</span> <span class="m"><code>Update()</code> → <code>garbageCollection(1)</code> → <code>garbageCollectionInternal(10240)</code> 2회. 각 회차가 큐에서 최대 10,241개를 꺼내 RefCount==0이면 <code>Destruction()</code>→<code>~IMemoryObject()</code>→풀 반납→맵 erase, 아니면 다시 push. 살아 있는 객체 전부가 매 프레임 두 번 큐를 돕니다(객체 수에 선형).</span></div></li>
+          <li><span class="chip warn">타이밍</span><div class="b"><span class="t">GC가 펜스 대기 전에 실행된다.</span> <span class="m"><code>GMemoryGlobalSystem</code>은 시스템 목록 2번째라 <code>GCoreSystem::Update</code> 맨 앞, 스케줄러가 <code>GraphicsBegin</code>(<code>PCommandQueue::Begin</code>의 펜스 대기)을 돌리기 전에 돕니다. 프레임 N에 참조를 끊은 텍스처는 N+1 시작에 <code>ComPtr</code>이 풀리는데 그때 GPU는 아직 N을 실행 중일 수 있습니다. 지금은 DevScene 리소스가 장수해서 드러나지 않습니다.</span></div></li>
+          <li><span class="chip crit">순서</span><div class="b"><span class="t">파괴 순서 = 큐 순서 = 할당 순서.</span> <span class="m">부팅 초기 객체(API, 큐, 할당자)가 그것을 쓰는 텍스처보다 먼저 죽습니다. 2026-09-17 크래시는 캐시 무효화 + null 가드로 무해화했을 뿐 구조는 그대로입니다(기존 P3).</span></div></li>
+          <li><span class="chip crit">약참조</span><div class="b"><span class="t">WeakCount를 보지 않고 해제한다.</span> <span class="m">블록 erase로 <code>unique_ptr&lt;atomic&gt;</code> 두 개가 해제된 뒤에도 <code>PWeakPtr::IsValid()</code>가 <code>_pRefCount-&gt;load()</code>를 읽습니다(TODO 5-18). 풀이 같은 주소를 재발급하면 <code>Wrap(ptr)</code>이 다른 객체를 돌려줄 수 있습니다(ABA).</span></div></li>
+          <li><span class="chip neutral">조회</span><div class="b"><span class="t"><code>Wrap&lt;T&gt;(ptr)</code>은 전역 뮤텍스 + 해시 조회.</span> <span class="m"><code>PWeakPtr::Pin()</code>, <code>SharedWrap(this)</code>, <code>HTaskHandle</code>, 델리게이트 <code>CreateSP</code> 등 27곳이 매번 이 경로를 탑니다.</span></div></li>
+          <li><span class="chip warn">검사</span><div class="b"><span class="t"><code>Allocate&lt;T&gt;</code>의 IMemoryObject 검사는 런타임 assert.</span> <span class="m">릴리스 구성에서는 통과하고 GC가 <code>(IMemoryObject*)ptr</code>로 가상 소멸자를 부르는 순간 UB가 됩니다. <code>Wrap</code>은 이미 <code>static_assert</code>입니다.</span></div></li>
+        </ul>
+        <div class="card">
+          <h3>한 프레임의 시스템 실행 순서 (<code>GCoreSystem::Update</code>, 등록 순서)</h3>
+          <ol class="seq">
+            <li>Log</li><li class="arw">→</li>
+            <li class="hl">Memory · GC (D3D 리소스가 여기서 풀림)</li><li class="arw">→</li>
+            <li>Timer</li><li class="arw">→</li>
+            <li class="fence">Schedule · GraphicsBegin = 펜스 대기</li><li class="arw">→</li>
+            <li>GUI NewFrame · 드로우</li><li class="arw">→</li>
+            <li>GraphicsEnd · Present</li><li class="arw">→</li>
+            <li>StringTable</li><li class="arw">→</li>
+            <li>Module</li><li class="arw">→</li>
+            <li>Object</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ===== 종료 ===== -->
+      <section id="shutdown">
+        <h2>종료 순서</h2>
+        <p class="sub"><code>GCoreSystem::Destroy()</code>(<code>CoreSystem.cpp:81-122</code>)와 <code>GModuleGlobalSystem::Destroy()</code>(<code>Module.cpp:228-268</code>). 빨간 점이 강제 파괴가 일어나는 지점입니다.</p>
+        <ol class="tl">
+          <li><div class="when">1</div><div class="what"><span class="t">시스템 <code>Destroy()</code> 역순.</span> <span class="m">모듈 시스템이 <code>_moduleOrder</code> 역순으로 <code>ShutdownModule</code> → <code>Flush</code>.</span></div></li>
+          <li><div class="when">2</div><div class="what"><span class="t"><code>GMemoryGlobalSystem::Flush()</code></span> <span class="m">참조 0인 객체를 반복 스윕으로 정리.</span></div></li>
+          <li><div class="when">3 ~ 7</div><div class="what"><span class="t">UnRegister StringTable → Object → Module → Schedule → Timer.</span> <span class="m">스케줄러 삭제 시점에 <code>PThread</code> 28개의 참조가 풀립니다.</span></div></li>
+          <li class="now"><div class="when">8</div><div class="what"><span class="t">UnRegister Memory → 소멸자에서 <code>forceFlush</code>.</span> <span class="m">참조가 남아 있어도 강제 파괴(<code>bForce</code>). 이때 살아 있는 대표 객체는 <code>PThread</code> 28개, <code>PTimer</code>, <code>PSequentialIDGenerator</code>, <code>PWindowsJWindow</code>. 이 소멸자들이 이미 사라진 <code>GStringTable</code>/<code>GObjectGlobalSystem</code>을 <code>GetInstance()</code>로 부르면 <code>*nullptr</code>입니다(지금은 안 부르지만 보장 장치가 없음). 강제 파괴 뒤 남은 <code>PSharedPtr</code> 소멸자는 해제된 카운터를 감소시킵니다.</span></div></li>
+          <li><div class="when">9 ~ 10</div><div class="what"><span class="t">UnRegister Log → DLL 언로드.</span> <span class="m">엔진 컨테이너를 static 저장소에 두면 안 되는 규칙(TODO 설계 규칙, 5-17)도 같은 뿌리입니다.</span></div></li>
+        </ol>
+      </section>
+
+      <!-- ===== 문자열 / 도구 ===== -->
+      <section id="strings">
+        <h2>문자열 · 통계 도구</h2>
+        <div class="two">
+          <div class="card">
+            <h3>문자열 (<code>String/</code>, 풀 밖)</h3>
+            <ul>
+              <li><code>PString</code>은 <code>std::string</code>(CRT 힙)을 들고 해시 <code>_stringCode</code>만 계산합니다. 풀을 쓰지 않습니다.</li>
+              <li><code>PName</code>은 <code>GStringTable</code>에 등록하고 <code>std::weak_ptr&lt;atomic_int&gt;</code>로 참조를 셉니다. 복사·소멸마다 <code>lock()</code>(원자 연산 2회) + <code>fetch_add/sub</code>. <code>_DEBUG</code>에서는 문자열 사본도 들어 약 72 B.</li>
+              <li><code>removeOldStringInfos</code>는 매 프레임 큐에서 1개를 꺼내 검사만 하고 <strong>다시 넣지 않습니다.</strong> 참조 0이어도 <code>FrameCount &gt;= INT32_MAX</code> 조건이라 못 지우고, 큐가 비면 이후 문자열은 검사 대상도 아닙니다. 사실상 영구 인터닝인데 정리 코드가 남아 의도가 불명확합니다.</li>
+              <li><code>HStringInfo</code>는 narrow/wide 두 사본을 듭니다(노드 128 B 클래스).</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>통계 도구 (<code>DevStatistics/MemoryStatistics.cpp</code>)</h3>
+            <ul>
+              <li><code>HMemoryPool::GetStatInfo</code>가 청크 100 MB를 30,768블록 단위로 전부 걷고 블록마다 <code>std::map&lt;…, std::vector&gt;</code>에 push합니다. 위젯이 열려 있는 동안 매 프레임 이 비용을 냅니다.</li>
+              <li>출력은 스레드별 헤더/사용/빈 비율 막대뿐이고, <strong>루프 안에서 <code>MemoryChunkStateInfos[0]</code>을 참조해 모든 그룹이 메인 스레드 값을 보입니다</strong>(<code>MemoryStatistics.cpp:59-61</code>).</li>
+              <li>클래스별 사용률·피크·실패 횟수가 없어 이번 32 B 고갈은 이 도구로 볼 수 없었습니다.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 실측 ===== -->
+      <section id="measure">
+        <h2>실측</h2>
+        <p class="sub">세 실행 모두 DevelopEngine|x64(<code>_DEBUG</code>, 최적화 없음, MDd) <code>JGLauncher.exe</code>(LaunchModule = JGDev_Graphics, DevScene 렌더)입니다. <code>jg_log.txt</code>는 실행마다 덮어써지므로 수치는 각 시점의 스냅샷입니다.</p>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th></th><th>A · 11:44 종료 (정상)</th><th>B · 11:57 종료 (비정상)</th><th>C · 12:32~12:38 (PSO 해시 수정 후, 정상)</th></tr></thead>
+            <tbody>
+              <tr><td>로그 줄 수</td><td class="num">137,537</td><td class="num">469,347</td><td class="num">264,425</td></tr>
+              <tr><td>풀 Allocate / Deallocate</td><td class="num">68,675 / 68,675</td><td class="num">237,751 / 231,448</td><td class="num">132,118 / 132,118</td></tr>
+              <tr><td><code>[Memory]</code> 줄 비율</td><td class="num">99.9%</td><td class="num">99.97%</td><td class="num">99.95%</td></tr>
+              <tr><td>스레드 불일치 해제 (Dismatch)</td><td class="num">55</td><td class="num">21</td><td class="num">55</td></tr>
+              <tr><td>청크</td><td>2 (메인, 워커 1)</td><td>2</td><td>2</td></tr>
+              <tr><td><code>Memory Chunk Shutdown</code></td><td><span class="chip good"><span class="g">✓</span>있음</span></td><td><span class="chip crit"><span class="g">✕</span>없음 · 로그 끊김</span></td><td><span class="chip good"><span class="g">✓</span>있음</span></td></tr>
+              <tr><td><code>[error]</code> / <code>[critical]</code></td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+              <tr><td>메인 청크 피크 live 블록</td><td>—</td><td class="num">6,270</td><td class="num">2,296</td></tr>
+              <tr><td>메인 청크 피크 페이로드 상한</td><td>—</td><td class="num">548 KB / 100.69 MB (0.5%)</td><td class="num">303 KB</td></tr>
+              <tr class="hl"><td>32 B 클래스 live (시작 → 끝)</td><td>—</td><td class="num">82 → 275 → <strong>4,096 = 한도</strong></td><td class="num">82 → 120 → 120 (피크 123)</td></tr>
+              <tr><td><code>Graphics PSO created</code></td><td>(로그 없음)</td><td>(로그 없음)</td><td class="num"><strong>2회</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="viz-wrap">
+          <div class="legend" aria-hidden="true">
+            <span><i class="key s1"></i>실행 B · 11:57 종료 (PSO 캐시 누수)</span>
+            <span><i class="key s2"></i>실행 C · 12:32 (PSO 해시 수정 후)</span>
+            <span><i class="key thresh"></i>32 B 블록 한도 4,096</span>
+          </div>
+          <div class="viz" id="chart-live32" aria-label="32바이트 클래스 live 블록 수 추이"></div>
+          <details>
+            <summary>표로 보기 — 로그 위치별 32 B live 블록 수</summary>
+            <div class="tbl-wrap">
+              <table class="tbl compact">
+                <thead><tr><th class="r">로그 위치 (만 줄)</th><th class="r">실행 B</th><th class="r">실행 C</th></tr></thead>
+                <tbody id="live32-rows"></tbody>
+              </table>
+            </div>
+          </details>
+          <figcaption>실행 B의 32 B live는 <code>Startup Graphics Module</code> 시점 82, DevScene 로드·리드백 직후(29,889행) 275, 이후 <strong>345행 주기로 3개씩</strong> 증가(누수 간격 207·71·67행 반복 = 서브메시 드로우 2회 + 합성 드로우 1회의 PSO Finalize). 469,146행에서 4,096에 도달하고 201행 뒤 <code>Allocated 16 byte</code>에서 로그가 끝납니다. 종료 시퀀스 없음, 이벤트 로그·<code>CrashDumps</code>에 기록 없음(디버거 아래 실행 또는 강제 종료로 보임). 병렬 세션은 <code>PipelineState.cpp</code> 주석에 "32바이트 풀 블록(4096개)이 고갈되면 push_back이 널 포인터에 생성자를 돌려 크래시"라고 관찰을 남겼습니다. 실행 C는 같은 구간에서 120으로 평탄하고 정상 종료 때 전부 해제됩니다. <span class="tag">로그</span></figcaption>
+        </div>
+
+        <div class="two">
+          <div class="card">
+            <h3>같은 로그의 해시 버킷 배열 성장</h3>
+            <ul>
+              <li>8 KB(18,855행) → 16 KB(70,890행) → 32 KB(129,820행) → 64 KB(247,534행)로 자라며 이전 것을 해제하는 블록 열이 하나 있습니다.</li>
+              <li>MSVC <code>unordered_map</code> 버킷 배열(엔트리 2×버킷×8 B)이 512→1024→2048→4096 버킷으로 리해시한 흔적. 32 B 노드(<code>pair&lt;uint64, ComPtr&gt;</code> 16 B + 리스트 링크 16 B)를 가진 맵 하나가 4,000개 이상으로 자랐다는 뜻입니다.</li>
+              <li><code>HHashMap&lt;uint64, HDX12ComPtr&lt;HDX12Pipeline&gt;&gt; _graphicsPSOCache</code>(<code>DirectX12API.h:30</code>)와 일치합니다.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>정상 상태 한 프레임의 풀 연산 (345회, 실행 B)</h3>
+            <div class="tbl-wrap">
+              <table class="tbl compact" style="min-width:0">
+                <thead><tr><th>클래스</th><th class="r">할당</th><th class="r">해제</th><th>주된 정체</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">16 B</td><td class="r num">85</td><td class="r num">85</td><td>컨테이너 디버그 프록시(<code>_ITERATOR_DEBUG_LEVEL=2</code>), 1~2원소 <code>HList</code> <span class="tag">추정</span></td></tr>
+                  <tr><td class="mono">128 B</td><td class="r num">36</td><td class="r num">36</td><td>빈 <code>HHashMap</code>의 버킷 배열</td></tr>
+                  <tr><td class="mono">64 B</td><td class="r num">20</td><td class="r num">20</td><td><code>HMap</code> 헤드 노드, 상태 맵 노드</td></tr>
+                  <tr class="hl"><td class="mono">32 B</td><td class="r num">17</td><td class="r num">14</td><td><strong>3개 누수</strong> = PSO 캐시 노드</td></tr>
+                  <tr><td class="mono">8 B · 4 B</td><td class="r num">7 · 2</td><td class="r num">7 · 2</td><td>작은 임시 버퍼</td></tr>
+                  <tr><td class="mono">1 KB · 4 KB · 2 KB · 256 B</td><td class="r num">3 · 2 · 1 · 1</td><td class="r num">3 · 2 · 1 · 1</td><td>상수 버퍼·디스크립터 임시 목록</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="sub" style="font-size:13px">프레임당 컨테이너를 수십 개 만들고 버립니다(로컬 <code>HList&lt;PSharedPtr&lt;&gt;&gt;</code> 반환, <code>HResourceState</code> 복사 등).</p>
+          </div>
+        </div>
+
+        <details>
+          <summary>실행 A의 크기별 누적 할당 횟수 (정상 종료, 137,537줄)</summary>
+          <div class="tbl-wrap">
+            <table class="tbl compact">
+              <thead><tr><th class="mono">16 B</th><th class="mono">128 B</th><th class="mono">64 B</th><th class="mono">32 B</th><th class="mono">8 B</th><th class="mono">1 KB</th><th class="mono">256 B</th><th class="mono">4 B</th><th class="mono">4 KB</th><th class="mono">2 KB</th><th class="mono">512 B</th><th class="mono">1 MB</th><th class="mono">512 KB</th><th class="mono">256 KB</th><th class="mono">8 KB</th><th class="mono">16 KB</th><th class="mono">32 KB</th></tr></thead>
+              <tbody><tr><td class="num">33,095</td><td class="num">14,189</td><td class="num">7,959</td><td class="num">6,710</td><td class="num">2,712</td><td class="num">1,141</td><td class="num">918</td><td class="num">773</td><td class="num">706</td><td class="num">391</td><td class="num">67</td><td class="num">6</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num">1</td></tr></tbody>
+            </table>
+          </div>
+          <p class="sub" style="font-size:13px; padding: 10px 16px">64 KB 이상 클래스(예약 67 MB)는 거의 쓰이지 않고, 1 MB 클래스 16개 중 6개가 워커(에셋 로드) 쪽에서 쓰였습니다.</p>
+        </details>
+      </section>
+
+      <!-- ===== 문제 목록 ===== -->
+      <section id="issues">
+        <h2>문제 목록</h2>
+        <div class="group-h"><h3>P0 — 크래시 · 메모리 안전</h3><span class="cnt">7건</span></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>항목</th><th>위치</th><th>근거</th><th>영향</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">1</td><td><span class="t">풀 고갈·초과 크기의 무음 실패</span></td><td class="mono">MemoryPool.cpp:78-116<br>Memory.h:573-575<br>Allocator.h:18-30</td><td><code>JG_ASSERT("...")</code>·<code>JG_ASSERT(true)</code>는 무효, <code>nullptr</code> 반환을 아무도 검사하지 않음, 1 MB 초과는 <code>out_of_range</code> <span class="tag">코드</span> B 로그가 32 B 한도에서 끊김 <span class="tag">로그</span></td><td>원인 추적이 불가능한 크래시. 다른 모듈의 누수가 풀 크래시로 나타남</td></tr>
+              <tr><td class="mono">2</td><td><span class="t">PSO 캐시 프레임당 증가 (원인 모듈)</span></td><td class="mono">PipelineState.cpp Finalize<br>(HEAD: HashState(&amp;_desc))</td><td>패딩 포함 원본 바이트 해시 → 매 프레임 <code>CreateGraphicsPipelineState</code> + 캐시 노드 32 B 3개/프레임 <span class="tag">로그</span><span class="tag">코드</span></td><td>32 B 클래스 고갈(약 1,270프레임), D3D PSO 객체 누수, 프레임당 PSO 생성 비용. <strong>병렬 세션이 내용 기반 해시로 수정 중(미커밋, 12:30). 실행 C에서 해소 확인</strong></td></tr>
+              <tr><td class="mono">3</td><td><span class="t"><code>PSharedPtr</code>/<code>PWeakPtr</code> 대입 의미론</span></td><td class="mono">Memory.h:241-275<br>operator=(nullptr_t) 없음</td><td>별도 컴파일 재현: <code>p=nullptr</code>·<code>p=empty</code>·<code>p=move(empty)</code> → 그대로 유지, <code>p=p</code> → 널·참조 −1 <span class="tag">재현</span> <code>= nullptr</code> 대입 28곳(변수 21종, <code>JGGraphics.cpp:58</code> 포함) <span class="tag">코드</span></td><td>해제 시점이 소유자 소멸 또는 <code>forceFlush</code>로 밀림. 자기 대입은 참조 유실 → 조기 파괴</td></tr>
+              <tr><td class="mono">4</td><td><span class="t">WeakCount 무시 해제, 카운터 UAF</span></td><td class="mono">Memory.cpp:92-107</td><td>기존 5-18. <code>PWeakPtr::IsValid</code>가 해제된 atomic을 읽음 <span class="tag">코드</span></td><td>잠재 크래시, <code>HTaskHandle</code> 상태 유실(4-6 우회)</td></tr>
+              <tr><td class="mono">5</td><td><span class="t">스레드 간 해제 경합</span></td><td class="mono">MemoryPool.cpp:166-211</td><td>소유 스레드 <code>Allocate</code>는 <code>RWLock</code>을 조회 뒤 풀고 청크 큐를 잠금 없이 조작. 타 스레드 <code>Deallocate</code>의 배타 락은 상대가 없어 보호가 안 됨 <span class="tag">코드</span> <code>Dismatch</code> 55건/실행 <span class="tag">로그</span></td><td><code>std::queue</code> 동시 변경 → 간헐 손상. 에셋 로드 스레드 ↔ 메인</td></tr>
+              <tr><td class="mono">6</td><td><span class="t"><code>shared_lock</code> 해제 후 iterator 사용</span></td><td class="mono">MemoryPool.cpp:166-185</td><td>다른 스레드의 <code>MakeMemoryChunk</code>(rehash)로 iterator 무효 <span class="tag">코드</span></td><td>UB (요소 참조는 유효해 현재 동작)</td></tr>
+              <tr><td class="mono">7</td><td><span class="t">종료 순서 의존</span></td><td class="mono">CoreSystem.cpp:98-105<br>Memory.cpp:12-17</td><td><code>forceFlush</code>가 StringTable/Object 시스템 삭제 뒤 실행, <code>GetInstance()</code>는 널 역참조 <span class="tag">코드</span></td><td>소멸자에서 시스템을 쓰는 GC 객체가 생기면 종료 크래시. static 컨테이너 금지 규칙과 동일 뿌리(5-17 잔존)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="group-h"><h3>P1 — 설계 · 성능</h3><span class="cnt">9건</span></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>항목</th><th>근거</th><th>영향</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">8</td><td><span class="t">GC 큐 전체 순회 · FIFO 파괴 · 1프레임 지연이 펜스와 무관</span></td><td>GC 객체 수명 절 <span class="tag">코드</span></td><td>객체 수에 비례하는 프레임 비용, 부모-자식 역순 파괴(P3 잔존), GPU 리소스 조기 해제 위험</td></tr>
+              <tr><td class="mono">9</td><td><span class="t">객체당 오버헤드</span></td><td>풀 헤더 16 B + 2의 제곱 라운딩(최대 50%) + 맵 노드 + atomic 2개(CRT) + 큐 8 B; 값 타입 vptr 8 B <span class="tag">코드</span></td><td>작은 객체가 많을수록 비율 증가. <code>PSharedPtr</code> 32 B라 <code>HList&lt;PSharedPtr&lt;&gt;&gt;</code> 복사 반환이 무겁다</td></tr>
+              <tr><td class="mono">10</td><td><span class="t">청크 크기 · 클래스 개수 고정</span></td><td>청크 절, 실측 절 <span class="tag">로그</span></td><td>예약 100.69 MB/스레드 상주 vs 사용 0.5%; 32 B 클래스는 상시 6.7% 사용, 다른 클래스는 0~30%. 개수 표가 실측과 무관</td></tr>
+              <tr><td class="mono">11</td><td><span class="t">할당 로그 + 매 줄 flush</span></td><td><code>MemoryPool.cpp:100,115</code>, <code>Log.cpp:15-16</code> <span class="tag">코드</span><span class="tag">로그</span></td><td>프레임당 345줄 × 파일·콘솔 2싱크 × flush. 로그의 99.9%를 차지해 다른 로그를 가림</td></tr>
+              <tr><td class="mono">12</td><td><span class="t"><code>HAllocator</code> 미완성</span></td><td><code>operator==</code> 없음(<code>swap</code>/이동 대입 C2678), 정렬 미지원, 시스템 종료 후 <code>deallocate</code> 무시, static 저장소 금지 규칙 <span class="tag">코드</span></td><td>우회 코드 산재(복사 후 clear, <code>std::vector</code> 예외 12곳)</td></tr>
+              <tr><td class="mono">13</td><td><span class="t">문자열 테이블 정리 로직 무효, <code>PName</code> 원자 연산</span></td><td>문자열 절 <span class="tag">코드</span></td><td>영구 성장(현재는 의도와 무관하게 동작), 이름 복사마다 원자 연산 3회</td></tr>
+              <tr><td class="mono">14</td><td><span class="t">통계 도구</span></td><td>통계 도구 절 <span class="tag">코드</span></td><td>인덱스 버그로 스레드 그룹 표시 오류, 매 프레임 100 MB 워크, 고갈·피크·실패 지표 없음</td></tr>
+              <tr><td class="mono">15</td><td><span class="t">스케줄러 <code>_syncTaskPool</code> 미제거</span></td><td><code>Scheduler.h:117,167</code>에서 <code>emplace</code>만, <code>erase</code> 없음 <span class="tag">코드</span></td><td><code>Schedule*</code> 호출마다 작업 객체가 종료까지 남음(현재 호출 빈도 낮음). <code>HTaskHandle</code>은 raw 포인터 보관(5-18)</td></tr>
+              <tr><td class="mono">16</td><td><span class="t">타입 검사</span></td><td><code>Allocate&lt;T&gt;</code> 런타임 assert(릴리스 통과), <code>Cast&lt;&gt;</code> 실패 시 <code>static_cast</code> 폴백, <code>enable_if</code>에 <code>typename</code> 누락(MSVC 전용) <span class="tag">코드</span></td><td>릴리스 UB 가능, 잘못된 다운캐스트 가능</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note"><strong>범위 밖(별도 분석 권장):</strong> GPU 측 메모리 — <code>PUploadAllocator</code>(리스트별 2 MB 페이지, 해제 없음), <code>PDescriptionAllocator</code>(1,024개 페이지, 해제 없음), <code>PResourceStagingManager</code>(요청별 스테이징 리소스 생성·재사용), PSO/루트서명 캐시(무제한), <code>_resourceRefCache</code>(등록 레지스트리). GPU 예산과 해제 정책은 이 문서에서 다루지 않았습니다.</div>
+      </section>
+
+      <!-- ===== 개선 방향 ===== -->
+      <section id="plan">
+        <h2>개선 방향 제안</h2>
+        <p class="sub">결정은 사용자 몫이고, 여기서는 의존 관계와 효과 기준으로 순서를 제안합니다. A는 작고 독립적이어서 바로 가능하고, B·C는 구조 변경입니다.</p>
+        <div class="flow">
+          <div class="phase">
+            <div class="ph">단계 A</div>
+            <h3>안전장치</h3>
+            <div class="who">작고 독립적 · 즉시 가능</div>
+            <ol>
+              <li><strong>풀 실패를 실패로.</strong> <code>HasSpace</code> 실패·1 MB 초과 시 요청 크기·클래스·스레드를 Critical 로그로 남기고 (a) 시스템 힙 폴백(헤더 표식) 또는 (b) 즉시 abort. <code>JG_ASSERT(문자열)</code> 두 곳 수정. <code>nullptr</code> 처리. (5-23 흡수)</li>
+              <li><strong>스마트 포인터 대입 수정.</strong> 빈 rhs 대입 = <code>Reset()</code>, <code>operator=(nullptr_t)</code> 추가, 자기 대입 가드, 이동 후 rhs 비움. <code>= nullptr</code> 28곳 확인.</li>
+              <li><strong>할당 로그 분리.</strong> 컴파일 스위치(예 <code>JG_MEMORY_TRACE</code>) 아래로, 기본 꺼짐. <code>flush_on</code>은 <code>warn</code> 이상. 포맷 <code>%llu</code>/<code>%p</code>.</li>
+              <li><strong>통계 도구 보수.</strong> 인덱스 버그, 클래스별 live/피크/한도/실패 카운터(O(1) 증감), 청크 워크 제거.</li>
+            </ol>
+          </div>
+          <div class="phase">
+            <div class="ph">단계 B</div>
+            <h3>GC · 스마트 포인터 구조</h3>
+            <div class="who">A 이후 · 5-18 해결</div>
+            <ol start="5">
+              <li><strong>제어 블록 통합.</strong> RefCount/WeakCount/플래그를 풀 헤더(또는 객체 앞 고정 오프셋)에 두고 <code>AllocatedMemoryBlocks</code>·큐·<code>unique_ptr</code> 2개를 없앤다. <code>Wrap</code>이 O(1)·무락이 되고, 객체 파괴(Ref 0)와 메모리 반납(Weak 0)이 분리된다.</li>
+              <li><strong>파괴 정책.</strong> 참조 0이 되는 순간 지연 파괴 목록에 넣고(순회 제거), 파괴는 프레임 경계에서 N프레임 지연 또는 GPU 펜스 기준. 순서는 등록 역순(LIFO)을 기본으로 → P3 해소.</li>
+              <li><strong>종료 규약.</strong> <code>forceFlush</code> 시점 생존 객체를 로그로 열거(누수 리포트), 시스템 삭제 순서를 GC 이후로 옮기거나 소멸자에서 시스템 접근 금지 검사.</li>
+            </ol>
+          </div>
+          <div class="phase">
+            <div class="ph">단계 C</div>
+            <h3>풀 재설계</h3>
+            <div class="who">실측에 맞춘 용량</div>
+            <ol start="8">
+              <li><strong>성장형 클래스.</strong> 고정 개수 대신 페이지(64 KB~1 MB) 단위로 필요할 때 늘린다. 초기 예약은 실측(피크 6,270블록·548 KB)에 맞춰 수 MB로. 대형 블록(64 KB 이상)은 시스템 힙 직접.</li>
+              <li><strong>스레드 간 해제.</strong> 타 스레드 해제는 소유 청크의 반납 큐(락 또는 lock-free)에 넣고 소유 스레드 <code>Allocate</code>가 회수. <code>hash&lt;thread::id&gt;</code> 충돌 대비.</li>
+              <li><strong>정렬 · <code>HAllocator</code> 완성.</strong> <code>alignof(T)</code> 반영, <code>operator==/!=</code>, <code>is_always_equal</code>, 종료 후 <code>deallocate</code> 정책.</li>
+              <li><strong>값 타입에서 <code>IMemoryObject</code> 분리 검토.</strong> <code>PString</code>/<code>PName</code>/<code>PSharedPtr</code>의 vptr 제거 또는 GC 대상 표식을 별도 태그로.</li>
+            </ol>
+          </div>
+          <div class="phase">
+            <div class="ph">단계 D</div>
+            <h3>관측</h3>
+            <div class="who">회귀 방지</div>
+            <ol start="12">
+              <li>프레임별 클래스 live 델타 리포트(이번 32 B 누수 같은 "프레임당 +k" 자동 감지).</li>
+              <li>선택적 콜사이트 태깅(파일/행), 시작·종료 스냅샷 비교.</li>
+              <li>로그 기반 리플레이는 <code>Document/Memory/tools/memlog_stats.sh</code>로 지금도 가능.</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="group-h"><h3>단계 E — 풀 밖 할당 흡수 (범위 확장)</h3><span class="cnt">2026-09-21 확인</span></div>
+        <p class="sub">통계 도구와 <code>[Memory]</code> 로그에 보이지 않는 할당을 줄여 실제 사용량을 한 곳에서 보는 것이 목적입니다. <a href="#arch">구조</a> 절의 "풀 밖에서 할당되는 것" 목록을 항목별로 판정했습니다.</p>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>#</th><th>항목</th><th>판정</th><th>선행</th><th>근거</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">E-1</td><td><span class="t"><code>HDelegate</code></span></td><td><span class="chip good"><span class="g">✓</span>가능 · 즉시</span></td><td class="mono">없음</td><td><code>HDelegates::SetAllocationCallbacks</code>(<code>Delegate.h:81</code>) 후크가 이미 있고 <strong>호출자가 0</strong>입니다. 기본값이 malloc/free 람다. 인라인 버퍼 32 B 초과분만 힙을 타므로 크기도 작습니다. 종료 후 Free 대비 유효성 검사 필요 <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">E-2</td><td><span class="t">모듈 인터페이스 객체</span></td><td><span class="chip good"><span class="g">✓</span>가능</span></td><td class="mono">없음</td><td>생성은 <code>GCoreSystem::Create</code> 이후(풀 존재), 파괴는 <code>GModuleGlobalSystem::Destroy</code>로 메모리 시스템 해제보다 앞섭니다. 단 <code>HPlatform::Allocate</code>는 <code>DevelopUnit</code>·JGHeaderTool도 쓰므로 헬퍼가 아니라 <code>JG_MODULE_IMPL</code> 경로만 <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">E-3</td><td><span class="t"><code>GStringTable</code> RefCount<br>+ <code>PName</code> 제어 블록</span></td><td><span class="chip good"><span class="g">✓</span>가능</span></td><td class="mono">없음</td><td>목록에는 둘로 적혀 있으나 <strong>실제로는 같은 할당 하나</strong>입니다(<code>StringTable.cpp:47</code>의 <code>make_shared&lt;HAtomicInt32&gt;</code>). <code>allocate_shared</code>로 바꾸면 제어 블록과 값이 32 B 블록 하나로 들어갑니다. 약참조가 풀 종료 후까지 살아남으면 죽은 풀에 반납(정적 저장소 금지 규칙과 동종) <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">E-4</td><td><span class="t">ImGui / ImPlot</span></td><td><span class="chip good"><span class="g">✓</span>가능</span></td><td class="mono">A-1</td><td><code>ImGui::SetAllocatorFunctions</code> 후크가 있고 <code>imconfig.h</code>에 주석만 있을 뿐 <strong>호출하지 않습니다</strong>. 컨텍스트 생성(<code>DX12GUIBackend.cpp:34</code>) 시점에 풀은 이미 있습니다. 드로우 리스트·정점 버퍼가 1 MB를 넘을 수 있어 A-1이 전제 <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">E-5</td><td><span class="t">rapidjson</span></td><td><span class="chip good"><span class="g">✓</span>가능</span></td><td class="mono">A-1</td><td><code>RAPIDJSON_DEFAULT_ALLOCATOR</code>가 매크로라 전역 재정의로 전환 가능. <code>PJson::_doc</code>가 기본 <code>rapidjson::Document</code> 타입이라 헤더 파급이 크고, 큰 에셋 JSON은 단일 요청이 1 MB를 넘을 수 있습니다. 에셋 로드 스레드에서 돌므로 C-9와도 얽힘 <span class="tag">코드</span></td></tr>
+              <tr class="hl"><td class="mono">E-6</td><td><span class="t"><code>PString::_rawString</code></span></td><td><span class="chip warn"><span class="g">!</span>조건부</span></td><td class="mono">A-3</td><td><strong>현 구조에서는 무한 재귀입니다.</strong> <code>HMemoryChunk::Allocate</code>가 성공 직후 <code>JG_LOG</code>를 부르고(<code>MemoryPool.cpp:100</code>) → <code>AddLog</code>가 <code>PString::Format</code>으로 PString 두 개를 만들고 → 그 <code>_rawString</code>이 다시 풀을 부릅니다. 할당 로그 제거(A-3)가 반드시 선행. 이후에도 SSO로 짧은 문자열은 힙을 안 쓰고 <code>GetRawString()</code> 44곳·<code>HRawString</code> 27곳이 <code>std::string</code>을 그대로 노출합니다. <strong>비용 대비 이득이 가장 나쁨</strong> <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">—</td><td><span class="t">spdlog</span></td><td><span class="chip crit"><span class="g">✕</span>불가</span></td><td class="mono">—</td><td><code>GLogGlobalSystem</code>이 시스템 등록 <strong>1번</strong>, <code>GMemoryGlobalSystem</code>이 2번입니다. 로거 생성자(<code>Log.cpp:7-21</code>)가 돌 때 풀이 없고, 파괴도 로그가 가장 마지막이라 풀보다 오래 삽니다. 순서를 뒤집으면 풀이 로그를 못 씁니다(E-6의 재귀와 맞물림) <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">—</td><td><span class="t"><code>GCoreSystem</code> · 시스템 인스턴스</span></td><td><span class="chip crit"><span class="g">✕</span>불가</span></td><td class="mono">—</td><td><code>GMemoryGlobalSystem</code> 자신이 <code>new T</code>(<code>CoreSystem.h:76</code>)로 만들어집니다. 닭과 달걀 <span class="tag">코드</span></td></tr>
+              <tr><td class="mono">—</td><td><span class="t">D3D12 객체 (ComPtr)</span></td><td><span class="chip crit"><span class="g">✕</span>불가</span></td><td class="mono">—</td><td>드라이버가 할당하며 D3D12에 CPU 할당자 후크가 없습니다</td></tr>
+              <tr><td class="mono">—</td><td><span class="t">GPU 힙<br>(업로드 페이지 · 디스크립터 힙 · 스테이징)</span></td><td><span class="chip crit"><span class="g">✕</span>불가</span></td><td class="mono">—</td><td>CPU 메모리가 아니라 D3D12 힙입니다. 별도 GPU 예산 관리 대상이며 단계 D에서 계측만 붙입니다</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note"><strong>PSO / 루트서명 캐시는 이 목록에서 빠집니다.</strong> 캐시 컨테이너(<code>HHashMap</code>)는 이미 풀 안이고, 밖에 있는 것은 값이 가리키는 D3D 객체뿐입니다. 이번 32 B 누수가 풀 로그에 보인 이유입니다.</div>
+        <div class="note crit"><strong>공통 주의.</strong> 흡수하는 만큼 32 B·16 B 클래스 압력이 커집니다. E-4·E-5를 A-1(실패 처리) 없이 넣으면 1 MB 초과 즉사 경로가 그대로 열려 있고, 양이 늘면 C-8(성장형 클래스)이 사실상 전제가 됩니다.</div>
+        <div class="card">
+          <h3>권장 순서</h3>
+          <ol class="seq">
+            <li class="fence">E-1 HDelegate</li><li class="arw">→</li>
+            <li class="fence">E-2 모듈 인터페이스</li><li class="arw">→</li>
+            <li class="fence">E-3 제어 블록</li><li class="arw">→</li>
+            <li class="hl">A-1 풀 실패 처리</li><li class="arw">→</li>
+            <li>E-4 ImGui</li><li class="arw">→</li>
+            <li>E-5 rapidjson</li><li class="arw">→</li>
+            <li class="hl">A-3 할당 로그 분리</li><li class="arw">→</li>
+            <li>E-6 PString 재검토</li>
+          </ol>
+          <p class="sub" style="font-size:13px">앞의 세 항목은 단계 A 없이도 안전합니다. 빨간 칸은 그 뒤 항목의 선행 조건입니다.</p>
+        </div>
+
+        <div class="group-h"><h3>검증 기준 (개선 전후 공통)</h3></div>
+        <ul class="ok">
+          <li><span class="g">✓</span><span>정상 종료 시 풀 Allocate 수 == Deallocate 수, <code>Memory Chunk Shutdown</code> 2줄, 종료 코드 0</span></li>
+          <li><span class="g">✓</span><span>정상 상태 프레임 구간에서 모든 클래스 live가 평탄(델타 0), 어떤 클래스도 한도 근접 없음</span></li>
+          <li><span class="g">✓</span><span><code>Graphics PSO created</code>가 시작 뒤 증가하지 않음</span></li>
+          <li><span class="g">✓</span><span>스레드 불일치 해제(<code>Dismatch</code>)가 있어도 손상 없음(현재는 경고만 남김)</span></li>
+          <li><span class="g">✓</span><span>단계 E를 적용한 항목은 흡수 후에도 위 조건이 유지될 것(반납까지 확인). 흡수 전후 클래스별 피크를 비교해 한도 여유를 남길 것</span></li>
+        </ul>
+      </section>
+
+      <!-- ===== 부록 ===== -->
+      <section id="appendix">
+        <h2>부록</h2>
+        <div class="group-h"><h3>재현 · 측정 절차</h3></div>
+        <ol class="steps">
+          <li><div><span class="t">런처 실행 후 <code>Bin/DevelopEngine/jg_log.txt</code>를 먼저 복사한다.</span><span class="m">다음 실행이 덮어씁니다. 오늘도 분석 중 두 번 바뀌었습니다.</span></div></li>
+          <li><div><span class="t"><code>bash Document/Memory/tools/memlog_stats.sh &lt;복사한 로그&gt;</code></span><span class="m">총계, 청크별 클래스 live/피크, 4만 줄 간격 live 추이, 대형 블록 이벤트를 출력합니다.</span></div></li>
+          <li><div><span class="t"><code>PSharedPtr</code> 대입 재현</span><span class="m"><code>Memory.h</code>의 copy/move/operator=를 그대로 옮긴 100줄짜리 코드로 5가지 케이스(<code>p=nullptr</code>, <code>p=empty</code>, <code>p=p</code>, <code>p=move(empty)</code>, <code>p=q</code>)를 확인했습니다. clang++는 <code>C:\Program Files\LLVM\bin</code>.</span></div></li>
+        </ol>
+        <div class="group-h"><h3>관련 파일</h3></div>
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>역할</th><th>파일</th></tr></thead>
+            <tbody>
+              <tr><td>풀</td><td class="mono">Source/Runtime/Core/Memory/MemoryPool.h / .cpp</td></tr>
+              <tr><td>GC · 스마트 포인터</td><td class="mono">Source/Runtime/Core/Memory/Memory.h / .cpp</td></tr>
+              <tr><td>컨테이너 할당자</td><td class="mono">Source/Runtime/Core/Memory/Allocator.h</td></tr>
+              <tr><td>시스템 등록 · 종료 순서</td><td class="mono">Source/Runtime/Core/CoreSystem.h / .cpp</td></tr>
+              <tr><td>모듈 종료 · Flush</td><td class="mono">Source/Runtime/Core/Misc/Module.cpp</td></tr>
+              <tr><td>리플렉션 객체</td><td class="mono">Source/Runtime/Core/Object/ObjectGlobals.* · ObjectGlobalSystem.*</td></tr>
+              <tr><td>문자열</td><td class="mono">Source/Runtime/Core/String/Name.* · String.* · StringTable.*</td></tr>
+              <tr><td>통계 도구</td><td class="mono">Source/Editor/DevStatistics/MemoryStatistics.cpp</td></tr>
+              <tr><td>이번 누수 원인</td><td class="mono">Source/Runtime/Graphics/DirectX12/Classes/PipelineState.cpp (병렬 세션 수정 중)</td></tr>
+              <tr><td>이전 분석</td><td class="mono">Document/2026-09-17_종료크래시_ResourceStateTracker_분석.md · Document/Graphics_TODO.md 5-17 · 5-18 · 5-23</td></tr>
+              <tr><td>이 문서의 원본</td><td class="mono"><a href="Memory_현황분석_2026-09-21.md">Document/Memory_현황분석_2026-09-21.md</a> · 인수인계 <a href="Memory/2026-09-21_Memory_현황분석.md">Document/Memory/2026-09-21_Memory_현황분석.md</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer>
+        <div>작성 2026-09-21 · 근거: 소스(12:35 기준)와 같은 날 실행 로그 3개(A 11:44, B 11:57, C 12:32~12:38). 소스는 수정하지 않았습니다.</div>
+        <div>같은 저장소에서 다른 세션이 동시에 작업 중이었습니다(<code>PipelineState.cpp</code> 12:30 수정, MSBuild 실행 중). 비정상 종료 로그(실행 B)의 원본 사본은 저장소에 넣지 않았고 수치는 이 문서에 옮겨 두었습니다.</div>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, attrs, s) { var t = el('text', attrs, parent); t.textContent = s; return t; }
+  function fmt(n) { return Number(n).toLocaleString('ko-KR'); }
+  function mkTip(root) {
+    var tip = document.createElement('div'); tip.className = 'tip'; root.appendChild(tip); return tip;
+  }
+  function placeTip(root, tip, clientX, clientY) {
+    var r = root.getBoundingClientRect();
+    var x = clientX - r.left + 14, y = clientY - r.top + 14;
+    tip.style.display = 'block';
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    if (x + tw > r.width - 8) x = clientX - r.left - tw - 14;
+    if (y + th > r.height - 4) y = clientY - r.top - th - 14;
+    if (x < 4) x = 4; if (y < 4) y = 4;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function tipRows(tip, header, rows) {
+    while (tip.firstChild) tip.removeChild(tip.firstChild);
+    if (header) { var h = document.createElement('div'); h.className = 'h'; h.textContent = header; tip.appendChild(h); }
+    rows.forEach(function (row) {
+      var r = document.createElement('div'); r.className = 'r';
+      if (row.color) { var key = document.createElement('i'); key.className = 'key'; key.style.background = row.color; r.appendChild(key); }
+      var v = document.createElement('span'); v.className = 'v'; v.textContent = row.value; r.appendChild(v);
+      var k = document.createElement('span'); k.className = 'k'; k.textContent = row.label; r.appendChild(k);
+      tip.appendChild(r);
+    });
+  }
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  /* ---------- 데이터 ---------- */
+  var CLASSES = [
+    { n: '4 B', size: 4, cap: 1024, peak: 3 }, { n: '8 B', size: 8, cap: 4096, peak: 6 },
+    { n: '16 B', size: 16, cap: 4096, peak: 854 }, { n: '32 B', size: 32, cap: 4096, peak: 4096, emph: true },
+    { n: '64 B', size: 64, cap: 4096, peak: 157 }, { n: '128 B', size: 128, cap: 2048, peak: 615 },
+    { n: '256 B', size: 256, cap: 2048, peak: 493 }, { n: '512 B', size: 512, cap: 2048, peak: 13 },
+    { n: '1 KB', size: 1024, cap: 2048, peak: 42 }, { n: '2 KB', size: 2048, cap: 2048, peak: 4 },
+    { n: '4 KB', size: 4096, cap: 1024, peak: 3 }, { n: '8 KB', size: 8192, cap: 1024, peak: 2 },
+    { n: '16 KB', size: 16384, cap: 512, peak: 1 }, { n: '32 KB', size: 32768, cap: 256, peak: 1 },
+    { n: '64 KB', size: 65536, cap: 128, peak: 1 }, { n: '128 KB', size: 131072, cap: 64, peak: 0 },
+    { n: '256 KB', size: 262144, cap: 64, peak: 0 }, { n: '512 KB', size: 524288, cap: 32, peak: 0 },
+    { n: '1 MB', size: 1048576, cap: 16, peak: 0 }
+  ];
+  // x = 로그 위치(만 줄), y = 32 B live 블록 수
+  var RUN_B = [[0.45, 82], [1.0, 132], [2.0, 180], [2.99, 275], [4, 361], [8, 709], [12, 1059], [16, 1404], [20, 1752], [24, 2102], [28, 2450], [32, 2798], [36, 3145], [40, 3493], [44, 3840], [46.93, 4096]];
+  var RUN_C = [[0.45, 82], [1.0, 109], [2.0, 110], [2.27, 121], [3.0, 120], [4, 120], [8, 120], [12, 120], [16, 120], [20, 120], [24, 120], [26.44, 0]];
+
+  /* ---------- 표 채우기 ---------- */
+  (function fillChunkTable() {
+    var tb = document.getElementById('chunk-rows'); if (!tb) return;
+    CLASSES.forEach(function (c) {
+      var tr = document.createElement('tr'); if (c.emph) tr.className = 'hl';
+      var cells = [c.n, fmt(c.cap), fmt(c.size + 16), fmt(c.cap * (c.size + 16)), fmt(c.peak), (c.peak / c.cap * 100).toFixed(1) + '%'];
+      cells.forEach(function (s, i) { var td = document.createElement('td'); td.className = i === 0 ? 'mono' : 'r num'; td.textContent = s; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  })();
+  (function fillLiveTable() {
+    var tb = document.getElementById('live32-rows'); if (!tb) return;
+    var xs = {}; RUN_B.concat(RUN_C).forEach(function (p) { xs[p[0]] = true; });
+    Object.keys(xs).map(Number).sort(function (a, b) { return a - b; }).forEach(function (x) {
+      var tr = document.createElement('tr');
+      var b = RUN_B.filter(function (p) { return p[0] === x; })[0];
+      var c = RUN_C.filter(function (p) { return p[0] === x; })[0];
+      [x.toFixed(2), b ? fmt(b[1]) : '—', c ? fmt(c[1]) : '—'].forEach(function (s) { var td = document.createElement('td'); td.className = 'r num'; td.textContent = s; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  })();
+
+  /* ---------- 가로 막대: 클래스별 피크 사용률 ---------- */
+  (function barChart() {
+    var root = document.getElementById('chart-fill'); if (!root) return;
+    var rowH = 24, barH = 14, W = 760, m = { t: 10, r: 210, b: 34, l: 70 };
+    var H = m.t + CLASSES.length * rowH + m.b, pw = W - m.l - m.r;
+    var x = function (pct) { return m.l + pct / 100 * pw; };
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '크기 클래스 19개의 피크 사용률. 32바이트 클래스만 100%이고 나머지는 30% 이하.' }, root);
+    [0, 25, 50, 75, 100].forEach(function (t) {
+      el('line', { x1: x(t), x2: x(t), y1: m.t, y2: H - m.b + 4, 'class': t === 0 ? 'axis' : 'grid' }, svg);
+      txt(svg, { x: x(t), y: H - m.b + 20, 'class': 'tick', 'text-anchor': 'middle' }, t + '%');
+    });
+    txt(svg, { x: m.l + pw / 2, y: H - 6, 'class': 'axis-title', 'text-anchor': 'middle' }, '피크 live 블록 ÷ 클래스 블록 개수 (실행 B, 메인 청크)');
+    var tip = mkTip(root);
+    CLASSES.forEach(function (c, i) {
+      var pct = c.peak / c.cap * 100, y0 = m.t + i * rowH + (rowH - barH) / 2;
+      txt(svg, { x: m.l - 10, y: y0 + barH / 2, dy: '0.35em', 'text-anchor': 'end', 'class': 'cat' }, c.n);
+      var w = x(pct) - x(0), bar = null;
+      if (w > 0) {
+        var r = Math.min(4, w), x0 = x(0), x1 = x0 + w;
+        var d = 'M' + x0 + ' ' + y0 + ' H' + (x1 - r) + ' a' + r + ' ' + r + ' 0 0 1 ' + r + ' ' + r + ' V' + (y0 + barH - r) + ' a' + r + ' ' + r + ' 0 0 1 -' + r + ' ' + r + ' H' + x0 + ' Z';
+        bar = el('path', { d: d, 'class': 'bar' + (c.emph ? ' emph' : '') }, svg);
+      }
+      var label = null;
+      if (pct >= 20) label = fmt(c.peak) + ' / ' + fmt(c.cap) + ' · ' + (pct >= 99.95 ? '100%' : pct.toFixed(1) + '%') + (c.emph ? ' · 한도' : '');
+      if (label) txt(svg, { x: x(pct) + 8, y: y0 + barH / 2, dy: '0.35em', 'class': 'vlabel' }, label);
+      var hit = el('rect', { x: m.l - 60, y: m.t + i * rowH, width: pw + 60 + m.r - 10, height: rowH, 'class': 'hit', tabindex: '0', role: 'img', 'aria-label': c.n + ' 피크 ' + fmt(c.peak) + ' / ' + fmt(c.cap) + ' (' + pct.toFixed(1) + '%)' }, svg);
+      function show(ev) {
+        if (bar) bar.classList.add('lift');
+        tipRows(tip, c.n + ' 클래스', [
+          { value: fmt(c.peak) + ' / ' + fmt(c.cap), label: '피크 live / 블록 개수', color: c.emph ? cssVar('--viz-s1') : cssVar('--viz-deemph') },
+          { value: pct.toFixed(1) + '%', label: '사용률' },
+          { value: fmt(c.peak * c.size), label: '피크 페이로드 (B)' }
+        ]);
+        if (ev && ev.clientX !== undefined) placeTip(root, tip, ev.clientX, ev.clientY);
+        else { var rb = hit.getBoundingClientRect(); placeTip(root, tip, rb.left + 80, rb.top + rowH / 2); }
+      }
+      function hide() { if (bar) bar.classList.remove('lift'); tip.style.display = 'none'; }
+      hit.addEventListener('pointermove', show); hit.addEventListener('pointerenter', show);
+      hit.addEventListener('pointerleave', hide); hit.addEventListener('focus', show); hit.addEventListener('blur', hide);
+    });
+  })();
+
+  /* ---------- 선 그래프: 32 B live 추이 ---------- */
+  (function lineChart() {
+    var root = document.getElementById('chart-live32'); if (!root) return;
+    var W = 760, H = 330, m = { t: 26, r: 140, b: 48, l: 62 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var xmin = 0, xmax = 48, ymin = 0, ymax = 4500;
+    var x = function (v) { return m.l + (v - xmin) / (xmax - xmin) * pw; };
+    var y = function (v) { return m.t + ph - (v - ymin) / (ymax - ymin) * ph; };
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': '32바이트 클래스 live 블록 수. 실행 B는 82에서 시작해 로그 46.9만 줄에서 한도 4,096에 닿고, 실행 C는 120에서 평탄하다가 정상 종료 때 0이 된다.' }, root);
+    [0, 1000, 2000, 3000, 4000].forEach(function (t) {
+      el('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), 'class': t === 0 ? 'axis' : 'grid' }, svg);
+      txt(svg, { x: m.l - 10, y: y(t), dy: '0.35em', 'text-anchor': 'end', 'class': 'tick' }, fmt(t));
+    });
+    [0, 8, 16, 24, 32, 40, 48].forEach(function (t) {
+      txt(svg, { x: x(t), y: H - m.b + 20, 'text-anchor': 'middle', 'class': 'tick' }, t === 0 ? '0' : t + '만');
+    });
+    txt(svg, { x: m.l + pw / 2, y: H - 8, 'text-anchor': 'middle', 'class': 'axis-title' }, '로그 진행 (줄 수 · 프레임 시간의 대용)');
+    txt(svg, { x: m.l - 10, y: m.t - 10, 'text-anchor': 'end', 'class': 'axis-title' }, 'live 블록');
+    // 한도선
+    var ty = y(4096);
+    el('line', { x1: m.l, x2: W - m.r, y1: ty, y2: ty, 'class': 'thresh' }, svg);
+    txt(svg, { x: W - m.r + 8, y: ty, dy: '0.35em', 'class': 'thresh-label' }, '한도 4,096');
+    var series = [
+      { name: '실행 B (누수)', pts: RUN_B, cls: 's1', varName: '--viz-s1' },
+      { name: '실행 C (수정 후)', pts: RUN_C, cls: 's2', varName: '--viz-s2' }
+    ];
+    series.forEach(function (s) {
+      var d = s.pts.map(function (p, i) { return (i ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1); }).join(' ');
+      el('path', { d: d, 'class': 'line ' + s.cls }, svg);
+    });
+    series.forEach(function (s) {
+      s.pts.forEach(function (p) { el('circle', { cx: x(p[0]), cy: y(p[1]), r: 4, 'class': 'dot ' + s.cls }, svg); });
+    });
+    // 선택적 직접 라벨
+    txt(svg, { x: x(46.93) - 8, y: y(4096) - 12, 'text-anchor': 'end', 'class': 'dlabel' }, '4,096 · 로그 끊김');
+    txt(svg, { x: x(12), y: y(120) - 12, 'text-anchor': 'middle', 'class': 'dlabel' }, '120 · 평탄 (수정 후)');
+    txt(svg, { x: x(26.44) + 10, y: y(0) - 6, 'class': 'dlabel' }, '0 · 정상 종료 (전부 해제)');
+    // 호버: 크로스헤어 + 툴팁 (전 시리즈 값)
+    var xs = {}; series.forEach(function (s) { s.pts.forEach(function (p) { xs[p[0]] = true; }); });
+    var XS = Object.keys(xs).map(Number).sort(function (a, b) { return a - b; });
+    var xhair = el('line', { x1: 0, x2: 0, y1: m.t, y2: m.t + ph, 'class': 'xhair' }, svg);
+    var tip = mkTip(root);
+    function valueAt(pts, xv) {
+      if (xv < pts[0][0] - 1e-9 || xv > pts[pts.length - 1][0] + 1e-9) return null;
+      for (var i = 0; i < pts.length; i++) {
+        if (Math.abs(pts[i][0] - xv) < 1e-9) return pts[i][1];
+        if (pts[i][0] > xv) { var a = pts[i - 1], b = pts[i]; return a[1] + (b[1] - a[1]) * (xv - a[0]) / (b[0] - a[0]); }
+      }
+      return null;
+    }
+    var idx = -1;
+    function showAt(i, clientX, clientY) {
+      idx = i; var xv = XS[i], px = x(xv);
+      xhair.setAttribute('x1', px); xhair.setAttribute('x2', px); xhair.style.opacity = '1';
+      var rows = series.map(function (s) {
+        var v = valueAt(s.pts, xv);
+        return { value: v === null ? '—' : fmt(Math.round(v)) + ' 블록', label: s.name, color: cssVar(s.varName) };
+      });
+      tipRows(tip, '로그 ' + (xv * 10000).toLocaleString('ko-KR') + '줄 부근', rows);
+      if (clientX !== undefined) placeTip(root, tip, clientX, clientY);
+      else { var rb = svg.getBoundingClientRect(); placeTip(root, tip, rb.left + px / W * rb.width, rb.top + (m.t + ph / 2) / H * rb.height); }
+    }
+    function hide() { xhair.style.opacity = '0'; tip.style.display = 'none'; idx = -1; }
+    var hit = el('rect', { x: m.l, y: m.t, width: pw, height: ph, 'class': 'hit', tabindex: '0', role: 'application', 'aria-label': '차트 탐색: 좌우 화살표로 로그 위치를 이동합니다.' }, svg);
+    hit.addEventListener('pointermove', function (ev) {
+      var rb = svg.getBoundingClientRect(); var vx = (ev.clientX - rb.left) / rb.width * W;
+      var best = 0, bd = Infinity; XS.forEach(function (v, i) { var d = Math.abs(x(v) - vx); if (d < bd) { bd = d; best = i; } });
+      showAt(best, ev.clientX, ev.clientY);
+    });
+    hit.addEventListener('pointerleave', hide);
+    hit.addEventListener('focus', function () { showAt(XS.length - 1); });
+    hit.addEventListener('blur', hide);
+    hit.addEventListener('keydown', function (ev) {
+      if (ev.key === 'ArrowLeft') { showAt(Math.max(0, (idx < 0 ? XS.length - 1 : idx) - 1)); ev.preventDefault(); }
+      else if (ev.key === 'ArrowRight') { showAt(Math.min(XS.length - 1, (idx < 0 ? 0 : idx) + 1)); ev.preventDefault(); }
+    });
+  })();
+})();
+</script>
+</body>
+</html>

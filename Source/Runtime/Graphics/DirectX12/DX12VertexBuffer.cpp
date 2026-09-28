@@ -194,8 +194,14 @@ HDX12Resource* PDX12VertexBuffer::Get() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12VertexBuffer::GetSRV() const
 {
-	if (IsValid() == false) return { 0 };
-	if (_srv.IsValid()) return { _srv.CPU() };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
+	if (_srv.IsValid())
+	{
+		return { _srv.CPU() };
+	}
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC desc = {};
 	desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
@@ -215,8 +221,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12VertexBuffer::GetSRV() const
 
 D3D12_CPU_DESCRIPTOR_HANDLE PDX12VertexBuffer::GetUAV() const
 {
-	if (IsValid() == false) return { 0 };
-	if (_uav.IsValid()) return { _uav.CPU() };
+	if (IsValid() == false)
+	{
+		return { 0 };
+	}
+	if (_uav.IsValid())
+	{
+		return { _uav.CPU() };
+	}
 
 	D3D12_UNORDERED_ACCESS_VIEW_DESC desc = {};
 	desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;

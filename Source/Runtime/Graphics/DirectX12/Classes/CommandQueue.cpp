@@ -46,8 +46,14 @@ void PCommandQueue::End()
 		{
 			PSharedPtr<PCommandList> pendCmdList = _excutePendingCmdLists[pair.first][cmdList.first];
 
-			if (GetCommandListState(cmdList.second) == ECommandListState::Close) continue;
-			if (GetCommandListState(pendCmdList) == ECommandListState::Close) continue;
+			if (GetCommandListState(cmdList.second) == ECommandListState::Close)
+			{
+				continue;
+			}
+			if (GetCommandListState(pendCmdList) == ECommandListState::Close)
+			{
+				continue;
+			}
 
 			bool bHasPendingBarrier = cmdList.second->Close(pendCmdList.GetRawPointer());
 

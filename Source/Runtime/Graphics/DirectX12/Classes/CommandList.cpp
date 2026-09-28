@@ -291,7 +291,10 @@ void PGraphicsCommandList::SetScissorRects(const HList<HScissorRect>& rects)
 
 void PGraphicsCommandList::ClearRenderTargetTexture(HDX12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle, const HLinearColor& clearColor)
 {
-	if (resource == nullptr || rtvHandle.ptr == 0) return;
+	if (resource == nullptr || rtvHandle.ptr == 0)
+	{
+		return;
+	}
 
 	TransitionBarrier(resource, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	FlushResourceBarrier();
@@ -302,7 +305,10 @@ void PGraphicsCommandList::ClearRenderTargetTexture(HDX12Resource* resource, D3D
 
 void PGraphicsCommandList::ClearDepthTexture(HDX12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle, float32 clearDepth, uint8 clearStencil, D3D12_CLEAR_FLAGS clearFlags)
 {
-	if (resource == nullptr || dsvHandle.ptr == 0) return;
+	if (resource == nullptr || dsvHandle.ptr == 0)
+	{
+		return;
+	}
 
 	TransitionBarrier(resource, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	FlushResourceBarrier();
@@ -331,7 +337,10 @@ void PGraphicsCommandList::SetRenderTarget(
 {
 	for (uint64 i = 0; i < rtTextureCount; ++i)
 	{
-		if (rtTextures[i] == nullptr) continue;
+		if (rtTextures[i] == nullptr)
+		{
+			continue;
+		}
 		TransitionBarrier(rtTextures[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
 	}
 	if (depthTexture != nullptr)
