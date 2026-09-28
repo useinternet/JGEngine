@@ -1,0 +1,39 @@
+
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.lib
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll
+msbuild exit=0
+
+===== 0-2 재현 코드(DevScene.cpp) 반영 빌드 =====
+
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.lib
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  DevScene.cpp
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll
+msbuild exit=0

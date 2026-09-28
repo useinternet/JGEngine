@@ -2,6 +2,9 @@
 # jg_log.txt 의 [Memory] 할당/해제 줄을 리플레이해 풀 사용 통계를 낸다. (Git Bash, awk)
 # 사용: bash Document/Memory/tools/memlog_stats.sh <jg_log 사본>  [샘플 간격 줄 수, 기본 40000]
 # 주의: Bin/DevelopEngine/jg_log.txt 는 실행마다 덮어써지므로 먼저 복사한 뒤 그 사본을 넘길 것.
+# 주의: 2026-09-28(Memory_TODO 1-1)부터 할당/해제 줄은 JG_MEMORY_TRACE 빌드에서만 나온다.
+#       Source/Runtime/Core/Memory/MemoryPool.cpp 맨 위 `#define JG_MEMORY_TRACE 0` 을 1 로 바꿔 빌드한 뒤 실행한 로그를 넘길 것.
+#       기본 빌드 로그를 넘기면 allocs/deallocs 가 0 으로 나온다(청크 생성·종료 줄과 Dismatch 경고만 남는다).
 set -euo pipefail
 F="${1:?jg_log 파일 경로}"
 STEP="${2:-40000}"

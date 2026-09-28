@@ -101,7 +101,7 @@ public:
 	PSharedPtr()  = default;
 	PSharedPtr(nullptr_t) {};
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PSharedPtr(const PSharedPtr<U>& rhs)
 	{
 		copy<U>(rhs);
@@ -112,7 +112,7 @@ public:
 		copy<T>(rhs);
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PSharedPtr(PSharedPtr<U>&& rhs)
 	{
 		move<U>(std::move(rhs));
@@ -132,7 +132,7 @@ public:
 		subRefCount();
 	}
 public:
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PSharedPtr<T>& operator=(const PSharedPtr<U>& rhs)
 	{
 		copy<U>(rhs);
@@ -147,7 +147,7 @@ public:
 		return *this;
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PSharedPtr<T>& operator=(PSharedPtr<U>&& rhs)
 	{
 		move<U>(std::move(rhs));
@@ -158,6 +158,14 @@ public:
 	PSharedPtr<T>& operator=(PSharedPtr<T>&& rhs)
 	{
 		move<T>(std::move(rhs));
+
+		return *this;
+	}
+
+	// `p = nullptr` 은 참조를 놓는다. (2026-09-28 Memory_TODO 1-2. 이전에는 빈 임시 객체의 이동 대입으로 흘러가 아무 일도 하지 않았다)
+	PSharedPtr<T>& operator=(nullptr_t)
+	{
+		Reset();
 
 		return *this;
 	}
@@ -237,38 +245,61 @@ public:
 		}
 	}
 private:
-	template<class U>
-	void copy(const PSharedPtr<U>& rhs)
+	// 대입 규칙 (2026-09-28 Memory_TODO 1-2. 표준 shared_ptr 과 같다):
+	//  - 빈 rhs 를 대입하면 놓는다(Reset 과 같다). 이전에는 early return 으로 아무 일도 하지 않아 `p = 빈포인터` 가 참조를 놓지 않았다.
+	//  - 같은 객체(자기 대입 포함)면 참조 수를 바꾸지 않는다. 이전에는 Reset 을 먼저 해서 `p = p` 가 참조를 잃었다.
+	//  - 새 참조를 먼저 잡고 옛 참조를 놓는다.
+	void assign(T* inPtr, HAtomicInt32* inRefCount, HAtomicInt32* inWeakCount)
 	{
-		if (rhs.IsValid() == false)
+		if (inPtr == _ptr)
 		{
 			return;
 		}
 
-		Reset();
+		if (inRefCount != nullptr)
+		{
+			inRefCount->fetch_add(1);
+		}
 
+		subRefCount();
+
+		_ptr        = inPtr;
+		_pRefCount  = inRefCount;
+		_pWeakCount = inWeakCount;
+	}
+
+	template<class U>
+	void copy(const PSharedPtr<U>& rhs)
+	{
 		PMemoryPrivate::PTemporaryOwner<U> owner(rhs);
-
-		_ptr = owner.ptr;
-		_pRefCount  = owner.pRefCount;
-		_pWeakCount = owner.pWeakCount;
-
-		addRefCount();
+		assign(owner.ptr, owner.pRefCount, owner.pWeakCount);
 	}
 
 	template<class U>
 	void move(PSharedPtr<U>&& rhs)
 	{
-		if (rhs.IsValid() == false)
+		// 자기 자신을 이동 대입하면 그대로 둔다.
+		if (static_cast<const void*>(&rhs) == static_cast<const void*>(this))
 		{
 			return;
 		}
 
-		Reset();
-
+		// rhs 의 참조를 넘겨받는다. owner 를 만드는 순간 rhs 는 비워진다.
 		PMemoryPrivate::PTemporaryOwner<U> owner(std::move(rhs));
 
-		_ptr = owner.ptr;
+		if (owner.ptr == _ptr)
+		{
+			// 같은 객체: rhs 가 들고 있던 참조 하나는 우리가 대신 놓는다.
+			if (owner.pRefCount != nullptr)
+			{
+				owner.pRefCount->fetch_sub(1);
+			}
+			return;
+		}
+
+		subRefCount();
+
+		_ptr        = owner.ptr;
 		_pRefCount  = owner.pRefCount;
 		_pWeakCount = owner.pWeakCount;
 	}
@@ -308,7 +339,7 @@ class PWeakPtr : public IMemoryObject
 public:
 	PWeakPtr() = default;
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr(const PWeakPtr<U>& rhs)
 	{
 		copy<U>(rhs);
@@ -319,7 +350,7 @@ public:
 		copy<T>(rhs);
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr(PWeakPtr<U>&& rhs)
 	{
 		move<U>(std::move(rhs));
@@ -330,7 +361,7 @@ public:
 		move<T>(std::move(rhs));
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr(const PSharedPtr<U>& rhs)
 	{
 		set<U>(rhs);
@@ -341,7 +372,7 @@ public:
 		set<T>(rhs);
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr(PSharedPtr<U>&& rhs)
 	{
 		set<U>(rhs);
@@ -362,7 +393,7 @@ public:
 		subWeakCount();
 	}
 public:
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr<T>& operator=(const PWeakPtr<U>& rhs)
 	{
 		copy<U>(rhs);
@@ -377,7 +408,7 @@ public:
 		return *this;
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr<T>& operator=(PWeakPtr<U>&& rhs)
 	{
 		move<U>(std::move(rhs));
@@ -392,7 +423,7 @@ public:
 		return *this;
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr<T>& operator=(const PSharedPtr<U>& rhs)
 	{
 		set<U>(rhs);
@@ -407,7 +438,7 @@ public:
 		return *this;
 	}
 
-	template <class U, std::enable_if<std::is_base_of<T, U>::value, int32>::type = 0>
+	template <class U, std::enable_if_t<std::is_base_of<T, U>::value, int32> = 0>
 	PWeakPtr<T>& operator=(PSharedPtr<U>&& rhs)
 	{
 		set<U>(rhs);
@@ -418,6 +449,14 @@ public:
 	PWeakPtr<T>& operator=(PSharedPtr<T>&& rhs)
 	{
 		set<T>(rhs);
+
+		return *this;
+	}
+
+	// `w = nullptr` 은 약참조를 놓는다. (2026-09-28 Memory_TODO 1-2. 이전에는 빈 PSharedPtr 대입으로 흘러가 아무 일도 하지 않았다)
+	PWeakPtr<T>& operator=(nullptr_t)
+	{
+		Reset();
 
 		return *this;
 	}
@@ -458,57 +497,66 @@ private:
 		return _ptr != nullptr;
 	}
 
-	template <class U>
-	void set(const PSharedPtr<U>& ptr)
+	// 대입 규칙은 PSharedPtr 와 같다 (2026-09-28 Memory_TODO 1-2): 빈 rhs = Reset, 같은 객체면 변화 없음, 새 약참조를 먼저 잡고 옛 것을 놓는다.
+	// 만료된 약참조(참조 수 0)도 표준 weak_ptr 처럼 그대로 복사한다. 이전에는 IsValid 검사에 걸려 대입이 통째로 무시됐다.
+	void assign(T* inPtr, HAtomicInt32* inRefCount, HAtomicInt32* inWeakCount)
 	{
-		if (ptr.IsValid() == false)
+		if (inPtr == _ptr)
 		{
 			return;
 		}
 
-		Reset();
+		if (inWeakCount != nullptr)
+		{
+			inWeakCount->fetch_add(1);
+		}
 
+		subWeakCount();
+
+		_ptr        = inPtr;
+		_pRefCount  = inRefCount;
+		_pWeakCount = inWeakCount;
+	}
+
+	template <class U>
+	void set(const PSharedPtr<U>& ptr)
+	{
 		PMemoryPrivate::PTemporaryOwner<U> owner(ptr);
-
-		_ptr = owner.ptr;
-		_pRefCount  = owner.pRefCount;
-		_pWeakCount = owner.pWeakCount;
-
-		addWeakCount();
+		assign(owner.ptr, owner.pRefCount, owner.pWeakCount);
 	}
 
 	template <class U>
 	void copy(const PWeakPtr<U>& rhs)
 	{
-		if (rhs.IsValid() == false)
-		{
-			return;
-		}
-
-		Reset();
-
 		PMemoryPrivate::PTemporaryOwner<U> owner(rhs);
-
-		_ptr = owner.ptr;
-		_pRefCount  = owner.pRefCount;
-		_pWeakCount = owner.pWeakCount;
-
-		addWeakCount();
+		assign(owner.ptr, owner.pRefCount, owner.pWeakCount);
 	}
 
 	template <class U>
 	void move(PWeakPtr<U>&& rhs)
 	{
-		if (rhs.IsValid() == false)
+		// 자기 자신을 이동 대입하면 그대로 둔다.
+		if (static_cast<const void*>(&rhs) == static_cast<const void*>(this))
 		{
 			return;
 		}
 
-		Reset();
-
+		// rhs 의 약참조를 넘겨받는다. owner 를 만드는 순간 rhs 는 비워진다.
 		PMemoryPrivate::PTemporaryOwner<U> owner(std::move(rhs));
 
-		_ptr = owner.ptr;
+		if (owner.ptr == _ptr)
+		{
+			// 같은 객체: rhs 가 들고 있던 약참조 하나는 우리가 대신 놓는다.
+			if (owner.pWeakCount != nullptr)
+			{
+				owner.pWeakCount->fetch_sub(1);
+			}
+			return;
+		}
+
+		subWeakCount();
+
+		_ptr        = owner.ptr;
 		_pRefCount  = owner.pRefCount;
 		_pWeakCount = owner.pWeakCount;
 	}
@@ -564,12 +612,11 @@ public:
 	template<class T, class ...Args>
 	PSharedPtr<T> Allocate(Args&& ... args) const
 	{
-		if (std::is_class<T>::value == true &&
-			std::is_base_of<IMemoryObject, T>::value == false)
-		{
-			JG_ASSERT(false);
-		}
-		
+		// 스마트 포인터로 다루는 클래스는 IMemoryObject 파생이어야 한다(GC 가 IMemoryObject* 로 Destruction()·소멸자를 부른다).
+		// 위반은 컴파일 시점에 잡는다. (2026-09-28 Memory_TODO 1-3. 이전에는 런타임 JG_ASSERT 라 릴리스 구성에서 통과했다. Wrap<T> 와 같은 규칙)
+		static_assert(std::is_class<T>::value == false || std::is_base_of<IMemoryObject, T>::value,
+			"Allocate<T>: T must derive from IMemoryObject (classes held by PSharedPtr/PWeakPtr must be rooted at IMemoryObject)");
+
 		void* MemPtr = MemoryPool.Allocate(sizeof(T));
 		PSharedPtr<T> Result;
 		Result._ptr = new(MemPtr) T(std::forward<Args>(args)...);

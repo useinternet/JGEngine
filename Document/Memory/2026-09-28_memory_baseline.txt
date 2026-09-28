@@ -1,0 +1,146 @@
+# 메모리 풀 기준선 (Memory_TODO 0-1)
+# 작성 2026-09-28. HEAD 7972462 (코드 정리). 구성 DevelopEngine|x64 (_DEBUG, MDd). Phase 1 이전 원본 상태.
+# 빌드: MSBuild JGEngine.sln -p:Configuration=DevelopEngine -p:Platform=x64 -m -v:m → 오류 0, 재링크 없음 (Bin이 이미 HEAD와 일치). 로그 Document/Memory/build_2026-09-28_phase0.log
+# 실행: Document/Memory/tools/capture_devscene.ps1 -WaitSeconds 60 (JGLauncher, LaunchModule=JGDev_Graphics, DevScene 렌더) → ExitCode 0
+# 로그: jg_log.txt 사본 315,973줄, [error]/[critical] 0, D3D12 디버그 레이어 메시지 0, 'Graphics PSO created' 2회
+# 아래는 bash Document/Memory/tools/memlog_stats.sh <사본> 출력 그대로. Phase 1 이후 같은 절차로 다시 뽑아 비교한다.
+# 비교 포인트: 총 Allocate == Deallocate, 32 B 클래스 live/피크(정상 ~120/123), 메인 청크 피크 총 블록(정상 ~2,300), 각 클래스 live 추이 평탄.
+
+== 총계 ==
+lines: 315973
+allocs: 157892  deallocs: 157892  dismatch: 55
+chunk init: 2  chunk shutdown: 2  error/critical: 0
+memory lines: 315843  PSO created: 2
+
+== 청크 ID (첫 번째가 메인 스레드) ==
+2177512009
+1891858244
+
+== 청크별 크기 클래스: 종료 시 live / 피크 live / 누적 할당 ==
+chunk 2177512009 : peak total live 2296
+         4 B : live      0  peak      3  allocs     1835
+         8 B : live      0  peak      6  allocs     6429
+        16 B : live      0  peak    854  allocs    77929
+        32 B : live      0  peak    123  allocs    13056
+        64 B : live      0  peak    157  allocs    18562
+       128 B : live      0  peak    616  allocs    33094
+       256 B : live      0  peak    493  allocs     1433
+       512 B : live      0  peak     13  allocs       59
+      1024 B : live      0  peak     41  allocs     2718
+      2048 B : live      0  peak      4  allocs      922
+      4096 B : live      0  peak      3  allocs     1754
+      8192 B : live      0  peak      1  allocs        1
+chunk 1891858244 : peak total live 52
+        16 B : live      0  peak     22  allocs       48
+        64 B : live      0  peak      7  allocs       17
+       128 B : live      0  peak      1  allocs        1
+       256 B : live      0  peak     10  allocs       14
+       512 B : live      0  peak      7  allocs        9
+      1024 B : live      0  peak      1  allocs        1
+    262144 B : live      0  peak      2  allocs        2
+    524288 B : live      0  peak      2  allocs        2
+   1048576 B : live      0  peak      4  allocs        6
+
+== 프레임 누수 추적: 40000 줄 간격 live 추이 (종료 시 live > 0 이거나 변화가 있는 클래스만) ==
+chunk 2177512009       4 B : 0 0 0 0 0 0 1  | end 0
+chunk 2177512009       8 B : 2 2 2 2 2 3 4  | end 0
+chunk 2177512009      16 B : 842 846 847 851 852 853 853  | end 0
+chunk 2177512009      32 B : 121 121 121 121 121 120 120  | end 0
+chunk 2177512009      64 B : 142 152 153 153 153 153 153  | end 0
+chunk 2177512009     128 B : 613 613 613 613 614 615 613  | end 0
+
+== 8KB 이상 블록 이벤트 (해시 버킷 배열 성장 등) ==
+  2408 Allocated 8192 [2177512009]
+  12062 Allocated 1048576 [1891858244]
+  12499 Allocated 524288 [1891858244]
+  12639 Allocated 1048576 [1891858244]
+  12671 Allocated 1048576 [1891858244]
+  12814 Allocated 524288 [1891858244]
+  12855 Deallocated 1048576 [1891858244]
+  12860 Deallocated 524288 [1891858244]
+  12867 Deallocated 1048576 [1891858244]
+  12880 Allocated 1048576 [1891858244]
+  13183 Allocated 262144 [1891858244]
+  13315 Allocated 1048576 [1891858244]
+  13343 Allocated 1048576 [1891858244]
+  13416 Allocated 262144 [1891858244]
+  13445 Deallocated 1048576 [1891858244]
+  13450 Deallocated 262144 [1891858244]
+  13455 Deallocated 1048576 [1891858244]
+  314975 Deallocated 1048576 [1891858244]
+  314981 Deallocated 524288 [1891858244]
+  315047 Deallocated 1048576 [1891858244]
+  315053 Deallocated 262144 [1891858244]
+  315607 Deallocated 8192 [2177512009]
+
+
+########## v2 — Phase 1 완료 후 (2026-09-28, 1-1 로그 스위치·1-2 대입 의미론·1-3 static_assert 적용, JG_MEMORY_TRACE=1 빌드) ##########
+# 실행: capture_devscene.ps1 -WaitSeconds 60 → ExitCode 0. 로그 242427줄, [error]/[critical] 0, 'Graphics PSO created' 2회
+# 기본 빌드(트레이스 OFF) 같은 60초 실행: 로그 211줄 18,680 bytes, [Memory] 줄 59(청크 2+2, Dismatch 55), 할당/해제 줄 0, ExitCode 0
+# 1-2 재현 코드(std::shared_ptr 비교 15케이스) ALL OK
+
+== 총계 ==
+lines: 242427
+allocs: 121108  deallocs: 121108  dismatch: 55
+chunk init: 2  chunk shutdown: 2  error/critical: 0
+memory lines: 242275  PSO created: 2
+
+== 청크 ID (첫 번째가 메인 스레드) ==
+11095985672148793014
+6174162781589094045
+
+== 청크별 크기 클래스: 종료 시 live / 피크 live / 누적 할당 ==
+chunk 6174162781589094045 : peak total live 54
+        16 B : live      0  peak     24  allocs       48
+        64 B : live      0  peak      7  allocs       17
+       128 B : live      0  peak      1  allocs        1
+       256 B : live      0  peak     10  allocs       14
+       512 B : live      0  peak      7  allocs        9
+      1024 B : live      0  peak      1  allocs        1
+    262144 B : live      0  peak      2  allocs        2
+    524288 B : live      0  peak      2  allocs        2
+   1048576 B : live      0  peak      4  allocs        6
+chunk 11095985672148793014 : peak total live 2296
+         4 B : live      0  peak      3  allocs     1399
+         8 B : live      0  peak      6  allocs     4903
+        16 B : live      0  peak    854  allocs    59652
+        32 B : live      0  peak    123  allocs    10006
+        64 B : live      0  peak    157  allocs    14202
+       128 B : live      0  peak    616  allocs    25456
+       256 B : live      0  peak    493  allocs     1217
+       512 B : live      0  peak     13  allocs       58
+      1024 B : live      0  peak     41  allocs     2078
+      2048 B : live      0  peak      4  allocs      704
+      4096 B : live      0  peak      3  allocs     1332
+      8192 B : live      0  peak      1  allocs        1
+
+== 프레임 누수 추적: 40000 줄 간격 live 추이 (종료 시 live > 0 이거나 변화가 있는 클래스만) ==
+chunk 11095985672148793014      16 B : 842 839 841 843 848 847  | end 0
+chunk 11095985672148793014      32 B : 119 119 121 121 121 121  | end 0
+chunk 11095985672148793014      64 B : 142 134 141 145 153 153  | end 0
+chunk 11095985672148793014     128 B : 611 612 613 613 613 613  | end 0
+chunk 11095985672148793014     256 B : 491 491 491 491 492 491  | end 0
+
+== 8KB 이상 블록 이벤트 (해시 버킷 배열 성장 등) ==
+  2408 Allocated 8192 [11095985672148793014]
+  11112 Allocated 1048576 [6174162781589094045]
+  11414 Allocated 524288 [6174162781589094045]
+  11484 Allocated 1048576 [6174162781589094045]
+  11511 Allocated 1048576 [6174162781589094045]
+  11626 Allocated 524288 [6174162781589094045]
+  11664 Deallocated 1048576 [6174162781589094045]
+  11671 Deallocated 524288 [6174162781589094045]
+  11676 Deallocated 1048576 [6174162781589094045]
+  11688 Allocated 1048576 [6174162781589094045]
+  11899 Allocated 262144 [6174162781589094045]
+  11963 Allocated 1048576 [6174162781589094045]
+  11988 Allocated 1048576 [6174162781589094045]
+  12079 Allocated 262144 [6174162781589094045]
+  12128 Deallocated 1048576 [6174162781589094045]
+  12135 Deallocated 262144 [6174162781589094045]
+  12140 Deallocated 1048576 [6174162781589094045]
+  241428 Deallocated 1048576 [6174162781589094045]
+  241442 Deallocated 524288 [6174162781589094045]
+  241456 Deallocated 1048576 [6174162781589094045]
+  241470 Deallocated 262144 [6174162781589094045]
+  242061 Deallocated 8192 [11095985672148793014]

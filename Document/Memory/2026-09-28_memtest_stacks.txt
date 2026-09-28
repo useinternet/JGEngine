@@ -1,0 +1,62 @@
+# Memory_TODO 0-2 재현 결과 (2026-09-28, HEAD 7972462 + DevScene.cpp 임시 재현 코드, DevelopEngine|x64)
+# 실행: JG_MEMTEST=<mode> Document/Memory/tools/crashwalk/crashwalk.exe C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe C:\JG\JGEngine\Bin\DevelopEngine 40
+# crashwalk는 2차(unhandled) 예외에서 스택을 찍고 대상을 종료 코드 3으로 끝낸다. 아래는 그 출력에서 발췌.
+
+===== (a) JG_MEMTEST=exhaust32 : 32B 클래스 고갈 → 풀이 nullptr 반환(로그 없음) → HList<uint8>(32)가 널 포인터에 씀 =====
+-- jg_log.txt 끝 3줄 (Chunk Shutdown 없음) --
+[:18412:][info][Memory]: [ID: 388139588] Allocated 32 byte, address : c0e194b0
+[:18412:][warning][Devkit]: [MemTest] exhaust32: pool returned nullptr after 4005 blocks of 32 bytes. Allocating HList<uint8>(32) now. If the pool is unchanged there will be no more log lines.
+[:18412:][info][Memory]: [ID: 388139588] Allocated 16 byte, address : c0e01b00
+-- crashwalk: 2차 예외와 스택 --
+=== Exception 0xC0000005 at 00007FFD2934A379 (firstChance=0) thread 18412 ===
+    write address 0000000000000000
+  #00 [Devkit.dll+0x15a379] Devkit!HAllocator<unsigned char>::construct<unsigned char>+0x59  C:\JG\JGEngine\Source\Runtime\Core\Memory\Allocator.h:43
+  #01 [Devkit.dll+0x161987] Devkit!std::_Normal_allocator_traits<HAllocator<unsigned char> >::construct<unsigned char>+0x37  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14
+  #02 [Devkit.dll+0x15ed2b] Devkit!std::_Uninitialized_backout_al<HAllocator<unsigned char> >::_Emplace_back<>+0x5b  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.3313
+  #03 [Devkit.dll+0x15fba0] Devkit!std::_Uninitialized_value_construct_n<HAllocator<unsigned char> >+0x80  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\include\
+  #04 [Devkit.dll+0x159d15] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::_Construct_n<>+0xc5  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\incl
+  #05 [Devkit.dll+0x166a44] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::vector<unsigned char,HAllocator<unsigned char> >+0x64  C:\Program Files\Microsoft Visual Studio\2022\Professio
+  #06 [Devkit.dll+0x17a260] Devkit!`anonymous namespace'::runMemoryPoolReproIfRequested+0x1d0  C:\JG\JGEngine\Source\Runtime\Devkit\DevScene.cpp:180
+  #07 [Devkit.dll+0x16bab3] Devkit!JGDevScene::OnInitialize+0x213  C:\JG\JGEngine\Source\Runtime\Devkit\DevScene.cpp:229
+  #08 [GUI.dll+0x71e984] GUI!JGWidgetComponent::Initialize+0x44  C:\JG\JGEngine\Source\Runtime\GUI\WidgetComponent.cpp:32
+  #09 [GUI.dll+0x71d60c] GUI!JGWidget::Initialize+0xac  C:\JG\JGEngine\Source\Runtime\GUI\Widget.cpp:114
+  #10 [JGDev_Graphics.dll+0x12a6af] JGDev_Graphics!HGUIModule::OpenWidget<JGDevFeature>+0x12f  C:\JG\JGEngine\Source\Runtime\GUI\GUIModule.h:45
+  #11 [JGDev_Graphics.dll+0x1411d8] JGDev_Graphics!HJGDev_GraphicsModule::StartupModule+0x818  C:\JG\JGEngine\Source\Editor\JGDev_Graphics\JGDev_Graphics.cpp:93
+  #12 [JGLauncher.exe+0x27f914] JGLauncher!GModuleGlobalSystem::ConnectModule+0x704  C:\JG\JGEngine\Source\Runtime\Core\Misc\Module.cpp:150
+  #13 [JGLauncher.exe+0x142219] JGLauncher!GCoreSystem::Create+0x259  C:\JG\JGEngine\Source\Runtime\Core\CoreSystem.cpp:57
+  #14 [JGLauncher.exe+0x121e80] JGLauncher!main+0x60  C:\JG\JGEngine\Source\Programs\JGLauncher\Main.cpp:13
+  #15 [JGLauncher.exe+0x2f8ad9] JGLauncher!invoke_main+0x39  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:79
+  #16 [JGLauncher.exe+0x2f897e] JGLauncher!__scrt_common_main_seh+0x12e  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+  #17 [JGLauncher.exe+0x2f883e] JGLauncher!__scrt_common_main+0xe  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:331
+  #18 [JGLauncher.exe+0x2f8b6e] JGLauncher!mainCRTStartup+0xe  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp:17
+  #19 [KERNEL32.DLL+0x2e957] KERNEL32!BaseThreadInitThunk+0x17  :0
+  #20 [ntdll.dll+0x427c] ntdll!RtlUserThreadStart+0x2c  :0
+Process exited with code 3 (0x00000003)
+
+===== (b) JG_MEMTEST=oversize : HList<uint8>(2MB) → MemoryQueues.at() std::out_of_range → catch 없음 → terminate/abort → 종료 코드 3 =====
+-- jg_log.txt 끝 2줄 (Chunk Shutdown 없음) --
+[:29076:][warning][Devkit]: [MemTest] oversize: allocating HList<uint8>(2 MB). If the pool is unchanged the process dies with exit code 3 (std::out_of_range) and no more log lines.
+[:29076:][info][Memory]: [ID: 1875462630] Allocated 16 byte, address : 34463b00
+-- crashwalk: 2차 예외와 스택 --
+=== Exception 0xE06D7363 at 00007FFE0AFFFE0A (firstChance=0) thread 29076 ===
+  #00 [KERNELBASE.dll+0xbfe0a] KERNELBASE!RaiseException+0x8a  :0
+  #01 [VCRUNTIME140D.dll+0x9362] VCRUNTIME140D!CxxThrowException+0x132  :0
+  #02 [MSVCP140D.dll+0x64a29] MSVCP140D!std::_Xout_of_range+0x29  :0
+  #03 [Devkit.dll+0x19343e] Devkit!std::map<enum EMemorySize,std::queue<void *,std::deque<void *,std::allocator<void *> > >,std::less<enum EMemorySize>,std::allocator<std::pair<enum EMemorySize const 
+  #04 [Devkit.dll+0x15d0b1] Devkit!HMemoryChunk::HasSpace+0x51  C:\JG\JGEngine\Source\Runtime\Core\Memory\MemoryPool.cpp:75
+  #05 [Devkit.dll+0x1986ad] Devkit!HMemoryChunk::Allocate+0x7d  C:\JG\JGEngine\Source\Runtime\Core\Memory\MemoryPool.cpp:86
+  #06 [Devkit.dll+0x1995ec] Devkit!HMemoryPool::Allocate+0x1ec  C:\JG\JGEngine\Source\Runtime\Core\Memory\MemoryPool.cpp:183
+  #07 [Devkit.dll+0x1687dc] Devkit!HAllocator<unsigned char>::allocate+0x7c  C:\JG\JGEngine\Source\Runtime\Core\Memory\Allocator.h:27
+  #08 [Devkit.dll+0x15d77a] Devkit!std::_Allocate_at_least_helper<HAllocator<unsigned char> >+0x3a  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\include\xmemory
+  #09 [Devkit.dll+0x1749ce] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::_Buy_raw+0x6e  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\include\ve
+  #10 [Devkit.dll+0x1748f1] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::_Buy_nonzero+0x51  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\includ
+  #11 [Devkit.dll+0x159cef] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::_Construct_n<>+0x9f  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.38.33130\incl
+  #12 [Devkit.dll+0x166a44] Devkit!std::vector<unsigned char,HAllocator<unsigned char> >::vector<unsigned char,HAllocator<unsigned char> >+0x64  C:\Program Files\Microsoft Visual Studio\2022\Professio
+  #13 [Devkit.dll+0x17a444] Devkit!`anonymous namespace'::runMemoryPoolReproIfRequested+0x3b4  C:\JG\JGEngine\Source\Runtime\Devkit\DevScene.cpp:194
+  #14 [Devkit.dll+0x16bab3] Devkit!JGDevScene::OnInitialize+0x213  C:\JG\JGEngine\Source\Runtime\Devkit\DevScene.cpp:229
+  #15 [GUI.dll+0x71e984] GUI!JGWidgetComponent::Initialize+0x44  C:\JG\JGEngine\Source\Runtime\GUI\WidgetComponent.cpp:32
+  #16 [GUI.dll+0x71d60c] GUI!JGWidget::Initialize+0xac  C:\JG\JGEngine\Source\Runtime\GUI\Widget.cpp:114
+  #17 [JGDev_Graphics.dll+0x12a6af] JGDev_Graphics!HGUIModule::OpenWidget<JGDevFeature>+0x12f  C:\JG\JGEngine\Source\Runtime\GUI\GUIModule.h:45
+  #18 [JGDev_Graphics.dll+0x1411d8] JGDev_Graphics!HJGDev_GraphicsModule::StartupModule+0x818  C:\JG\JGEngine\Source\Editor\JGDev_Graphics\JGDev_Graphics.cpp:93
+
+# 참고: 캡처 스크립트(capture_devscene.ps1)로 (b)를 돌리면 abort 경로에서 메인 스레드가 멈춘 채 창이 30초 이상 남아 있다가 종료 코드 3으로 끝난다. 로그는 두 방식 모두 [MemTest] 경고 뒤 16B(디버그 프록시) 할당 1줄에서 끊긴다.

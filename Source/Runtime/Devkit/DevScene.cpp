@@ -139,6 +139,71 @@ namespace
 	};
 }
 
+// [임시 · Memory_TODO 0-2] 메모리 풀 고갈·1MB 초과 재현. 환경 변수 JG_MEMTEST가 있을 때만 동작한다.
+//   JG_MEMTEST=exhaust32 : 32바이트 클래스를 풀에서 직접 비운 뒤 HList<uint8>(32)를 만든다.
+//                          지금 소스에서는 풀이 로그 없이 nullptr을 돌려주고 vector가 널 포인터에 써서 크래시한다(0xC0000005).
+//   JG_MEMTEST=oversize  : HList<uint8>(2MB)를 만든다. 지금 소스에서는 MemoryQueues.at()의 out_of_range로 종료 코드 3.
+// Phase 2-1(풀 재설계) 뒤에는 exhaust32는 페이지 성장 Warning 한 줄 뒤 계속 실행되고, oversize는 2-1에서 정한 동작을 해야 한다.
+// Phase 2-6 검증 뒤 이 블록과 OnInitialize 끝의 호출을 제거한다.
+namespace
+{
+	void runMemoryPoolReproIfRequested()
+	{
+		char*  mode    = nullptr;
+		size_t modeLen = 0;
+		if (_dupenv_s(&mode, &modeLen, "JG_MEMTEST") != 0 || mode == nullptr)
+		{
+			return;
+		}
+
+		const std::string modeString(mode);
+		free(mode);
+
+		if (modeString == "exhaust32")
+		{
+			HMemoryPool* pool = GMemoryGlobalSystem::GetInstance().GetMemoryPool();
+
+			// 풀을 쓰지 않는 컨테이너에 들고 있어야 한다. (HList는 자기 버퍼와 디버그 프록시를 풀에서 받는다)
+			std::vector<void*> held;
+			held.reserve(8192);
+			while (held.size() < 8192)
+			{
+				void* block = pool->Allocate(32);
+				if (block == nullptr)
+				{
+					break;
+				}
+				held.push_back(block);
+			}
+
+			JG_LOG(Devkit, ELogLevel::Warning, "[MemTest] exhaust32: pool returned nullptr after %d blocks of 32 bytes. Allocating HList<uint8>(32) now. If the pool is unchanged there will be no more log lines.", (int32)held.size());
+
+			HList<uint8> victim(32);
+			victim[0] = 1;
+
+			JG_LOG(Devkit, ELogLevel::Warning, "[MemTest] exhaust32: survived. victim.data()=%p", (void*)victim.data());
+
+			for (void* block : held)
+			{
+				pool->Deallocate(block);
+			}
+		}
+		else if (modeString == "oversize")
+		{
+			JG_LOG(Devkit, ELogLevel::Warning, "[MemTest] oversize: allocating HList<uint8>(2 MB). If the pool is unchanged the process dies with exit code 3 (std::out_of_range) and no more log lines.");
+
+			HList<uint8> big(2u * 1024u * 1024u);
+			big[0] = 1;
+
+			JG_LOG(Devkit, ELogLevel::Warning, "[MemTest] oversize: survived. size=%d", (int32)big.size());
+		}
+		else
+		{
+			JG_LOG(Devkit, ELogLevel::Warning, "[MemTest] unknown JG_MEMTEST value: %s", modeString.c_str());
+		}
+	}
+}
+
 void JGDevScene::OnInitialize()
 {
 	// 기본 카메라. 메시가 로드되면 FitCameraToMesh가 경계 상자에 맞춰 다시 잡는다.
@@ -159,6 +224,9 @@ void JGDevScene::OnInitialize()
 
 	CreateCompositeMaterial();
 	RequestMeshLoad();
+
+	// [임시 · Memory_TODO 0-2] 환경 변수 JG_MEMTEST가 있을 때만 재현 코드가 돈다. Phase 2-6 뒤 제거.
+	runMemoryPoolReproIfRequested();
 }
 
 void JGDevScene::OnShutdown()
