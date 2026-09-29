@@ -1,0 +1,280 @@
+// 5-2 검증용 임시 코드 (2026-09-29). Source/Runtime/Devkit/DevScene.cpp 에 넣어 쓰고 검증 뒤 뺀다.
+// 결과: Document/Memory/2026-09-29_Phase5-2_FBX텍스처임포트.md
+//
+// 사용
+//   1. 테스트 FBX 만들기: build.bat <출력 폴더> 뒤 <출력 폴더>\make_embedded_texture_fbx.exe EmbeddedTextureTest.fbx
+//      (생성기가 스스로 다시 읽어 픽셀을 비교하고 "RESULT: PASS" 를 찍는다)
+//   2. 아래 (A)~(E)를 DevScene.cpp 에 넣고 Devkit 빌드
+//   3. Content/TempAsset/ImportTest 를 지운 뒤
+//      JG_IMPORTTEST=<fbx 절대 경로> 로 런처 실행 -> 임포트 + 저장 + 디스크에서 다시 로드 + GPU 리드백 비교
+//      JG_IMPORTTEST=verify 로 런처 실행        -> 시작 로드(GAssetDatabase::loadAssets)로 올라온 에셋만 비교
+//   4. 로그에서 "ImportTest : RESULT PASS (3 / 3)" 확인. 화면 위쪽에 세 텍스처가 그려진다.
+//   5. 끝나면 코드를 빼고 Content/TempAsset/ImportTest, Bin/DevelopEngine/DevScene_ImportTest_Checker.png 를 지운다
+//      (Content 아래 .jgasset 은 매 시작마다 전부 로드된다. Noise.jgasset 은 약 74MB)
+//
+// 기대 픽셀 함수는 make_embedded_texture_fbx.cpp 의 checkerPixel / noisePixels / photoPixel 과 같아야 한다.
+
+// (A) include 목록 끝
+#include "Importers/FBXAssetImporter.h"   // 임시: 5-2 임포트 검증
+
+// (B) 첫 익명 namespace(EGBuffer 정의) 뒤. writePNG 를 쓰므로 그 뒤여야 한다.
+namespace
+{
+	struct HImportTestCase
+	{
+		const char* Name;
+		uint32      Width;
+		uint32      Height;
+		bool        bExact;   // PNG는 정확 비교, JPG는 평균 절대 오차
+	};
+
+	constexpr int32 ImportTestCaseCount = 3;
+	constexpr HImportTestCase ImportTestCases[ImportTestCaseCount] =
+	{
+		{ "Checker", 300,  150,  true  },
+		{ "Noise",   1024, 1024, true  },
+		{ "Photo",   64,   64,   false },
+	};
+	constexpr const char* ImportTestAssetDirectory  = "/JGEngine/TempAsset/ImportTest/";
+	constexpr const char* ImportTestCheckerDumpPath = "DevScene_ImportTest_Checker.png";
+
+	struct HImportTestState
+	{
+		bool    bActive  = false;
+		int32   Finished = 0;
+		int32   Passed   = 0;
+		PSharedPtr<JGTexture> Textures[ImportTestCaseCount];
+		PString Status;
+	};
+	HImportTestState GImportTest;
+
+	void importTestCheckerPixel(uint32 x, uint32 y, uint8 out[4])
+	{
+		out[0] = (uint8)(x * 255 / (300 - 1));
+		out[1] = (uint8)(y * 255 / (150 - 1));
+		out[2] = (((x / 30) + (y / 30)) % 2) ? 255 : 0;
+		out[3] = (x < 300 / 2) ? 255 : 128;
+	}
+
+	uint32 importTestNextNoise(uint32& inOutState)
+	{
+		inOutState = inOutState * 1664525u + 1013904223u;
+		return inOutState;
+	}
+
+	void importTestPhotoPixel(uint32 x, uint32 y, uint8 out[3])
+	{
+		out[0] = (uint8)(x * 4);
+		out[1] = (uint8)(y * 4);
+		out[2] = 128;
+	}
+
+	bool importTestCompare(int32 inCaseIndex, const HTexturePixels& inPixels, PString& outDetail)
+	{
+		const HImportTestCase& testCase = ImportTestCases[inCaseIndex];
+		if (inPixels.IsValid() == false || inPixels.Format != ETextureFormat::R8G8B8A8_Unorm || inPixels.Width != testCase.Width || inPixels.Height != testCase.Height)
+		{
+			outDetail = PString::Format("unexpected readback %dx%d, format %d", (int32)inPixels.Width, (int32)inPixels.Height, (int32)inPixels.Format);
+			return false;
+		}
+
+		if (testCase.bExact)
+		{
+			uint64 mismatches = 0;
+			uint32 noiseState = 12345u;
+			for (uint32 y = 0; y < inPixels.Height; ++y)
+			{
+				for (uint32 x = 0; x < inPixels.Width; ++x)
+				{
+					uint8 expected[4];
+					if (inCaseIndex == 0)
+					{
+						importTestCheckerPixel(x, y, expected);
+					}
+					else
+					{
+						const uint32 noise = importTestNextNoise(noiseState);
+						expected[0] = (uint8)(noise >> 24);
+						expected[1] = (uint8)(noise >> 16);
+						expected[2] = (uint8)(noise >> 8);
+						expected[3] = (uint8)(noise);
+					}
+					if (memcmp(expected, inPixels.GetPixel(x, y), 4) != 0)
+					{
+						++mismatches;
+					}
+				}
+			}
+			outDetail = PString::Format("exact compare %d mismatched pixels", (int32)mismatches);
+			return mismatches == 0;
+		}
+
+		float64 errorSum = 0.0;
+		for (uint32 y = 0; y < inPixels.Height; ++y)
+		{
+			for (uint32 x = 0; x < inPixels.Width; ++x)
+			{
+				uint8 expected[3];
+				importTestPhotoPixel(x, y, expected);
+				const uint8* actual = inPixels.GetPixel(x, y);
+				for (int32 c = 0; c < 3; ++c)
+				{
+					const float64 diff = (float64)expected[c] - (float64)actual[c];
+					errorSum += (diff < 0.0) ? -diff : diff;
+				}
+			}
+		}
+		const float64 meanError = errorSum / ((float64)inPixels.Width * inPixels.Height * 3);
+		outDetail = PString::Format("mean abs error %.2f (JPEG), alpha %d", meanError, (int32)inPixels.GetPixel(0, 0)[3]);
+		return meanError < 4.0;
+	}
+
+	void onImportTestReadback(int32 inCaseIndex, const HTexturePixels& inPixels)
+	{
+		if (GImportTest.bActive == false)
+		{
+			return;
+		}
+
+		PString detail;
+		const bool bPassed = importTestCompare(inCaseIndex, inPixels, detail);
+		if (inCaseIndex == 0 && inPixels.IsValid())
+		{
+			writePNG(ImportTestCheckerDumpPath, inPixels, false);
+		}
+
+		JG_LOG(Devkit, bPassed ? ELogLevel::Info : ELogLevel::Error, "ImportTest : %s %dx%d readback, %s -> %s",
+			PString(ImportTestCases[inCaseIndex].Name), (int32)inPixels.Width, (int32)inPixels.Height, detail, PString(bPassed ? "PASS" : "FAIL"));
+
+		++GImportTest.Finished;
+		if (bPassed)
+		{
+			++GImportTest.Passed;
+		}
+		if (GImportTest.Finished == ImportTestCaseCount)
+		{
+			GImportTest.Status = PString::Format("ImportTest : %d / %d passed", GImportTest.Passed, ImportTestCaseCount);
+			JG_LOG(Devkit, GImportTest.Passed == ImportTestCaseCount ? ELogLevel::Info : ELogLevel::Error, "ImportTest : RESULT %s (%d / %d)",
+				PString(GImportTest.Passed == ImportTestCaseCount ? "PASS" : "FAIL"), GImportTest.Passed, ImportTestCaseCount);
+		}
+	}
+
+	void onImportTestAssetLoaded(int32 inCaseIndex, PWeakPtr<JGAsset> inAsset)
+	{
+		if (GImportTest.bActive == false)
+		{
+			return;
+		}
+
+		const HImportTestCase& testCase = ImportTestCases[inCaseIndex];
+		PSharedPtr<JGAsset> asset = inAsset.Pin();
+		// JGTexture 가 JG_GENERATED_SIMPLE_BODY 를 가져야 이 검사가 통과한다. (2026-09-29 이전에는 GetType()이 JGAsset 이었다)
+		if (asset.IsValid() == false || (asset->GetType() == JGType::GenerateType<JGTexture>()) == false)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "ImportTest : %s asset is not loaded as JGTexture -> FAIL", PString(testCase.Name));
+			onImportTestReadback(inCaseIndex, HTexturePixels());
+			return;
+		}
+
+		PSharedPtr<JGTexture> texture = Cast<JGTexture>(asset);
+		PSharedPtr<IRawTexture> rawTexture = texture->GetRawTexture();
+		if (texture->IsValid() == false || rawTexture == nullptr)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "ImportTest : %s texture is invalid -> FAIL", PString(testCase.Name));
+			onImportTestReadback(inCaseIndex, HTexturePixels());
+			return;
+		}
+
+		const HTextureInfo& info = rawTexture->GetTextureInfo();
+		JG_LOG(Devkit, ELogLevel::Info, "ImportTest : %s loaded (%dx%d, format %s, mip %d, array %d, name %s)", PString(testCase.Name),
+			(int32)info.Width, (int32)info.Height, PString(info.Format == ETextureFormat::R8G8B8A8_Unorm ? "R8G8B8A8_Unorm" : "UNEXPECTED"),
+			(int32)info.MipLevel, (int32)info.ArraySize, info.Name);
+
+		GImportTest.Textures[inCaseIndex] = texture;
+		const bool bRequested = GetGraphicsAPI().RequestTextureReadback(rawTexture,
+			HOnTextureReadbackComplete::CreateLambda([inCaseIndex](const HTexturePixels& InPixels)
+			{
+				onImportTestReadback(inCaseIndex, InPixels);
+			}));
+		if (bRequested == false)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "ImportTest : %s readback request failed", PString(testCase.Name));
+			onImportTestReadback(inCaseIndex, HTexturePixels());
+		}
+	}
+
+	void runImportTestIfRequested()
+	{
+		char value[1024] = {};
+		size_t valueLength = 0;
+		if (getenv_s(&valueLength, value, sizeof(value), "JG_IMPORTTEST") != 0 || valueLength <= 1)
+		{
+			return;
+		}
+
+		GImportTest = HImportTestState();
+		GImportTest.bActive = true;
+		GImportTest.Status  = PString("ImportTest : running");
+
+		const PString option = value;
+		if ((option == PString("verify")) == false)
+		{
+			PString destDirectory;
+			HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "TempAsset/ImportTest", &destDirectory);
+			HFileHelper::CreateDirectory(destDirectory);
+
+			PSharedPtr<PFBXAssetImportArguments> importArgs = Allocate<PFBXAssetImportArguments>();
+			importArgs->SrcPath  = option;
+			importArgs->DestPath = destDirectory;
+			importArgs->Flags    = EFBXAssetImportFlags::Import_Texture;
+
+			PSharedPtr<JGFBXAssetImporter> importer = Allocate<JGFBXAssetImporter>();
+			const bool bImported = importer->Import(importArgs);
+			JG_LOG(Devkit, bImported ? ELogLevel::Info : ELogLevel::Error, "ImportTest : Import(%s) -> %s, %s", option, destDirectory, PString(bImported ? "ok" : "failed"));
+		}
+
+		for (int32 i = 0; i < ImportTestCaseCount; ++i)
+		{
+			const PString assetPath = PString::Format("%s%s%s", ImportTestAssetDirectory, ImportTestCases[i].Name, JG_ASSET_FORMAT);
+			GAssetDatabase::GetInstance().LoadAssetAsync(HAssetPath(assetPath),
+				POnLoadCompelete::CreateLambda([i](PWeakPtr<JGAsset> InAsset)
+				{
+					onImportTestAssetLoaded(i, InAsset);
+				}));
+		}
+	}
+
+	void drawImportTestGUI()
+	{
+		if (GImportTest.bActive == false)
+		{
+			return;
+		}
+
+		HGUI::Text(GImportTest.Status);
+		const HVector2 sizes[ImportTestCaseCount] = { HVector2(300.0f, 150.0f), HVector2(150.0f, 150.0f), HVector2(150.0f, 150.0f) };
+		bool bFirst = true;
+		for (int32 i = 0; i < ImportTestCaseCount; ++i)
+		{
+			if (GImportTest.Textures[i] == nullptr)
+			{
+				continue;
+			}
+			if (bFirst == false)
+			{
+				HGUI::SameLine();
+			}
+			HGUI::Image(GImportTest.Textures[i]->GetRawTexture()->GetTextureID(), sizes[i]);
+			bFirst = false;
+		}
+	}
+}
+
+// (C) JGDevScene::OnInitialize() 끝 (RequestMeshLoad() 뒤)
+	runImportTestIfRequested();
+
+// (D) JGDevScene::OnShutdown() 맨 앞 — 그래픽 종료 전에 텍스처를 놓는다
+	GImportTest = HImportTestState();
+
+// (E) JGDevScene::OnGenerateGUI() 의 HGUI::Image(SceneTexture...) 바로 앞 — 씬 이미지가 영역을 다 차지하므로 위에 그린다
+	drawImportTestGUI();

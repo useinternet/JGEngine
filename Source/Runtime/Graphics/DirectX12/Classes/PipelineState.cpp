@@ -214,7 +214,9 @@ void PGraphicsPipelineState::BindShader(const HHashMap<EShaderDomain, HList<uint
 {
 	_bDirty = true;
 
-	for (const HPair<EShaderDomain, HList<uint8>>& dataPair : inShaderBtDatas)
+	// 키 타입은 map 의 value_type 과 같게 const 로 둔다. HPair<EShaderDomain, ...> 로 받으면 반복마다 HList 가 임시 객체로 복사되고,
+	// 아래에서 그 임시 버퍼의 포인터를 _desc 에 넣어 dangling 이 된다 (2026-09-28 풀 재설계 뒤 LIFO 재사용·0xDD 채움으로 드러남: "Encoded Vertex Shader size doesn't match").
+	for (const HPair<const EShaderDomain, HList<uint8>>& dataPair : inShaderBtDatas)
 	{
 		switch (dataPair.first)
 		{

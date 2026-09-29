@@ -1,0 +1,42 @@
+# JGLauncher 를 띄우고 상주 메모리(Private Bytes / Working Set)·CPU 시간·스레드 수를 1초마다 표본으로 뽑는다. (Memory_TODO 2-6, 설계 §7-4)
+# 이 파일은 .ps1 이 아니라 .ps1.txt 로 둔다: Windows Defender 가 .ps1 로 두면 격리한다 (2026-09-28 Get-MpThreatDetection 에 4회 기록. 화면 캡처·프로세스 종료 휴리스틱으로 추정).
+# 사용: cp Document/Memory/tools/measure_resident.ps1.txt $TEMP/measure_resident.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File $TEMP/measure_resident.ps1 -WaitSeconds 25
+# 출력: 표본 표 + 마지막 5초 평균. 끝나면 WM_CLOSE 로 정상 종료하고 ExitCode 를 찍는다. 기록: 재설계 전 private 428.5 MB / WS 335.6 MB → 후 230.2 MB / 137.6 MB (2026-09-28).
+param([int]$WaitSeconds = 25)
+$ErrorActionPreference = "Stop"
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32Close {
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+}
+"@
+$exe = "C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe"
+$workDir = "C:\JG\JGEngine\Bin\DevelopEngine"
+$proc = Start-Process -FilePath $exe -WorkingDirectory $workDir -PassThru
+Write-Output "Started PID $($proc.Id)"
+$hwnd = [IntPtr]::Zero
+for ($i = 0; $i -lt 60; $i++) {
+    Start-Sleep -Milliseconds 500
+    $proc.Refresh()
+    if ($proc.HasExited) { Write-Output "Process exited early with code $($proc.ExitCode)"; exit 2 }
+    if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
+}
+if ($hwnd -eq [IntPtr]::Zero) { Write-Output "No main window"; $proc.Kill(); exit 3 }
+$samples = @()
+for ($t = 1; $t -le $WaitSeconds; $t++) {
+    Start-Sleep -Seconds 1
+    $proc.Refresh()
+    if ($proc.HasExited) { Write-Output "Process exited during wait with code $($proc.ExitCode)"; exit 4 }
+    $s = [pscustomobject]@{ T = $t; PrivateMB = [math]::Round($proc.PrivateMemorySize64 / 1MB, 1); WorkingSetMB = [math]::Round($proc.WorkingSet64 / 1MB, 1); CpuSec = [math]::Round($proc.TotalProcessorTime.TotalSeconds, 1); Threads = $proc.Threads.Count }
+    $samples += $s
+    Write-Output ("t={0,3}s  private {1,8} MB  workingset {2,8} MB  cpu {3,6} s  threads {4}" -f $s.T, $s.PrivateMB, $s.WorkingSetMB, $s.CpuSec, $s.Threads)
+}
+$tail = $samples | Select-Object -Last 5
+$avgPriv = [math]::Round((($tail | Measure-Object -Property PrivateMB -Average).Average), 1)
+$avgWs   = [math]::Round((($tail | Measure-Object -Property WorkingSetMB -Average).Average), 1)
+Write-Output "steady(last 5s avg): private $avgPriv MB  workingset $avgWs MB"
+[Win32Close]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+if (-not $proc.WaitForExit(30000)) { Write-Output "Timeout waiting exit, killing"; $proc.Kill(); exit 5 }
+Write-Output "ExitCode $($proc.ExitCode)"
+exit 0

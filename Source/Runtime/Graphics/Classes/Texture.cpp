@@ -4,12 +4,6 @@
 #include "JGGraphics.h"
 #include "JGGraphicsHelper.h"
 
-namespace
-{
-	// JSON에 담는 압축 픽셀은 HList(엔진 풀)라 블록 한도인 2MB를 넘을 수 없다. 큰 텍스처 저장은 5-23에서 다룬다.
-	constexpr uint64 TextureJsonPixelLimit = 2 * 1024 * 1024;
-}
-
 bool JGTexture::IsValid() const
 {
 	return _texture != nullptr && _texture->IsValid();
@@ -44,22 +38,19 @@ void JGTexture::WriteJson(PJsonData& json) const
 	HTexturePixels pixels;
 	if (GetGraphicsAPI().ReadbackTextureImmediate(_texture, pixels) && pixels.IsValid())
 	{
-		// 압축 작업 버퍼는 std 할당자. 엔진 풀은 블록 하나가 최대 2MB라 큰 텍스처를 HList에 담을 수 없다. (5-23)
+		// 1MB를 넘는 버퍼는 풀의 대형 블록 경로로 간다. (5-23 이전에는 2MB가 한도라 압축 결과가 그보다 크면 픽셀을 저장하지 않았다)
 		uLongf compressedSize = compressBound((uLong)pixels.Data.size());
-		std::vector<uint8> compressBuffer(compressedSize);
+		compressedPixels.resize(compressedSize);
 
-		const int32 result = compress((Bytef*)compressBuffer.data(), &compressedSize, (const Bytef*)pixels.Data.data(), (uLong)pixels.Data.size());
+		const int32 result = compress((Bytef*)compressedPixels.data(), &compressedSize, (const Bytef*)pixels.Data.data(), (uLong)pixels.Data.size());
 		if (result != Z_OK)
 		{
 			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail compress pixels (zlib %d). Pixels are not written", texInfo.Name, result);
-		}
-		else if (compressedSize > TextureJsonPixelLimit)
-		{
-			JG_LOG(Graphics, ELogLevel::Error, "%s : Compressed pixels(%d bytes) exceed the JSON pixel limit(%d bytes). Pixels are not written", texInfo.Name, (int32)compressedSize, (int32)TextureJsonPixelLimit);
+			compressedPixels.clear();
 		}
 		else
 		{
-			compressedPixels.assign(compressBuffer.begin(), compressBuffer.begin() + compressedSize);
+			compressedPixels.resize(compressedSize);
 		}
 	}
 	else
@@ -162,7 +153,7 @@ void JGTexture::ReadJson(const PJsonData& json)
 		return;
 	}
 
-	std::vector<uint8> pixels(pixelDataSize);   // 풀 블록 한도(2MB) 때문에 std 할당자
+	HList<uint8> pixels(pixelDataSize);
 
 	uLongf destLength   = (uLongf)pixelDataSize;
 	uLong  sourceLength = (uLong)compressedPixels.size();

@@ -1,0 +1,19 @@
+msbuild 버전 17.14.40+3e7442088(.NET Framework용)
+
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll
+  DevScene.cpp
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll

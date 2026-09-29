@@ -617,7 +617,8 @@ public:
 		static_assert(std::is_class<T>::value == false || std::is_base_of<IMemoryObject, T>::value,
 			"Allocate<T>: T must derive from IMemoryObject (classes held by PSharedPtr/PWeakPtr must be rooted at IMemoryObject)");
 
-		void* MemPtr = MemoryPool.Allocate(sizeof(T));
+		void* MemPtr = MemoryPool.Allocate(sizeof(T), alignof(T));
+		JG_CHECK(MemPtr != nullptr);   // 풀은 성장하므로 nullptr 을 돌려주지 않는다. 계약을 코드로 남긴다 (Memory_TODO 2-1)
 		PSharedPtr<T> Result;
 		Result._ptr = new(MemPtr) T(std::forward<Args>(args)...);
 

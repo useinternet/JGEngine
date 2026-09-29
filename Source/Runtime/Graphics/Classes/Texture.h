@@ -30,6 +30,10 @@ struct HTextureConstructArguments
 JGCLASS()
 class GRAPHICS_API JGTexture : public JGAsset
 {
+	// 생성 본문(JG_GENERATED_CLASS_BODY)은 WriteJson/ReadJson을 정의해 아래 직접 구현과 겹치므로 GetType()만 둔다.
+	// 없으면 GetType()이 JGAsset을 돌려줘 로드한 텍스처 에셋의 타입 검사가 실패한다. (생성은 이름으로 하므로 LoadObject는 원래 동작했다)
+	JG_GENERATED_SIMPLE_BODY
+
 	friend class PJGGraphicsAPI;
 private:
 
@@ -40,6 +44,9 @@ public:
 	virtual bool IsValid() const;
 
 	// ~JGAsset
+
+	// 바인딩·리드백·GUI 표시에 쓰는 GPU 텍스처
+	PSharedPtr<IRawTexture> GetRawTexture() const { return _texture; }
 protected:
 
 	// IJsonable

@@ -1,0 +1,5 @@
+
+  DevScene.cpp
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+msbuild exit=0

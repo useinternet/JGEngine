@@ -1,0 +1,30 @@
+GameFrameWorks 이름 변경 검증 (2026-09-29)
+변경: Simulation -> GameMaster (파사드 · 그것을 든 월드 액터 · 시스템 단위 이름) / Gameplay (그 밖의 타입)
+대응표: Document/GameFrameWorks_이름변경안_2026-09-29.md
+
+===== 1. 치환 스크립트 (perl, 세션 임시 폴더) =====
+- 건식 실행 치환 수가 사전 grep 개수와 일치: PSimulation 107, JGSimulationDirectorActor 44, JGSimulationActor 17,
+  _simulation 17, GetSimulation 10, 일반 규칙(접두 글자 + Simulation) 1666, 지역 simulation 53, 로그 카테고리 11
+- 파일 이동 72, 내용 변경 75/89. 남은 Simulation 토큰 0 (주석 2곳은 수동 정리)
+- 리뷰 재현 코드 Document/Memory/tools/gfw_review_repro/ReviewRepro.cpp 도 같은 표로 치환 (보조 함수 이름 3개 포함), 남은 토큰 0
+- 주석: 시스템을 가리키는 "시뮬레이션" · "Director" 22곳 수동 정리. 일반 동사로 쓴 "시뮬레이션해 평가한다" 1곳은 유지
+
+===== 2. 동작 불변 검증 (격리 워크트리: HEAD fcace8f Core + GameFrameWorks, BuildProjectReferences=false) =====
+변경 전: 옛 이름 소스 + 옛 재현 코드 -> 빌드 오류 0 -> simtest 75 PASS, simreview [REPRODUCED] 16줄
+변경 후: 새 이름 소스(메인 트리 결과물 그대로) + 새 재현 코드 -> 빌드 오류 0 -> gmtest 75 PASS, simtest(별칭) 75 PASS, simreview 16줄
+비교: 변경 전 출력을 같은 이름표로 정규화한 뒤 줄 단위 diff
+  자체 테스트 80줄  -> IDENTICAL
+  리뷰 재현   18줄  -> IDENTICAL
+  (R10 성능 측정 · R16 크래시 시나리오는 실행 시간 · 크래시 지점이 흔들려 비교에서 제외)
+
+===== 3. 메인 트리 =====
+- Temp/CodeGen/GameFrameWorks 비움 -> JGHeaderTool -> JGBuildTool
+  첫 시도에서 JGBuildTool.exe 가 "Device or resource busy" 로 실행되지 않음: 다른 세션의 솔루션 전체 빌드(11:37~11:45)가
+  JGBuildTool.exe 를 다시 링크하던 중. 같은 시각 GameFrameWorks.vcxproj(의존 포함) 빌드는 Graphics PDB 잠금(C1041)으로 실패.
+  그 전체 빌드는 이름 변경 직후 옛 파일 목록의 vcxproj 로 GameFrameWorks 를 만나 실패했을 가능성이 크다(GameFrameWorks.dll 10:12 그대로).
+- 11:49 JGBuildTool 재실행 -> vcxproj 의 Simulation 참조 0, GameMaster 참조 66
+- GameFrameWorks.vcxproj · JGConsole.vcxproj (BuildProjectReferences=false) 오류 0 (dll 11:52, exe 11:53)
+- JGConsole.exe gmtest: GameMaster self test 60/60, World self test 15/15, "gmtest: OK (0 failures)", 종료 코드 0, [error] 0
+- JGLauncher 30초 (crashwalk 아래, 콘솔 출력 캡처): Process exited with code 0, [error]/[critical]/D3D12 DebugLayer 0
+  리플렉션 등록 클래스: JGActor JGActorComponent JGGameEntryActor JGGameInstance JGGameMasterActor JGGameplayCommandHandler
+  JGGameplayControllerActor JGGameplayCue JGGameplayEffect JGGameplayEntityActor JGGameplayEntityComponent JGGameplayModifier JGGameplayTrigger

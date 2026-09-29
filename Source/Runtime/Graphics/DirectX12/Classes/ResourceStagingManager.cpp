@@ -255,9 +255,8 @@ void PResourceStagingManager::RecordUploads()
 	HList<HUploadRequest> requests;
 	{
 		HLockGuard<HMutex> lock(_uploadMutex);
-		// HAllocator에 operator==가 없어 swap/move 대입이 컴파일되지 않는다. 복사 뒤 비운다.
-		requests = _pendingUploads;
-		_pendingUploads.clear();
+		// HAllocator 에 operator== 가 생겨(Memory_TODO 2-4) swap 이 컴파일된다. 락 안에서 버퍼만 바꿔 받는다.
+		requests.swap(_pendingUploads);
 	}
 	if (requests.empty())
 	{

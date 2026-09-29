@@ -2,7 +2,12 @@
 #include "FBXAssetImporter.h"
 #include "Classes/StaticMesh.h"
 #include "Classes/Texture.h"
+// 임베디드 텍스처(PNG, JPG 등 원본 파일 바이트) 디코딩. Graphics 모듈에서 stb_image 구현은 이 파일 하나에만 둔다.
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
+#pragma warning(pop)
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
@@ -16,6 +21,45 @@ HMatrix ToHMatrix(const aiMatrix4x4& aiMatrix)
 		aiMatrix.c1, aiMatrix.c2, aiMatrix.c3, aiMatrix.c4,
 		aiMatrix.d1, aiMatrix.d2, aiMatrix.d3, aiMatrix.d4));
 };
+
+namespace
+{
+	// 임베디드 텍스처의 에셋 이름. FBX는 원본 경로("textures/Albedo.png", "C:\Art\Albedo.png")를 주므로 파일 이름만 쓰고 확장자는 뗀다.
+	// 이름이 없거나 "*0" 같은 인덱스 참조면 "<FBX 파일 이름>_Texture<인덱스>"로 짓는다.
+	PString makeTextureAssetName(const aiTexture* inTexture, uint32 inTextureIndex, const PString& inSrcPath)
+	{
+		const char* fullPath = inTexture->mFilename.C_Str();
+		const char* fileName = fullPath;
+		for (const char* c = fullPath; *c != '\0'; ++c)
+		{
+			if (*c == '/' || *c == '\\')
+			{
+				fileName = c + 1;
+			}
+		}
+
+		const char* extension = strrchr(fileName, '.');
+		const uint64 nameLength = (extension != nullptr) ? (uint64)(extension - fileName) : (uint64)strlen(fileName);
+		if (nameLength == 0 || fileName[0] == '*')
+		{
+			PString srcName;
+			HFileHelper::FileNameOnly(inSrcPath, &srcName);
+			return PString::Format("%s_Texture%d", srcName, (int32)inTextureIndex);
+		}
+
+		// 파일 이름에 못 쓰는 문자는 '_'로 바꾼다. PString은 만들 때 해시를 계산하므로 버퍼에서 고친 뒤 한 번에 만든다.
+		HList<char> buffer(fileName, fileName + nameLength);
+		for (char& c : buffer)
+		{
+			if ((uint8)c < 32 || strchr("<>:\"|?*", c) != nullptr)
+			{
+				c = '_';
+			}
+		}
+		buffer.push_back('\0');
+		return PString(buffer.data());
+	}
+}
 
 bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 {
@@ -130,14 +174,28 @@ bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs)
 		}
 		if (scene->HasTextures() == true && EnumHasAnyFlags(_args.Flags, EFBXAssetImportFlags::Import_Texture))
 		{
-			// Texture
+			// FBX 안에 들어 있는(embedded) 텍스처만 온다. 외부 파일로 참조된 텍스처는 mTextures에 없다.
+			HHashSet<PString> writtenNames;
 			uint32 texCnt = scene->mNumTextures;
 			for (uint32 i = 0; i < texCnt; ++i)
 			{
 				HTextureStock texStock;
-				aiTexture* tex = scene->mTextures[i];
-				ReadTexture(tex, &texStock);
-				//WriteTexture(setting.OutputPath, texInfo);
+				const aiTexture* tex = scene->mTextures[i];
+				if (ReadTexture(tex, i, &texStock) == false)
+				{
+					continue;
+				}
+
+				// 폴더만 다르고 파일 이름이 같은 텍스처가 서로를 덮어쓰지 않게 한다.
+				if (writtenNames.contains(texStock.Name))
+				{
+					const PString originName = texStock.Name;
+					texStock.Name = PString::Format("%s_%d", originName, (int32)i);
+					JG_LOG(Asset, ELogLevel::Warning, "%s : Embedded texture name %s is duplicated. Saved as %s", _args.SrcPath, originName, texStock.Name);
+				}
+				writtenNames.insert(texStock.Name);
+
+				WriteTexture(texStock);
 			}
 		}
 
@@ -385,23 +443,60 @@ void JGFBXAssetImporter::ReadAnimation(const aiAnimation* anim, HAnimationClipSt
 	JG_CHECK(false);
 }
 
-void JGFBXAssetImporter::ReadTexture(const aiTexture* tex, HTextureStock* outStock)
+bool JGFBXAssetImporter::ReadTexture(const aiTexture* tex, uint32 inTextureIndex, HTextureStock* outStock)
 {
-	if (outStock == nullptr || tex == nullptr)
+	if (outStock == nullptr || tex == nullptr || tex->pcData == nullptr)
 	{
-		return;
+		return false;
 	}
 
-	outStock->Name   = tex->mFilename.C_Str();
-	outStock->Width  = tex->mWidth;
-	outStock->Height = tex->mHeight;
+	outStock->Name     = makeTextureAssetName(tex, inTextureIndex, _args.SrcPath);
 	outStock->Channels = 4;
 
-	uint32 pixelSize = outStock->Width * outStock->Height * outStock->Channels;
-	outStock->OriginPixelSize = pixelSize;
+	if (tex->mHeight == 0)
+	{
+		// 압축 텍스처: pcData는 원본 파일(PNG, JPG 등) 바이트이고 mWidth가 그 바이트 수다. FBX의 임베디드 텍스처는 항상 이 경우다.
+		// (이전 코드는 비압축으로 가정해 Width * 0 * 4 = 0 바이트를 복사했다)
+		int32 width = 0;
+		int32 height = 0;
+		int32 channelsInFile = 0;
+		stbi_uc* decoded = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(tex->pcData), (int32)tex->mWidth, &width, &height, &channelsInFile, 4);
+		if (decoded == nullptr)
+		{
+			JG_LOG(Asset, ELogLevel::Error, "%s : Fail decode embedded texture %s (format hint \"%s\", %d bytes) : %s",
+				_args.SrcPath, tex->mFilename.C_Str(), tex->achFormatHint, (int32)tex->mWidth, stbi_failure_reason());
+			return false;
+		}
 
-	outStock->Pixels.resize(pixelSize);
-	HPlatform::MemCopy(tex->pcData, outStock->Pixels.data(), pixelSize);
+		outStock->Width  = width;
+		outStock->Height = height;
+
+		const uint64 pixelSize = (uint64)width * height * 4;
+		outStock->Pixels.resize(pixelSize);
+		HPlatform::MemCopy(decoded, outStock->Pixels.data(), pixelSize);
+		stbi_image_free(decoded);
+	}
+	else
+	{
+		// 비압축 텍스처: mWidth x mHeight 개의 aiTexel(ARGB8888, 메모리 순서 B G R A). 필드 이름으로 읽어 RGBA로 담는다.
+		// FBX 로더는 만들지 않지만 assimp는 파일 내용으로 포맷을 고르므로 다른 포맷이 들어와도 맞게 둔다.
+		outStock->Width  = tex->mWidth;
+		outStock->Height = tex->mHeight;
+
+		const uint64 texelCount = (uint64)tex->mWidth * tex->mHeight;
+		outStock->Pixels.resize(texelCount * 4);
+		for (uint64 i = 0; i < texelCount; ++i)
+		{
+			const aiTexel& texel = tex->pcData[i];
+			outStock->Pixels[i * 4 + 0] = texel.r;
+			outStock->Pixels[i * 4 + 1] = texel.g;
+			outStock->Pixels[i * 4 + 2] = texel.b;
+			outStock->Pixels[i * 4 + 3] = texel.a;
+		}
+	}
+
+	outStock->OriginPixelSize = (uint32)outStock->Pixels.size();
+	return true;
 }
 
 void JGFBXAssetImporter::WriteMesh(const HMeshStock& inStock)
@@ -441,19 +536,29 @@ void JGFBXAssetImporter::WriteTexture(const HTextureStock& inStock)
 	PString destPath;
 	HFileHelper::CombinePath(_args.DestPath, inStock.Name + JG_ASSET_FORMAT, &destPath);
 
+	// 메시(WriteMesh)처럼 오브젝트 이름을 에셋 경로로 준다. JGAsset::SetName이 이름으로 AssetPath를 채우므로
+	// 짧은 이름을 주면 "NOT Support Asset Path" 경고와 함께 AssetPath가 "(null)"로 저장된다(5-20). DestPath가 Content 밖이면 짧은 이름을 쓴다.
+	const HAssetPath assetPath(destPath);
+
 	HTextureConstructArguments args;
-	args.TextureInfo.Name = inStock.Name;
+	args.TextureInfo.Name = assetPath.IsValid() ? assetPath.GetAssetPath().ToString() : inStock.Name;
 	args.TextureInfo.Width = inStock.Width;
 	args.TextureInfo.Height = inStock.Height;
 	args.TextureInfo.PixelPerUnit = inStock.PixelPerUnit;
-	args.TextureInfo.Format = ETextureFormat::R16G16B16A16_Float;
-	
-	args.Pixels = std::move(inStock.Pixels);
+	// ReadTexture가 항상 RGBA8로 풀어 둔다. (이전에는 R16G16B16A16_Float라 픽셀당 8바이트로 읽어 4바이트 버퍼를 넘었다)
+	args.TextureInfo.Format = ETextureFormat::R8G8B8A8_Unorm;
+	// 업로드는 밉 0만 한다. MipLevel 0은 D3D12에서 전체 밉 체인이라 나머지 밉이 빈 채로 샘플링된다.
+	args.TextureInfo.MipLevel  = 1;
+	args.TextureInfo.ArraySize = 1;
 
+	// CreateTexture가 const 인자를 받으므로 복사한다. (이전의 std::move는 const 참조라 어차피 복사였다)
+	args.Pixels = inStock.Pixels;
+
+	// 저장(WriteJson)은 방금 요청한 업로드를 반영한 뒤 GPU에서 픽셀을 다시 읽어 압축한다. (ReadbackTextureImmediate, 메인 스레드)
 	PSharedPtr<JGTexture> texture = GetGraphicsAPI().CreateTexture(args);
 	if (SaveObject(destPath, texture.GetRawPointer()))
 	{
-		JG_LOG(Asset, ELogLevel::Trace, "%s : Success Save Texture", destPath);
+		JG_LOG(Asset, ELogLevel::Info, "%s : Success Save Texture (%dx%d, R8G8B8A8_Unorm)", destPath, inStock.Width, inStock.Height);
 	}
 	else
 	{

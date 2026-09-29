@@ -1,0 +1,21 @@
+msbuild 버전 17.14.40+3e7442088(.NET Framework용)
+
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  PipelineState.cpp
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\JG\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll

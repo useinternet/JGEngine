@@ -1,0 +1,62 @@
+GameProject 재현 결과 — 2026-09-29 12:05~12:35
+스크립트: Document/Memory/tools/gameproject_repro/run_repro.sh /c/JG/JGEngine <scratchpad>/gp_repro 60
+툴: 작업 트리의 Bin/DevelopEngine/JGBuildTool.exe · JGHeaderTool.exe (Debug 빌드, 소스는 HEAD 와 동일)
+가짜 엔진 루트: 엔진 *.module.json 17개 + BuildTemplate.lua + 툴 exe + premake5.exe + PCH.h/.cpp (소스 없음)
+게임 프로젝트: MyGame/Source/Game (Game.module.json, GameModule.h/.cpp, MyGameEntryActor.h/.cpp[JGCLASS]),
+               MyGame/Source/Editor (Editor.module.json, EditorModule.h/.cpp), 빈 Bin · Content · Temp
+인자: UserWorkDirectory = <MyGame 절대경로>, UserWorkCategories = ["Source"]
+
+== result.txt ==
+pass1_headertool: exit 139 (1s)
+pass1_buildtool: HUNG after 60s (killed winpid 47176)
+pass2_headertool: exit 139 (1s)
+pass2_buildtool: exit 127 (9s)        ← 감시 스크립트가 대화상자 창을 보고 강제 종료
+manual premake: exit 0
+control_buildtool (UserWorkCategories=[]): exit 139 (완주 후 종료 시 세그폴트)
+
+== 대화상자 확인 (PowerShell Get-Process) ==
+47176 JGBuildTool title=[Microsoft Visual C++ Runtime Library] start=12:10:14
+12:22:36 killed 8044 JGBuildTool title=[Microsoft Visual C++ Runtime Library] started 12:20:58
+(첫 시도 11:47 에도 같은 창 제목으로 멈춘 것을 tasklist /V 로 확인, 수동 종료)
+
+== BuildTool stdout (pass1, 발췌) ==
+Step 1. Engine Collection Module Infos..   Editor: 4 / Programs: 4 / Runtime: 8 / Total: 16
+Step 2. User Collection Module Infos..
+  Source Category Module List: Editor, Game   Source: 2 / Total: 2
+Step 3. Generate Build Script..  (의존 해석 오류 0)
+Step 4. Insert Include PCH..
+  ← 여기서 멈춤 (Step 5, module_system_info 기록 없음)
+
+== 생성된 lua (pass1_generated_jgengine.lua :395-417, 발췌) ==
+group "MyGame/Source"
+  project "Editor"
+    includedirs{ "Source/Editor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Editor/", "Source/Runtime/Core/",
+                 "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", "Source/Game/", "Temp/CodeGen/Game/", }
+    SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/", {"_EDITOR", }, "Temp/CodeGen/Editor/")
+  project "Game"
+    includedirs{ "Source/Game/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Game/", "Source/Runtime/Core/",
+                 "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", }
+    SetDynamicCPPProjectConfig("SharedLib", "Source/Game/", {"_GAME", }, "Temp/CodeGen/Game/")
+→ 전부 lua 위치(엔진 루트) 기준 상대경로. "Source/Editor/" 는 엔진 Source/Editor 카테고리.
+
+== 수동 premake (Step 3 lua 를 엔진 루트에 두고 premake5 vs2022) ==
+Generated ../../JGEngine.sln  (엔진 루트)
+sln 프로젝트: Engine/{Editor: DevConsole DevStatistics JGDev_Graphics JGEditor}, {Programs: 4}, {Runtime: AI Asset Core Devkit GUI Game GameFrameWorks Graphics}, MyGame/Source/{Editor}
+→ Game 은 1개뿐 (게임 Game 이 엔진 Game 에 합쳐짐)
+Game.vcxproj   AdditionalIncludeDirectories = ..\..\Source\Runtime\Game;..\..\Source\Game;..\..\Source\ThirdParty;..\..\Source;..\CodeGen\Game;...
+Editor.vcxproj AdditionalIncludeDirectories = ..\..\Source\Editor;..\..\Source\ThirdParty;..\..\Source;..\CodeGen\Editor;...
+Editor.vcxproj OutDir = ..\..\Bin\DevelopEngine\  (엔진 Bin)
+
+== HeaderTool stdout (pass1/pass2 동일) ==
+... Recognized Class List...
+[Memory]: Memory Chunk Shutdown. ... live blocks 34 ...     ← 코드젠 대상 0, 종료 시 139
+
+== 게임 프로젝트 폴더 ==
+실행 전후 동일 (Bin · Temp 비어 있음). 툴은 게임 프로젝트에 아무것도 쓰지 않았다.
+
+== 대조군 (같은 가짜 루트, UserWorkCategories=[]) ==
+Step 4. Insert Include PCH..
+Step 5. Make Project Files..  premake 실행 (Generated ../../JGEngine.sln ...)
+Recognize CodeGenable Module : DevConsole Game AI DevStatistics JGEditor Asset JGDev_Graphics Devkit GameFrameWorks Graphics GUI
+Compelete Build Tool Run..
+→ bash: Segmentation fault (139).  Temp/CodeGen/module_system_info.json 생성됨.

@@ -19,6 +19,9 @@ GMemoryGlobalSystem::~GMemoryGlobalSystem()
 void GMemoryGlobalSystem::Update()
 {
 	garbageCollection(1);
+
+	// 10초 동안 쓰이지 않은 빈 페이지와 대형 캐시 블록을 시스템에 돌려준다 (Memory_TODO 2-1, 설계 §3-8b·§3-9)
+	MemoryPool.Tick();
 }
 
 void GMemoryGlobalSystem::Flush()

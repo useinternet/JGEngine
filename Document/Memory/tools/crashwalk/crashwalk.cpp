@@ -1,9 +1,11 @@
 // crashwalk : 대상 프로세스를 디버기로 실행하고, 예외(AV)가 나면 심볼이 붙은 콜스택을 출력하는 최소 디버거.
-// 사용: crashwalk.exe <exe> <workdir> <closeAfterSeconds>
+// 사용: crashwalk.exe <exe> <workdir> <closeAfterSeconds> [hangAfterSeconds=30]
 //  - closeAfterSeconds 뒤에 대상의 최상위 창에 WM_CLOSE를 보내 정상 종료 경로를 밟게 한다.
+//  - WM_CLOSE 뒤 hangAfterSeconds 안에 끝나지 않으면(종료 행) 모든 스레드를 멈추고 콜스택을 출력한 뒤 종료 코드 4로 죽인다. (2026-09-28 추가)
 #include <windows.h>
 #include <dbghelp.h>
 #include <psapi.h>
+#include <tlhelp32.h>
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -98,9 +100,34 @@ static void PrintStack(HANDLE hProcess, DWORD threadId)
 	CloseHandle(hThread);
 }
 
+// 종료 행 진단: 대상의 모든 스레드를 잠시 멈추고 스택을 찍는다. (디버기는 우리가 멈추기 전까지 실행 중이므로 GetThreadContext 전에 SuspendThread 가 필요하다)
+static void DumpAllThreads(HANDLE hProcess, DWORD pid)
+{
+	HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+	if (snap == INVALID_HANDLE_VALUE) { printf("CreateToolhelp32Snapshot failed %lu\n", GetLastError()); return; }
+
+	THREADENTRY32 te = {};
+	te.dwSize = sizeof(te);
+	for (BOOL ok = Thread32First(snap, &te); ok; ok = Thread32Next(snap, &te))
+	{
+		if (te.th32OwnerProcessID != pid) continue;
+		HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, te.th32ThreadID);
+		if (hThread == nullptr) continue;
+		SuspendThread(hThread);
+		printf("--- thread %lu ---\n", te.th32ThreadID);
+		PrintStack(hProcess, te.th32ThreadID);
+		ResumeThread(hThread);
+		CloseHandle(hThread);
+	}
+	CloseHandle(snap);
+	fflush(stdout);
+}
+
 int wmain(int argc, wchar_t** argv)
 {
-	if (argc < 4) { printf("usage: crashwalk <exe> <workdir> <closeAfterSeconds>\n"); return 1; }
+	if (argc < 4) { printf("usage: crashwalk <exe> <workdir> <closeAfterSeconds> [hangAfterSeconds=30]\n"); return 1; }
+	const ULONGLONG hangAfterMs = (argc >= 5 ? (ULONGLONG)_wtoi(argv[4]) : 30ULL) * 1000ULL;
+	ULONGLONG closeTime = 0;
 
 	std::wstring cmd = argv[1];
 	STARTUPINFOW si = {}; si.cb = sizeof(si);
@@ -116,7 +143,7 @@ int wmain(int argc, wchar_t** argv)
 	SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS | SYMOPT_LOAD_LINES);
 	SymInitializeW(hProcess, argv[2], FALSE);
 
-	const ULONGLONG closeAfterMs = (ULONGLONG)_wtoi(argv[3]) * 1000ULL;
+	ULONGLONG closeAfterMs = (ULONGLONG)_wtoi(argv[3]) * 1000ULL;
 	const ULONGLONG start = GetTickCount64();
 	bool bClosed = false;
 	int exitCode = -1;
@@ -130,6 +157,17 @@ int wmain(int argc, wchar_t** argv)
 			{
 				EnumWindows(EnumWindowsProc, 0);
 				bClosed = true;
+				closeTime = GetTickCount64();
+			}
+			else if (bClosed && GetTickCount64() - closeTime > hangAfterMs)
+			{
+				printf("=== Process did not exit %llu s after WM_CLOSE. Dumping all threads, then terminating ===\n", hangAfterMs / 1000ULL);
+				SymCleanup(hProcess);
+				SymInitializeW(hProcess, argv[2], TRUE);
+				DumpAllThreads(hProcess, g_targetPid);
+				TerminateProcess(hProcess, 4);
+				bClosed = false;    // 다시 덤프하지 않는다. EXIT_PROCESS_DEBUG_EVENT 가 곧 온다
+				closeAfterMs = ~0ULL;
 			}
 			continue;
 		}

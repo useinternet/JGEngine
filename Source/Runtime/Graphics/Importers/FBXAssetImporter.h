@@ -1,6 +1,9 @@
 #pragma once
 #include "AssetImporter.h"
 #include "JGGraphicsDefine.h"
+// JG_GENERATED_CLASS_BODY는 생성 헤더마다 다시 정의된다. 이 줄이 없으면 먼저 포함된 다른 클래스의 본문이 펼쳐진다.
+// (Devkit에서 포함하면 StaticMesh 본문이 펼쳐져 '_subMeshes' 오류가 났다. AssetImporter.h도 같은 이유로 자기 생성 헤더를 포함한다)
+#include "FBXAssetImporter.generation.h"
 
 struct aiScene;
 struct aiMesh;
@@ -59,7 +62,7 @@ public:
 		int32 Channels = 0;
 		uint32 PixelPerUnit = 100;
 		uint32 OriginPixelSize = 0;
-		HList<uint8> Pixels;
+		HList<uint8> Pixels;		// 항상 RGBA8 (ReadTexture가 압축 해제·채널 순서 변환까지 한다)
 	};
 
 	class HSkeletalStock
@@ -123,7 +126,7 @@ private:
 	void ReadSkeletal(const aiScene* scene, HSkeletalStock* outStock, HSceneHierarchyInfo* outSceneHierarchyInfo);
 	void ReadSkeletalNodeHierarchy(const aiNode* node, HSceneHierarchyInfo* outSceneHierarchyInfo, HSkeletalStock* outStock);
 	void ReadAnimation(const aiAnimation* anim, HAnimationClipStock* outStock);
-	void ReadTexture(const aiTexture* tex, HTextureStock* outStock);
+	bool ReadTexture(const aiTexture* tex, uint32 inTextureIndex, HTextureStock* outStock);
 
 private:
 	void WriteMesh(const HMeshStock& inStock);

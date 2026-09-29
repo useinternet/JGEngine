@@ -1,211 +1,178 @@
-[:47792:][info][Memory]: [ID: 13715638067107203975] Memory Chunk Initizlie. TotalMemory : 103108.750
-[:47792:][info][Core]: Active Thread: [359083127]
-[:47792:][info][Core]: Active Thread: [3842617301]
-[:47792:][info][Core]: Active Thread: [2550856897]
-[:47792:][info][Core]: Active Thread: [2164118563]
-[:47792:][info][Core]: Active Thread: [157935708]
-[:47792:][info][Core]: Active Thread: [3425048590]
-[:47792:][info][Core]: Active Thread: [1390591884]
-[:47792:][info][Core]: Active Thread: [2436954959]
-[:47792:][info][Core]: Active Thread: [2450504927]
-[:47792:][info][Core]: Active Thread: [1964118972]
-[:47792:][info][Core]: Active Thread: [3680185022]
-[:47792:][info][Core]: Active Thread: [2056979647]
-[:47792:][info][Core]: Active Thread: [4008784347]
-[:47792:][info][Core]: Active Thread: [1734854224]
-[:47792:][info][Core]: Active Thread: [3679350238]
-[:47792:][info][Core]: Active Thread: [446278597]
-[:47792:][info][Core]: Active Thread: [2381531161]
-[:47792:][info][Core]: Active Thread: [1651080477]
-[:47792:][info][Core]: Active Thread: [2925480048]
-[:47792:][info][Core]: Active Thread: [2236772759]
-[:47792:][info][Core]: Active Thread: [3409516010]
-[:47792:][info][Core]: Active Thread: [2721486983]
-[:47792:][info][Core]: Active Thread: [934464555]
-[:47792:][info][Core]: Active Thread: [4024447362]
-[:47792:][info][Core]: Active Thread: [1940232063]
-[:47792:][info][Core]: Active Thread: [3503054947]
-[:47792:][info][Core]: Active Thread: [11975141]
-[:47792:][info][Core]: Active Thread: [1322820283]
-[:47792:][info][Core]: Active Thread Totoal Count: 28 
-[:47792:][trace][Graphics]: DirectX12 Init Start
-[:47792:][trace][Graphics]: Success Create D3D12Device
-[:47792:][info][Graphics]: Description : NVIDIA GeForce RTX 5070 Ti
-[:47792:][info][Graphics]: VideoMemory : 15995  MB
-[:47792:][trace][Graphics]: Create DescriptorAllocator...
-[:47792:][trace][Graphics]: Create CommandQueue...
-[:47792:][trace][Graphics]: Create ResourceStagingManager...
-[:47792:][trace][Graphics]: Create FrameBuffer...
-[:47792:][trace][Graphics]: Create Default Resources...
-[:47792:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][info][Graphics]: Start Collect Shader in (../../Source/Shader)
-[:47792:][trace][Graphics]: Collect compute_shader_template
-[:47792:][trace][Graphics]: Collect graphics_shader_template
-[:47792:][trace][Graphics]: Collect scene_shader
-[:47792:][info][Graphics]: Complete Collect Shader
-[:47792:][trace][Graphics]: DirectX12 Init End
-[:47792:][trace][Graphics]: Startup Graphics Module...
-[:47792:][trace][Asset]: Startup Asset Module...
-[:47792:][trace][JGDev_GraphicsModule]: Startup JGDev_GraphicsModule Module...
-[:47792:][trace][Graphics]: Register DevSceneTexture in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Register DevSceneCompositeMaterial in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][info][Core]: Recognized Class List...
-[:47792:][debug][Core]: - JGAssetImporter
-[:47792:][debug][Core]: - JGMemoryStatistcs
-[:47792:][debug][Core]: - JGDevConsole
-[:47792:][debug][Core]: - JGAsset
-[:47792:][debug][Core]: - JGDevFeature
-[:47792:][debug][Core]: - JGDevScene
-[:47792:][debug][Core]: - JGDevSettings
-[:47792:][debug][Core]: - JGStaticMesh
-[:47792:][debug][Core]: - JGTexture
-[:47792:][debug][Core]: - JGFBXAssetImporter
-[:47792:][debug][Core]: - JGWidget
-[:47792:][debug][Core]: - JGWidgetComponent
-[:47792:][trace][Asset]: Start Load Assets in ../../Content
-[:47792:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Graphics PSO created. cache size 1
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:31600:][info][Memory]: [ID: 4028187352482048092] Memory Chunk Initizlie. TotalMemory : 103108.750
-[:31600:][warning][Asset]: NOT Support Asset Path
-[:31600:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][warning][Memory]: Dismatch Allocated Thread(13715638067107203975) And Deallocated Thread(4028187352482048092), Memory Location : 2614b7ccdd0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d3a0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d380
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d360
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d340
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d170
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d200
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c255d0
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d2b0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d300
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c257f0
-[:31600:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d560
-[:31600:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d540
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d3f0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d500
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25c30
-[:31600:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
-[:31600:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:31600:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d660
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d640
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d530
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d600
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25e50
-[:47792:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
-[:47792:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
-[:47792:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
-[:47792:][trace][Graphics]: Graphics PSO created. cache size 2
-[:47792:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][warning][Graphics]: DevSceneTexture : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
-[:47792:][trace][Graphics]: Register DevSceneTexture_ReadbackStaging in ResourceRefMap
-[:47792:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
-[:47792:][trace][Asset]: Shutdown Asset Module...
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cad6b0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d080
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cad080
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d350
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d480
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25a10
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 261674d12d0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d420
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cadef0
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d490
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d580
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25d40
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26165010c90
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d440
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cae100
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d0d0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d180
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c253b0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 261671d12a0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d120
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cad8c0
-[:47792:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
-[:47792:][trace][Graphics]: UnRegister {0} in ResourceRefMap
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b8d210
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d280
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c256e0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26166051090
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d140
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cadad0
-[:47792:][trace][Graphics]: Shutdown Graphics Module...
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161cadce0
-[:47792:][trace][JGDev_GraphicsModule]: Shutdown JGDev_GraphicsModule Module...
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d3c0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161b3d0c0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c254c0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c252a0
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25900
-[:47792:][warning][Memory]: Dismatch Allocated Thread(4028187352482048092) And Deallocated Thread(13715638067107203975), Memory Location : 26161c25b20
-[:47792:][info][Memory]: [ID: 0] Memory Chunk Shutdown.
-[:47792:][info][Memory]: [ID: 0] Memory Chunk Shutdown.
+[:56052:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 521817350729082963. pages are created on first request
+[:56052:][info][Core]: Active Thread: [2010379744]
+[:56052:][info][Core]: Active Thread: [2821499822]
+[:56052:][info][Core]: Active Thread: [196650848]
+[:56052:][info][Core]: Active Thread: [1227663952]
+[:56052:][info][Core]: Active Thread: [3201005568]
+[:56052:][info][Core]: Active Thread: [1374589738]
+[:56052:][info][Core]: Active Thread: [3924121479]
+[:56052:][info][Core]: Active Thread: [2322270411]
+[:56052:][info][Core]: Active Thread: [1159735829]
+[:56052:][info][Core]: Active Thread: [3574141760]
+[:56052:][info][Core]: Active Thread: [2763360813]
+[:56052:][info][Core]: Active Thread: [2706606578]
+[:56052:][info][Core]: Active Thread: [2178320706]
+[:56052:][info][Core]: Active Thread: [749788848]
+[:56052:][info][Core]: Active Thread: [1987484141]
+[:56052:][info][Core]: Active Thread: [945821052]
+[:56052:][info][Core]: Active Thread: [32364229]
+[:56052:][info][Core]: Active Thread: [2261129234]
+[:56052:][info][Core]: Active Thread: [2543128656]
+[:56052:][info][Core]: Active Thread: [2266168351]
+[:56052:][info][Core]: Active Thread: [1796464967]
+[:56052:][info][Core]: Active Thread: [1534515502]
+[:56052:][info][Core]: Active Thread: [1704336891]
+[:56052:][info][Core]: Active Thread: [3462798511]
+[:56052:][info][Core]: Active Thread: [2003879755]
+[:56052:][info][Core]: Active Thread: [1990329787]
+[:56052:][info][Core]: Active Thread: [3956180108]
+[:56052:][info][Core]: Active Thread: [1771482404]
+[:56052:][info][Core]: Active Thread Totoal Count: 28 
+[:56052:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:56052:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:56052:][trace][Graphics]: DirectX12 Init Start
+[:56052:][trace][Graphics]: Success Create D3D12Device
+[:56052:][info][Graphics]: Description : NVIDIA GeForce RTX 5070 Ti
+[:56052:][info][Graphics]: VideoMemory : 15995  MB
+[:56052:][trace][Graphics]: Create DescriptorAllocator...
+[:56052:][trace][Graphics]: Create CommandQueue...
+[:56052:][trace][Graphics]: Create ResourceStagingManager...
+[:56052:][trace][Graphics]: Create FrameBuffer...
+[:56052:][trace][Graphics]: Create Default Resources...
+[:56052:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][info][Graphics]: Start Collect Shader in (../../Source/Shader)
+[:56052:][trace][Graphics]: Collect compute_shader_template
+[:56052:][trace][Graphics]: Collect graphics_shader_template
+[:56052:][trace][Graphics]: Collect scene_shader
+[:56052:][info][Graphics]: Complete Collect Shader
+[:56052:][trace][Graphics]: DirectX12 Init End
+[:56052:][trace][Graphics]: Startup Graphics Module...
+[:56052:][trace][Asset]: Startup Asset Module...
+[:56052:][trace][JGDev_GraphicsModule]: Startup JGDev_GraphicsModule Module...
+[:56052:][trace][Graphics]: Register DevSceneTexture in ResourceRefMap
+[:56052:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.88 MB)
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Register DevSceneCompositeMaterial in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:56052:][info][Core]: Recognized Class List...
+[:56052:][debug][Core]: - JGGameplayEntityComponent
+[:56052:][debug][Core]: - JGAssetImporter
+[:56052:][debug][Core]: - JGMemoryStatistcs
+[:56052:][debug][Core]: - JGGameplayEntityActor
+[:56052:][debug][Core]: - JGDevConsole
+[:56052:][debug][Core]: - JGAsset
+[:56052:][debug][Core]: - JGDevFeature
+[:56052:][debug][Core]: - JGDevScene
+[:56052:][debug][Core]: - JGDevSettings
+[:56052:][debug][Core]: - JGActor
+[:56052:][debug][Core]: - JGGameEntryActor
+[:56052:][debug][Core]: - JGGameMasterActor
+[:56052:][debug][Core]: - JGGameplayControllerActor
+[:56052:][debug][Core]: - JGGameplayCue
+[:56052:][debug][Core]: - JGActorComponent
+[:56052:][debug][Core]: - JGGameInstance
+[:56052:][debug][Core]: - JGGameplayCommandHandler
+[:56052:][debug][Core]: - JGGameplayEffect
+[:56052:][debug][Core]: - JGGameplayModifier
+[:56052:][debug][Core]: - JGGameplayTrigger
+[:56052:][debug][Core]: - JGStaticMesh
+[:56052:][debug][Core]: - JGTexture
+[:56052:][debug][Core]: - JGFBXAssetImporter
+[:56052:][debug][Core]: - JGWidget
+[:56052:][debug][Core]: - JGWidgetComponent
+[:56052:][trace][Asset]: Start Load Assets in ../../Content
+[:56052:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Graphics PSO created. cache size 1
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:38824:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 3387776606063523840. pages are created on first request
+[:38824:][warning][Asset]: NOT Support Asset Path
+[:38824:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:38824:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 3.88 MB)
+[:38824:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.38 MB)
+[:38824:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:38824:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][info][Memory]: [ID: 1] class 1048576 B grew to 4 pages (4 blocks, growth #3, chunk committed 5.63 MB)
+[:38824:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 5.88 MB)
+[:38824:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:38824:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:38824:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:56052:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:56052:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:56052:][trace][Graphics]: Graphics PSO created. cache size 2
+[:56052:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][warning][Graphics]: DevSceneTexture : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:56052:][trace][Graphics]: Register DevSceneTexture_ReadbackStaging in ResourceRefMap
+[:56052:][trace][Graphics]: Add Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
+[:56052:][trace][Asset]: Shutdown Asset Module...
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Remove Counting Resource : {0}   Ref : {1}
+[:56052:][trace][Graphics]: UnRegister {0} in ResourceRefMap
+[:56052:][trace][Graphics]: Shutdown Graphics Module...
+[:56052:][trace][JGDev_GraphicsModule]: Shutdown JGDev_GraphicsModule Module...
+[:56052:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 15, committed 0.94 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:56052:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0

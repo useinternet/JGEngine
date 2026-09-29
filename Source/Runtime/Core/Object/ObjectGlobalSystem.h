@@ -179,7 +179,7 @@ inline bool SaveObject(const PString& path, T* obj)
 		}
 	}
 
-	JG_LOG(Core, ELogLevel::Error, PString::Format("%s: Fail Save %S", typeName, path));
+	JG_LOG(Core, ELogLevel::Error, PString::Format("%s: Fail Save %s", typeName, path));
 	return false;
 }
 

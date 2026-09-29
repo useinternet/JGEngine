@@ -1,0 +1,369 @@
+{
+    "SchemaVersion": 1,
+    "Initial": {
+        "Entities": {
+            "Generations": [
+                1,
+                1,
+                1
+            ],
+            "Alive": [
+                1,
+                1,
+                1
+            ],
+            "FreeIndices": [],
+            "AliveCount": 3
+        },
+        "Zones": {
+            "Zones": [
+                {
+                    "Name": "Units",
+                    "Entities": [
+                        {
+                            "Index": 0,
+                            "Generation": 1
+                        },
+                        {
+                            "Index": 1,
+                            "Generation": 1
+                        },
+                        {
+                            "Index": 2,
+                            "Generation": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        "Board": {
+            "Kind": 0,
+            "Width": 0,
+            "Height": 0,
+            "Occupants": [],
+            "Blocked": [],
+            "Positions": [],
+            "PositionGenerations": []
+        },
+        "Turn": {
+            "Round": 0,
+            "Phase": 0,
+            "Order": [],
+            "OrderIndex": -1,
+            "CurrentActor": {
+                "Index": 0,
+                "Generation": 0
+            },
+            "TurnCount": 0
+        },
+        "Choice": {
+            "bPending": false,
+            "Chooser": {
+                "Index": 0,
+                "Generation": 0
+            },
+            "Kind": "(null)",
+            "Candidates": [],
+            "Min": 1,
+            "Max": 1,
+            "Waiting": {
+                "Kind": "(null)",
+                "Subject": {
+                    "Index": 0,
+                    "Generation": 0
+                },
+                "Target": {
+                    "Index": 0,
+                    "Generation": 0
+                },
+                "Targets": [],
+                "Params": [],
+                "Coord": {
+                    "X": 0,
+                    "Y": 0
+                },
+                "Tag": "(null)",
+                "CauseSequence": 0,
+                "Depth": 0,
+                "bHasChoice": false,
+                "Choice": []
+            },
+            "SavedQueue": []
+        },
+        "Random": [
+            {
+                "State": 1224338057510141583,
+                "Increment": 3,
+                "CallCount": 0
+            },
+            {
+                "State": 13952610505203727595,
+                "Increment": 5,
+                "CallCount": 0
+            },
+            {
+                "State": 8234138879187761991,
+                "Increment": 7,
+                "CallCount": 0
+            },
+            {
+                "State": 2515667253171796387,
+                "Increment": 9,
+                "CallCount": 0
+            },
+            {
+                "State": 15243939700865382399,
+                "Increment": 11,
+                "CallCount": 0
+            },
+            {
+                "State": 9525468074849416795,
+                "Increment": 13,
+                "CallCount": 0
+            },
+            {
+                "State": 3806996448833451191,
+                "Increment": 15,
+                "CallCount": 0
+            },
+            {
+                "State": 16535268896527037203,
+                "Increment": 17,
+                "CallCount": 0
+            }
+        ],
+        "Sequence": 0,
+        "Seed": 12345,
+        "Tables": {
+            "TestValue": {
+                "Ids": [
+                    {
+                        "Index": 0,
+                        "Generation": 1
+                    },
+                    {
+                        "Index": 1,
+                        "Generation": 1
+                    },
+                    {
+                        "Index": 2,
+                        "Generation": 1
+                    }
+                ],
+                "Values": [
+                    {
+                        "Value": 10
+                    },
+                    {
+                        "Value": 10
+                    },
+                    {
+                        "Value": 10
+                    }
+                ]
+            }
+        }
+    },
+    "Current": {
+        "Entities": {
+            "Generations": [
+                1,
+                1,
+                1
+            ],
+            "Alive": [
+                1,
+                1,
+                1
+            ],
+            "FreeIndices": [],
+            "AliveCount": 3
+        },
+        "Zones": {
+            "Zones": [
+                {
+                    "Name": "Units",
+                    "Entities": [
+                        {
+                            "Index": 0,
+                            "Generation": 1
+                        },
+                        {
+                            "Index": 1,
+                            "Generation": 1
+                        },
+                        {
+                            "Index": 2,
+                            "Generation": 1
+                        }
+                    ]
+                }
+            ]
+        },
+        "Board": {
+            "Kind": 0,
+            "Width": 0,
+            "Height": 0,
+            "Occupants": [],
+            "Blocked": [],
+            "Positions": [],
+            "PositionGenerations": []
+        },
+        "Turn": {
+            "Round": 1,
+            "Phase": 4,
+            "Order": [
+                {
+                    "Index": 0,
+                    "Generation": 1
+                },
+                {
+                    "Index": 1,
+                    "Generation": 1
+                },
+                {
+                    "Index": 2,
+                    "Generation": 1
+                }
+            ],
+            "OrderIndex": 0,
+            "CurrentActor": {
+                "Index": 0,
+                "Generation": 1
+            },
+            "TurnCount": 1
+        },
+        "Choice": {
+            "bPending": true,
+            "Chooser": {
+                "Index": 0,
+                "Generation": 1
+            },
+            "Kind": "TestPick",
+            "Candidates": [
+                {
+                    "Index": 1,
+                    "Generation": 1
+                },
+                {
+                    "Index": 2,
+                    "Generation": 1
+                }
+            ],
+            "Min": 1,
+            "Max": 1,
+            "Waiting": {
+                "Kind": "TestPick",
+                "Subject": {
+                    "Index": 0,
+                    "Generation": 1
+                },
+                "Target": {
+                    "Index": 0,
+                    "Generation": 0
+                },
+                "Targets": [],
+                "Params": [],
+                "Coord": {
+                    "X": 0,
+                    "Y": 0
+                },
+                "Tag": "(null)",
+                "CauseSequence": 0,
+                "Depth": 0,
+                "bHasChoice": false,
+                "Choice": []
+            },
+            "SavedQueue": []
+        },
+        "Random": [
+            {
+                "State": 1224338057510141583,
+                "Increment": 3,
+                "CallCount": 0
+            },
+            {
+                "State": 13952610505203727595,
+                "Increment": 5,
+                "CallCount": 0
+            },
+            {
+                "State": 8234138879187761991,
+                "Increment": 7,
+                "CallCount": 0
+            },
+            {
+                "State": 2515667253171796387,
+                "Increment": 9,
+                "CallCount": 0
+            },
+            {
+                "State": 15243939700865382399,
+                "Increment": 11,
+                "CallCount": 0
+            },
+            {
+                "State": 9525468074849416795,
+                "Increment": 13,
+                "CallCount": 0
+            },
+            {
+                "State": 3806996448833451191,
+                "Increment": 15,
+                "CallCount": 0
+            },
+            {
+                "State": 16535268896527037203,
+                "Increment": 17,
+                "CallCount": 0
+            }
+        ],
+        "Sequence": 1,
+        "Seed": 12345,
+        "Tables": {
+            "TestValue": {
+                "Ids": [
+                    {
+                        "Index": 0,
+                        "Generation": 1
+                    },
+                    {
+                        "Index": 1,
+                        "Generation": 1
+                    },
+                    {
+                        "Index": 2,
+                        "Generation": 1
+                    }
+                ],
+                "Values": [
+                    {
+                        "Value": 10
+                    },
+                    {
+                        "Value": 10
+                    },
+                    {
+                        "Value": 10
+                    }
+                ]
+            }
+        }
+    },
+    "Log": {
+        "Commands": [
+            {
+                "Kind": "TestPickAct",
+                "Actor": {
+                    "Index": 0,
+                    "Generation": 1
+                },
+                "Targets": [],
+                "Params": [],
+                "Path": [],
+                "ExtraKeys": [],
+                "ExtraValues": []
+            }
+        ]
+    }
+}

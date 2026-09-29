@@ -1,0 +1,38 @@
+2026-09-29 Winsock include-order probe (evidence for Document/리슨서버_설계방안_2026-09-29.md §4)
+
+Question: can a JGEngine .cpp include <winsock2.h>?
+Engine include chain: every .cpp starts with "PCH/PCH.h", which includes <d3d12.h> (_DIRECTX12, PCH.h:27)
+and <Rpc.h> (_PLATFORM_WINDOWS, PCH.h:43); both pull <Windows.h>. Core's Platform/PlatformDefines.h:7 also
+includes <Windows.h>. WIN32_LEAN_AND_MEAN is not defined anywhere in Source/ (outside ThirdParty/Imgui),
+so <Windows.h> pulls the old <winsock.h>.
+
+Toolchain: VS 2022 Professional, vcvars64, cl /nologo /EHsc, Windows SDK 10.0.26100.0.
+Scratch location used: <session scratchpad>/wsprobe (not kept in the repo).
+
+---- probe_bad.cpp (engine order) ----
+#include <Rpc.h>
+#include <Windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+int main() { WSADATA data; return WSAStartup(MAKEWORD(2, 2), &data); }
+
+Result: cl exit 2, 102 "error C" lines, stops with C1003 (too many errors).
+  ws2def.h(246): error C2011: 'sockaddr': 'struct' 형식 재정의
+  ws2def.h(448): error C2143 / C2059 구문 오류
+  counts: C2375 x46, C2065 x29, C2011 x11, C2143 x4, C2146 x3, C2059 x2, C2061 x2, C4430 x2, C2447, C2660, C1003
+
+---- probe_good.cpp (fix candidate) ----
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <Rpc.h>
+#include <Windows.h>
+#pragma comment(lib, "ws2_32.lib")
+int main() { WSADATA data; int result = WSAStartup(MAKEWORD(2, 2), &data); WSACleanup(); return result; }
+
+Result: cl exit 0, probe_good.exe exit 0 (WSAStartup succeeded).
+
+Conclusion: put <winsock2.h>/<ws2tcpip.h> (+ ws2_32.lib pragma) at the very top of Source/PCH/PCH.h,
+before the _DIRECTX12 block (d3d12.h) and the _PLATFORM_WINDOWS block (Rpc.h). Alternative: define
+_WINSOCKAPI_ (or WIN32_LEAN_AND_MEAN) before the first <Windows.h>; WIN32_LEAN_AND_MEAN also drops other
+headers the engine may rely on, so the explicit winsock2-first include is the smaller change.
+Shared PCH edit => full rebuild; coordinate with other sessions building in the main tree.

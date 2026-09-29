@@ -144,3 +144,73 @@ chunk 11095985672148793014     256 B : 491 491 491 491 492 491  | end 0
   241456 Deallocated 1048576 [6174162781589094045]
   241470 Deallocated 262144 [6174162781589094045]
   242061 Deallocated 8192 [11095985672148793014]
+
+
+########## v3 — Phase 2 풀 재설계 후 (2026-09-28, 페이지 성장형 클래스 8B~1MB·대형 캐시·원격 반납 스택·Tick 회수. JG_MEMORY_TRACE=1 빌드) ##########
+# 실행: crashwalk.exe JGLauncher.exe <Bin/DevelopEngine> 60 → 60초 뒤 WM_CLOSE, 예외 0, ExitCode 0. 입력은 crashwalk stdout(spdlog 콘솔 싱크) 708,344줄 (공유 jg_log.txt 는 다른 세션의 실행이 덮어써 쓰지 않음)
+# 청크 ID 는 이제 청크 테이블 인덱스(0 = 메인, 1 = 로드 스레드). 4B 클래스는 없어져 8B 로 합쳐짐(v2 4B 피크 3 + 8B 피크 6 → 8B 피크 7). Dismatch 경고는 사라지고 RemoteFreeTotal 카운터로 대체(종료 로그: 메인 1, 로드 44~58).
+# 비교: 총 Allocate == Deallocate, 32B 피크 124(v2 123)·종료 0, 메인 피크 총 블록 2,614(v2 2,296. GameFrameWorks 모듈 추가로 16B/128B/256B 피크 증가, 추이는 평탄), 워커 청크는 v2 와 동일. 상주 메모리(기본 빌드, measure_resident.ps1.txt 25초): private 428.5 → 230.2 MB, working set 335.6 → 137.6 MB. 검증 목록은 Memory_TODO 2-6 / 설계 문서 §7 참조.
+== 총계 ==
+lines: 708344
+allocs: 354081  deallocs: 354081  dismatch: 0
+chunk init: 2  chunk shutdown: 2  error/critical: 0
+memory lines: 708174  PSO created: 2
+
+== 청크 ID (첫 번째가 메인 스레드) ==
+0
+1
+
+== 청크별 크기 클래스: 종료 시 live / 피크 live / 누적 할당 ==
+chunk 0 : peak total live 2614
+         8 B : live      0  peak      7  allocs    20099
+        16 B : live      0  peak    973  allocs   175273
+        32 B : live      0  peak    124  allocs    31469
+        64 B : live      0  peak    157  allocs    44880
+       128 B : live      0  peak    758  allocs    79328
+       256 B : live      0  peak    538  allocs     2797
+       512 B : live      0  peak     13  allocs       63
+      1024 B : live      0  peak     51  allocs       62
+      2048 B : live      0  peak      4  allocs        7
+      4096 B : live      0  peak      2  allocs        2
+      8192 B : live      0  peak      1  allocs        1
+chunk 1 : peak total live 52
+        16 B : live      0  peak     22  allocs       48
+        64 B : live      0  peak      7  allocs       17
+       128 B : live      0  peak      1  allocs        1
+       256 B : live      0  peak     10  allocs       14
+       512 B : live      0  peak      7  allocs        9
+      1024 B : live      0  peak      1  allocs        1
+    262144 B : live      0  peak      2  allocs        2
+    524288 B : live      0  peak      2  allocs        2
+   1048576 B : live      0  peak      4  allocs        6
+
+== 프레임 누수 추적: 40000 줄 간격 live 추이 (종료 시 live > 0 이거나 변화가 있는 클래스만) ==
+chunk 0       8 B : 4 2 2 2 2 2 2 2 2 2 2 2 2 2 5 2 2  | end 0
+chunk 0      16 B : 971 967 971 958 969 969 967 971 960 972 969 968 966 965 972 968 969  | end 0
+chunk 0      32 B : 121 121 121 120 123 121 121 123 122 122 121 121 120 122 121 121 121  | end 0
+chunk 0      64 B : 153 151 151 137 153 151 151 151 141 153 151 151 151 152 153 151 151  | end 0
+chunk 0     128 B : 755 755 755 753 755 757 755 755 755 757 757 756 755 755 755 756 755  | end 0
+
+== 8KB 이상 블록 이벤트 (해시 버킷 배열 성장 등) ==
+  2586 Allocated 8192 [0]
+  19321 Allocated 1048576 [1]
+  20290 Allocated 524288 [1]
+  20497 Allocated 1048576 [1]
+  20570 Allocated 1048576 [1]
+  20807 Allocated 524288 [1]
+  20901 Deallocated 1048576 [1]
+  20911 Deallocated 524288 [1]
+  20921 Deallocated 1048576 [1]
+  20938 Allocated 1048576 [1]
+  21690 Allocated 262144 [1]
+  21869 Allocated 1048576 [1]
+  21920 Allocated 1048576 [1]
+  22040 Allocated 262144 [1]
+  22114 Deallocated 1048576 [1]
+  22124 Deallocated 262144 [1]
+  22134 Deallocated 1048576 [1]
+  707223 Deallocated 1048576 [1]
+  707231 Deallocated 262144 [1]
+  707333 Deallocated 1048576 [1]
+  707341 Deallocated 524288 [1]
+  707935 Deallocated 8192 [0]

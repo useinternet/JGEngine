@@ -3,29 +3,47 @@
 #include "MemoryPool.h"
 #include "Memory.h"
 
+namespace HAllocatorPrivate
+{
+	// 메모리 시스템이 내려간 뒤의 deallocate 는 무시한다 (정적 컨테이너가 DLL 언로드 때 소멸하는 경우. JGGraphicsDefine.h 의 규칙 위반).
+	// 디버그에서는 처음 한 번 디버거 출력으로 알린다 (Memory_TODO 2-4).
+	inline void ReportDeallocateAfterShutdownOnce()
+	{
+#ifdef _DEBUG
+		static bool bReported = false;
+		if (bReported == false)
+		{
+			bReported = true;
+			OutputDebugStringA("[JGEngine][Memory] HAllocator::deallocate was called after the memory system shut down (static container holding pool memory?). ignored.\n");
+		}
+#endif
+	}
+}
+
 template<typename T>
 class HAllocator
 {
 public:
-	HAllocator() {}
-
 	using value_type = T;
+
+	// 상태가 없어 모든 인스턴스가 같다. HList::swap 과 이동 대입이 할당자 비교 없이 컴파일된다 (Memory_TODO 2-4).
+	using is_always_equal = std::true_type;
+
+	HAllocator() = default;
 
 	template<typename Other>
 	HAllocator(const HAllocator<Other>&) {}
 
 	//초기화되지 않은 메모리 공간을 할당하여 그 시작 주소를 반환하는 함수
+	// 정렬이 16을 넘는 타입(alignas(32) 등)은 풀이 대형(정렬) 경로로 보내 맞춘다.
 	T* allocate(std::size_t count)
 	{
-		if (GMemoryGlobalSystem::IsValid() == false)
-		{
-			JG_ASSERT(false);
-		}
-		
-		const int32 MemSize = static_cast<int32>(count * sizeof(T));
+		JG_CHECK(GMemoryGlobalSystem::IsValid() == true);
+
 		HMemoryPool* MemoryPool = GMemoryGlobalSystem::GetInstance().GetMemoryPool();
-		void* Result = MemoryPool->Allocate(MemSize);
-		return (T*)Result;
+		void* Result = MemoryPool->Allocate(static_cast<uint64>(count) * sizeof(T), alignof(T));
+		JG_CHECK(Result != nullptr);
+		return static_cast<T*>(Result);
 	}
 
 	//  메모리 공간을 해제하는 함수
@@ -35,6 +53,10 @@ public:
 		{
 			HMemoryPool* MemoryPool = GMemoryGlobalSystem::GetInstance().GetMemoryPool();
 			MemoryPool->Deallocate(ptr);
+		}
+		else
+		{
+			HAllocatorPrivate::ReportDeallocateAfterShutdownOnce();
 		}
 	}
 
@@ -46,6 +68,18 @@ public:
 	template <class U>
 	void destroy(U* p) {
 		p->~U();
+	}
+
+	template<typename Other>
+	bool operator==(const HAllocator<Other>&) const
+	{
+		return true;
+	}
+
+	template<typename Other>
+	bool operator!=(const HAllocator<Other>&) const
+	{
+		return false;
 	}
 };
 

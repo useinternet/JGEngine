@@ -120,8 +120,8 @@ workspace "JGEngine"
 
 
 			project "JGConsole"
-				includedirs{ "Source/Programs/JGConsole/", "Source/ThirdParty", "Source/", "Source/Runtime/Core/", }
-				links{ "Core", }
+				includedirs{ "Source/Programs/JGConsole/", "Source/ThirdParty", "Source/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", }
+				links{ "Core", "GameFrameWorks", }
 				SetCPPProjectConfig("ConsoleApp", "Source/Programs/JGConsole/", {"_JGCONSOLE", })
 				filter "configurations:DevelopEngine"
 					DebugConfig()
@@ -229,7 +229,7 @@ workspace "JGEngine"
 
 
 			project "JGEditor"
-				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
+				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
 				links{ "Core", "GameFrameWorks", "Graphics", "GUI", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/JGEditor/", {"_JGEDITOR", }, "Temp/CodeGen/JGEditor/")
 				filter "configurations:DevelopEngine"
@@ -320,7 +320,7 @@ workspace "JGEngine"
 
 
 			project "Game"
-				includedirs{ "Source/Runtime/Game/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Game/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", }
+				includedirs{ "Source/Runtime/Game/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Game/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", }
 				links{ "Core", "GameFrameWorks", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/Game/", {"_GAME", }, "Temp/CodeGen/Game/")
 				filter "configurations:DevelopEngine"
@@ -338,9 +338,9 @@ workspace "JGEngine"
 
 
 			project "GameFrameWorks"
-				includedirs{ "Source/Runtime/GameFrameWorks/", "Source/ThirdParty", "Source/", "Source/Runtime/Core/", }
-				links{ "Core", }
-				SetCPPProjectConfig("StaticLib", "Source/Runtime/GameFrameWorks/", {"_GAMEFRAMEWORKS", })
+				includedirs{ "Source/Runtime/GameFrameWorks/", "Source/ThirdParty", "Source/", "Temp/CodeGen/GameFrameWorks/", "Source/Runtime/Core/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
+				links{ "Core", "Asset", "Graphics", "GUI", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/GameFrameWorks/", {"_GAMEFRAMEWORKS", }, "Temp/CodeGen/GameFrameWorks/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }

@@ -1,0 +1,3276 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-29",
+  "source": [
+    "ArkhamDB API pack core (ko/en): Document/아컴호러/data/raw/arkhamdb_core_ko.json, arkhamdb_core_en.json",
+    "ArkhamCards campaign guide data @cc50c60d: https://raw.githubusercontent.com/zzorba/arkham-cards-data/master/campaigns/notz/{campaign,torch,arkham,tentacles}.json",
+    "ArkhamCards Korean: https://raw.githubusercontent.com/zzorba/arkham-cards-data/master/i18n/ko/campaigns/notz/{campaign,torch,arkham,tentacles}.po, i18n/ko/encounter_sets.po",
+    "ArkhamCards: https://raw.githubusercontent.com/zzorba/arkham-cards-data/master/encounter_sets.json, chaos_tokens.json",
+    "SCED @05ff1dab: https://github.com/Chr1Z93/SCED/blob/main/objects/CoreNightoftheZealot.64a613.json (download box, filename night_of_the_zealot)",
+    "SCED-downloads @d24d4dcf: https://github.com/Chr1Z93/SCED-downloads/tree/main/decomposed/campaign/Night%20of%20the%20Zealot/CoreNightoftheZealot.64a613 (location *.gmnotes)",
+    "Card images: Document/아컴호러/images/<code>.png (revealed/front), <code>b.png (unrevealed/back) — 24 fronts + 8 backs compared visually"
+  ],
+  "conventions": {
+    "location_sides": "front = ArkhamDB 앞면(공개 면, images/<code>.png), back = 뒷면(미공개 면, images/<code>b.png). SCED는 locationFront=미공개, locationBack=공개라서 반대로 매핑함.",
+    "symbol_ids": {
+      "circle": "원",
+      "square": "사각형",
+      "triangle": "삼각형",
+      "diamond": "마름모",
+      "plus": "십자",
+      "t": "T",
+      "squiggle": "물결(SCED Tilde)",
+      "moon": "초승달(SCED Crescent)",
+      "hourglass": "모래시계",
+      "slash": "사선 두 줄 //(SCED SlantedEquals)"
+    },
+    "connections_trait": "텍스트로 정의된 특성 기반 연결(큰길: 다른 모든 Woods 장소와 연결). SCED의 ArkhamWoods 가상 기호를 대체.",
+    "clues": "clues 값 + clues_per_investigator=true 이면 인원수만큼 곱함",
+    "text": "한국어 문자열은 카드 원문이 아닌 요약. [[X]]는 특성(trait) 표기, [action]/[willpower] 등은 ArkhamDB 아이콘 태그.",
+    "event_ids": "set_by/read_by 형식: <scenario>:<R1|R2|R3|no_resolution|setup|intro|act_1b|agenda_2b>"
+  },
+  "campaign": {
+    "code": "notz",
+    "arkhamcards_id": "core",
+    "name_ko": "광신도의 밤",
+    "name_en": "Night of the Zealot",
+    "scenario_order": [
+      "torch",
+      "arkham",
+      "tentacles"
+    ],
+    "chaos_bag": {
+      "easy": [
+        "+1",
+        "+1",
+        "0",
+        "0",
+        "0",
+        "-1",
+        "-1",
+        "-1",
+        "-2",
+        "-2",
+        "skull",
+        "skull",
+        "cultist",
+        "tablet",
+        "auto_fail",
+        "elder_sign"
+      ],
+      "standard": [
+        "+1",
+        "0",
+        "0",
+        "-1",
+        "-1",
+        "-1",
+        "-2",
+        "-2",
+        "-3",
+        "-4",
+        "skull",
+        "skull",
+        "cultist",
+        "tablet",
+        "auto_fail",
+        "elder_sign"
+      ],
+      "hard": [
+        "0",
+        "0",
+        "0",
+        "-1",
+        "-1",
+        "-2",
+        "-2",
+        "-3",
+        "-3",
+        "-4",
+        "-5",
+        "skull",
+        "skull",
+        "cultist",
+        "tablet",
+        "auto_fail",
+        "elder_sign"
+      ],
+      "expert": [
+        "0",
+        "-1",
+        "-1",
+        "-2",
+        "-2",
+        "-3",
+        "-3",
+        "-4",
+        "-4",
+        "-5",
+        "-6",
+        "-8",
+        "skull",
+        "skull",
+        "cultist",
+        "tablet",
+        "auto_fail",
+        "elder_sign"
+      ]
+    },
+    "chaos_bag_additions": [
+      {
+        "scenario": "tentacles",
+        "when": "setup",
+        "add": [
+          "elder_thing"
+        ],
+        "duration": "campaign"
+      }
+    ],
+    "campaign_log_sections": [
+      {
+        "id": "campaign_notes",
+        "ko": "캠페인 메모",
+        "en": "Campaign Notes",
+        "type": "flags",
+        "note": "한국어 섹션명은 출처에 없음(임의 표기)"
+      },
+      {
+        "id": "cultists_interrogated",
+        "ko": "심문한 추종자",
+        "en": "Cultists We Interrogated",
+        "type": "card_list"
+      },
+      {
+        "id": "cultists_escaped",
+        "ko": "도망친 추종자",
+        "en": "Cultists Who Got Away",
+        "type": "card_list"
+      }
+    ],
+    "campaign_log_keys": [
+      {
+        "id": "house_standing",
+        "section": "campaign_notes",
+        "ko": "당신의 집이 여전히 남아 있다",
+        "en": "Your house is still standing.",
+        "set_by": [
+          "torch:no_resolution",
+          "torch:R2",
+          "torch:R3"
+        ],
+        "read_by": [
+          "arkham:setup"
+        ],
+        "effect": "한밤의 가면: 모든 조사자가 ‘당신의 집’에서 시작"
+      },
+      {
+        "id": "house_burned",
+        "section": "campaign_notes",
+        "ko": "당신의 집이 불타버렸다",
+        "en": "Your house has burned to the ground.",
+        "set_by": [
+          "torch:R1"
+        ],
+        "read_by": [
+          "arkham:setup"
+        ],
+        "effect": "한밤의 가면: ‘당신의 집’ 게임에서 제거, 모두 ‘아컴 강변’에서 시작"
+      },
+      {
+        "id": "ghoul_priest_alive",
+        "section": "campaign_notes",
+        "ko": "‘구울 사제’가 여전히 살아 있다",
+        "en": "The Ghoul Priest is still alive.",
+        "set_by": [
+          "torch:no_resolution",
+          "torch:R3"
+        ],
+        "cleared_by": [
+          "arkham:R1",
+          "arkham:R2"
+        ],
+        "read_by": [
+          "arkham:setup",
+          "tentacles:setup"
+        ],
+        "effect": "‘구울 사제’(01116)를 조우 덱에 넣고 섞음. 한밤의 가면 결말 때 구울 사제가 승점 더미에 있으면 기록 삭제"
+      },
+      {
+        "id": "lita_finds_others",
+        "section": "campaign_notes",
+        "ko": "리타는 어쩔 수 없이 다른 사람에게 도움을 요청했다",
+        "en": "Lita was forced to find others to help her cause.",
+        "set_by": [
+          "torch:R3"
+        ],
+        "read_by": [
+          "arkham:intro"
+        ],
+        "effect": "한밤의 가면 도입 스토리 분기만(규칙 영향 없음)"
+      },
+      {
+        "id": "cultists_interrogated",
+        "section": "cultists_interrogated",
+        "type": "card_list",
+        "ko": "심문한 추종자",
+        "en": "Cultists We Interrogated",
+        "set_by": [
+          "arkham:R1",
+          "arkham:R2"
+        ],
+        "read_by": [],
+        "effect": "승점 더미의 고유 [[추종자]] 적 목록. 이후 규칙 참조 없음(도망친 추종자와 배타)"
+      },
+      {
+        "id": "cultists_escaped",
+        "section": "cultists_escaped",
+        "type": "card_list",
+        "ko": "도망친 추종자",
+        "en": "Cultists Who Got Away",
+        "set_by": [
+          "arkham:R1",
+          "arkham:R2"
+        ],
+        "read_by": [
+          "tentacles:setup",
+          "tentacles:act_1b"
+        ],
+        "effect": "셋업: 기록 수 1–2→주요사건 1a 파멸 1, 3–4→2, 5–6→3 / 주요목적 1b: 기록된 적을 보유 게임(collection)에서 찾아 ‘큰길’에 출현"
+      },
+      {
+        "id": "past_midnight",
+        "section": "campaign_notes",
+        "ko": "자정이 지났다",
+        "en": "It is past midnight.",
+        "set_by": [
+          "arkham:R2"
+        ],
+        "read_by": [
+          "tentacles:setup"
+        ],
+        "effect": "지하 세계의 포식자: 각 플레이어는 시작 손에서 무작위 2장 버림"
+      },
+      {
+        "id": "arkham_succumbed",
+        "section": "campaign_notes",
+        "ko": "우몰도스의 끔찍한 복수에 아컴이 무릎을 꿇다",
+        "en": "Arkham succumbed to Umôrdhoth's terrible vengeance.",
+        "set_by": [
+          "tentacles:no_resolution"
+        ],
+        "read_by": [],
+        "effect": "캠페인 종료(패배)"
+      },
+      {
+        "id": "ritual_broken",
+        "section": "campaign_notes",
+        "ko": "우몰도스를 소환하는 의식을 분쇄하다",
+        "en": "The ritual to summon Umôrdhoth was broken.",
+        "set_by": [
+          "tentacles:R1"
+        ],
+        "read_by": [],
+        "effect": "캠페인 종료(승리)"
+      },
+      {
+        "id": "umordhoth_repelled",
+        "section": "campaign_notes",
+        "ko": "조사자들이 우몰도스를 격퇴하다",
+        "en": "The investigators repelled Umôrdhoth.",
+        "set_by": [
+          "tentacles:R2"
+        ],
+        "read_by": [],
+        "effect": "캠페인 종료(승리)"
+      },
+      {
+        "id": "lita_sacrificed",
+        "section": "campaign_notes",
+        "ko": "조사자가 리타 챈들러를 우몰도스에게 희생시켰다",
+        "en": "The investigators sacrificed Lita Chantler to Umôrdhoth.",
+        "set_by": [
+          "tentacles:R3"
+        ],
+        "read_by": [],
+        "effect": "캠페인 종료(생존)"
+      }
+    ],
+    "campaign_cards": [
+      {
+        "code": "01117",
+        "ko": "리타 챈들러",
+        "en": "Lita Chantler",
+        "earned_by": [
+          "torch:no_resolution",
+          "torch:R1",
+          "torch:R3(대표 조사자가 사망한 경우에만, 선택한 조사자)"
+        ],
+        "recipient": "대표 조사자(선택 사항). 덱 크기에 포함되지 않음",
+        "used_by": [
+          "tentacles: 우몰도스(01157)의 [action] — 리타를 조종 중일 때 R3"
+        ],
+        "removed_by": [
+          "tentacles:R3"
+        ]
+      },
+      {
+        "code": "random_basic_madness_weakness",
+        "ko": "무작위 기본 [[정신이상]] 약점",
+        "en": "random basic Madness weakness",
+        "earned_by": [
+          "tentacles:agenda_2b([willpower] 6 실패자, 손으로)"
+        ]
+      },
+      {
+        "code": "random_madness_weakness",
+        "ko": "무작위 [[정신이상]] 약점",
+        "en": "random Madness weakness",
+        "earned_by": [
+          "tentacles:R3(각 조사자, 덱에 추가)"
+        ]
+      }
+    ],
+    "xp_rules": {
+      "base": "시나리오 종료 시 각 조사자는 승점 더미 카드의 승점 X 합만큼 XP를 얻음(단서가 남지 않은 승점 장소는 승점 더미에 추가).",
+      "bonus": [
+        {
+          "scenario": "torch",
+          "resolution": "no_resolution",
+          "all": 2,
+          "lead": 0
+        },
+        {
+          "scenario": "torch",
+          "resolution": "R1",
+          "all": 2,
+          "lead": 0
+        },
+        {
+          "scenario": "torch",
+          "resolution": "R2",
+          "all": 2,
+          "lead": 1
+        },
+        {
+          "scenario": "torch",
+          "resolution": "R3",
+          "all": null,
+          "lead": null,
+          "note": "XP 획득 단계 없음(ArkhamCards 기준)"
+        },
+        {
+          "scenario": "arkham",
+          "resolution": "R1",
+          "all": 0,
+          "lead": 0
+        },
+        {
+          "scenario": "arkham",
+          "resolution": "R2",
+          "all": 0,
+          "lead": 0
+        },
+        {
+          "scenario": "tentacles",
+          "resolution": "R1",
+          "all": 5,
+          "lead": 0
+        },
+        {
+          "scenario": "tentacles",
+          "resolution": "R2",
+          "all": 10,
+          "lead": 0
+        },
+        {
+          "scenario": "tentacles",
+          "resolution": "R3",
+          "all": 0,
+          "lead": 0
+        },
+        {
+          "scenario": "tentacles",
+          "resolution": "no_resolution",
+          "all": null,
+          "lead": null,
+          "note": "전원 사망·캠페인 패배"
+        }
+      ]
+    },
+    "trauma_events": [
+      {
+        "at": "torch:agenda_3b",
+        "who": "후퇴하지 않은 조사자(주요목적 3 상태일 때)",
+        "effect": "쓰러짐 + 육체적 트라우마 1"
+      },
+      {
+        "at": "torch:R1",
+        "who": "대표 조사자",
+        "effect": "정신적 트라우마 1"
+      },
+      {
+        "at": "torch:R3",
+        "who": "후퇴하지 않은 조사자",
+        "effect": "사망(killed). 조사자 부족 시 캠페인 패배, 아니면 새 조사자"
+      },
+      {
+        "at": "tentacles:R1",
+        "who": "각 조사자",
+        "effect": "정신적 트라우마 2"
+      },
+      {
+        "at": "tentacles:R2",
+        "who": "각 조사자",
+        "effect": "육체적 2 + 정신적 2"
+      },
+      {
+        "at": "tentacles:R3",
+        "who": "각 조사자",
+        "effect": "육체적 2 + 정신적 2 + 무작위 [[정신이상]] 약점 덱 추가"
+      },
+      {
+        "at": "tentacles:no_resolution",
+        "who": "생존한 조사자 전원",
+        "effect": "사망 + 캠페인 패배"
+      },
+      {
+        "at": "any:defeat",
+        "who": "쓰러진 조사자(일반 규칙)",
+        "effect": "피해로 쓰러짐 → 육체적 1 / 공포로 쓰러짐 → 정신적 1. 육체적 ≥ 체력이면 사망(killed), 정신적 ≥ 정신력이면 미침"
+      }
+    ]
+  },
+  "encounter_sets": {
+    "torch": {
+      "ko": "회합",
+      "en": "The Gathering",
+      "total_cards": 16,
+      "encounter_deck_cards": 2,
+      "cards": [
+        {
+          "code": "01104",
+          "name_ko": "회합",
+          "name_en": "The Gathering",
+          "type": "scenario",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01105",
+          "name_ko": "무슨 일이야?!",
+          "name_en": "What's Going On?!",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01106",
+          "name_ko": "구울이 나타나다",
+          "name_en": "Rise of the Ghouls",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01107",
+          "name_ko": "구울들이 뛰쳐나간다!",
+          "name_en": "They're Getting Out!",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01108",
+          "name_ko": "갇히다",
+          "name_en": "Trapped",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01109",
+          "name_ko": "장벽",
+          "name_en": "The Barrier",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01110",
+          "name_ko": "대체 무슨 짓이야?",
+          "name_en": "What Have You Done?",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01111",
+          "name_ko": "서재",
+          "name_en": "Study",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01112",
+          "name_ko": "복도",
+          "name_en": "Hallway",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01113",
+          "name_ko": "다락방",
+          "name_en": "Attic",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01114",
+          "name_ko": "지하실",
+          "name_en": "Cellar",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01115",
+          "name_ko": "거실",
+          "name_en": "Parlor",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01116",
+          "name_ko": "구울 사제",
+          "name_en": "Ghoul Priest",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "치워 둠(회합)"
+        },
+        {
+          "code": "01117",
+          "name_ko": "리타 챈들러",
+          "name_en": "Lita Chantler",
+          "type": "asset",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "치워 둠(회합)"
+        },
+        {
+          "code": "01118",
+          "name_ko": "식인귀",
+          "name_en": "Flesh-Eater",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01119",
+          "name_ko": "냉기 구울",
+          "name_en": "Icy Ghoul",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "arkham": {
+      "ko": "한밤의 가면",
+      "en": "The Midnight Masks",
+      "total_cards": 20,
+      "encounter_deck_cards": 5,
+      "cards": [
+        {
+          "code": "01120",
+          "name_ko": "한밤의 가면",
+          "name_en": "The Midnight Masks",
+          "type": "scenario",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01121a",
+          "name_ko": "사냥꾼인가 사냥감인가?",
+          "name_en": "Predator or Prey?",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "back": {
+            "code": "01121b",
+            "name_ko": "가면 쓴 사냥꾼",
+            "name_en": "The Masked Hunter",
+            "type": "enemy"
+          }
+        },
+        {
+          "code": "01122",
+          "name_ko": "시간이 얼마 남지 않았다",
+          "name_en": "Time Is Running Short",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01123",
+          "name_ko": "음모를 밝혀내다",
+          "name_en": "Uncovering the Conspiracy",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01124",
+          "name_ko": "당신의 집",
+          "name_en": "Your House",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01125",
+          "name_ko": "아컴 강변",
+          "name_en": "Rivertown",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01126",
+          "name_ko": "아컴 남부",
+          "name_en": "Southside",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01127",
+          "name_ko": "아컴 남부",
+          "name_en": "Southside",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01128",
+          "name_ko": "세인트 메리 병원",
+          "name_en": "St. Mary's Hospital",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01129",
+          "name_ko": "미스캐토닉 대학",
+          "name_en": "Miskatonic University",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01130",
+          "name_ko": "아컴 번화가",
+          "name_en": "Downtown",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01131",
+          "name_ko": "아컴 번화가",
+          "name_en": "Downtown",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01132",
+          "name_ko": "아컴 동부",
+          "name_en": "Easttown",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01133",
+          "name_ko": "묘지",
+          "name_en": "Graveyard",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01134",
+          "name_ko": "아컴 북부",
+          "name_en": "Northside",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01135",
+          "name_ko": "추적해오는 그림자",
+          "name_en": "Hunting Shadow",
+          "type": "treachery",
+          "qty": 3,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01136",
+          "name_ko": "수사가 난항에 빠지다",
+          "name_en": "False Lead",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "cultists": {
+      "ko": "우몰도스의 사교도",
+      "en": "Cult of Umôrdhoth",
+      "total_cards": 5,
+      "encounter_deck_cards": 0,
+      "cards": [
+        {
+          "code": "01137",
+          "name_ko": "“늑대인간” 드류",
+          "name_en": "\"Wolf-Man\" Drew",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "추종자 덱(한밤의 가면)"
+        },
+        {
+          "code": "01138",
+          "name_ko": "헤르만 콜린스",
+          "name_en": "Herman Collins",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "추종자 덱(한밤의 가면)"
+        },
+        {
+          "code": "01139",
+          "name_ko": "피터 워렌",
+          "name_en": "Peter Warren",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "추종자 덱(한밤의 가면)"
+        },
+        {
+          "code": "01140",
+          "name_ko": "빅토리아 데버루",
+          "name_en": "Victoria Devereux",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "추종자 덱(한밤의 가면)"
+        },
+        {
+          "code": "01141",
+          "name_ko": "루스 터너",
+          "name_en": "Ruth Turner",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "추종자 덱(한밤의 가면)"
+        }
+      ],
+      "cultist_deck_cards": 5
+    },
+    "tentacles": {
+      "ko": "지하 세계의 포식자",
+      "en": "The Devourer Below",
+      "total_cards": 18,
+      "encounter_deck_cards": 2,
+      "cards": [
+        {
+          "code": "01142",
+          "name_ko": "지하 세계의 포식자",
+          "name_en": "The Devourer Below",
+          "type": "scenario",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01143",
+          "name_ko": "아컴의 숲",
+          "name_en": "The Arkham Woods",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01144",
+          "name_ko": "의식이 시작되다",
+          "name_en": "The Ritual Begins",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01145",
+          "name_ko": "복수의 때가 오다",
+          "name_en": "Vengeance Awaits",
+          "type": "agenda",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01146",
+          "name_ko": "흔적을 조사하다",
+          "name_en": "Investigating the Trail",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01147",
+          "name_ko": "어둠 속으로",
+          "name_en": "Into the Darkness",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01148",
+          "name_ko": "의식 방해",
+          "name_en": "Disrupting the Ritual",
+          "type": "act",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01149",
+          "name_ko": "큰길",
+          "name_en": "Main Path",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01150",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01151",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01152",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01153",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01154",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01155",
+          "name_ko": "아컴의 숲",
+          "name_en": "Arkham Woods",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01156",
+          "name_ko": "의식 장소",
+          "name_en": "Ritual Site",
+          "type": "location",
+          "qty": 1,
+          "in_encounter_deck": false
+        },
+        {
+          "code": "01157",
+          "name_ko": "우몰도스",
+          "name_en": "Umôrdhoth",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": false,
+          "note": "치워 둠(지하 세계의 포식자)"
+        },
+        {
+          "code": "01158",
+          "name_ko": "우몰도스의 분노",
+          "name_en": "Umôrdhoth's Wrath",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "rats": {
+      "ko": "쥐떼",
+      "en": "Rats",
+      "total_cards": 3,
+      "encounter_deck_cards": 3,
+      "cards": [
+        {
+          "code": "01159",
+          "name_ko": "들끓는 쥐 떼",
+          "name_en": "Swarm of Rats",
+          "type": "enemy",
+          "qty": 3,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "ghouls": {
+      "ko": "구울",
+      "en": "Ghouls",
+      "total_cards": 7,
+      "encounter_deck_cards": 7,
+      "cards": [
+        {
+          "code": "01160",
+          "name_ko": "구울 하수인",
+          "name_en": "Ghoul Minion",
+          "type": "enemy",
+          "qty": 3,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01161",
+          "name_ko": "굶주린 구울",
+          "name_en": "Ravenous Ghoul",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01162",
+          "name_ko": "움켜쥐는 손",
+          "name_en": "Grasping Hands",
+          "type": "treachery",
+          "qty": 3,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "striking_fear": {
+      "ko": "엄습하는 공포",
+      "en": "Striking Fear",
+      "total_cards": 7,
+      "encounter_deck_cards": 7,
+      "cards": [
+        {
+          "code": "01163",
+          "name_ko": "부패한 시체",
+          "name_en": "Rotting Remains",
+          "type": "treachery",
+          "qty": 3,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01164",
+          "name_ko": "공포에 얼어붙다",
+          "name_en": "Frozen in Fear",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01165",
+          "name_ko": "시끄러운 소음",
+          "name_en": "Dissonant Voices",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "ancient_evils": {
+      "ko": "고대의 악",
+      "en": "Ancient Evils",
+      "total_cards": 3,
+      "encounter_deck_cards": 3,
+      "cards": [
+        {
+          "code": "01166",
+          "name_ko": "고대의 악",
+          "name_en": "Ancient Evils",
+          "type": "treachery",
+          "qty": 3,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "chilling_cold": {
+      "ko": "으스스한 한기",
+      "en": "Chilling Cold",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01167",
+          "name_ko": "으스스한 한기",
+          "name_en": "Crypt Chill",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01168",
+          "name_ko": "자욱한 안개",
+          "name_en": "Obscuring Fog",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "pentagram": {
+      "ko": "어둠의 사교",
+      "en": "Dark Cult",
+      "total_cards": 6,
+      "encounter_deck_cards": 6,
+      "cards": [
+        {
+          "code": "01169",
+          "name_ko": "사교도 시종",
+          "name_en": "Acolyte",
+          "type": "enemy",
+          "qty": 3,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01170",
+          "name_ko": "교단의 마법사",
+          "name_en": "Wizard of the Order",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01171",
+          "name_ko": "기이한 주문",
+          "name_en": "Mysterious Chanting",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "nightgaunts": {
+      "ko": "나이트건트",
+      "en": "Nightgaunts",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01172",
+          "name_ko": "추적해오는 나이트건트",
+          "name_en": "Hunting Nightgaunt",
+          "type": "enemy",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01173",
+          "name_ko": "어둠의 날개에서",
+          "name_en": "On Wings of Darkness",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "locked_doors": {
+      "ko": "잠긴 문",
+      "en": "Locked Doors",
+      "total_cards": 2,
+      "encounter_deck_cards": 2,
+      "cards": [
+        {
+          "code": "01174",
+          "name_ko": "잠긴 문",
+          "name_en": "Locked Door",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "agents_of_yog": {
+      "ko": "요그소토스의 권속",
+      "en": "Agents of Yog-Sothoth",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01177",
+          "name_ko": "이스인 관찰자",
+          "name_en": "Yithian Observer",
+          "type": "enemy",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01178",
+          "name_ko": "힘의 거래",
+          "name_en": "Offer of Power",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "agents_of_shub": {
+      "ko": "슈브 니구라스의 권속",
+      "en": "Agents of Shub-Niggurath",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01179",
+          "name_ko": "멈출 수 없는 슈브 니구라스의 어린 것",
+          "name_en": "Relentless Dark Young",
+          "type": "enemy",
+          "qty": 1,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01180",
+          "name_ko": "염소의 종자",
+          "name_en": "Goat Spawn",
+          "type": "enemy",
+          "qty": 3,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "agents_of_cthulhu": {
+      "ko": "크툴루의 권속",
+      "en": "Agents of Cthulhu",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01181",
+          "name_ko": "어린 심해인",
+          "name_en": "Young Deep One",
+          "type": "enemy",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01182",
+          "name_ko": "르리예의 꿈",
+          "name_en": "Dreams of R'lyeh",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    },
+    "agents_of_hastur": {
+      "ko": "하스터의 권속",
+      "en": "Agents of Hastur",
+      "total_cards": 4,
+      "encounter_deck_cards": 4,
+      "cards": [
+        {
+          "code": "01175",
+          "name_ko": "괴성을 지르는 비야키",
+          "name_en": "Screeching Byakhee",
+          "type": "enemy",
+          "qty": 2,
+          "in_encounter_deck": true
+        },
+        {
+          "code": "01176",
+          "name_ko": "황색의 표식",
+          "name_en": "The Yellow Sign",
+          "type": "treachery",
+          "qty": 2,
+          "in_encounter_deck": true
+        }
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "id": "torch",
+      "scenario_card": "01104",
+      "name_ko": "회합",
+      "name_en": "The Gathering",
+      "header": "시나리오 I",
+      "encounter_sets": [
+        "torch",
+        "rats",
+        "ghouls",
+        "striking_fear",
+        "ancient_evils",
+        "chilling_cold"
+      ],
+      "encounter_deck": {
+        "total": 26,
+        "by_set": {
+          "torch": 2,
+          "rats": 3,
+          "ghouls": 7,
+          "striking_fear": 7,
+          "ancient_evils": 3,
+          "chilling_cold": 4
+        },
+        "adjust": "없음"
+      },
+      "token_effects": {
+        "easy_standard": {
+          "skull": "−X (X=당신 장소의 [[구울]] 적 수)",
+          "cultist": "−1. 실패 시 공포 1",
+          "tablet": "−2. 당신 장소에 [[구울]] 적이 있으면 피해 1"
+        },
+        "hard_expert": {
+          "skull": "−2. 실패 시 테스트 후 조우 덱·버린 조우 카드 더미에서 [[구울]] 적 1장을 찾아 뽑고 조우 덱 섞기",
+          "cultist": "토큰 1개 추가 공개(자체 수정치 없음). 실패 시 공포 2",
+          "tablet": "−4. 당신 장소에 [[구울]] 적이 있으면 피해 1·공포 1"
+        }
+      },
+      "token_modifiers": {
+        "easy_standard": {
+          "skull": {
+            "modifier": "-X",
+            "x": "당신 장소의 [[구울]] 적 수"
+          },
+          "cultist": {
+            "modifier": -1,
+            "on_fail": "공포 1"
+          },
+          "tablet": {
+            "modifier": -2,
+            "effect": "당신 장소에 [[구울]] 적이 있으면 피해 1"
+          }
+        },
+        "hard_expert": {
+          "skull": {
+            "modifier": -2,
+            "on_fail": "테스트 후 조우 덱·버린 조우 카드 더미에서 [[구울]] 적 1장을 찾아 뽑고 조우 덱 섞기"
+          },
+          "cultist": {
+            "modifier": 0,
+            "reveal_another": 1,
+            "on_fail": "공포 2"
+          },
+          "tablet": {
+            "modifier": -4,
+            "effect": "당신 장소에 [[구울]] 적이 있으면 피해 1·공포 1"
+          }
+        }
+      },
+      "setup": {
+        "in_play": [
+          "01111"
+        ],
+        "set_aside": [
+          "01112",
+          "01113",
+          "01114",
+          "01115",
+          "01116",
+          "01117"
+        ],
+        "removed": [],
+        "start_location": "01111",
+        "steps": [
+          "조우 세트 6종(회합·쥐떼·구울·엄습하는 공포·고대의 악·으스스한 한기)을 모은다.",
+          "‘서재’만 플레이 영역에 두고, 나머지 장소(복도·다락방·지하실·거실)는 비플레이 상태로 치워 둔다.",
+          "‘구울 사제’와 ‘리타 챈들러’를 치워 둔다.",
+          "남은 조우 카드 26장을 섞어 조우 덱을 만든다.",
+          "주요목적 덱(01108→01110)과 주요사건 덱(01105→01107)을 1단계가 위로 오게 준비한다.",
+          "모든 조사자는 ‘서재’에서 시작한다."
+        ]
+      },
+      "act_deck": [
+        {
+          "code": "01108",
+          "stage": 1,
+          "clues": 2,
+          "per_investigator": true,
+          "objective": null,
+          "on_advance": "치워 둔 복도·지하실·다락방·거실을 플레이 → 서재의 적 모두 버림 → 조사자 전원을 복도에 배치 → 서재를 게임에서 제거.",
+          "name_ko": "갇히다",
+          "name_en": "Trapped",
+          "back_name_ko": "바닥에 달린 문",
+          "back_name_en": "The Door on the Floor"
+        },
+        {
+          "code": "01109",
+          "stage": 2,
+          "clues": 3,
+          "per_investigator": true,
+          "objective": "라운드 종료 시 복도에 있는 조사자들이 그룹으로 필요 단서를 지불하면 진행.",
+          "on_advance": "거실 공개(진입 가능) → 치워 둔 ‘리타 챈들러’를 거실에 둠(조종자 없음) → 치워 둔 ‘구울 사제’를 복도에 출현.",
+          "name_ko": "장벽",
+          "name_en": "The Barrier",
+          "back_name_ko": "장벽 돌파",
+          "back_name_en": "Breaking the Barrier"
+        },
+        {
+          "code": "01110",
+          "stage": 3,
+          "clues": null,
+          "per_investigator": false,
+          "objective": "‘구울 사제’가 쓰러지면 진행.",
+          "on_advance": "대표 조사자 선택: 집을 불태움 → R1 / 불태우지 않음 → R2.",
+          "name_ko": "대체 무슨 짓이야?",
+          "name_en": "What Have You Done?",
+          "back_name_ko": "집을 사수하라",
+          "back_name_en": "Defending the Home"
+        }
+      ],
+      "agenda_deck": [
+        {
+          "code": "01105",
+          "stage": 1,
+          "doom": 3,
+          "constant": null,
+          "on_advance": "대표 조사자 선택: 모든 조사자가 무작위로 손 카드 1장 버림, 또는 대표 조사자가 공포 2.",
+          "name_ko": "무슨 일이야?!",
+          "name_en": "What's Going On?!",
+          "back_name_ko": "시간의 경과",
+          "back_name_en": "A Lapse in Time"
+        },
+        {
+          "code": "01106",
+          "stage": 2,
+          "doom": 7,
+          "constant": null,
+          "on_advance": "버린 조우 카드 더미를 조우 덱에 섞고, [[구울]] 적이 나올 때까지 위에서 버림 → 대표 조사자가 그 적을 뽑음.",
+          "name_ko": "구울이 나타나다",
+          "name_en": "Rise of the Ghouls",
+          "back_name_ko": "지하 터널",
+          "back_name_en": "The Tunnels Below"
+        },
+        {
+          "code": "01107",
+          "stage": 3,
+          "doom": 10,
+          "constant": "강제: 적 단계 끝에 교전하지 않은 [[구울]] 적은 거실 쪽으로 1칸 이동. 라운드 끝에 복도·거실의 [[구울]] 적 1체당 이 주요사건에 파멸 1.",
+          "on_advance": "주요목적 1·2단계면 → R3. 주요목적 3단계면 후퇴하지 않은 조사자 전원 쓰러짐 + 육체적 트라우마 1(→ 결말 없음).",
+          "name_ko": "구울들이 뛰쳐나간다!",
+          "name_en": "They're Getting Out!",
+          "back_name_ko": "구울들이 해방되다",
+          "back_name_en": "The Ghouls Break Free"
+        }
+      ],
+      "resolutions": [
+        {
+          "id": "no_resolution",
+          "condition": "모든 조사자가 후퇴(거실) 또는 쓰러짐(주요사건 3b의 3막 분기 포함).",
+          "effects": [
+            "기록: 집이 남아 있다, 구울 사제 생존",
+            "대표 조사자가 ‘리타 챈들러’ 획득(선택, 덱 크기 미포함)",
+            "XP: 승점 + 2"
+          ],
+          "log": [
+            "house_standing",
+            "ghoul_priest_alive"
+          ],
+          "xp": "승점 + 2",
+          "xp_bonus": {
+            "all": 2,
+            "lead": 0
+          },
+          "cards": [
+            {
+              "op": "add",
+              "code": "01117",
+              "who": "lead_investigator",
+              "optional": true,
+              "counts_toward_deck_size": false
+            }
+          ],
+          "next": "2편: ‘당신의 집’ 시작 + 구울 사제 조우 덱 / 3편: 구울 사제 조우 덱"
+        },
+        {
+          "id": "R1",
+          "condition": "주요목적 3b에서 대표 조사자가 ‘집을 불태운다’ 선택(= 구울 사제를 쓰러뜨림).",
+          "effects": [
+            "기록: 집이 불타버렸다",
+            "대표 조사자가 ‘리타 챈들러’ 획득(선택)",
+            "대표 조사자 정신적 트라우마 1",
+            "XP: 승점 + 2"
+          ],
+          "log": [
+            "house_burned"
+          ],
+          "xp": "승점 + 2",
+          "xp_bonus": {
+            "all": 2,
+            "lead": 0
+          },
+          "trauma": "대표 조사자 정신적 1",
+          "cards": [
+            {
+              "op": "add",
+              "code": "01117",
+              "who": "lead_investigator",
+              "optional": true,
+              "counts_toward_deck_size": false
+            }
+          ],
+          "next": "2편: ‘당신의 집’ 제거, ‘아컴 강변’에서 시작"
+        },
+        {
+          "id": "R2",
+          "condition": "주요목적 3b에서 ‘불태우지 않는다’ 선택(= 구울 사제를 쓰러뜨림).",
+          "effects": [
+            "기록: 집이 남아 있다",
+            "대표 조사자 추가 XP 1",
+            "XP: 승점 + 2",
+            "‘리타 챈들러’ 획득 없음"
+          ],
+          "log": [
+            "house_standing"
+          ],
+          "xp": "승점 + 2 (대표 조사자 +1 추가)",
+          "xp_bonus": {
+            "all": 2,
+            "lead": 1
+          },
+          "cards": [],
+          "next": "2편: ‘당신의 집’ 시작(구울 사제는 추가되지 않음) / 3편: R3 선택지 없음"
+        },
+        {
+          "id": "R3",
+          "condition": "주요사건 3이 진행될 때 주요목적 1·2단계(집에 갇힘).",
+          "effects": [
+            "기록: 리타는 다른 사람에게 도움을 요청했다, 집이 남아 있다, 구울 사제 생존",
+            "후퇴하지 않은 조사자 전원 사망(1·2막에는 후퇴 수단이 없어 사실상 전원)",
+            "남은 조사자가 부족하면 캠페인 패배, 아니면 사망한 플레이어는 새 조사자 선택",
+            "대표 조사자가 사망했다면 조사자 1명을 골라 ‘리타 챈들러’ 획득",
+            "XP 단계 없음"
+          ],
+          "log": [
+            "lita_finds_others",
+            "house_standing",
+            "ghoul_priest_alive"
+          ],
+          "xp": "없음",
+          "xp_bonus": null,
+          "trauma": "후퇴하지 않은 조사자 사망(killed)",
+          "cards": [
+            {
+              "op": "add",
+              "code": "01117",
+              "who": "chosen_investigator",
+              "condition": "대표 조사자가 사망한 경우에만",
+              "counts_toward_deck_size": false
+            }
+          ],
+          "next": "2편: ‘당신의 집’ 시작 + 구울 사제 조우 덱, 도입 스토리 분기"
+        }
+      ],
+      "resign": "거실(01115, 공개 면)의 [action]",
+      "named_spawns": {
+        "01118": "01113",
+        "01119": "01114",
+        "01116": "주요목적 2b로 복도(01112)"
+      },
+      "victory_sources": [
+        {
+          "code": "01113",
+          "vp": 1
+        },
+        {
+          "code": "01114",
+          "vp": 1
+        },
+        {
+          "code": "01116",
+          "vp": 2
+        },
+        {
+          "code": "01118",
+          "vp": 1
+        },
+        {
+          "code": "01119",
+          "vp": 1
+        }
+      ],
+      "story_cards": [
+        {
+          "code": "01116",
+          "role": "보스. 체력 5×인원, 먹잇감=[combat] 최고, 사냥꾼·보복. 주요목적 3 목표."
+        },
+        {
+          "code": "01117",
+          "role": "스토리 자산 → 결말 보상 캠페인 카드."
+        }
+      ],
+      "locations": [
+        "01111",
+        "01112",
+        "01113",
+        "01114",
+        "01115"
+      ],
+      "adjacency_revealed": [
+        [
+          "01112",
+          "01113"
+        ],
+        [
+          "01112",
+          "01114"
+        ],
+        [
+          "01112",
+          "01115"
+        ]
+      ],
+      "engine_notes": [
+        "‘서재’는 연결 없는 시작 장소 → 1막 동안 이동 불가. 1b는 적 버림 → 조사자 ‘배치’(이동 아님, 이동 트리거 없음) → 서재 제거 순서로 처리.",
+        "‘거실’ 미공개 면은 진입 금지(이동 대상 제외). 입장이 아니라 주요목적 2b 효과로 강제 공개되고, 공개 면이 후퇴 [action]과 ‘리타’ 협상([intellect] 4 → 조종권 획득)을 부여.",
+        "출현 지시 장소(식인귀→다락방, 냉기 구울→지하실)가 아직 플레이 전이면 그 적은 버려짐(일반 규칙) — 서재 단계에서 빈번.",
+        "주요사건 3: 적 단계 끝 ‘거실 방향 1칸’ 경로 이동, 라운드 끝 특정 장소 구울 수만큼 파멸 추가. 주요목적 2 목표는 ‘라운드 종료 시 복도에 있는 조사자’만 단서 지불 가능.",
+        "주요목적 3b는 대표 조사자의 2지선다가 결말(R1/R2)을 결정 — 선택형 결말 UI 필요. ‘리타’는 게임 중 스토리 자산, 결말 후 캠페인 카드(덱 크기 미포함)로 전환."
+      ]
+    },
+    {
+      "id": "arkham",
+      "scenario_card": "01120",
+      "name_ko": "한밤의 가면",
+      "name_en": "The Midnight Masks",
+      "header": "시나리오 II",
+      "encounter_sets": [
+        "arkham",
+        "chilling_cold",
+        "nightgaunts",
+        "pentagram",
+        "locked_doors"
+      ],
+      "aside_sets": [
+        "cultists"
+      ],
+      "encounter_deck": {
+        "total": 21,
+        "by_set": {
+          "arkham": 5,
+          "chilling_cold": 4,
+          "nightgaunts": 4,
+          "pentagram": 6,
+          "locked_doors": 2
+        },
+        "adjust": "−(인원−1)장(셋업 사교도 시종), +1 구울 사제(생존 기록 시)"
+      },
+      "cultist_deck": [
+        "01137",
+        "01138",
+        "01139",
+        "01140",
+        "01141"
+      ],
+      "token_effects": {
+        "easy_standard": {
+          "skull": "−X (X=플레이 중인 [[추종자]] 적 1체가 가진 최대 파멸 수)",
+          "cultist": "−2. 가장 가까운 [[추종자]] 적에 파멸 1",
+          "tablet": "−3. 실패 시 당신의 단서 1개를 당신 장소에 놓음"
+        },
+        "hard_expert": {
+          "skull": "−X (X=플레이 중인 파멸 총합)",
+          "cultist": "−2. 모든 [[추종자]] 적에 파멸 1씩. [[추종자]] 적이 없으면 토큰 1개 추가 공개",
+          "tablet": "−4. 실패 시 당신의 단서를 모두 당신 장소에 놓음"
+        }
+      },
+      "token_modifiers": {
+        "easy_standard": {
+          "skull": {
+            "modifier": "-X",
+            "x": "플레이 중인 [[추종자]] 적 1체가 가진 최대 파멸 수"
+          },
+          "cultist": {
+            "modifier": -2,
+            "effect": "가장 가까운 [[추종자]] 적에 파멸 1"
+          },
+          "tablet": {
+            "modifier": -3,
+            "on_fail": "당신의 단서 1개를 당신 장소에 놓음"
+          }
+        },
+        "hard_expert": {
+          "skull": {
+            "modifier": "-X",
+            "x": "플레이 중인 파멸 총합"
+          },
+          "cultist": {
+            "modifier": -2,
+            "effect": "모든 [[추종자]] 적에 파멸 1씩. [[추종자]] 적이 없으면 토큰 1개 추가 공개"
+          },
+          "tablet": {
+            "modifier": -4,
+            "on_fail": "당신의 단서를 모두 당신 장소에 놓음"
+          }
+        }
+      },
+      "setup": {
+        "in_play": [
+          "01124",
+          "01125",
+          "01128",
+          "01129",
+          "01132",
+          "01133",
+          "01134"
+        ],
+        "random_choices": [
+          {
+            "pick": 1,
+            "from": [
+              "01130",
+              "01131"
+            ],
+            "others": "removed",
+            "label": "아컴 번화가"
+          },
+          {
+            "pick": 1,
+            "from": [
+              "01126",
+              "01127"
+            ],
+            "others": "removed",
+            "label": "아컴 남부"
+          }
+        ],
+        "set_aside": [],
+        "removed": [],
+        "removed_note": "random_choices에서 뽑히지 않은 아컴 번화가·아컴 남부, 집이 불탔다면 01124",
+        "start_location": "01124",
+        "conditional": [
+          {
+            "if_log": "house_burned",
+            "then": "‘당신의 집’(01124) 게임에서 제거, 시작 장소 = 01125(아컴 강변)"
+          },
+          {
+            "if_log": "house_standing",
+            "then": "시작 장소 = 01124(당신의 집)"
+          },
+          {
+            "if_log": "ghoul_priest_alive",
+            "then": "‘구울 사제’(01116)를 조우 덱에 섞음"
+          }
+        ],
+        "player_count": {
+          "1": [],
+          "2": [
+            "01126|01127"
+          ],
+          "3": [
+            "01126|01127",
+            "01130|01131"
+          ],
+          "4": [
+            "01126|01127",
+            "01130|01131",
+            "01133"
+          ],
+          "card": "01169",
+          "note": "인원수 − 1장의 ‘사교도 시종’을 조우 세트에서 꺼내 해당 장소에 출현(각각 파멸 1)"
+        },
+        "location_layout": [
+          [
+            "01134",
+            "01131|01130",
+            "01132"
+          ],
+          [
+            "01129",
+            "01125",
+            "01133"
+          ],
+          [
+            "01128",
+            "01126|01127",
+            "01124"
+          ]
+        ],
+        "steps": [
+          "조우 세트 5종(한밤의 가면·으스스한 한기·나이트건트·어둠의 사교·잠긴 문)을 모은다.",
+          "‘우몰도스의 사교도’ 5장을 섞어 별도의 ‘추종자 덱’으로 치워 둔다.",
+          "‘아컴 번화가’(01130/01131)·‘아컴 남부’(01126/01127)를 각각 무작위 1장 플레이, 나머지는 게임에서 제거.",
+          "아컴 북부·아컴 동부·아컴 강변·세인트 메리 병원·묘지·미스캐토닉 대학·당신의 집을 플레이(권장 배치 3×3).",
+          "인원별 ‘사교도 시종’: 1인 없음 / 2인 아컴 남부 / 3인 +아컴 번화가 / 4인 +묘지(각자 강제 효과로 파멸 1).",
+          "기록 ‘집이 불타버렸다’ → ‘당신의 집’ 제거, 모두 ‘아컴 강변’ 시작 / ‘집이 남아 있다’ → 모두 ‘당신의 집’ 시작.",
+          "남은 조우 카드를 섞어 조우 덱(21장 − 셋업에 쓴 사교도 시종).",
+          "기록 ‘구울 사제 생존’ → ‘구울 사제’를 조우 덱에 섞음(당신의 집이 있으면 그곳에 출현).",
+          "주의: 적 위의 파멸도 주요사건 파멸 합계에 포함."
+        ]
+      },
+      "act_deck": [
+        {
+          "code": "01123",
+          "stage": 1,
+          "clues": null,
+          "per_investigator": false,
+          "action": "[action] 조사자당 단서 2개를 그룹으로 지불 → 추종자 덱 맨 위 카드를 뽑음.",
+          "objective": "승점 더미에 고유 [[추종자]] 적이 6종이면 진행(추종자 덱엔 5종뿐, 6번째는 가면 쓴 사냥꾼).",
+          "on_advance": "→ R1.",
+          "name_ko": "음모를 밝혀내다",
+          "name_en": "Uncovering the Conspiracy",
+          "back_name_ko": "비밀이 드러나다",
+          "back_name_en": "Secrets Unveiled"
+        }
+      ],
+      "agenda_deck": [
+        {
+          "code": "01121a",
+          "stage": 1,
+          "doom": 6,
+          "constant": "[action] 후퇴(어느 장소에서나).",
+          "on_advance": "카드를 뒤집으면 적 ‘가면 쓴 사냥꾼’(01121b) — 먹잇감(단서 최다) 조사자와 교전 상태로 출현.",
+          "name_ko": "사냥꾼인가 사냥감인가?",
+          "name_en": "Predator or Prey?",
+          "back_name_ko": "가면 쓴 사냥꾼(적)",
+          "back_name_en": "The Masked Hunter (enemy)"
+        },
+        {
+          "code": "01122",
+          "stage": 2,
+          "doom": 8,
+          "constant": "[action] 후퇴(어느 장소에서나).",
+          "on_advance": "→ R2(자정).",
+          "name_ko": "시간이 얼마 남지 않았다",
+          "name_en": "Time Is Running Short",
+          "back_name_ko": "자정을 알리는 종이 울리다",
+          "back_name_en": "The Clock Strikes Midnight"
+        }
+      ],
+      "resolutions": [
+        {
+          "id": "no_resolution",
+          "condition": "모든 조사자가 후퇴 또는 쓰러짐.",
+          "effects": [
+            "결말 1을 그대로 적용"
+          ],
+          "goto": "R1",
+          "log": [],
+          "xp": "R1과 동일",
+          "next": "R1 참조"
+        },
+        {
+          "id": "R1",
+          "condition": "주요목적 1a 목표 달성(고유 추종자 6종) 또는 결말 없음.",
+          "effects": [
+            "심문한 추종자: 승점 더미의 고유 [[추종자]] 적 기록",
+            "도망친 추종자: 추종자 덱에 남았거나 플레이 중인 고유 적 기록. 주요사건 1 상태였다면 ‘가면 쓴 사냥꾼’도 기록",
+            "구울 사제가 승점 더미에 있으면 ‘구울 사제 생존’ 기록 삭제",
+            "XP: 승점만"
+          ],
+          "log": [
+            "cultists_interrogated",
+            "cultists_escaped"
+          ],
+          "log_rules": {
+            "cultists_interrogated": "승점 더미의 고유 [[추종자]] 적",
+            "cultists_escaped": "추종자 덱 잔여 + 플레이 중인 고유 적 (+주요사건 1이면 01121b)"
+          },
+          "log_clear": [
+            {
+              "id": "ghoul_priest_alive",
+              "if": "01116이 승점 더미에 있음"
+            }
+          ],
+          "xp": "승점",
+          "xp_bonus": {
+            "all": 0,
+            "lead": 0
+          },
+          "next": "3편 셋업: 도망친 추종자 수 → 주요사건 1a 파멸 / 주요목적 1b 출현"
+        },
+        {
+          "id": "R2",
+          "condition": "주요사건 2가 진행(자정).",
+          "effects": [
+            "심문한/도망친 추종자 기록(R1과 동일, 가면 쓴 사냥꾼 자동 추가 없음)",
+            "기록: 자정이 지났다",
+            "구울 사제가 승점 더미에 있으면 기록 삭제",
+            "XP: 승점만"
+          ],
+          "log": [
+            "cultists_interrogated",
+            "cultists_escaped",
+            "past_midnight"
+          ],
+          "log_rules": {
+            "cultists_interrogated": "승점 더미의 고유 [[추종자]] 적",
+            "cultists_escaped": "추종자 덱 잔여 + 플레이 중인 고유 적"
+          },
+          "log_clear": [
+            {
+              "id": "ghoul_priest_alive",
+              "if": "01116이 승점 더미에 있음"
+            }
+          ],
+          "xp": "승점",
+          "xp_bonus": {
+            "all": 0,
+            "lead": 0
+          },
+          "next": "3편: 위 효과 + 시작 손 무작위 2장 버림"
+        }
+      ],
+      "resign": "주요사건 1a·2a의 [action](장소 무관)",
+      "named_spawns": {
+        "01137": "아컴 번화가(01130/01131)",
+        "01138": "01133",
+        "01139": "01129",
+        "01140": "01134",
+        "01141": "01128",
+        "01121b": "먹잇감(단서 최다)과 교전",
+        "01169": "빈 장소",
+        "01170": "빈 장소",
+        "01116": "01124(있으면)"
+      },
+      "victory_sources": [
+        {
+          "code": "01129",
+          "vp": 1
+        },
+        {
+          "code": "01131",
+          "vp": 1,
+          "note": "선택된 경우"
+        },
+        {
+          "code": "01133",
+          "vp": 1
+        },
+        {
+          "code": "01134",
+          "vp": 1
+        },
+        {
+          "code": "01137",
+          "vp": 1
+        },
+        {
+          "code": "01138",
+          "vp": 1
+        },
+        {
+          "code": "01139",
+          "vp": 1
+        },
+        {
+          "code": "01140",
+          "vp": 1
+        },
+        {
+          "code": "01141",
+          "vp": 1
+        },
+        {
+          "code": "01121b",
+          "vp": 2
+        },
+        {
+          "code": "01116",
+          "vp": 2,
+          "note": "생존 기록 시"
+        }
+      ],
+      "story_cards": [
+        {
+          "code": "01121b",
+          "role": "주요사건 1a 뒷면 적. 체력 4+2×인원, 먹잇감=단서 최다, Hunter. 교전 중 단서 발견·소비 불가."
+        },
+        {
+          "code": "01138",
+          "role": "협상: 손 카드 4장 선택해 버림 → 승점 더미."
+        },
+        {
+          "code": "01139",
+          "role": "협상: 단서 2 소비 → 승점 더미."
+        },
+        {
+          "code": "01140",
+          "role": "협상: 자원 5 소비 → 승점 더미."
+        },
+        {
+          "code": "01141",
+          "role": "강제: 회피당한 후 승점 더미."
+        },
+        {
+          "code": "01137",
+          "role": "강제: 공격할 때 자신 피해 1 회복."
+        }
+      ],
+      "locations": [
+        "01124",
+        "01125",
+        "01126",
+        "01127",
+        "01128",
+        "01129",
+        "01130",
+        "01131",
+        "01132",
+        "01133",
+        "01134"
+      ],
+      "adjacency_revealed": [
+        [
+          "01124",
+          "01125"
+        ],
+        [
+          "01125",
+          "01132"
+        ],
+        [
+          "01125",
+          "01129"
+        ],
+        [
+          "01125",
+          "01126"
+        ],
+        [
+          "01125",
+          "01127"
+        ],
+        [
+          "01125",
+          "01133"
+        ],
+        [
+          "01126",
+          "01129"
+        ],
+        [
+          "01126",
+          "01128"
+        ],
+        [
+          "01127",
+          "01129"
+        ],
+        [
+          "01127",
+          "01128"
+        ],
+        [
+          "01128",
+          "01129"
+        ],
+        [
+          "01129",
+          "01134"
+        ],
+        [
+          "01130",
+          "01132"
+        ],
+        [
+          "01130",
+          "01134"
+        ],
+        [
+          "01131",
+          "01132"
+        ],
+        [
+          "01131",
+          "01134"
+        ]
+      ],
+      "engine_notes": [
+        "추종자 덱: 조우 덱과 별개 덱. 주요목적 1a [action](조사자당 단서 2, 그룹 지불)으로 맨 위를 뽑아 조우 카드처럼 해결(각 카드의 출현 지시 장소에 출현).",
+        "쓰러뜨리지 않고 적을 승점 더미에 넣는 경로 필요: 적 카드의 협상 [action](헤르만 콜린스·피터 워렌·빅토리아 데버루), 루스 터너는 회피당한 후 강제.",
+        "주요사건 1a의 뒷면이 적 카드(01121b, 같은 물리 카드) — 주요사건 진행 = 적 출현. 교전 중 단서 발견·소비 금지 제약.",
+        "적 위 파멸이 주요사건 파멸 합계에 포함(사교도 시종·교단의 마법사·기이한 주문·[cultist] 토큰). 후퇴가 장소가 아닌 주요사건 카드 [action] → 어디서나 가능.",
+        "같은 이름 장소 2종(아컴 남부·아컴 번화가) 중 무작위 1장, 게임당/그룹당 1회 제한 장소 능력 다수, 결말에서 캠페인 기록에 ‘카드 목록’ 저장."
+      ]
+    },
+    {
+      "id": "tentacles",
+      "scenario_card": "01142",
+      "name_ko": "지하 세계의 포식자",
+      "name_en": "The Devourer Below",
+      "header": "시나리오 III",
+      "encounter_sets": [
+        "tentacles",
+        "ancient_evils",
+        "striking_fear",
+        "ghouls",
+        "pentagram"
+      ],
+      "random_encounter_sets": {
+        "pick": 1,
+        "from": [
+          "agents_of_yog",
+          "agents_of_shub",
+          "agents_of_cthulhu",
+          "agents_of_hastur"
+        ],
+        "hidden": true,
+        "others": "removed"
+      },
+      "encounter_deck": {
+        "total": 29,
+        "by_set": {
+          "tentacles": 2,
+          "ancient_evils": 3,
+          "striking_fear": 7,
+          "ghouls": 7,
+          "pentagram": 6,
+          "agents_random_1": 4
+        },
+        "adjust": "+1 구울 사제(생존 기록 시)"
+      },
+      "token_effects": {
+        "easy_standard": {
+          "skull": "−X (X=플레이 중인 [[괴물]] 적 수)",
+          "cultist": "−2. 가장 가까운 적에 파멸 1",
+          "tablet": "−3. 당신 장소에 [[괴물]] 적이 있으면 피해 1",
+          "elder_thing": "−5. [[고대의 존재]] 적이 플레이 중이면 토큰 1개 추가 공개"
+        },
+        "hard_expert": {
+          "skull": "−3. 실패 시 테스트 후 조우 덱·버린 조우 카드 더미에서 [[괴물]] 적 1장을 찾아 뽑고 조우 덱 섞기",
+          "cultist": "−4. 가장 가까운 적에 파멸 2",
+          "tablet": "−5. 당신 장소에 [[괴물]] 적이 있으면 피해 1·공포 1",
+          "elder_thing": "−7. [[고대의 존재]] 적이 플레이 중이면 토큰 1개 추가 공개"
+        }
+      },
+      "token_modifiers": {
+        "easy_standard": {
+          "skull": {
+            "modifier": "-X",
+            "x": "플레이 중인 [[괴물]] 적 수"
+          },
+          "cultist": {
+            "modifier": -2,
+            "effect": "가장 가까운 적에 파멸 1"
+          },
+          "tablet": {
+            "modifier": -3,
+            "effect": "당신 장소에 [[괴물]] 적이 있으면 피해 1"
+          },
+          "elder_thing": {
+            "modifier": -5,
+            "effect": "[[고대의 존재]] 적이 플레이 중이면 토큰 1개 추가 공개"
+          }
+        },
+        "hard_expert": {
+          "skull": {
+            "modifier": -3,
+            "on_fail": "테스트 후 조우 덱·버린 조우 카드 더미에서 [[괴물]] 적 1장을 찾아 뽑고 조우 덱 섞기"
+          },
+          "cultist": {
+            "modifier": -4,
+            "effect": "가장 가까운 적에 파멸 2"
+          },
+          "tablet": {
+            "modifier": -5,
+            "effect": "당신 장소에 [[괴물]] 적이 있으면 피해 1·공포 1"
+          },
+          "elder_thing": {
+            "modifier": -7,
+            "effect": "[[고대의 존재]] 적이 플레이 중이면 토큰 1개 추가 공개"
+          }
+        }
+      },
+      "setup": {
+        "in_play": [
+          "01149"
+        ],
+        "random_choices": [
+          {
+            "pick": 4,
+            "from": [
+              "01150",
+              "01151",
+              "01152",
+              "01153",
+              "01154",
+              "01155"
+            ],
+            "others": "removed",
+            "unrevealed": true,
+            "label": "아컴의 숲"
+          }
+        ],
+        "set_aside": [
+          "01156",
+          "01157"
+        ],
+        "removed": [],
+        "removed_note": "뽑히지 않은 아컴의 숲 2장, 뽑히지 않은 권속 세트 3종",
+        "start_location": "01149",
+        "conditional": [
+          {
+            "if_log_count": "cultists_escaped",
+            "table": {
+              "0": 0,
+              "1": 1,
+              "2": 1,
+              "3": 2,
+              "4": 2,
+              "5": 3,
+              "6": 3
+            },
+            "then": "주요사건 1a에 표의 수만큼 파멸"
+          },
+          {
+            "always": true,
+            "then": "혼돈 주머니에 elder_thing 1개 추가(캠페인 잔여 기간)"
+          },
+          {
+            "if_log": "past_midnight",
+            "then": "각 플레이어는 시작 손에서 무작위 2장 버림"
+          },
+          {
+            "if_log": "ghoul_priest_alive",
+            "then": "‘구울 사제’(01116)를 조우 덱에 섞음"
+          }
+        ],
+        "steps": [
+          "조우 세트 5종(지하 세계의 포식자·고대의 악·엄습하는 공포·구울·어둠의 사교)을 모은다.",
+          "‘큰길’ 플레이. ‘아컴의 숲’ 6장을 섞어 무작위 4장을 공개 면을 보지 않고 플레이, 나머지 2장은 게임에서 제거. 모두 ‘큰길’에서 시작.",
+          "‘의식 장소’와 ‘우몰도스’를 치워 둔다.",
+          "권속 세트 4종(요그소토스·슈브 니구라스·크툴루·하스터) 중 1개를 무작위로 골라 보지 않고 나머지 조우 카드와 섞어 조우 덱(29장). 나머지 3종 제거.",
+          "기록 ‘도망친 추종자’ 수: 1–2 → 주요사건 1a에 파멸 1, 3–4 → 2, 5–6 → 3(0이면 없음).",
+          "혼돈 주머니에 elder_thing 토큰 1개 추가(캠페인 잔여 기간).",
+          "기록 ‘자정이 지났다’ → 각 플레이어는 시작 손에서 무작위 2장 버림.",
+          "기록 ‘구울 사제 생존’ → ‘구울 사제’를 조우 덱에 섞음."
+        ]
+      },
+      "act_deck": [
+        {
+          "code": "01146",
+          "stage": 1,
+          "clues": 3,
+          "per_investigator": true,
+          "objective": null,
+          "on_advance": "의식 장소가 없으면 플레이 → ‘도망친 추종자’에 기록된 적을 보유 게임에서 찾아 모두 ‘큰길’에 출현.",
+          "name_ko": "흔적을 조사하다",
+          "name_en": "Investigating the Trail",
+          "back_name_ko": "계획이 드러나다",
+          "back_name_en": "Unveiling the Plan"
+        },
+        {
+          "code": "01147",
+          "stage": 2,
+          "clues": null,
+          "per_investigator": false,
+          "objective": "조사자가 ‘의식 장소’에 들어가면 진행.",
+          "on_advance": "버린 조우 카드 더미를 조우 덱에 섞고 적 1장(3인 이상 2장)이 나올 때까지 버림 → 버린 적을 의식 장소에 출현.",
+          "name_ko": "어둠 속으로",
+          "name_en": "Into the Darkness",
+          "back_name_ko": "마지막 의식",
+          "back_name_en": "Last Rites"
+        },
+        {
+          "code": "01148",
+          "stage": 3,
+          "clues": null,
+          "per_investigator": false,
+          "action": "[action] 단서 1 소비: [willpower](3) 또는 [agility](3) 테스트, 성공 시 이 주요목적에 단서 1.",
+          "objective": "이 주요목적에 단서가 조사자당 2개면 진행.",
+          "on_advance": "→ R1.",
+          "name_ko": "의식 방해",
+          "name_en": "Disrupting the Ritual",
+          "back_name_ko": "의식이 깨지다",
+          "back_name_en": "The Ritual Is Broken"
+        }
+      ],
+      "agenda_deck": [
+        {
+          "code": "01143",
+          "stage": 1,
+          "doom": 4,
+          "constant": null,
+          "on_advance": "버린 조우 카드 더미를 조우 덱에 섞고 [[괴물]] 적이 나올 때까지 버림 → 그 적을 큰길에 출현 + 파멸 1.",
+          "name_ko": "아컴의 숲",
+          "name_en": "The Arkham Woods",
+          "back_name_ko": "침입자에게 죽음을",
+          "back_name_en": "Death to the Intruders"
+        },
+        {
+          "code": "01144",
+          "stage": 2,
+          "doom": 5,
+          "constant": "모든 적 전투 +1·회피 +1.",
+          "on_advance": "플레이어 순서대로 [willpower](6) 테스트, 실패자는 보유 게임의 무작위 기본 [[정신이상]] 약점 1장을 손에 추가.",
+          "name_ko": "의식이 시작되다",
+          "name_en": "The Ritual Begins",
+          "back_name_ko": "우몰도스의 의지",
+          "back_name_en": "The Will of Umôrdhoth"
+        },
+        {
+          "code": "01145",
+          "stage": 3,
+          "doom": 5,
+          "constant": "강제(진행할 때): 주요목적 1이면 의식 장소 플레이 + 우몰도스 출현 / 주요목적 2·3이면 의식 장소의 적 모두 버리고 우몰도스 출현(의식 장소).",
+          "on_advance": "뒷면 ‘지하 세계의 포식자’가 현재 주요목적과 주요사건을 모두 대체(한 장이 두 역할). 목표: 우몰도스를 쓰러뜨리면 → R2.",
+          "name_ko": "복수의 때가 오다",
+          "name_en": "Vengeance Awaits",
+          "back_name_ko": "지하 세계의 포식자",
+          "back_name_en": "The Devourer Below"
+        }
+      ],
+      "resolutions": [
+        {
+          "id": "no_resolution",
+          "condition": "모든 조사자가 후퇴 또는 쓰러짐.",
+          "effects": [
+            "기록: 아컴이 무릎을 꿇다",
+            "생존한 조사자 전원 사망(후퇴한 조사자 포함)",
+            "캠페인 패배"
+          ],
+          "log": [
+            "arkham_succumbed"
+          ],
+          "xp": "없음",
+          "xp_bonus": null,
+          "trauma": "전원 사망",
+          "campaign_result": "lose",
+          "next": "캠페인 종료(패배)"
+        },
+        {
+          "id": "R1",
+          "condition": "주요목적 3 목표 달성(의식 방해).",
+          "effects": [
+            "기록: 의식을 분쇄하다",
+            "각 조사자 정신적 트라우마 2",
+            "XP: 승점 + 5",
+            "승리"
+          ],
+          "log": [
+            "ritual_broken"
+          ],
+          "xp": "승점 + 5",
+          "xp_bonus": {
+            "all": 5,
+            "lead": 0
+          },
+          "trauma": "각 정신적 2",
+          "campaign_result": "win",
+          "next": "캠페인 종료(승리)"
+        },
+        {
+          "id": "R2",
+          "condition": "주요사건 3b(주요목적 겸용) 목표: 우몰도스를 쓰러뜨림.",
+          "effects": [
+            "기록: 우몰도스를 격퇴하다",
+            "각 조사자 육체적 2·정신적 2",
+            "XP: 승점 + 10",
+            "승리"
+          ],
+          "log": [
+            "umordhoth_repelled"
+          ],
+          "xp": "승점 + 10",
+          "xp_bonus": {
+            "all": 10,
+            "lead": 0
+          },
+          "trauma": "각 육체적 2·정신적 2",
+          "campaign_result": "win",
+          "next": "캠페인 종료(승리)"
+        },
+        {
+          "id": "R3",
+          "condition": "우몰도스와 같은 장소에서 ‘리타 챈들러’를 조종 중인 조사자가 우몰도스의 [action] 사용.",
+          "effects": [
+            "기록: 리타 챈들러를 희생시켰다",
+            "‘리타 챈들러’를 덱에서 제거",
+            "각 조사자 육체적 2·정신적 2",
+            "각 조사자 무작위 [[정신이상]] 약점 1장을 덱에 추가",
+            "XP: 승점",
+            "생존(부분 승리)"
+          ],
+          "log": [
+            "lita_sacrificed"
+          ],
+          "xp": "승점",
+          "xp_bonus": {
+            "all": 0,
+            "lead": 0
+          },
+          "trauma": "각 육체적 2·정신적 2",
+          "cards": [
+            {
+              "op": "remove",
+              "code": "01117"
+            },
+            {
+              "op": "add",
+              "code": "random_madness_weakness",
+              "who": "each_investigator",
+              "to": "deck"
+            }
+          ],
+          "campaign_result": "survived",
+          "next": "캠페인 종료(생존)"
+        }
+      ],
+      "resign": "큰길(01149)의 [action]",
+      "named_spawns": {
+        "01157": "01156(주요사건 3)",
+        "escaped_cultists": "01149(주요목적 1b)",
+        "agenda_1b_monster": "01149",
+        "act_2b_enemies": "01156"
+      },
+      "victory_sources": [
+        {
+          "code": "01175",
+          "vp": 1,
+          "note": "하스터의 권속"
+        },
+        {
+          "code": "01177",
+          "vp": 1,
+          "note": "요그소토스의 권속"
+        },
+        {
+          "code": "01179",
+          "vp": 1,
+          "note": "슈브 니구라스의 권속"
+        },
+        {
+          "code": "escaped_cultists",
+          "vp": "각 1(가면 쓴 사냥꾼 2)",
+          "note": "1b로 출현한 도망친 추종자"
+        },
+        {
+          "code": "01116",
+          "vp": 2,
+          "note": "생존 기록 시"
+        }
+      ],
+      "story_cards": [
+        {
+          "code": "01157",
+          "role": "최종 보스. 체력 6+4×인원, 사냥꾼·거대한, 각 조사자 차례 끝 준비. [action] 리타 조종 시 → R3. 승점 없음."
+        },
+        {
+          "code": "01156",
+          "role": "치워 둔 장소. 1b 또는 주요사건 3으로 등장, 큰길에만 연결."
+        }
+      ],
+      "locations": [
+        "01149",
+        "01150",
+        "01151",
+        "01152",
+        "01153",
+        "01154",
+        "01155",
+        "01156"
+      ],
+      "adjacency_revealed": [
+        [
+          "01149",
+          "01156"
+        ],
+        [
+          "01149",
+          "01150"
+        ],
+        [
+          "01149",
+          "01151"
+        ],
+        [
+          "01149",
+          "01152"
+        ],
+        [
+          "01149",
+          "01153"
+        ],
+        [
+          "01149",
+          "01154"
+        ],
+        [
+          "01149",
+          "01155"
+        ],
+        [
+          "01150",
+          "01153"
+        ],
+        [
+          "01150",
+          "01152"
+        ],
+        [
+          "01151",
+          "01152"
+        ],
+        [
+          "01151",
+          "01154"
+        ],
+        [
+          "01153",
+          "01155"
+        ],
+        [
+          "01154",
+          "01155"
+        ]
+      ],
+      "engine_notes": [
+        "아컴의 숲 6장 중 무작위 4장을 미공개 배치 — 미공개 면은 모두 동일(square, 연결 squiggle)해 공개 전까지 정체 은닉. 공개 시 기호·연결이 바뀌므로 연결 그래프를 면 상태별로 재계산(공개된 숲 6장은 6각 고리).",
+        "‘큰길’은 텍스트로 모든 [[숲]] 장소와 연결(특성 기반 연결). ‘의식 장소’는 큰길에만 연결되고 라운드 종료 시 단서를 조사자당 2개까지 보충.",
+        "주요사건 3b는 현재 주요목적·주요사건을 동시에 대체하는 단일 카드(두 역할, 파멸 한계 없음, 목표=우몰도스를 쓰러뜨림). 대체 시 주요목적 3 진행도는 소멸.",
+        "우몰도스: 거대한, 각 조사자 차례 끝마다 준비, 체력 6+4×인원, [action]은 캠페인 카드 ‘리타’를 조종할 때만 사용 가능(→R3).",
+        "캠페인 기록 연동: 도망친 추종자 수 → 셋업 파멸, 목록 → 1b에서 보유 게임의 카드 생성·출현(가면 쓴 사냥꾼은 01121 뒷면). 2b·R3는 보유 게임의 무작위 정신이상 약점을 요구, 숲 장소는 조사 능력치 대체·이동 취소."
+      ]
+    }
+  ],
+  "locations": {
+    "01111": {
+      "scenario": "torch",
+      "name_ko": "서재",
+      "name_en": "Study",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": null,
+      "traits_en": null,
+      "front": {
+        "symbol": "circle",
+        "connections": []
+      },
+      "back": {
+        "symbol": "circle",
+        "connections": []
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "in_play_start",
+      "setup_note": null,
+      "ability": "연결 없음(고립). 주요목적 1b에서 게임에서 제거.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/1TheGathering.667111/Study.377b20.gmnotes"
+    },
+    "01112": {
+      "scenario": "torch",
+      "name_ko": "복도",
+      "name_en": "Hallway",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 1,
+      "clues": 0,
+      "clues_per_investigator": false,
+      "victory": null,
+      "traits_ko": null,
+      "traits_en": null,
+      "front": {
+        "symbol": "square",
+        "connections": [
+          "triangle",
+          "plus",
+          "diamond"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "triangle",
+          "plus",
+          "diamond"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "set_aside",
+      "setup_note": null,
+      "ability": "1b 이후 허브. 주요목적 2 목표는 라운드 종료 시 이곳의 조사자만 단서 지불.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/1TheGathering.667111/Set-aside.7a167a/Hallway.ce8846.gmnotes"
+    },
+    "01113": {
+      "scenario": "torch",
+      "name_ko": "다락방",
+      "name_en": "Attic",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 1,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": null,
+      "traits_en": null,
+      "front": {
+        "symbol": "triangle",
+        "connections": [
+          "square"
+        ]
+      },
+      "back": {
+        "symbol": "triangle",
+        "connections": [
+          "square"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "set_aside",
+      "setup_note": null,
+      "ability": "강제: 들어온 후 공포 1. ‘식인귀’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/1TheGathering.667111/Set-aside.7a167a/Attic.cfcb21.gmnotes"
+    },
+    "01114": {
+      "scenario": "torch",
+      "name_ko": "지하실",
+      "name_en": "Cellar",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 4,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": null,
+      "traits_en": null,
+      "front": {
+        "symbol": "plus",
+        "connections": [
+          "square"
+        ]
+      },
+      "back": {
+        "symbol": "plus",
+        "connections": [
+          "square"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "set_aside",
+      "setup_note": null,
+      "ability": "강제: 들어온 후 피해 1. ‘냉기 구울’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/1TheGathering.667111/Set-aside.7a167a/Cellar.b3ccaf.gmnotes"
+    },
+    "01115": {
+      "scenario": "torch",
+      "name_ko": "거실",
+      "name_en": "Parlor",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 0,
+      "clues_per_investigator": false,
+      "victory": null,
+      "traits_ko": null,
+      "traits_en": null,
+      "front": {
+        "symbol": "diamond",
+        "connections": [
+          "square"
+        ]
+      },
+      "back": {
+        "symbol": "diamond",
+        "connections": [
+          "square"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "set_aside",
+      "setup_note": null,
+      "ability": "미공개 면: 진입 불가. 공개 면: [action] 후퇴 / 조종자 없는 ‘리타’에 협상 [action]([intellect] 4 성공 시 조종).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/1TheGathering.667111/Set-aside.7a167a/Parlor.377b20.gmnotes"
+    },
+    "01124": {
+      "scenario": "arkham",
+      "name_ko": "당신의 집",
+      "name_en": "Your House",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "squiggle",
+        "connections": [
+          "circle"
+        ]
+      },
+      "back": {
+        "symbol": "squiggle",
+        "connections": [
+          "circle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "conditional",
+      "setup_note": "집이 남아 있다: 플레이·시작 장소 / 집이 불타버렸다: 게임에서 제거",
+      "ability": "강제: ‘구울 사제’는 이곳에 출현. [action] 카드 1장+자원 1(차례당 1번).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/YourHouse.377b20.gmnotes"
+    },
+    "01125": {
+      "scenario": "arkham",
+      "name_ko": "아컴 강변",
+      "name_en": "Rivertown",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 1,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴. 중심부.",
+      "traits_en": "Arkham. Central.",
+      "front": {
+        "symbol": "circle",
+        "connections": [
+          "moon",
+          "diamond",
+          "square",
+          "squiggle",
+          "hourglass"
+        ]
+      },
+      "back": {
+        "symbol": "circle",
+        "connections": [
+          "moon",
+          "diamond",
+          "square",
+          "squiggle",
+          "hourglass"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "in_play",
+      "setup_note": "집이 불타버렸다면 시작 장소",
+      "ability": "[[중심부]] — ‘어둠의 날개에서’ 이동 목적지. 능력 없음.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Rivertown.af8db2.gmnotes"
+    },
+    "01126": {
+      "scenario": "arkham",
+      "name_ko": "아컴 남부",
+      "name_en": "Southside",
+      "subname_ko": "사학회",
+      "subname_en": "Historical Society",
+      "shroud": 3,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "square",
+        "connections": [
+          "diamond",
+          "plus",
+          "circle"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "diamond",
+          "plus",
+          "circle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_1_of_2",
+      "setup_note": "01126/01127 중 무작위 1장, 나머지 제거",
+      "ability": "[action] 카드 3장 뽑기(게임당 1번).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Southside.19e7d8.gmnotes"
+    },
+    "01127": {
+      "scenario": "arkham",
+      "name_ko": "아컴 남부",
+      "name_en": "Southside",
+      "subname_ko": "마의 하숙집",
+      "subname_en": "Ma's Boarding House",
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "square",
+        "connections": [
+          "diamond",
+          "plus",
+          "circle"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "diamond",
+          "plus",
+          "circle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_1_of_2",
+      "setup_note": "01126/01127 중 무작위 1장, 나머지 제거",
+      "ability": "[action] 덱에서 [[조력자]] 자산 1장 찾아 손으로(게임당 1번).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Southside.076b61.gmnotes"
+    },
+    "01128": {
+      "scenario": "arkham",
+      "name_ko": "세인트 메리 병원",
+      "name_en": "St. Mary's Hospital",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "plus",
+        "connections": [
+          "diamond",
+          "square"
+        ]
+      },
+      "back": {
+        "symbol": "plus",
+        "connections": [
+          "diamond",
+          "square"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "in_play",
+      "setup_note": null,
+      "ability": "[action] 피해 3 회복(게임당 1번). ‘루스 터너’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/StMarysHospital.fac63b.gmnotes"
+    },
+    "01129": {
+      "scenario": "arkham",
+      "name_ko": "미스캐토닉 대학",
+      "name_en": "Miskatonic University",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 4,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "diamond",
+        "connections": [
+          "t",
+          "plus",
+          "circle",
+          "square"
+        ]
+      },
+      "back": {
+        "symbol": "diamond",
+        "connections": [
+          "t",
+          "plus",
+          "circle",
+          "square"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "in_play",
+      "setup_note": null,
+      "ability": "[action] 덱 위 6장에서 [[서적]]/[[마법]] 1장 찾아 손으로. ‘피터 워렌’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/MiskatonicUniversity.23b896.gmnotes"
+    },
+    "01130": {
+      "scenario": "arkham",
+      "name_ko": "아컴 번화가",
+      "name_en": "Downtown",
+      "subname_ko": "제일 아컴 은행",
+      "subname_en": "First Bank of Arkham",
+      "shroud": 3,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "triangle",
+        "connections": [
+          "moon",
+          "t"
+        ]
+      },
+      "back": {
+        "symbol": "triangle",
+        "connections": [
+          "moon",
+          "t"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_1_of_2",
+      "setup_note": "01130/01131 중 무작위 1장, 나머지 제거",
+      "ability": "[action] 자원 3 획득(게임당 1번). ‘늑대인간 드류’ 출현지(아컴 번화가).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Downtown.b5b8db.gmnotes"
+    },
+    "01131": {
+      "scenario": "arkham",
+      "name_ko": "아컴 번화가",
+      "name_en": "Downtown",
+      "subname_ko": "아컴 정신 병원",
+      "subname_en": "Arkham Asylum",
+      "shroud": 4,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "triangle",
+        "connections": [
+          "moon",
+          "t"
+        ]
+      },
+      "back": {
+        "symbol": "triangle",
+        "connections": [
+          "moon",
+          "t"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_1_of_2",
+      "setup_note": "01130/01131 중 무작위 1장, 나머지 제거",
+      "ability": "[action] 공포 3 회복(게임당 1번). ‘늑대인간 드류’ 출현지(아컴 번화가).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Downtown.1aa7cb.gmnotes"
+    },
+    "01132": {
+      "scenario": "arkham",
+      "name_ko": "아컴 동부",
+      "name_en": "Easttown",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "moon",
+        "connections": [
+          "circle",
+          "triangle"
+        ]
+      },
+      "back": {
+        "symbol": "moon",
+        "connections": [
+          "circle",
+          "triangle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "in_play",
+      "setup_note": null,
+      "ability": "이곳에 있는 동안 [[조력자]] 자산 비용 −2.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Easttown.692e5f.gmnotes"
+    },
+    "01133": {
+      "scenario": "arkham",
+      "name_ko": "묘지",
+      "name_en": "Graveyard",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 1,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "hourglass",
+        "connections": [
+          "circle"
+        ]
+      },
+      "back": {
+        "symbol": "hourglass",
+        "connections": [
+          "circle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "in_play",
+      "setup_note": null,
+      "ability": "강제: 들어온 후 [willpower](3), 실패 시 공포 2 또는 아컴 강변으로 이동. ‘헤르만 콜린스’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Graveyard.e1b8fc.gmnotes"
+    },
+    "01134": {
+      "scenario": "arkham",
+      "name_ko": "아컴 북부",
+      "name_en": "Northside",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 3,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": 1,
+      "traits_ko": "아컴.",
+      "traits_en": "Arkham.",
+      "front": {
+        "symbol": "t",
+        "connections": [
+          "diamond",
+          "triangle"
+        ]
+      },
+      "back": {
+        "symbol": "t",
+        "connections": [
+          "diamond",
+          "triangle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "in_play",
+      "setup_note": null,
+      "ability": "[action] 자원 5 → 토큰 저장소에서 단서 2(그룹당 게임 1번). ‘빅토리아 데버루’ 출현지.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/2TheMidnightMasks.c38c96/Northside.d2ad6e.gmnotes"
+    },
+    "01149": {
+      "scenario": "tentacles",
+      "name_ko": "큰길",
+      "name_en": "Main Path",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 2,
+      "clues": 0,
+      "clues_per_investigator": false,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "squiggle",
+        "connections": [
+          "square",
+          "plus"
+        ],
+        "connections_trait": [
+          "woods"
+        ]
+      },
+      "back": {
+        "symbol": "squiggle",
+        "connections": [
+          "square",
+          "plus"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "in_play_start",
+      "setup_note": null,
+      "ability": "텍스트: 다른 모든 [[숲]] 장소와 연결. [action] 후퇴.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/MainPath.377b20.gmnotes"
+    },
+    "01150": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "부정한 땅",
+      "subname_en": "Unhallowed Ground",
+      "shroud": 4,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "triangle",
+        "connections": [
+          "squiggle",
+          "hourglass",
+          "diamond"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "강제: 들어온 후 [willpower](4), 실패 시 피해 1·공포 1.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.377b20.gmnotes"
+    },
+    "01151": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "구불구불한 길",
+      "subname_en": "Twisting Paths",
+      "shroud": 3,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "t",
+        "connections": [
+          "squiggle",
+          "diamond",
+          "slash"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "강제: 이곳에서 나갈 때 [intellect](3), 실패 시 이동 취소.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.e90029.gmnotes"
+    },
+    "01152": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "오래된 집",
+      "subname_en": "Old House",
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "diamond",
+        "connections": [
+          "squiggle",
+          "triangle",
+          "t"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "조사 시 [willpower] 사용.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.861e20.gmnotes"
+    },
+    "01153": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "낭떠러지",
+      "subname_en": "Cliffside",
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "hourglass",
+        "connections": [
+          "squiggle",
+          "moon",
+          "triangle"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "조사 시 [agility] 사용.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.47ac26.gmnotes"
+    },
+    "01154": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "뒤얽힌 덤불",
+      "subname_en": "Tangled Thicket",
+      "shroud": 2,
+      "clues": 1,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "slash",
+        "connections": [
+          "squiggle",
+          "t",
+          "moon"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "조사 시 [combat] 사용.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.09c961.gmnotes"
+    },
+    "01155": {
+      "scenario": "tentacles",
+      "name_ko": "아컴의 숲",
+      "name_en": "Arkham Woods",
+      "subname_ko": "조용한 빈 터",
+      "subname_en": "Quiet Glade",
+      "shroud": 1,
+      "clues": 0,
+      "clues_per_investigator": false,
+      "victory": null,
+      "traits_ko": "숲.",
+      "traits_en": "Woods.",
+      "front": {
+        "symbol": "moon",
+        "connections": [
+          "squiggle",
+          "slash",
+          "hourglass"
+        ]
+      },
+      "back": {
+        "symbol": "square",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front",
+      "setup_state": "random_4_of_6_unrevealed",
+      "setup_note": null,
+      "ability": "[action] 피해 1 또는 공포 1 회복(차례당 1번).",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/ArkhamWoods.54354d/ArkhamWoods.e8e04b.gmnotes"
+    },
+    "01156": {
+      "scenario": "tentacles",
+      "name_ko": "의식 장소",
+      "name_en": "Ritual Site",
+      "subname_ko": null,
+      "subname_en": null,
+      "shroud": 3,
+      "clues": 2,
+      "clues_per_investigator": true,
+      "victory": null,
+      "traits_ko": "동굴.",
+      "traits_en": "Cave.",
+      "front": {
+        "symbol": "plus",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "back": {
+        "symbol": "plus",
+        "connections": [
+          "squiggle"
+        ]
+      },
+      "revealed_side": "front",
+      "source": "sced",
+      "image_check": "front+back",
+      "setup_state": "set_aside",
+      "setup_note": null,
+      "ability": "강제: 라운드 종료 시 단서가 조사자당 2 미만이면 2×인원까지 보충.",
+      "sced_file": "decomposed/campaign/Night of the Zealot/CoreNightoftheZealot.64a613/3TheDevourerBelow.2130f0/Set-aside.7a167a/RitualSite.372a95.gmnotes"
+    }
+  }
+}

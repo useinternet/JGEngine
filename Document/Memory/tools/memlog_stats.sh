@@ -12,11 +12,11 @@ STEP="${2:-40000}"
 echo "== 총계 =="
 echo "lines: $(wc -l < "$F")"
 echo "allocs: $(grep -c '\] Allocated ' "$F")  deallocs: $(grep -c '\] Deallocated ' "$F")  dismatch: $(grep -c 'Dismatch' "$F")"
-echo "chunk init: $(grep -c 'Chunk Initizlie' "$F")  chunk shutdown: $(grep -c 'Chunk Shutdown' "$F")  error/critical: $(grep -cE '\[(error|critical)\]' "$F" || true)"
+echo "chunk init: $(grep -c 'Chunk Initi' "$F")  chunk shutdown: $(grep -c 'Chunk Shutdown' "$F")  error/critical: $(grep -cE '\[(error|critical)\]' "$F" || true)"
 echo "memory lines: $(grep -c '\[Memory\]' "$F")  PSO created: $(grep -c 'Graphics PSO created' "$F" || true)"
 echo
 echo "== 청크 ID (첫 번째가 메인 스레드) =="
-grep -oE "\[ID: [0-9]+\] Memory Chunk Initizlie" "$F" | grep -oE "[0-9]+" || true
+grep -oE "\[ID: [0-9]+\] Memory Chunk Initi" "$F" | grep -oE "[0-9]+" || true
 echo
 
 awk -v step="$STEP" '

@@ -1,0 +1,215 @@
+===== 2026-09-28 GameFrameWorks.vcxproj (main tree, with references) =====
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+
+===== JGConsole.vcxproj =====
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+
+===== JGConsole.exe simtest =====
+[:24096:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 2275667406676754187. pages are created on first request
+[:24096:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:24096:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:24096:][info][Core]: Recognized Class List...
+[:24096:][info][GameFrameWorks]: GameFrameWorks module startup
+== Simulation self test ==
+  [PASS] initial state has 3 units
+  [PASS] start emits GameStarted
+  [PASS] start emits TurnStarted
+  [PASS] phase is TurnMain after start
+  [PASS] first actor is first unit in zone
+  [PASS] EnumerateLegal for first actor = 4 (EndTurn + 2 TestAct + TestPickAct), got 4
+  [PASS] TestAct executed ()
+  [PASS] target value 10 - (3 + 2 bonus) = 5, got 5
+  [PASS] TestValueChanged emitted
+  [PASS] event cause sequence is 0 for first command
+  [PASS] acting out of turn is rejected ()
+  [PASS] EndTurn executed
+  [PASS] current actor advanced to second unit
+  [PASS] EndTurn emits TurnEnded and TurnStarted
+  [PASS] lethal TestAct executed
+  [PASS] target destroyed at 0
+  [PASS] EntityDestroyed emitted
+  [PASS] trigger healed attacker 5 -> 6, got 6
+  [PASS] trigger reaction event has depth >= 1
+  [PASS] command log has 3 commands
+  [PASS] state changed after extra EndTurn
+  [PASS] Undo succeeds
+  [PASS] checksum restored after Undo
+  [PASS] command log restored after Undo
+  [PASS] Save succeeds
+  [PASS] Load succeeds
+  [PASS] loaded checksum equals saved checksum
+  [PASS] loaded command log has 3 commands
+  [PASS] loaded simulation accepts commands
+[:24096:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 0.88 MB)
+  [PASS] Replay succeeds
+  [PASS] replayed checksum equals original
+[:24096:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:24096:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.00 MB)
+  [PASS] 3 runs produce identical checksums (16846252102020713744)
+[:24096:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+  [PASS] TestPickAct returns PendingChoice
+  [PASS] ChoiceRequested emitted
+  [PASS] pending choice has 2 candidates
+  [PASS] other commands rejected while choice pending
+  [PASS] non-candidate selection rejected (choice pending)
+  [PASS] Save while pending succeeds
+  [PASS] loaded simulation keeps pending choice
+  [PASS] ResolveChoice executed ()
+  [PASS] ChoiceResolved emitted
+  [PASS] picked target 10 - (1 + 2 bonus) = 7, got 7
+  [PASS] no pending choice after resolve
+  [PASS] loaded simulation resolves the same choice
+[:24096:][info][Memory]: [ID: 0] class 4096 B grew to 4 pages (60 blocks, growth #3, chunk committed 1.19 MB)
+[:24096:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 1.28 MB)
+  [PASS] random agent played 18 steps
+  [PASS] sequence equals steps played
+  [PASS] greedy agent played 12 steps
+[:24096:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 1.31 MB)
+  [PASS] random agent runs are reproducible
+  [PASS] hex distance (0,0)-(2,-1) = 2
+  [PASS] hex distance (0,0)-(3,0) = 3
+  [PASS] square path around a blocked cell has 4 steps, got 4
+  [PASS] path ends at the goal
+  [PASS] board SetPosition succeeds
+  [PASS] OccupantAt returns the unit
+  [PASS] cannot move onto a blocked cell
+  [PASS] square range 1 around center = 5 cells, got 5
+  [PASS] same seed gives same random sequence
+  [PASS] random stream counts calls
+  [PASS] shuffle keeps all entities
+  [PASS] shuffle is a permutation
+== Simulation self test: 60 passed, 0 failed ==
+[:24096:][info][SimulationSelfTest]: Simulation self test: 60 passed, 0 failed
+simtest: OK (0 failures)
+[:24096:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:24096:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 22, committed 1.31 MB, live blocks 0, remote pending 0 (total 0), large live 0
+
+===== 2026-09-28 18:0x GameInstance 추가 후 재빌드 (GameFrameWorks.vcxproj) =====
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  WorldSelfTest.cpp
+  SimulationAgent.cpp
+  SimulationTrigger.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\GameFrameWorks.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GameFrameWorks.exp 개체를 생성하고 있습니다.
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+
+===== JGConsole.vcxproj =====
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  Main.cpp
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+
+===== JGConsole.exe simtest (Simulation + World) =====
+[:44096:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 11840126779863713809. pages are created on first request
+[:44096:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:44096:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:44096:][info][Core]: Recognized Class List...
+[:44096:][info][GameFrameWorks]: GameFrameWorks module startup
+== Simulation self test ==
+  [PASS] initial state has 3 units
+  [PASS] start emits GameStarted
+  [PASS] start emits TurnStarted
+  [PASS] phase is TurnMain after start
+  [PASS] first actor is first unit in zone
+  [PASS] EnumerateLegal for first actor = 4 (EndTurn + 2 TestAct + TestPickAct), got 4
+  [PASS] TestAct executed ()
+  [PASS] target value 10 - (3 + 2 bonus) = 5, got 5
+  [PASS] TestValueChanged emitted
+  [PASS] event cause sequence is 0 for first command
+  [PASS] acting out of turn is rejected ()
+  [PASS] EndTurn executed
+  [PASS] current actor advanced to second unit
+  [PASS] EndTurn emits TurnEnded and TurnStarted
+  [PASS] lethal TestAct executed
+  [PASS] target destroyed at 0
+  [PASS] EntityDestroyed emitted
+  [PASS] trigger healed attacker 5 -> 6, got 6
+  [PASS] trigger reaction event has depth >= 1
+  [PASS] command log has 3 commands
+  [PASS] state changed after extra EndTurn
+  [PASS] Undo succeeds
+  [PASS] checksum restored after Undo
+  [PASS] command log restored after Undo
+  [PASS] Save succeeds
+  [PASS] Load succeeds
+  [PASS] loaded checksum equals saved checksum
+  [PASS] loaded command log has 3 commands
+  [PASS] loaded simulation accepts commands
+[:44096:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 0.88 MB)
+[:44096:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+  [PASS] Replay succeeds
+  [PASS] replayed checksum equals original
+[:44096:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.00 MB)
+  [PASS] 3 runs produce identical checksums (16846252102020713744)
+[:44096:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+  [PASS] TestPickAct returns PendingChoice
+  [PASS] ChoiceRequested emitted
+  [PASS] pending choice has 2 candidates
+  [PASS] other commands rejected while choice pending
+  [PASS] non-candidate selection rejected (choice pending)
+[:44096:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 1.12 MB)
+  [PASS] Save while pending succeeds
+  [PASS] loaded simulation keeps pending choice
+  [PASS] ResolveChoice executed ()
+  [PASS] ChoiceResolved emitted
+  [PASS] picked target 10 - (1 + 2 bonus) = 7, got 7
+  [PASS] no pending choice after resolve
+  [PASS] loaded simulation resolves the same choice
+[:44096:][info][Memory]: [ID: 0] class 4096 B grew to 4 pages (60 blocks, growth #3, chunk committed 1.25 MB)
+[:44096:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 1.34 MB)
+  [PASS] random agent played 18 steps
+  [PASS] sequence equals steps played
+  [PASS] greedy agent played 12 steps
+[:44096:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 1.38 MB)
+  [PASS] random agent runs are reproducible
+  [PASS] hex distance (0,0)-(2,-1) = 2
+  [PASS] hex distance (0,0)-(3,0) = 3
+  [PASS] square path around a blocked cell has 4 steps, got 4
+  [PASS] path ends at the goal
+  [PASS] board SetPosition succeeds
+  [PASS] OccupantAt returns the unit
+  [PASS] cannot move onto a blocked cell
+  [PASS] square range 1 around center = 5 cells, got 5
+  [PASS] same seed gives same random sequence
+  [PASS] random stream counts calls
+  [PASS] shuffle keeps all entities
+  [PASS] shuffle is a permutation
+== Simulation self test: 60 passed, 0 failed ==
+[:44096:][info][SimulationSelfTest]: Simulation self test: 60 passed, 0 failed
+== World self test ==
+  [PASS] game instance exists after module startup
+[:44096:][info][GameFrameWorks]: JGGameInstance: world loaded (SelfTestWorld)
+  [PASS] LoadWorld creates the active world
+  [PASS] loaded world has begun play
+  [PASS] director spawned into the world
+  [PASS] director drained the start events
+  [PASS] 3 entity actors bound after start, got 3
+  [PASS] entity id resolves to an actor
+  [PASS] bound actor carries its entity id
+  [PASS] director executed the command ()
+  [PASS] entity actor removed after EntityDestroyed, got 2
+  [PASS] destroyed entity no longer resolves
+  [PASS] command submitted while busy is buffered
+  [PASS] buffered command executed after the presentation drained
+  [PASS] bindings rebuilt after undo (1 -> 2)
+[:44096:][info][GameFrameWorks]: JGGameInstance: world unloaded (SelfTestWorld)
+  [PASS] UnloadWorld ends play and clears the active world
+== World self test: 15 passed, 0 failed ==
+[:44096:][info][WorldSelfTest]: World self test: 15 passed, 0 failed
+simtest: OK (0 failures)
+[:44096:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:44096:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 23, committed 1.38 MB, live blocks 0, remote pending 0 (total 0), large live 0

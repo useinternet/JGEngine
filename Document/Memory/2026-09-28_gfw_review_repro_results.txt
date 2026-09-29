@@ -1,0 +1,57 @@
+GameFrameWorks 리뷰 재현 결과 (2026-09-28)
+환경: 격리 워크트리 = HEAD fcace8f (Core 는 커밋본, 고정 풀) + 메인 트리 GameFrameWorks 스냅샷(20:32 기준 동일) + JGConsole 에 ReviewRepro.cpp
+빌드: GameFrameWorks.vcxproj · JGConsole.vcxproj (DevelopEngine|x64, BuildProjectReferences=false) 오류 0
+재현 코드: Document/Memory/tools/gfw_review_repro/ReviewRepro.cpp  보고서: Document/GameFrameWorks_설계코드리뷰_2026-09-28.md
+
+===== 기준선: JGConsole.exe simtest (종료 코드 0) =====
+== Simulation self test: 60 passed, 0 failed ==
+== World self test: 15 passed, 0 failed ==
+simtest: OK (0 failures)
+
+===== JGConsole.exe simreview (종료 코드 0) =====
+== GameFrameWorks review repro ==
+[REPRODUCED]     R1 SetBoardPosition(stale id) : new entity E1.2 reuses B's index=yes, its position=LOST (expected (2, 2)), occupant(3,3)=E1.1 alive=NO (phantom), occupant(2,2)=E1.2
+[REPRODUCED]     R2 Add<T>(stale id) : new entity value=-1 (expected 50), components on dead ids in Each<T>=1
+[REPRODUCED]     R3 MoveToZone(stale id) : dead B in Graveyard=yes, ZoneChanged event index 3 after EntityDestroyed index 0
+[REPRODUCED]     R4 RequestChoice from trigger : submit=2, B after damage=7, after ResolveChoice=4 (expected 7: the damage effect ran again), resolve result=1 
+[REPRODUCED]     R5 RequestChoice from handler : submit result=1 (1=Executed, 2=PendingChoice), pending choice=none, ChoiceRequested event=none
+[REPRODUCED]     R6a end-of-turn effect resolves in next turn : effect from TurnEnded(A=E0.1) resolved with CurrentActor=E1.1 phase=4 (TurnEnd=5, TurnMain=4); probe event index 5, next TurnStarted index 3
+[REPRODUCED]     R9 CauseSequence of Start == first command : Start events cause=0, first command events cause=0
+[REPRODUCED]     R6b RoundStarted effects resolve after OrderResolve : C initiative set to 3 by a RoundStarted trigger (D=2), round-1 order=[E0.1, E1.1] (ascending key expects D first)
+[REPRODUCED]     R7 Load skips Finalize : same command after Start: marks=12, after Load (no Start): marks=21, checksum DIFFERENT
+[REPRODUCED]     R8 Emit recursion has no depth guard : nested React->SpawnEntity levels=80 (stopped by the trigger itself), max event depth=80 > MaxEffectDepth=64, EffectDepthExceeded=none
+[REPRODUCED]     R17 write through const state : A=99 B=77 after writing through const HSimulationState&, checksum changed without a command=yes, command log=0
+[REPRODUCED]     R11 spawn+destroy in one tick leaves a zombie : destroyed actor still in world=yes, HasBegunPlay=yes, IsPendingDestroy=yes, GetWorld()=null
+[REPRODUCED]     R12 child GetWorldPosition : GetWorldPosition=(0.0, 0.0, 0.0), expected (6, 2, 3); matrix row 3 = (6.0, 2.0, 3.0)
+[REPRODUCED]     R13 death cue cannot find its actor : B bound before=yes, cue asked for EntityDestroyed 1 time(s), actor found at that moment 0 time(s)
+[REPRODUCED]     R14 non-reflected cue plays as base class : prototype accepted 1 event(s), derived Begin ran 0 time(s) (CreateInstance makes GetClass()=JGSimulationCue)
+[REPRODUCED]     R15 director spawn+destroy in one frame : entity actors in world=3 (alive entities=2), destroyed-but-present actors=1
+== done ==
+
+===== JGConsole.exe simreviewperf (2회, 종료 코드 0) =====
+[NOT REPRODUCED] R10 snapshot stack at limit : avg Submit 0.867 ms with <=20 snapshots, 2.095 ms at the limit of 40 (x2.4), state has 302 entities
+[NOT REPRODUCED] R10 snapshot stack at limit : avg Submit 0.845 ms with <=20 snapshots, 2.104 ms at the limit of 40 (x2.5), state has 302 entities
+(판정 문턱 x3 에 못 미쳐 NOT REPRODUCED 로 찍혔지만, 한도 도달 후 Submit 비용이 x2.4 로 늘어난 측정값이다. 한도 256 은 HEAD 풀이 못 버텨 재지 못함)
+
+===== JGConsole.exe simreview256 (crashwalk 하에서) =====
+R16 submitted 25 commands, snapshots=25
+R16 submitted 50 commands, snapshots=50
+R16 submitted 75 commands, snapshots=75
+=== Exception 0xC0000005 at 00007FFD310E41C2 (firstChance=0) thread 27820 ===
+    write address 0000000000000000
+  #00 [GameFrameWorks.dll+0x1f41c2] GameFrameWorks!std::_Container_proxy::_Container_proxy+0x32  xmemory:1190
+  #01 [GameFrameWorks.dll+0x1e2603] GameFrameWorks!std::_Construct_in_place<std::_Container_proxy,std::_Container_base12 *>+0x83  xutility:257
+  #02 [GameFrameWorks.dll+0x1e113f] GameFrameWorks!std::_Container_base12::_Alloc_proxy<HAllocator<std::_Container_proxy> >+0x5f  xmemory:1210
+  #03 [GameFrameWorks.dll+0x23bd28] GameFrameWorks!std::vector<unsigned int,HAllocator<unsigned int> >::vector<unsigned int,HAllocator<unsigned int> >+0x78  vector:610
+  #04 [GameFrameWorks.dll+0x23eb1a] GameFrameWorks!HSimulationBoardState::HSimulationBoardState+0xaa  :0
+  #05 [GameFrameWorks.dll+0x31cf6f] GameFrameWorks!HSimulationState::HSimulationState+0x7f  SimulationState.cpp:10
+  #06 [GameFrameWorks.dll+0x231dc4] GameFrameWorks!HAllocator<HSimulationState>::construct<HSimulationState,HSimulationState &>+0x54  Allocator.h:44
+  #07 [GameFrameWorks.dll+0x231e33] GameFrameWorks!std::_Normal_allocator_traits<HAllocator<HSimulationState> >::construct<HSimulationState,HSimulationState &>+0x43  xmemory:613
+  #08 [GameFrameWorks.dll+0x227b97] GameFrameWorks!std::_Uninitialized_backout_al<HAllocator<HSimulationState> >::_Emplace_back<HSimulationState &>+0x67  xmemory:1802
+  #09 [GameFrameWorks.dll+0x22c4fa] GameFrameWorks!std::_Uninitialized_copy<HSimulationState *,HSimulationState *,HAllocator<HSimulationState> >+0xaa  xmemory:1856
+  #10 [GameFrameWorks.dll+0x2e3fc7] GameFrameWorks!std::vector<HSimulationState,HAllocator<HSimulationState> >::_Emplace_reallocate<HSimulationState const &>+0x1c7  vector:843
+  #11 [GameFrameWorks.dll+0x2e3dcb] GameFrameWorks!std::vector<HSimulationState,HAllocator<HSimulationState> >::_Emplace_one_at_back<HSimulationState const &>+0x7b  vector:784
+  #12 [GameFrameWorks.dll+0x2e58c7] GameFrameWorks!std::vector<HSimulationState,HAllocator<HSimulationState> >::push_back+0x37  vector:872
+  #13 [GameFrameWorks.dll+0x2e4a25] GameFrameWorks!PSimulationSnapshotStack::Push+0x45  SimulationSnapshotStack.cpp:21
+  #14 [GameFrameWorks.dll+0x2f078a] GameFrameWorks!PSimulation::Submit+0x10a  Simulation.cpp:199
+Process exited with code 3 (0x00000003)

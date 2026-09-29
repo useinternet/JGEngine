@@ -1,7 +1,7 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "ConsoleApp",
-    "ModuleDependencies": [ "Core" ],
+    "ModuleDependencies": [ "Core", "GameFrameWorks" ],
     "ModuleName": "JGConsole",
     "ModulePath": "Source/Programs/JGConsole/",
     "Defines": [

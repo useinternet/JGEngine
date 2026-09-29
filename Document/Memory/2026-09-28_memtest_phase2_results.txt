@@ -1,0 +1,118 @@
+# Memory_TODO 2-6 임시 테스트 결과 (JG_MEMTEST=<mode>, DevelopEngine x64, 2026-09-28). 각 모드를 crashwalk 아래에서 22초 실행. 줄은 spdlog 콘솔 싱크를 crashwalk stdout 으로 받은 것(공유 jg_log.txt 는 다른 세션의 실행이 덮어써 쓰지 않음).
+
+## exhaust32 (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin exhaust32
+[warning][Devkit]: [MemTest] PASS  exhaust32: 8192 blocks of 32 B allocated without nullptr (old pool stopped at 4096)
+[warning][Devkit]: [MemTest] PASS  exhaust32: HList<uint8>(32) works while the class is past its old limit
+[warning][Devkit]: [MemTest] exhaust32: 32 B class pages 1 -> 7, growths 0 -> 6, live 91 -> 8284, total 9548
+[warning][Devkit]: [MemTest] PASS  exhaust32: the 32 B class grew by adding pages (Growths counter)
+[warning][Devkit]: [MemTest] PASS  exhaust32: live counter tracks the 8192 blocks
+[warning][Devkit]: [MemTest] PASS  exhaust32: no block overlap (all 8192 byte patterns intact)
+[warning][Devkit]: [MemTest] exhaust32: after free: live 92, pages 7, empty pages 5 (released by the frame tick after 10 s idle)
+[warning][Devkit]: [MemTest] PASS  exhaust32: live returns to the starting value (+1 for the victim list still in scope)
+[warning][Devkit]: [MemTest] end exhaust32: 0 failure(s), 2.9 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## oversize (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin oversize
+[warning][Devkit]: [MemTest] PASS  oversize: HList<uint8>(2 MB) allocated and writable (old pool threw out_of_range)
+[warning][Devkit]: [MemTest] PASS  oversize: the buffer header is marked Large
+[warning][Devkit]: [MemTest] PASS  oversize: the 2 MB buffer is counted as a live large block of the main chunk
+[warning][Devkit]: [MemTest] PASS  oversize: the freed 2 MB block sits in the large cache
+[warning][Devkit]: [MemTest] end oversize: 0 failure(s), 32.6 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## align (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin align
+[warning][Devkit]: [MemTest] PASS  align: 1000 HList<alignas(32) T> buffers are all 32-byte aligned
+[warning][Devkit]: [MemTest] PASS  align: over-aligned buffers go through the large (aligned) path
+[warning][Devkit]: [MemTest] PASS  align: HList::swap and move-assignment compile and work (HAllocator operator== / is_always_equal)
+[warning][Devkit]: [MemTest] PASS  align: the 1000 freed aligned buffers were cached (released by the frame tick after 10 s idle)
+[warning][Devkit]: [MemTest] end align: 0 failure(s), 51.4 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## stress (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin stress
+[warning][Devkit]: [MemTest] stress: 10 rounds x 10000 blocks each way in 1440.1 ms. worker chunk: remote pending 0 / total 99890, live 0, large live 0. main chunk: remote pending 0 / total 99890, live 2278 -> 2278
+[warning][Devkit]: [MemTest] PASS  stress: no pattern corruption in 200,000 cross-thread blocks
+[warning][Devkit]: [MemTest] PASS  stress: the worker thread got its own chunk
+[warning][Devkit]: [MemTest] PASS  stress: remote free pending is 0 on both chunks after the final drain
+[warning][Devkit]: [MemTest] PASS  stress: worker chunk received exactly the class blocks freed by main (large blocks do not use the remote stack)
+[warning][Devkit]: [MemTest] PASS  stress: every block allocated on the worker is back (live 0, large live 0)
+[warning][Devkit]: [MemTest] PASS  stress: main chunk live is back to the starting value
+[warning][Devkit]: [MemTest] end stress: 0 failure(s), 1440.8 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 99891), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 1, committed 0.06 MB, live blocks 0, remote pending 0 (total 99890), large live 0
+[info][Memory]: [ID: 2] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## largecache (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin largecache
+[warning][Devkit]: [MemTest] PASS  largecache: 2 MB freed -> cached (count +1, bytes +2 MB)
+[warning][Devkit]: [MemTest] FAIL  largecache: 1.6 MB request reused the 2 MB block (2.0 <= 1.6 x 1.25), waste 0.4 MB counted
+[warning][Devkit]: [MemTest] FAIL  largecache: 1.2 MB request did not reuse the 2 MB block (2.0 > 1.2 x 1.25), new block
+[warning][Devkit]: [MemTest] FAIL  largecache: both blocks cached (2 MB + 1.2 MB)
+[warning][Devkit]: [MemTest] largecache: after 70 x (1 MB + 1): cached 63 blocks / 63.00 MB, evict 9
+[warning][Devkit]: [MemTest] PASS  largecache: frees beyond the 64 MB budget evicted the oldest blocks, cache <= 64 MB
+[warning][Devkit]: [MemTest] PASS  largecache: alignment-32 request is 32-byte aligned and bypasses the cache
+[warning][Devkit]: [MemTest] largecache: sleeping 11 s, then Tick
+[warning][Devkit]: [MemTest] PASS  largecache: after 11 s idle, Tick released every cached block
+[warning][Devkit]: [MemTest] end largecache: 3 failure(s), 11030.2 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 14, committed 5.88 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## emptypages (crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin emptypages
+[warning][Devkit]: [MemTest] PASS  emptypages: 3000 x 32 B added at least 2 pages (1364 blocks per 64 KB page)
+[warning][Devkit]: [MemTest] PASS  emptypages: 4 x 1 MB are 4 single-block pages
+[warning][Devkit]: [MemTest] emptypages: after free: 32 B pages 3 (empty 1; the debug quarantine keeps the last 32 frees out of their page), 1 MB pages 4 (empty 4)
+[warning][Devkit]: [MemTest] PASS  emptypages: freed 32 B pages moved to the Empty list and are not released yet
+[warning][Devkit]: [MemTest] PASS  emptypages: the 4 x 1 MB pages are Empty and not released yet
+[warning][Devkit]: [MemTest] emptypages: sleeping 5 s, then Tick
+[warning][Devkit]: [MemTest] PASS  emptypages: Tick at 5 s released nothing (idle < 10 s)
+[warning][Devkit]: [MemTest] PASS  emptypages: a 32 B allocation at 5 s used existing pages (no growth)
+[warning][Devkit]: [MemTest] PASS  emptypages: a 1 MB allocation at 5 s reused an Empty page (EmptyPages -1, no growth)
+[warning][Devkit]: [MemTest] emptypages: sleeping 6 s, then Tick
+[warning][Devkit]: [MemTest] emptypages: after 11 s: 32 B pages 2 (empty 0, releases 1), 1 MB pages 1 (empty 0, releases 3)
+[warning][Devkit]: [MemTest] PASS  emptypages: Tick at 11 s released every idle 32 B page
+[warning][Devkit]: [MemTest] PASS  emptypages: Tick at 11 s released the 3 idle 1 MB pages; the reused one stays
+[warning][Devkit]: [MemTest] PASS  emptypages: chunk committed bytes went down after the release
+[warning][Devkit]: [MemTest] end emptypages: 0 failure(s), 11014.1 ms
+[trace][Graphics]: Graphics PSO created. cache size 1
+[trace][Graphics]: Graphics PSO created. cache size 2
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 16, committed 1.94 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 14, committed 5.88 MB, live blocks 0, remote pending 39 (total 54), large live 0
+Process exited with code 0 (0x00000000)
+
+## largecache — 재실행 (경계 비교 정수화 + 테스트 크기 1,677,722 / 1,258,291 B 로 수정 뒤, 트레이스 빌드. crashwalk rc=0)
+[warning][Devkit]: [MemTest] begin largecache
+[warning][Devkit]: [MemTest] PASS  largecache: 2 MB freed -> cached (count +1, bytes +2 MB)
+[warning][Devkit]: [MemTest] PASS  largecache: 1.6 MB request reused the 2 MB block (2.0 <= 1.6 x 1.25), waste 0.4 MB counted
+[warning][Devkit]: [MemTest] PASS  largecache: 1.2 MB request did not reuse the 2 MB block (2.0 > 1.2 x 1.25), new block
+[warning][Devkit]: [MemTest] PASS  largecache: both blocks cached (2 MB + 1.2 MB)
+[warning][Devkit]: [MemTest] largecache: after 70 x (1 MB + 1): cached 63 blocks / 63.00 MB, evict 8
+[warning][Devkit]: [MemTest] PASS  largecache: frees beyond the 64 MB budget evicted the oldest blocks, cache <= 64 MB
+[warning][Devkit]: [MemTest] PASS  largecache: alignment-32 request is 32-byte aligned and bypasses the cache
+[warning][Devkit]: [MemTest] largecache: sleeping 11 s, then Tick
+[warning][Devkit]: [MemTest] PASS  largecache: after 11 s idle, Tick released every cached block
+[warning][Devkit]: [MemTest] end largecache: 0 failure(s), 11034.6 ms
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 14, committed 0.88 MB, live blocks 0, remote pending 1 (total 1), large live 0
+[info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 14, committed 5.88 MB, live blocks 0, remote pending 44 (total 54), large live 0
+Process exited with code 0 (0x00000000)

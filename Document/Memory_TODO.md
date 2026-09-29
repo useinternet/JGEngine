@@ -71,43 +71,46 @@
 
 상세 설계는 **`Document/Memory_풀재설계_설계_2026-09-28.md`**(자료구조·할당/해제 경로·스레드 모델·통계·검증·결정 4건). 아래 항목의 "결정 필요"는 그 문서 §6과 같다.
 
-- [ ] **2-1. 청크를 페이지 목록으로: 성장형 크기 클래스와 실패 처리** — `Source/Runtime/Core/Memory/MemoryPool.h/.cpp`(`HMemoryChunk::Initialize` 7-44행, `Allocate` 78-100행, `MakeMemoryChunk` 228-251행), `Core/Memory/Memory.h:565-575`, `Core/Memory/Allocator.h:18-32` — `결정 필요`
+- [x] **2-1. 청크를 페이지 목록으로: 성장형 크기 클래스와 실패 처리** — 완료 2026-09-28. `MemoryPool.h/.cpp` 전면 교체(설계 문서 §3, 구현 차이 §3-15): 청크 = 클래스 18개(8B~1MB)의 페이지 목록(64KB `VirtualAlloc`, 32KB 이상은 블록 하나짜리 `malloc` 페이지, lazy). 클래스가 비면 페이지 추가(Info 한 줄, 청크 커밋 16·32·64·128MB 문턱 Warning). 1MB 초과·정렬 16 초과는 대형 경로(요청 크기 그대로 + 캐시: 용량×4 ≤ 요청×5, 예산 64MB, 유휴 10초). 빈 페이지는 같은 클래스가 재사용(LIFO)하고 10초 유휴면 `Tick`(`GMemoryGlobalSystem::Update`)이 회수. 남은 실패는 시스템 힙 실패 하나로 Critical 로그 뒤 `abort()`. 상주 메모리 private 428.5 → 230.2 MB(WS 335.6 → 137.6 MB). `Graphics_TODO.md` 5-23·5-27 종결. 원래 계획: `Source/Runtime/Core/Memory/MemoryPool.h/.cpp`(`HMemoryChunk::Initialize` 7-44행, `Allocate` 78-100행, `MakeMemoryChunk` 228-251행), `Core/Memory/Memory.h:565-575`, `Core/Memory/Allocator.h:18-32` — `결정 필요`
   `HMemoryChunk`가 클래스마다 페이지 목록을 갖게 한다. 페이지는 같은 헤더 형식(`HMemoryHeader`, `OwnerChunkID` 동일)의 블록 N개 묶음이고, 큐가 비면 페이지를 하나 더 만들어 붙인다(**외부 블록을 만들지 않는다**). 페이지 목록은 `std::vector`(풀 자기 자신을 쓸 수 없음). `Shutdown`은 페이지 전부 해제.
   초기 예약은 기준선(메인 피크 2,296블록·303KB, 워커 5.5MB)에 맞춰 스레드당 수 MB로 낮춰 100.69MB 상주를 없앤다.
   성장이 일어나면 Warning 로그 1줄(클래스, 스레드, 페이지 수. 실패 분기이므로 재귀 규칙과 충돌 없음을 확인). `JG_ASSERT("no memory space left.")`(88행)와 `JG_ASSERT(true)`(109행)는 조건식으로. `HasSpace`의 `MemoryQueues.at()`(75행)은 클래스 조회로 바꿔 예외를 없앤다. `GMemoryGlobalSystem::Allocate`의 `new(MemPtr)`(575행)와 `HAllocator::allocate`(18행)에는 `JG_CHECK(ptr != nullptr)`.
   결정 1 — 페이지 크기: 권장 64KB(작은 클래스는 블록 수백 개, 큰 클래스는 최소 4블록). 대안: 클래스별 고정 블록 수.
-  결정 2 — 1MB 초과(클래스 없음): (i) 풀 API 안의 대형 블록 경로(헤더 표식 `OwnerChunkID` 특수값, `Deallocate`가 표식을 먼저 보고 `free`, 별도 카운터. 외부 블록은 이 한 종류만) — 권장. (ii) Critical 로그 후 abort 유지 + `std::vector` 우회 12곳 유지.
-  결정 3 — 대형 블록 기준: (i)를 택하면 64KB 이상을 대형으로 볼지, 1MB 초과만 볼지.
-  완료 조건: 0-2 (a)가 Warning 1줄 뒤 계속 실행(종료 코드 0), (b)가 결정 2대로 동작. 시작 직후 상주 메모리(작업 관리자 Private Bytes)가 기준선보다 150MB 이상 감소. `Graphics_TODO.md` 5-23 종결 표시((i)면 `std::vector` 우회는 2-4 뒤 필요 시 되돌림).
+  결정 2 — **확정 2026-09-28**: 상한 1MB. 초과 요청은 청크가 소유하는 블록 하나짜리 페이지로 요청 크기 그대로 잡고(헤더 32B: `Raw`·`Capacity`·표식 `MemorySize = Large`), 놓으면 풀 전체 대형 캐시에 넣어 재사용한다(요청 ≤ 용량 ≤ 요청 × 1.25, 총량 64MB, 10초 유휴 해제, 프레임 틱은 `GMemoryGlobalSystem::Update`). 상세·시나리오는 설계 문서 §3-9. 캐시 파라미터 세 값(1.25배·64MB·10초)과 페이지 64KB·성장 로그 수준·디버그 채움/격리·회수 방식(메인 Tick + 청크별 뮤텍스)은 **2026-09-28 확정**(설계 문서 §6).
+  결정 3 — **확정 2026-09-28**: 빈 페이지는 개수 제한 없이 같은 클래스가 재사용하고 10초 유휴면 프레임 틱이 회수한다(대형 캐시와 같은 규칙. "보관 1개" 규칙 폐기). Empty·All 페이지 목록만 청크별 뮤텍스, 블록 경로는 무락. 설계 문서 §3-8b.
+  완료 조건: 0-2 (a)가 성장 Info 로그 뒤 계속 실행(종료 코드 0), (b)가 결정 2대로 동작. 시작 직후 상주 메모리(작업 관리자 Private Bytes)가 기준선보다 150MB 이상 감소. `Graphics_TODO.md` 5-23 종결 표시((i)면 `std::vector` 우회는 2-4 뒤 필요 시 되돌림).
 
-- [ ] **2-2. 클래스별 카운터와 통계 도구** — `Core/Memory/MemoryPool.h/.cpp`(`GetStatInfo` 118-150행), `Source/Editor/DevStatistics/MemoryStatistics.cpp:59-61`
+- [x] **2-2. 클래스별 카운터와 통계 도구** — 완료 2026-09-28. `HSizeClass`의 atomic 카운터(live·peak·total·pages·empty·growths·releases·alloc), 청크의 원격 반납·대형 블록 카운터, 풀의 대형 캐시 카운터를 `GetStatInfo`가 relaxed 로 읽기만 한다(락·청크 워크 없음). 위젯(`MemoryStatistics.cpp`): 풀 요약 2줄 + 스레드별 막대(청크마다 자기 값. 옛 `[0]` 버그 수정) + 청크별 클래스 표(live/total·페이지(빈)·성장·회수·사용률·피크. 성장 있으면 노랑, 사용률 90% 이상 빨강). 스크린샷 `Document/Memory/2026-09-28_phase2_memwidget_capture.png`(exhaust32 중 32B 행 성장 6·회수 6). 부수 수정: `HGUI::PlotBarGroups`가 그룹 1개일 때 ImPlot 틱 라벨을 넘겨 읽던 크래시(`GUI.cpp`). 원래 계획: `Core/Memory/MemoryPool.h/.cpp`(`GetStatInfo` 118-150행), `Source/Editor/DevStatistics/MemoryStatistics.cpp:59-61`
   새 청크가 처음부터 클래스별 live/피크/페이지 수(=한도)/성장 횟수, 대형 블록 수·바이트를 갖고 `Allocate`/`Deallocate`에서 O(1)로 증감한다. `GetStatInfo`의 청크 전체 워크(30,768블록)를 카운터 기반으로 바꾼다.
   위젯은 루프 안 `MemoryChunkStateInfos[0]`을 `ChunkStatInfo`로(모든 그룹이 메인 스레드 값을 보이는 버그), 스레드별 막대 아래에 클래스별 사용률(live/한도)·피크·성장 횟수 표, 90% 이상 강조.
   완료 조건: 위젯을 열어 둔 채 0-2 (a)를 돌리면 32B 행의 성장 횟수가 오르는 것이 보이고, 프레임 시간이 위젯 개폐에 따라 달라지지 않는다.
 
-- [ ] **2-3. 스레드 간 해제 경합 제거와 iterator 락** — `Source/Runtime/Core/Memory/MemoryPool.cpp:166-211`
+- [x] **2-3. 스레드 간 해제 경합 제거와 iterator 락** — 완료 2026-09-28. TLS 청크 캐시(모듈 사본은 스레드 id 비교로 1회 보정), 청크 테이블 인덱스 = 헤더 `OwnerChunkID`, 키는 `std::thread::id`(해시 충돌 없음), 타 스레드 반납은 lock-free MPSC 스택에 push 하고 소유 스레드가 다음 할당 때 pop-all(대기 256 이상이면 즉시). `Dismatch` 경고는 없어지고 `RemoteFreeTotal` 카운터로. 스트레스(별도 스레드 ↔ 메인 10라운드 × 10,000블록 × 양방향, 8B~1MB+1 혼합, 바이트 패턴 검증) 손상 0·pending 0·live 복귀, 1.4초. 원래 계획: `Source/Runtime/Core/Memory/MemoryPool.cpp:166-211`
   소유 스레드의 `Allocate`가 청크 큐를 잠금 없이 만지고, 타 스레드 `Deallocate`의 배타 락은 상대가 없어 보호가 안 된다(`Dismatch` 55건/실행). 타 스레드 해제는 소유 청크의 반납 큐(뮤텍스 또는 lock-free 스택)에 넣고 소유 스레드의 다음 `Allocate`가 회수한다. `HMemoryPool::Allocate`가 `shared_lock`을 풀고 쓰는 iterator(옛 P0-6)는 락 안에서 쓴다. `std::hash<std::thread::id>` 충돌 시 청크가 섞이므로 충돌 감지(스케줄러의 시작 시 검사를 풀 쪽으로) 또는 스레드 로컬 인덱스.
   완료 조건: 임시 스트레스 테스트(로드 스레드에서 `HList` 10만 개 할당 → 메인에서 해제, 반대 방향도)를 디버그 빌드에서 10회 돌려 손상·assert 없음. `Dismatch` 경고는 정보 로그로 낮추거나 제거.
 
-- [ ] **2-4. `HAllocator` 완성** — `Source/Runtime/Core/Memory/Allocator.h`
+- [x] **2-4. `HAllocator` 완성** — 완료 2026-09-28. `operator==`/`!=`, `is_always_equal`, `allocate`가 `alignof(T)`를 풀에 전달(16 초과는 대형 정렬 경로), `JG_CHECK(Result != nullptr)`, 메모리 시스템 종료 뒤 `deallocate`는 무시 + 디버그 1회 `OutputDebugString`. `GMemoryGlobalSystem::Allocate<T>`도 `alignof(T)` + `JG_CHECK`. 검증: `alignas(32)` `HList` 1,000개 모두 32의 배수, `HList::swap`·이동 대입 컴파일·동작. `ResourceStagingManager::RecordUploads`의 "복사 후 clear" 우회를 `swap`으로 되돌림. 원래 계획: `Source/Runtime/Core/Memory/Allocator.h`
   `operator==`/`operator!=`(항상 같음)와 `is_always_equal = true_type`(`HList` swap·이동 대입 C2678 해소). `alignof(T)`가 16을 넘으면 정렬 인자를 풀에 전달(현재 정렬은 개수 표가 우연히 맞아 16까지만 보장. 페이지 시작과 블록 stride를 정렬에 맞춘다). 메모리 시스템 해제 뒤 `deallocate`는 지금처럼 무시하되 디버그에서 1회 경고. 이후 `Graphics`·`StagingManager`의 "복사 후 clear" 우회를 swap으로 되돌린다.
   완료 조건: `HList<T>::swap`과 이동 대입이 컴파일된다. `alignas(32)` 타입을 담은 `HList` 임시 테스트에서 주소가 32의 배수.
 
-- [ ] **2-5. 값 타입에서 `IMemoryObject` 분리 검토** — `Source/Runtime/Core/String/String.h`, `String/Name.h`, `Object/JGType.h`, `Memory/Memory.h`(`PSharedPtr`/`PWeakPtr`) — `결정 필요`
+- [x] ~~**2-5. 값 타입에서 `IMemoryObject` 분리 검토**~~ — **하지 않음 (사용자 결정 2026-09-29).** 실익이 작다: 값 하나당 vptr 8B(메인 청크 풀 할당 336KB 규모라 수십 KB 이하), 실제 오용인 `JGType` GC 할당 4곳도 무해해 그대로 둔다. 4-1·7-1의 전제도 아니다. 검토 기록(측정 크기·방안 비교): `Document/Memory_2-5_값타입분리_검토_2026-09-29.md`. 아래는 원래 항목 설명.
   `PString`·`PName`·`JGType`·`PSharedPtr`·`PWeakPtr`이 `IMemoryObject`를 상속해 vptr 8B를 지니고(`PSharedPtr` 32B), `Allocate<>` 대상 표식과 값 타입이 섞여 있다. 권장안: GC 대상 표식을 별도 태그 타입(`IGCObject`)으로 분리하고 값 타입은 상속을 끊는다(`Allocate<PString>` 같은 사용이 있으면 `static_assert`로 드러남). 대안: 현행 유지(문서화만). 4-1(제어 블록)이 이 결정에 영향을 받으므로 여기서 정한다.
   완료 조건(적용 시): `sizeof(PSharedPtr<T>) == 24`, 전체 빌드 오류 0, 리플렉션·JSON 직렬화 회귀 없음(`Allocate(const T&)`로 `JGType`을 만드는 `ObjectGlobals.cpp:42, 58`은 유지 여부 확인).
 
-- [ ] **2-6. Phase 2 검증** — 공통 검증 루프 + 0-2 (a)(b) 재현이 2-1의 정해진 동작을 함 + 상주 메모리 비교 + 2-3 스트레스 테스트 + 2-4 정렬 테스트 + 위젯 클래스별 표 확인. 결과를 기준선 파일에 **v3**로 덧붙인다. 확인 뒤 **0-2·2-3 임시 코드 제거**(`git diff`로 확인. DevScene.cpp의 `runMemoryPoolReproIfRequested`와 호출 1줄).
+- [x] **2-6. Phase 2 검증** — 완료 2026-09-28. (1) 전체 빌드 오류 0, 경고 LNK4098 1(`build_2026-09-28_phase2*.log`). (2) 임시 테스트 6종(`JG_MEMTEST=exhaust32|oversize|align|stress|largecache|emptypages`, crashwalk 아래 실행) **37/37 PASS**, 크래시 0, 종료 코드 0 — `Document/Memory/2026-09-28_memtest_phase2_results.txt`. (3) 트레이스 빌드 60초 리플레이 → 기준선 **v3**(Allocate = Deallocate 354,081, Dismatch 0, 클래스 live 평탄, 종료 0). (4) 상주 메모리 private 428.5 → **230.2 MB**, WS 335.6 → 137.6 MB(`tools/measure_resident.ps1.txt`). (5) 위젯 스크린샷. (6) 종료 로그 `Memory Chunk Shutdown` 청크마다 1줄(pages·committed·live·remote pending), 대형 잔존 0, D3D12 오류 0. (7) 임시 코드 제거(DevScene.cpp 검증 블록·호출, DevStatistics.cpp 위젯 자동 열기). **새 풀이 드러낸 기존 버그 2건 수정**: `PGraphicsPipelineState::BindShader`의 non-const 키 `HPair` 순회(HList 임시 복사 → `_desc.VS/PS` dangling. 설계 문서 §8)와 `HGUI::PlotBarGroups` 그룹 1개 크래시. 원래 계획: 공통 검증 루프 + 0-2 (a)(b) 재현이 2-1의 정해진 동작을 함 + 상주 메모리 비교 + 2-3 스트레스 테스트 + 2-4 정렬 테스트 + 위젯 클래스별 표 확인. 결과를 기준선 파일에 **v3**로 덧붙인다. 확인 뒤 **0-2·2-3 임시 코드 제거**(`git diff`로 확인. DevScene.cpp의 `runMemoryPoolReproIfRequested`와 호출 1줄).
 
-- [ ] **2-7. 커밋** — "메모리 풀 재설계: 페이지 성장형 클래스, 실패 처리, 클래스별 카운터, 스레드 간 해제 큐, HAllocator 완성" (사용자가 직접 커밋). Core/Memory 3파일, DevStatistics/MemoryStatistics.cpp, Devkit/DevScene.cpp(임시 코드 제거), 기준선 파일.
+- [ ] **2-7. 커밋** — "메모리 풀 재설계: 페이지 성장형 클래스, 대형 블록 캐시, 클래스별 카운터, 스레드 간 해제 스택, HAllocator 완성" (사용자가 직접 커밋. 1-5 와 함께 해도 된다). 포함: `Core/Memory/MemoryPool.h/.cpp`·`Allocator.h`·`Memory.h/.cpp`, `Editor/DevStatistics/MemoryStatistics.cpp`, `Graphics/DirectX12/Classes/PipelineState.cpp`(BindShader 키 const)·`ResourceStagingManager.cpp`(swap), `GUI/GUI.cpp`(PlotBarGroups), `Devkit/DevScene.cpp`(임시 코드 제거 뒤 HEAD 와 같음), `Document/Memory/tools/`(memlog_stats.sh 패턴, crashwalk.cpp/.exe 행 덤프, measure_resident.ps1.txt), 문서(`Memory_TODO.md`, 설계 문서, 인수인계, `Graphics_TODO.md` 5-23·5-27), 기준선 v3·테스트 결과·스크린샷·빌드 로그.
 
 ---
 
 ## Phase 3. 풀 밖 할당 흡수 1차 (옛 Phase 2 · 현황분석 E-1~E-3 · 선행 조건 없음, 풀이 성장할 수 있게 된 뒤 진행)
 
+**건너뜀 (사용자 결정 2026-09-29). 아래 3-1~3-5는 하지 않는다.** 세 항목 모두 지금 고칠 문제가 없다. 할당 횟수가 적고(모듈 시작 때 8번, 고유 문자열당 24B 한 번, 32B 넘는 델리게이트 바인딩만), 목적인 "통계에 보이게"도 풀 커밋 약 4MB 대 프로세스 Private 230MB라 거의 달라지지 않는다(나머지는 D3D12 드라이버·ImGui·rapidjson·문자열 본문 등 이 Phase 대상이 아님). 3-1은 적힌 대로 하면 위험하다(아래 주의).
+
 - [ ] **3-1. `HDelegate` 힙 할당을 풀로** — `Source/Runtime/Core/Misc/Delegate.h:66, 81`
   `HDelegates::SetAllocationCallbacks`(81행) 후크가 있는데 호출자가 0이고 기본값이 malloc/free 람다(66행)다. `GCoreSystem::Create`에서 메모리 시스템 등록 직후(`Core/CoreSystem.cpp:36` 다음) 풀 `Allocate`/`Deallocate`로 연결한다. Free 콜백은 `GMemoryGlobalSystem::IsValid()`가 false면 그냥 반환(종료 후 static 델리게이트 대비, `HAllocator::deallocate`와 같은 규칙).
   인라인 버퍼 32B를 넘는 바인딩만 힙을 타므로 크기는 작다. 풀 `Allocate` 안에서 델리게이트를 만드는 경로가 없는지 확인(재귀 규칙).
+  **주의(2026-09-29 확인): 적힌 대로 하면 힙이 깨진다.** `HDelegatesInteral::Alloc`/`Free`는 헤더의 네임스페이스 `static` 변수(`Delegate.h:66-67`, 내부 연결)라 번역 단위·DLL마다 사본이 따로 있고, `SetAllocationCallbacks`(81행)는 부른 파일의 사본만 바꾼다. 한 곳에서만 풀로 바꾸면 풀에서 할당한 블록을 다른 파일이 `free`하거나 그 반대가 된다. 지금은 모든 사본이 malloc/free라 안전하다. 하려면 콜백이 모든 번역 단위·DLL에서 같은 값을 보도록 구조부터 바꿔야 한다.
   완료 조건: `JG_MEMORY_TRACE` 빌드에서 32B 초과 델리게이트 바인딩이 풀 할당으로 보이고, 정상 종료 시 Allocate == Deallocate 유지.
 
 - [ ] **3-2. 모듈 인터페이스 객체를 풀로** — `Source/Runtime/Core/Misc/Module.h:11`(`JG_MODULE_IMPL`), `Core/Misc/Module.cpp:137, 217, 264`
@@ -127,8 +130,13 @@
 
 ## Phase 4. GC · 스마트 포인터 구조 (옛 Phase 3 · 현황분석 B · P0-4, P0-7, P1-8)
 
+**검토 2026-09-29 (`결정 필요`): 4-1을 "약참조 카운터 수명"으로 줄여서 하고, 나머지(4-1의 맵·뮤텍스 제거, 4-2, 4-3, 4-4)는 지금 문제가 없어 하지 않는 것을 권장.**
+- 지금 있는 문제(코드 확인): GC가 객체를 파괴하면서 참조 카운터를 같이 해제한다(`Memory.cpp:105` `AllocatedMemoryBlocks.erase`, WeakCount 무시). 만료된 `PWeakPtr`는 그 주소를 계속 써서 `IsValid()`·소멸자가 해제 메모리를 읽고(`Memory.h:491`, 소멸자 386행), `Reset()`·재대입·이동은 해제 메모리에 쓴다(468, 514, 557행). 확인된 실행 경로는 에셋 로드마다 한 번: 로드가 끝나면 `_loadingAssets.erase`가 `HTaskHandle`의 `PWeakPtr<PTask>`를 소멸시키는데, 그 전에 GC(`GMemoryGlobalSystem::Update`가 모듈 갱신보다 먼저 돈다)가 PTask를 파괴해 카운터가 이미 없다. 크래시로 관측된 적은 없다(디버그 힙이 해제 메모리를 0xDD로 채워 음수로 읽힘). `Pin()`은 주소로 객체를 다시 찾아서(481행) Phase 2 풀의 즉시 주소 재사용과 겹치면 다른 객체를 잡을 수 있다. 종료 강제 파괴 때 남은 스마트 포인터가 해제된 카운터에 쓰는 문제(2026-09-17 기록)도 같은 원인이다.
+- 축소판 진행: ① 재현(임시 코드로 GC가 카운터를 해제하는 대신 표식값으로 채워 두고, 약참조가 그 값을 읽으면 경고) → ② 수정: 카운터를 제어 블록 하나로 묶고 객체가 죽어도 약참조가 남아 있으면 유지(std::shared_ptr 방식, 약참조 수 + 살아 있는 동안 1), `Pin()`·`Wrap()`은 "참조 수가 0보다 크면 1 올리기"(CAS)로, `Wrap`이 약참조 카운터도 채우게, 강제 파괴 중에는 제어 블록 해제를 끝까지 미룸 → ③ 검증 후 임시 코드 제거. 범위 `Core/Memory/Memory.h/.cpp`, 100줄 안팎.
+- 하지 않는 것: 4-1의 맵·전역 뮤텍스·객체당 할당 4회 정리(측정된 비용 없음), 4-2(매 프레임 전체 순회는 측정 안 했고 문제 보고 없음, 파괴 순서는 지금 종료 코드 0, D3D12 오류 0), 4-3(누수 리포트는 관측용, static 맵 4개는 폴백이 돌 때만 생기는데 지금은 안 돈다), 4-4(`HTaskHandle`의 유일한 보유자 `GAssetDatabase`는 메서드를 부르지 않는다).
+
 - [ ] **4-1. 제어 블록 통합** — `Source/Runtime/Core/Memory/Memory.h`(`GMemoryGlobalSystem::Allocate` 565행, `Wrap` 610행, `HMemoryBlock`), `Core/Memory/Memory.cpp:92-107`, `Core/Memory/MemoryPool.h`(`HMemoryHeader`, 2-1에서 바뀐 레이아웃 기준) — `결정 필요`
-  RefCount/WeakCount/상태 플래그를 객체와 같은 블록에 둔다. 권장안: 헤더를 늘리지 않고 GC 객체에 한해 객체 앞에 고정 크기 제어 블록을 두고 `Allocate<T>`가 `sizeof(T) + 제어블록`을 요청한다(컨테이너 블록은 그대로). 대안: 헤더 확장(모든 블록이 비용을 냄). 2-5 결정(값 타입 vptr 분리)에 따라 GC 태그 타입을 함께 정리.
+  RefCount/WeakCount/상태 플래그를 객체와 같은 블록에 둔다. 권장안: 헤더를 늘리지 않고 GC 객체에 한해 객체 앞에 고정 크기 제어 블록을 두고 `Allocate<T>`가 `sizeof(T) + 제어블록`을 요청한다(컨테이너 블록은 그대로). 대안: 헤더 확장(모든 블록이 비용을 냄). (2-5 값 타입 분리는 하지 않기로 함, 2026-09-29. 이 항목과 무관)
   `AllocatedMemoryBlocks`(unordered_map)·`AllocatedMemoryBlockQueue`·`unique_ptr<HAtomicInt32>` 2개를 없앤다. `Wrap(ptr)`은 포인터 연산 한 번(O(1), 무락)으로 제어 블록을 찾는다. `IMemoryObject` 뿌리 하나·오프셋 0 규칙은 그대로 전제.
   객체 파괴(Ref 0 → `Destruction()`·소멸자)와 메모리 반납(Weak 0)을 분리한다. 그래야 `PWeakPtr::IsValid()`가 해제된 카운터를 읽지 않는다(P0-4, `Graphics_TODO.md` 5-18의 근본 원인).
   완료 조건: 디버그 빌드에서 `PWeakPtr::IsValid()`/`Pin()`이 해제 메모리를 읽는 경로가 없음(파괴 시 제어 블록 오염값 채우기 테스트). 객체당 힙 할당이 4회 → 1회. `Wrap` 호출에 전역 뮤텍스 없음.
@@ -196,7 +204,7 @@
 
 - [ ] **7-1. 문자열 테이블 수명 정책** — `Source/Runtime/Core/String/StringTable.cpp:147`(`removeOldStringInfos`), `String/Name.cpp` — `결정 필요`
   정리 로직이 큐에서 꺼낸 ID를 다시 넣지 않아 사실상 동작하지 않고(참조 0이어도 `FrameCount >= INT32_MAX`), 결과적으로 영구 인터닝이다. 권장안: 영구 인터닝으로 확정하고 정리 코드·`FrameCount`·`weak_ptr` 참조 카운트를 제거, `PName`은 `uint64` ID만 든다(복사마다 원자 연산 3회 제거. 3-3의 제어 블록 이전도 불필요해짐). 대안: 정리 로직 복구(큐 재삽입 + 유효 수명값).
-  완료 조건(권장안): `sizeof(PName)`이 디버그에서 문자열 사본 포함 40B 안팎, 릴리스 8B(2-5와 함께면 vptr도 제외). 이름 비교·JSON 직렬화 회귀 없음.
+  완료 조건(권장안): `sizeof(PName)`이 릴리스 16B(ID 8B + vptr 8B. 2-5는 하지 않기로 함), 디버그는 문자열 사본 포함 56B(2026-09-29 크기 프로브 기준 계산). 이름 비교·JSON 직렬화 회귀 없음.
 
 - [ ] **7-2. 스케줄러 작업 객체 정리** — `Source/Runtime/Core/Thread/Scheduler.h:117, 167`, `Scheduler.cpp`(`Update`)
   `_syncTaskPool`에 `emplace`만 있고 `erase`가 없어 `Schedule*` 호출마다 작업 객체가 종료까지 남는다. 작업이 제거될 때(`bIsRemoveTask`) 풀에서도 지운다. `GUI_TODO.md` 2단계의 `Unschedule` 작업과 겹치면 그쪽 결과를 따른다.

@@ -1,6 +1,7 @@
 #pragma once
 #include "Core.h"
 #include "AssetDefines.h"
+#include "AssetImporter.generation.h"
 
 class JGAssetImporter;
 class ASSET_API PAssetImportArguments : public IMemoryObject
