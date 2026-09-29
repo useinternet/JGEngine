@@ -106,6 +106,13 @@ public:
 	PSharedPtr<PCommandQueue> GetCommandQueue() const;
 	PSharedPtr<PDX12FrameBuffer> GetFrameBuffer() const;
 	PSharedPtr<PResourceStagingManager> GetResourceStagingManager() const;
+
+	// 프레임 파이프라이닝(5-5): 지금 기록 중인 프레임의 인덱스(0 ~ GetFramesInFlight()-1)와 동시에 GPU에 올라갈 수 있는 프레임 수.
+	// 프레임마다 CPU가 새로 쓰는 GPU 가시 데이터(예: GUI의 SRV 슬롯)는 이 인덱스로 나눠 써야 앞 프레임이 읽는 중인 데이터를 덮지 않는다.
+	uint32 GetFrameIndex() const;
+	uint32 GetFramesInFlight() const;
+	// 큐에 들어간 GPU 작업이 모두 끝날 때까지 기다린다. GPU가 쓰는 리소스를 이 API 밖에서 직접 해제하기 전에 부른다(예: GUI 종료).
+	void WaitForGPUIdle();
 };
 
 

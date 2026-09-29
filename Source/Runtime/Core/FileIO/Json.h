@@ -819,7 +819,9 @@ inline bool PJsonData::getValueInJsonValue(rapidjson::Value& jsonValue, T* value
 template<class T>
 inline bool PJsonData::readJsonValue(T* value) const
 {
-	JG_LOG_ERROR("{0} is not supported read json", typeid(T).name());
+	// 지원하지 않는 타입은 컴파일 오류로 막는다. (이전에는 정의되지 않은 JG_LOG_ERROR 호출이라 인스턴스화되면 "식별자 없음" 오류로 같은 효과를 냈다.
+	// 쓰기 쪽 makeJsonValue(const T&)도 rapidjson::Value 생성 실패로 컴파일 오류가 난다)
+	static_assert(sizeof(T) == 0, "PJsonData::GetData : unsupported type. Add a readJsonValue specialization or implement IJsonable");
 	return false;
 }
 

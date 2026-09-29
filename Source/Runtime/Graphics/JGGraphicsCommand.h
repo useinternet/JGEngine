@@ -22,10 +22,10 @@ public:
 	// Render Setting
 	virtual void SetRenderTarget(const HRenderTarget& inRenderTarget) = 0;
 	virtual void SetRenderPassData(const HRenderPassCBData& inData) = 0;
-	// Surface 도메인: 메시의 서브메시를 순회해 각 머터리얼로 그린다. SetRenderTarget에 깊이 텍스처가 있으면 깊이 테스트한다.
+	// Surface 도메인: 메시의 서브메시를 순회해 각 머터리얼(덮어쓰기가 있으면 그것)로 그린다. SetRenderTarget에 깊이 텍스처가 있으면 깊이 테스트한다.
 	virtual void Draw(const HDrawArguments& inArgs) = 0;
-	// Scene 도메인: 풀스크린 삼각형 2개.
-	virtual void Draw(const HSceneDrawArguments& inArgs) = 0;
+	// Screen 도메인: 풀스크린 삼각형 2개.
+	virtual void Draw(const HScreenDrawArguments& inArgs) = 0;
 
 	// Util
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture) const = 0;

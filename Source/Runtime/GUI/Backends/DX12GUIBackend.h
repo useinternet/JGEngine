@@ -14,7 +14,10 @@ class PDX12GUIBackend : public PGUIBackend
 
 	uint32 IncreaseSize    = 0;
 	uint32 CurrentSrvIndex = 0;
-	uint32 SrvStartIndex   = 1;
+	uint32 SrvStartIndex   = 1;      // 0번은 ImGui 폰트 텍스처
+	// 프레임 파이프라이닝(5-5): SrvStartIndex 뒤 슬롯을 프레임 인덱스마다 나눠 쓴다. 이번 프레임의 구간은 [SrvRegionStart, SrvRegionEnd).
+	uint32 SrvRegionStart  = 1;
+	uint32 SrvRegionEnd    = 1024;
 	const uint32 MaxSrvCount = 1024;
 
 public:

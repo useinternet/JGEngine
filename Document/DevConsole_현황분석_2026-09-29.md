@@ -2,6 +2,7 @@
 
 대상: `Source/Editor/DevConsole` 6개 파일 285줄과 연관 코드(Core 델리게이트·문자열·로그, GUI 위젯).
 코드 읽기 기준이다. 빌드·실행은 하지 않았다(다른 세션의 MSBuild가 도는 중이었다). 근거 상세는 `Document/Memory/2026-09-29_DevConsole_현황분석.md`.
+할 일 목록: **`Document/DevConsole_TODO.md`**(2026-09-29 작성).
 
 ## 결론
 
@@ -37,6 +38,7 @@
 | 7 | `String.cpp:365-373` | `ToInt/ToFloat`가 `std::stoi/stof`를 써서 잘못된 입력에 예외를 던진다. 엔진에 catch가 없다 | `-count=abc`를 변환하면 프로세스 종료(코드 3) |
 | 8 | `GUI.cpp:59-71` | 입력 버퍼가 512바이트로 고정이고 `memcpy_s` 길이 검사가 없다 | 512자 이상 넣으면 디버그 CRT에서 중단 (GUI_TODO 2-9) |
 | 9 | `DevConsoleModule.cpp:23` | 로그 카테고리가 `DevStatistics`로 복붙되어 있다 | GUI_TODO 1-9 |
+| 10 | `GUI.cpp:49-57` | `HGUI::Text`가 문자열을 printf 서식으로 넘긴다(기존 캡처로 확인, TODO 작성 중 발견) | 메모리 통계 창이 이미 틀리게 그려진다: usage 값에 `%`가 없고 peak 열이 비어 있다(`MemoryStatistics.cpp:135`, `Document/Memory/2026-09-28_phase2_memwidget_capture.png`). 콘솔 로그 뷰에 `%s`가 든 줄이 오면 크래시할 수 있다 |
 
 ## 3. 없는 기능
 
@@ -67,8 +69,12 @@
 | 항목 | 지금 방식 |
 |---|---|
 | Graphics_TODO 5-25 DevScene 리드백 덤프 | 메시 로드 30프레임 뒤 자동 실행(`DevScene.cpp:196-199`) |
+| Graphics_TODO 5-31 FBX 임포트 진입점 | 호출하는 코드가 없다 |
+| GameFrameWorks_TODO 1-2 `simrun <file> -repeat N` | 미구현 |
+| `게임모듈_사전작업_분석_2026-09-29.md` R8 `modtest <Module>` | 미구현 |
+| `리슨서버_설계방안_2026-09-29.md` `nethost` / `netjoin` | 미구현 |
 | Memory_TODO 0-2 풀 고갈 재현 | 환경 변수 `JG_MEMTEST` 훅으로 대신함(검증 후 제거됨) |
-| JGConsole `simtest` (이름변경안에서 `gmtest` 검토 중) | argv 하드코딩 |
+| JGConsole `gmtest`(별칭 `simtest`, 2026-09-29 이름 변경 완료) | argv 하드코딩(`Main.cpp:44`). 알 수 없는 명령도 종료 코드 0 |
 
 ## 6. 다음 단계에서 정할 것
 
@@ -78,4 +84,4 @@
 | 1차 범위 | 명령 등록·실행, help/list, 출력 창, 히스토리 | CVar·자동완성·스크립트/실행 인자는 2차 |
 | 인자 문법 | `-name=value`는 유지하고 위치 인자·따옴표 추가, 변환은 Try 계열 | 기존 규칙과 호환되고 변환에서 예외가 안 난다 |
 | 기존 TODO | GUI_TODO 1-6·1-9·2-9를 이번 작업에 포함 | 구조를 바꾸면 1-6 코드는 없어진다 |
-| Core 델리게이트 §2-4·5 | 별도 항목으로 수정 | 콘솔이 멀티캐스트를 안 써도 Core 버그로 남는다 |
+| Core 델리게이트 §2-4·5 | 제외 (TODO 작성 시 변경) | 새 구조에서는 콘솔이 멀티캐스트를 쓰지 않는다. 남은 멀티캐스트 사용처(`JWindow.h:11,15`, `DX12FrameBuffer.h:23-24`, `GUIBackend.h:5-6`)는 인자가 포인터·정수·참조뿐이고, 브로드캐스트 중에 해제하는 코드도 없다 |

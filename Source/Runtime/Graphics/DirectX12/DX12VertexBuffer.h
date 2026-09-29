@@ -14,8 +14,7 @@ class PDX12VertexBuffer
 
 	uint64 _elementSize  = 0;
 	uint64 _elementCount = 0;
-	void* _cpuData = nullptr;          // CPULoad: UPLOAD 힙 매핑 포인터
-	HList<uint8> _shadowData;          // GPULoad: CPU 사본. GetDatas/GetData가 이걸 돌려준다.
+	void* _cpuData = nullptr;          // CPULoad: UPLOAD 힙 매핑 포인터. GPULoad는 CPU 사본을 들지 않는다(에셋이 든다, 5-26)
 
 	HDX12ComPtr<HDX12Resource> _dx12Resource;
 
@@ -34,9 +33,6 @@ public:
 
 	// IVertexBuffer
 	virtual void SetDatas(const void* inDatas, uint64 inElementSize, uint64 inElementCount) override;
-	virtual void SetData(const void* inData, uint64 inIndex) override;
-	virtual void* GetDatas() const override;
-	virtual void* GetData(uint64 inIndex) const override;
 
 	virtual uint64 GetVertexCount() const override;
 	virtual uint64 GetVertexSize() const override;
@@ -54,6 +50,6 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUAV() const;
 
 private:
-	// GPULoad: CPU 사본 전체를 스테이징 관리자에 업로드 요청한다.
-	void requestUpload();
+	// GPULoad: 주어진 데이터 전체를 스테이징 관리자에 업로드 요청한다. (요청 시점에 스테이징으로 복사된다)
+	void requestUpload(const void* inDatas, uint64 inByteSize);
 };

@@ -34,7 +34,7 @@ public:
 	virtual void SetRenderTarget(const HRenderTarget& inRenderTarget) override;
 	virtual void SetRenderPassData(const HRenderPassCBData& inData) override;
 	virtual void Draw(const HDrawArguments& inArgs) override;
-	virtual void Draw(const HSceneDrawArguments& inArgs) override;
+	virtual void Draw(const HScreenDrawArguments& inArgs) override;
 	
 	virtual void ClearTexture(PSharedPtr<IRawTexture> inTexture) const override;
 	virtual void ClearTexture(PSharedPtr<IRawTexture> inTexture, const HLinearColor& inClearColor) const override;

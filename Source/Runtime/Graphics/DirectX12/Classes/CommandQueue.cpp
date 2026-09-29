@@ -29,7 +29,16 @@ PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType comm
 
 void PCommandQueue::Begin()
 {
-	_fence->WaitForFenceValue(_fenceValue);
+	// 이 프레임 인덱스를 마지막으로 쓴 프레임(FramesInFlight 프레임 전)의 GPU 작업만 기다린다. 바로 앞 프레임은 GPU에서 계속 돈다.
+	// (5-5 이전에는 바로 앞 프레임의 완료까지 기다려 CPU와 GPU가 번갈아 쉬었다)
+	// 이 인덱스의 리스트는 이 대기 뒤 첫 RequestCommandList에서 Reset된다.
+	_fence->WaitForFenceValue(_frames[_frameIndex].FenceValue);
+
+	// 방금 기다린 프레임(지금 번호 - FramesInFlight)까지는 GPU가 끝냈으므로 그 번호 이하로 미룬 해제를 놓는다.
+	if (_submittedFrameCount >= FramesInFlight)
+	{
+		releaseDeferred(_submittedFrameCount - FramesInFlight);
+	}
 }
 
 void PCommandQueue::End()
@@ -37,14 +46,15 @@ void PCommandQueue::End()
 	_bCommandListExcute = true;
 
 	HList<ID3D12CommandList*>   d3dCmdLists;
+	HFrameContext& frame = _frames[_frameIndex];
 
 	PResourceStateTracker::Lock();
 
-	for (HPair < const uint64, HHashMap<uint64, PSharedPtr<PCommandList>>>& pair : _excuteCmdLists)
+	for (HPair < const uint64, HHashMap<uint64, PSharedPtr<PCommandList>>>& pair : frame.ExecuteCmdLists)
 	{
 		for (HPair<const uint64, PSharedPtr<PCommandList>>& cmdList : pair.second)
 		{
-			PSharedPtr<PCommandList> pendCmdList = _excutePendingCmdLists[pair.first][cmdList.first];
+			PSharedPtr<PCommandList> pendCmdList = frame.ExecutePendingCmdLists[pair.first][cmdList.first];
 
 			if (GetCommandListState(cmdList.second) == ECommandListState::Close)
 			{
@@ -76,6 +86,14 @@ void PCommandQueue::End()
 	_dx12CommandQueue->Signal(_fence->Get(), _fence->GetValue());
 	_fenceValue = _fence->GetValue();
 
+	// 이 인덱스의 리스트는 이 펜스 값이 지나야 다시 쓸 수 있다. 다음 프레임은 다른 인덱스의 리스트에 기록한다.
+	{
+		HLockGuard<HMutex> lock(_deferredReleaseMutex);
+		frame.FenceValue = _fenceValue;
+		++_submittedFrameCount;
+		_frameIndex = (uint32)(_submittedFrameCount % FramesInFlight);
+	}
+
 	_bCommandListExcute = false;
 }
 
@@ -100,7 +118,7 @@ void PCommandQueue::ExecuteImmediate(PSharedPtr<PCommandList> cmdList, PSharedPt
 		return;
 	}
 
-	// End()와 같은 절차를 이 두 리스트에만 적용한다. 프레임 리스트(_excuteCmdLists)는 건드리지 않는다.
+	// End()와 같은 절차를 이 두 리스트에만 적용한다. 프레임 리스트(_frames)는 건드리지 않는다.
 	HLockGuard<HMutex> lock(_mutex);
 	_bCommandListExcute = true;
 
@@ -131,6 +149,43 @@ void PCommandQueue::ExecuteImmediate(PSharedPtr<PCommandList> cmdList, PSharedPt
 	_bCommandListExcute = false;
 }
 
+void PCommandQueue::DeferRelease(HDX12ComPtr<HDX12Resource> resource)
+{
+	if (resource == nullptr)
+	{
+		return;
+	}
+
+	HLockGuard<HMutex> lock(_deferredReleaseMutex);
+
+	HDeferredRelease deferred;
+	deferred.FrameSerial = _submittedFrameCount;
+	deferred.Resource    = resource;
+	_deferredReleases.push_back(deferred);
+}
+
+void PCommandQueue::ReleaseAllDeferred()
+{
+	HLockGuard<HMutex> lock(_deferredReleaseMutex);
+	_deferredReleases.clear();
+}
+
+void PCommandQueue::releaseDeferred(uint64 inCompletedFrameSerial)
+{
+	HLockGuard<HMutex> lock(_deferredReleaseMutex);
+
+	// 번호 오름차순이므로 앞에서부터 끝난 프레임의 것만 놓는다.
+	uint64 releaseCount = 0;
+	while (releaseCount < _deferredReleases.size() && _deferredReleases[releaseCount].FrameSerial <= inCompletedFrameSerial)
+	{
+		++releaseCount;
+	}
+	if (releaseCount > 0)
+	{
+		_deferredReleases.erase(_deferredReleases.begin(), _deferredReleases.begin() + releaseCount);
+	}
+}
+
 bool PCommandQueue::IsFenceComplete(uint64 fenceValue) const
 {
 	if (_fence == nullptr || _fence->Get() == nullptr)
@@ -151,18 +206,21 @@ PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType comm
 
 	commandID = 16777619U * (uint64)commandListType ^ commandID;
 
-	PSharedPtr<PCommandList> result = nullptr;
-	if (_excuteCmdLists[priority].find(commandID) == _excuteCmdLists[priority].end())
-	{
-		_excuteCmdLists[priority][commandID] = CreateCommandList(commandListType);
-		_excutePendingCmdLists[priority][commandID] = CreateCommandList(commandListType);
+	// 지금 기록 중인 프레임 인덱스의 리스트. Close 상태면 이 인덱스를 마지막으로 제출한 프레임이 끝난 뒤(Begin에서 기다림)라 Reset해도 된다.
+	HFrameContext& frame = _frames[_frameIndex];
 
-		result = _excuteCmdLists[priority][commandID];
+	PSharedPtr<PCommandList> result = nullptr;
+	if (frame.ExecuteCmdLists[priority].find(commandID) == frame.ExecuteCmdLists[priority].end())
+	{
+		frame.ExecuteCmdLists[priority][commandID] = CreateCommandList(commandListType);
+		frame.ExecutePendingCmdLists[priority][commandID] = CreateCommandList(commandListType);
+
+		result = frame.ExecuteCmdLists[priority][commandID];
 	}
 	else
 	{
-		PSharedPtr<PCommandList> pCmdList = _excuteCmdLists[priority][commandID];
-		PSharedPtr<PCommandList> pPendingCmdList = _excutePendingCmdLists[priority][commandID];
+		PSharedPtr<PCommandList> pCmdList = frame.ExecuteCmdLists[priority][commandID];
+		PSharedPtr<PCommandList> pPendingCmdList = frame.ExecutePendingCmdLists[priority][commandID];
 
 		if (GetCommandListState(pCmdList) == ECommandListState::Close)
 		{

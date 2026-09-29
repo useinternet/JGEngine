@@ -19,11 +19,14 @@ struct HStaticMeshConstructArguments
 	HList<HList<uint32>>  Indeies;
 };
 
-// 서브메시 하나 = 정점 버퍼 + 인덱스 버퍼 + 머터리얼(약참조).
+// 에셋(JGStaticMesh)의 서브메시 하나 = 정점/인덱스 CPU 사본 + GPU 버퍼 + 머터리얼(약참조).
+// CPU 사본은 에셋이 든다. 저장(WriteJson), 경계 상자, GetVertex/GetIndex가 쓴다. GPU 버퍼는 GPU에 올리는 일만 한다. (5-26)
 // GPU 버퍼에는 HVertex가 아니라 HVertexData(POD)만 올린다. HVertex는 vptr이 있어 그대로 올리면 입력 레이아웃과 어긋난다.
 struct GRAPHICS_API HStaticSubMesh : public IJsonable
 {
 	PName Name;
+	HList<HVertexData> Vertices;   // CPU 사본
+	HList<uint32>      Indices;    // CPU 사본
 	PSharedPtr<IVertexBuffer> VertexBuffer;
 	PSharedPtr<IIndexBuffer>  IndexBuffer;
 	PWeakPtr<IRawMaterial> Material;
@@ -31,10 +34,10 @@ struct GRAPHICS_API HStaticSubMesh : public IJsonable
 	bool IsValid() const;
 	void SetName(const PName& inName);
 
-	// 정점/인덱스를 GPU 버퍼로 올린다. 버퍼가 없으면 만든다.
+	// CPU 사본을 채우고 GPU 버퍼로 올린다. 버퍼가 없으면 만든다.
 	// inName은 값으로 받는다. ReadJson처럼 멤버 Name 자신을 넘기는 호출이 있어 참조로 받으면 자기 대입이 된다.
 	void SetData(PName inName, const HList<HVertex>& inVertices, const HList<uint32>& inIndices);
-	// GPU 버퍼 내용을 HVertex/uint32 목록으로 복사한다. (직렬화용)
+	// CPU 사본을 HVertex/uint32 목록으로 복사한다. (직렬화용)
 	void GetVertices(HList<HVertex>& outVertices) const;
 	void GetIndices(HList<uint32>& outIndices) const;
 
@@ -43,11 +46,22 @@ protected:
 	virtual void ReadJson(const PJsonData& json) override;
 };
 
+// 렌더 메시(PStaticMesh)의 서브메시. GPU 버퍼와 머터리얼만 든다. CPU 사본은 에셋에만 있다.
+struct GRAPHICS_API HRenderSubMesh
+{
+	PName Name;
+	PSharedPtr<IVertexBuffer> VertexBuffer;
+	PSharedPtr<IIndexBuffer>  IndexBuffer;
+	PWeakPtr<IRawMaterial> Material;
+
+	bool IsValid() const;
+};
+
 
 class GRAPHICS_API PStaticMesh : public IMesh
 {
 	PName _name;
-	HList<HStaticSubMesh> _subMeshes;
+	HList<HRenderSubMesh> _subMeshes;
 	// 정점 입력 레이아웃(HVertexData). GC 객체의 멤버로 보관해 메모리 시스템과 수명을 맞춘다. (static 금지, JGGraphicsDefine.h 참고)
 	HInputLayout _inputLayout;
 
@@ -70,9 +84,10 @@ public:
 	virtual void Reset() override;
 	// ~IMesh
 
+	// 에셋 서브메시에서 GPU 버퍼와 머터리얼만 가져온다. (CPU 사본까지 복사하면 메시마다 사본이 두 벌이 된다)
 	void SetSubMeshes(const HList<HStaticSubMesh>& inSubMeshes);
 	void SetMaterial(uint32 inSlot, PSharedPtr<IRawMaterial> inMaterial);
-	const HList<HStaticSubMesh>& GetSubMeshes() const;
+	const HList<HRenderSubMesh>& GetSubMeshes() const;
 };
 
 JGCLASS()

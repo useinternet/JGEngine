@@ -1,10 +1,11 @@
 #pragma once
-#include "GameDefines.h"
+#include "MyGameDefines.h"
 #include "Actors/GameEntryActor.h"
 #include "MyGameEntryActor.generation.h"
 
+// 월드 진입점. 엔진이 월드를 만든 직후 스폰하고 OnEnterWorld 를 부른다.
 JGCLASS()
-class GAME_API JGMyGameEntryActor : public JGGameEntryActor
+class MYGAME_API JGMyGameEntryActor : public JGGameEntryActor
 {
 	JG_GENERATED_CLASS_BODY
 

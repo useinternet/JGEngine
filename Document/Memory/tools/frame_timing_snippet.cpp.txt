@@ -1,0 +1,78 @@
+// 5-5 검증용 임시 계측 (2026-09-29). 세 곳에 넣어 쓰고 검증 뒤 뺀다. 결과: Document/Memory/2026-09-29_Phase5-3_5-4_5-5.md
+//
+// 사용 (crashwalk 표준 출력으로 로그를 받는다)
+//   JG_GPUSTRESS=3000              : X Bot을 같은 자리에 인스턴스 3000개로 그려 GPU를 병목으로 만든다(CPU 비용은 그대로)
+//   JG_FRAMESYNC=1                 : Begin()이 5-5 이전처럼 마지막 제출의 완료를 기다린다(같은 바이너리로 전후 비교)
+//   로그 "FrameTiming : frames a-b, frame avg X ms (...), fence wait avg Y ms" 가 600프레임마다 찍힌다.
+//   검증에 쓴 순서: 보통 60초 / JG_GPUSTRESS=3000 JG_FRAMESYNC=1 45초 / JG_GPUSTRESS=3000 45초 (각각 crashwalk.exe <exe> <cwd> <초>)
+
+// (A) DirectX12/DirectX12API.cpp — include 목록 끝
+#include <chrono>   // 임시 계측 (5-5 전후 비교)
+
+// (B) DirectX12/DirectX12API.cpp — PDirectX12API::BeginFrame() 전체를 아래로
+void PDirectX12API::BeginFrame()
+{
+	// ---- 임시 계측 (5-5 전후 비교): 프레임 시간과 Begin()의 펜스 대기 시간을 600프레임마다 찍는다. 검증 뒤 제거 ----
+	using HTimingClock = std::chrono::steady_clock;
+	static HTimingClock::time_point s_lastBeginStart;
+	static float64 s_frameMsSum = 0.0;
+	static float64 s_frameMsMax = 0.0;
+	static float64 s_waitMsSum  = 0.0;
+	static float64 s_waitMsMax  = 0.0;
+	static uint64  s_windowFrames = 0;
+	static uint64  s_totalFrames  = 0;
+	const HTimingClock::time_point beginStart = HTimingClock::now();
+	// ----
+
+	_commandQueue->Begin();
+
+	// ---- 임시 계측 ----
+	const float64 waitMs = std::chrono::duration<float64, std::milli>(HTimingClock::now() - beginStart).count();
+	if (s_totalFrames > 0)
+	{
+		const float64 frameMs = std::chrono::duration<float64, std::milli>(beginStart - s_lastBeginStart).count();
+		s_frameMsSum += frameMs;
+		s_frameMsMax  = std::max(s_frameMsMax, frameMs);
+		s_waitMsSum  += waitMs;
+		s_waitMsMax   = std::max(s_waitMsMax, waitMs);
+		++s_windowFrames;
+		if (s_windowFrames == 600)
+		{
+			JG_LOG(Graphics, ELogLevel::Info, "FrameTiming : frames %d-%d, frame avg %.3f ms (max %.3f, %.0f fps), fence wait avg %.3f ms (max %.3f)",
+				(int32)(s_totalFrames - 599), (int32)s_totalFrames, s_frameMsSum / 600.0, s_frameMsMax, 600000.0 / s_frameMsSum, s_waitMsSum / 600.0, s_waitMsMax);
+			s_frameMsSum = 0.0;
+			s_frameMsMax = 0.0;
+			s_waitMsSum  = 0.0;
+			s_waitMsMax  = 0.0;
+			s_windowFrames = 0;
+		}
+	}
+	s_lastBeginStart = beginStart;
+	++s_totalFrames;
+	// ----
+
+	_resourceStagingManager->BeginFrame();   // 지난 제출의 리드백 완료 처리(콜백은 여기서, 메인 스레드)
+}
+
+// (C) DirectX12/DX12GraphicsCommand.cpp — PDX12GraphicsCommand::Draw(const HDrawArguments&) 의 DrawIndexed 한 줄을 아래로
+		static const uint32 s_stressInstances = []()
+		{
+			char value[32] = {};
+			size_t length = 0;
+			if (getenv_s(&length, value, sizeof(value), "JG_GPUSTRESS") != 0 || length <= 1)
+			{
+				return 1u;
+			}
+			const int32 count = atoi(value);
+			return (uint32)(count > 1 ? count : 1);
+		}();
+		cmdList->DrawIndexed((uint32)indexBuffer->GetIndexCount(), s_stressInstances);
+
+// (D) DirectX12/Classes/CommandQueue.cpp — PCommandQueue::Begin() 의 WaitForFenceValue 한 줄을 아래로
+	static const bool s_bLegacyFrameSync = []()
+	{
+		char value[8] = {};
+		size_t length = 0;
+		return getenv_s(&length, value, sizeof(value), "JG_FRAMESYNC") == 0 && length > 1 && value[0] == '1';
+	}();
+	_fence->WaitForFenceValue(s_bLegacyFrameSync ? _fenceValue : _frames[_frameIndex].FenceValue);

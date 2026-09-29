@@ -3,5 +3,5 @@
 
 void JGMyGameEntryActor::OnEnterWorld()
 {
-	JG_LOG(Game, ELogLevel::Info, "MyGame entry actor entered world");
+	JG_LOG(MyGame, ELogLevel::Info, "MyGame entry actor entered world");
 }

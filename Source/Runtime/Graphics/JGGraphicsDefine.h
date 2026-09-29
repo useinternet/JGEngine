@@ -442,9 +442,13 @@ struct HDrawArguments
 {
 	PSharedPtr<IMesh> Mesh;
 	HObjectCBData ObjectCBData;
+	// 서브메시별 머터리얼 덮어쓰기(PScene의 메시 배치). null이거나 칸이 비었으면 메시의 머터리얼을 쓴다.
+	// 호출 동안만 읽는다. 매 드로우마다 목록을 복사하지 않도록 포인터로 받는다.
+	const HList<PSharedPtr<IRawMaterial>>* MaterialOverrides = nullptr;
 };
 
-struct HSceneDrawArguments
+// Screen 도메인(화면 전체에 그리는 머터리얼) 드로우. 합성 같은 풀스크린 패스에 쓴다.
+struct HScreenDrawArguments
 {
 	PSharedPtr<IRawMaterial> Material;
 };

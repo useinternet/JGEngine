@@ -133,7 +133,7 @@ bool GObjectGlobalSystem::RegisterJGClass(PSharedPtr<JGClass> classObject, const
 	PSharedPtr<JGType> classType = classObject->GetClassType();
 	if (classType.IsValid() == false)
 	{
-		JG_LOG(Core, ELogLevel::Critical, "{0} : Invalid Type", classObject->GetName());
+		JG_LOG(Core, ELogLevel::Critical, "%s : Invalid Type", classObject->GetName());
 		return false;
 	}
 	
@@ -167,7 +167,7 @@ bool GObjectGlobalSystem::RegisterJGEnum(PSharedPtr<JGEnum> enumObject)
 	PSharedPtr<JGType> enumType = enumObject->GetEnumType();
 	if (enumType.IsValid() == false)
 	{
-		JG_LOG(Core, ELogLevel::Critical, "{0} : Invalid Type", enumObject->GetName());
+		JG_LOG(Core, ELogLevel::Critical, "%s : Invalid Type", enumObject->GetName());
 		return false;
 	}
 

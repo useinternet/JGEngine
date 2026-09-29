@@ -40,6 +40,7 @@ JGCLASS/JGPROPERTY를 바꿨으면 `Build/BatchFiles`에서 `JGHeaderTool.exe`, 
 - [ ] **1-6. DevConsole 모듈의 GUI 모듈 검사 반전 수정** — `Source/Editor/DevConsole/DevConsoleModule.cpp:65-75`
   `JG_CHECK(GUIModule == nullptr)` → `!= nullptr`. `static` 캐시 포인터를 없애고 매번 `FindModule<HGUIModule>()`한다(모듈 재연결 시 댕글링 방지). `Register/UnRegisterConsoleCommand`는 아직 호출자가 없으니 동작 확인은 임시 호출로.
   완료 조건: `RegisterConsoleCommand`를 임시로 한 번 호출해도 assert가 나지 않는다.
+  → 2026-09-29: `Document/DevConsole_TODO.md` 3-1에서 이 API를 통째로 지우므로 여기서 따로 고치지 않는다(DevConsole 트랙에서 처리).
 
 - [ ] **1-7. `PDX12GUIBackend::Shutdown`에서 기반 `Shutdown` 호출** — `Source/Runtime/GUI/Backends/DX12GUIBackend.cpp:135`
   ImGui 컨텍스트 파괴 뒤 `PGUIBackend::Shutdown()`을 호출해 `OnGUI`/`OnMainMenuGUI`의 생포인터 델리게이트를 지운다.
@@ -54,6 +55,9 @@ JGCLASS/JGPROPERTY를 바꿨으면 `Build/BatchFiles`에서 `JGHeaderTool.exe`, 
   `JGDev_Graphics.cpp:43` "Fail Connect Graphics Module..." → "GUI", `:54` "Asset" → "DevStatistics", `:66` "Asset" → "Devkit", `:78` 카테고리 `DevStatistics` → `JGDev_GraphicsModule`, 메시지 "JGDev_GraphicsModule Need GUI Module".
   `JG_LOG`의 카테고리는 토큰을 문자열로 바꿔 쓰므로(`Log.h:56`) 선언 없이 새 이름을 쓸 수 있다.
   완료 조건: 실행 로그에서 GUI 관련 줄이 `[GUI]`, `[DevConsole]` 카테고리로 찍힌다.
+  → 2026-09-29: `DevConsoleModule.cpp:23` 부분은 `Document/DevConsole_TODO.md` 3-1에서 처리한다.
+
+- 참고(2026-09-29): `HGUI::Text`가 문자열을 printf 서식으로 해석하는 버그(`GUI.cpp:49-57`. 메모리 통계 창의 peak 열이 비어 보인다)는 `Document/DevConsole_TODO.md` 2-1에서 처리한다.
 
 - [ ] **1-10. P1 검증** — 공통 검증 루프. 추가로: 캡처에서 메뉴바(`Dev`, `Windows`)와 DevFeature 창이 그대로 보인다. 임시 확인 코드(1-4, 1-5, 1-6)는 모두 제거했는지 `git diff`로 확인.
 
@@ -132,7 +136,8 @@ JGCLASS/JGPROPERTY를 바꿨으면 `Build/BatchFiles`에서 `JGHeaderTool.exe`, 
   zip은 init 커밋부터 추적됨. 옛 설계 참고가 필요하면 압축을 풀어 `Document/Reference/GUI_2024/`로 옮기고 `git rm`, 아니면 이력에만 남기고 삭제. `imgui.ini`는 실행마다 바뀌는 사용자 레이아웃이라 추적 해제(`.gitignore`) 권장. `Bin/` 전체 추적 정책은 별도 논의.
   완료 조건: `git status`에 실행만으로 생기는 변경이 줄어든다.
 
-- [ ] **3-6. JGEditor 모듈 정리** — `Source/Editor/JGEditor/JGEditor.h:7, 22`, `JGEditor.cpp:5, 12, 36, 44, 58-68`, `JGEditor.module.json` — `결정 필요`
+- [ ] **3-6. JGEditor 모듈 정리** — `Source/Editor/JGEditor/JGEditor.h:7, 22`, `JGEditor.cpp:5, 12, 36, 44, 58-68`, `JGEditor.module.json` — `결정됨: (a) 2026-09-29`
+  결정: JGEditor 를 에디터 호스트로 키우고 JGDev_Graphics 는 임시로 제거한다(사용자, 게임 모듈 작업 D2). 작업은 `Document/게임모듈_사전작업_분석_2026-09-29.md` R3 에서 진행 — JGDev_Graphics 를 고치는 이 문서의 1-9 · 1-11 · 2-2 · 2-11 은 그 뒤 대상이 JGEditor 로 바뀐다.
   옛 설계 잔재(`GGUIGlobalSystem`, `HMenuBuilder`, `BuildMainMenu`)만 있는 런치 모듈. (a) 살리려면 GUI를 실제로 연결하고 `HGUIModule::AddMainMenuItem` 방식으로 메뉴를 옮긴다. (b) 지우려면 모듈 폴더와 json 제거 후 JGBuildTool 재생성. 어느 쪽이든 2026-09-17 모듈 수명 기록의 "모듈 RefCount 미적용"(JGEditor와 JGDev_Graphics가 함께 뜨면 Graphics 이중 Disconnect) 항목과 함께 처리한다.
   완료 조건: 결정에 따라 빌드 통과.
 

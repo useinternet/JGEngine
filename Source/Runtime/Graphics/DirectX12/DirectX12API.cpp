@@ -70,6 +70,12 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	JG_LOG(Graphics, ELogLevel::Trace, "Create ResourceStagingManager...");
 	_resourceStagingManager = Allocate<PResourceStagingManager>();
 
+	// 스왑체인 버퍼와 ImGui 메인 뷰포트의 정점/인덱스 버퍼는 BufferCount개를 돌려 쓴다. 동시에 GPU에 올리는 프레임보다 적으면 GPU가 읽는 버퍼를 덮는다. (5-5)
+	if ((uint32)args.BufferCount < PCommandQueue::FramesInFlight)
+	{
+		JG_LOG(Graphics, ELogLevel::Critical, "BufferCount(%d) must be >= FramesInFlight(%d)", (int32)args.BufferCount, (int32)PCommandQueue::FramesInFlight);
+	}
+
 	JG_LOG(Graphics, ELogLevel::Trace, "Create FrameBuffer...");
 	HFrameBufferInfo frameBufferInfo;
 	frameBufferInfo.Handle = args.Handle;
@@ -107,6 +113,14 @@ void PDirectX12API::Destroy()
 	_graphicsPSOCache.clear();
 	_computePSOCache.clear();
 	_resourceRefCache.clear();
+
+	// 큐를 비웠고 더 제출하지 않으므로 미뤄 둔 해제를 모두 놓는다. (위에서 놓은 기본 텍스처 등도 여기로 모인다)
+	_commandQueue->ReleaseAllDeferred();
+
+#ifdef _DEBUG
+	// 종료 중에 쌓인 디버그 레이어 메시지(예: GPU가 쓰는 중에 해제된 객체)는 EndFrame이 더 오지 않아 버려졌다. 마지막으로 비운다.
+	flushDebugLayerMessages();
+#endif
 
 	// 반드시 마지막에. 이 시점부터 HDirectXAPI 의 모든 조회가 nullptr 로 떨어져서,
 	// 뒤늦게 GC 되는 텍스처/버퍼의 소멸자가 이 객체를 건드리지 않는다.
@@ -311,6 +325,13 @@ void PDirectX12API::DestroyCommittedResource(HDX12ComPtr<HDX12Resource> resource
 	}
 
 	PResourceStateTracker::UnRegisterResource(resource.Get());
+
+	// 프레임 파이프라이닝(5-5): 앞서 제출한 프레임이 GPU에서 아직 이 리소스를 쓰고 있을 수 있다.
+	// 커맨드 리스트는 정점/인덱스 버퍼와 텍스처 바인딩에 참조를 남기지 않으므로, 모든 해제가 지나는 이곳에서 그 프레임이 끝날 때까지 참조를 들고 있는다.
+	if (_commandQueue != nullptr)
+	{
+		_commandQueue->DeferRelease(resource);
+	}
 }
 
 const HHashMap<uint64, HDX12ComPtr<HDX12RootSignature>>& PDirectX12API::GetRootSignatureCache() const
@@ -738,4 +759,22 @@ bool PDirectX12API::ReadbackTextureImmediate(PSharedPtr<IRawTexture> inTexture, 
 PSharedPtr<PResourceStagingManager> PDirectX12API::GetResourceStagingManager() const
 {
 	return _resourceStagingManager;
+}
+
+uint32 PDirectX12API::GetFrameIndex() const
+{
+	return (_commandQueue != nullptr) ? _commandQueue->GetFrameIndex() : 0;
+}
+
+uint32 PDirectX12API::GetFramesInFlight() const
+{
+	return PCommandQueue::FramesInFlight;
+}
+
+void PDirectX12API::WaitForGPUIdle()
+{
+	if (_commandQueue != nullptr)
+	{
+		_commandQueue->Flush();
+	}
 }

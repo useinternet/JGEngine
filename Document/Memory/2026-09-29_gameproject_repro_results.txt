@@ -4,6 +4,8 @@ GameProject 재현 결과 — 2026-09-29 12:05~12:35
 가짜 엔진 루트: 엔진 *.module.json 17개 + BuildTemplate.lua + 툴 exe + premake5.exe + PCH.h/.cpp (소스 없음)
 게임 프로젝트: MyGame/Source/Game (Game.module.json, GameModule.h/.cpp, MyGameEntryActor.h/.cpp[JGCLASS]),
                MyGame/Source/Editor (Editor.module.json, EditorModule.h/.cpp), 빈 Bin · Content · Temp
+※ 이 실행 뒤(같은 날) D5 결정으로 초안을 MyGame/Source/MyGame · MyGame/Source/MyGameEditor 로 바꿨다.
+  아래 결과는 바꾸기 전 이름(Game · Editor) 기준. 다시 돌리면 "Game 이 엔진 Game 에 합쳐짐" 행은 사라지고 Step 4 멈춤 등 나머지는 같아야 한다.
 인자: UserWorkDirectory = <MyGame 절대경로>, UserWorkCategories = ["Source"]
 
 == result.txt ==

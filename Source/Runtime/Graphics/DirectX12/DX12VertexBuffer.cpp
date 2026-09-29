@@ -86,52 +86,12 @@ void PDX12VertexBuffer::SetDatas(const void* inDatas, uint64 inElementSize, uint
 
 	if (bGPULoad)
 	{
-		_shadowData.assign((const uint8*)inDatas, (const uint8*)inDatas + btSize);
-		requestUpload();
+		requestUpload(inDatas, btSize);
 	}
 	else if (_cpuData != nullptr)
 	{
 		memcpy(_cpuData, inDatas, btSize);
 	}
-}
-
-void PDX12VertexBuffer::SetData(const void* inData, uint64 inIndex)
-{
-	void* dataPos = GetData(inIndex);
-	if (dataPos == nullptr || inData == nullptr)
-	{
-		return;
-	}
-
-	memcpy(dataPos, inData, _elementSize);
-
-	if (_loadMethod == EBufferLoadMethod::GPULoad)
-	{
-		// CPU 사본만 고쳤으므로 GPU에 다시 올린다. 같은 대상의 대기 요청은 하나로 합쳐진다.
-		requestUpload();
-	}
-}
-
-void* PDX12VertexBuffer::GetDatas() const
-{
-	if (_loadMethod == EBufferLoadMethod::GPULoad)
-	{
-		return _shadowData.empty() ? nullptr : (void*)_shadowData.data();
-	}
-	return _cpuData;
-}
-
-void* PDX12VertexBuffer::GetData(uint64 inIndex) const
-{
-	JG_CHECK(inIndex < _elementCount && IsValid());
-
-	uint8* datas = (uint8*)GetDatas();
-	if (datas == nullptr || inIndex >= _elementCount)
-	{
-		return nullptr;
-	}
-
-	return datas + inIndex * _elementSize;
 }
 
 uint64 PDX12VertexBuffer::GetVertexCount() const
@@ -165,8 +125,6 @@ void PDX12VertexBuffer::SetLoadMethod(EBufferLoadMethod inLoadMethod)
 
 void PDX12VertexBuffer::Reset()
 {
-	_shadowData.clear();
-
 	if (_dx12Resource == nullptr)
 	{
 		return;
@@ -245,9 +203,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12VertexBuffer::GetUAV() const
 	return _uav.CPU();
 }
 
-void PDX12VertexBuffer::requestUpload()
+void PDX12VertexBuffer::requestUpload(const void* inDatas, uint64 inByteSize)
 {
-	if (IsValid() == false || _shadowData.empty())
+	if (IsValid() == false || inDatas == nullptr || inByteSize == 0)
 	{
 		return;
 	}
@@ -259,5 +217,5 @@ void PDX12VertexBuffer::requestUpload()
 		return;
 	}
 
-	stagingManager->RequestBufferUpload(_dx12Resource, _shadowData.data(), _shadowData.size(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, _name);
+	stagingManager->RequestBufferUpload(_dx12Resource, inDatas, inByteSize, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, _name);
 }

@@ -13,8 +13,7 @@ class PDX12IndexBuffer
 	EBufferLoadMethod _loadMethod = EBufferLoadMethod::CPULoad;
 
 	uint64 _indexCount = 0;
-	uint32* _cpuData = nullptr;        // CPULoad: UPLOAD 힙 매핑 포인터
-	HList<uint32> _shadowData;         // GPULoad: CPU 사본. GetDatas/GetData가 이걸 돌려준다.
+	uint32* _cpuData = nullptr;        // CPULoad: UPLOAD 힙 매핑 포인터. GPULoad는 CPU 사본을 들지 않는다(에셋이 든다, 5-26)
 
 	HDX12ComPtr<HDX12Resource> _dx12Resource;
 
@@ -33,9 +32,6 @@ public:
 
 	// IIndexBuffer
 	virtual void SetDatas(const uint32* inDatas, uint64 inCount) override;
-	virtual void SetData(uint32 inData, uint64 inIndex) override;
-	virtual uint32* GetDatas() const override;
-	virtual uint32 GetData(uint64 inIndex) const override;
 
 	virtual uint64 GetIndexCount() const override;
 	virtual EBufferLoadMethod GetLoadMethod() const override;
@@ -52,6 +48,6 @@ public:
 	D3D12_CPU_DESCRIPTOR_HANDLE GetUAV() const;
 
 private:
-	// GPULoad: CPU 사본 전체를 스테이징 관리자에 업로드 요청한다.
-	void requestUpload();
+	// GPULoad: 주어진 인덱스 전체를 스테이징 관리자에 업로드 요청한다. (요청 시점에 스테이징으로 복사된다)
+	void requestUpload(const uint32* inDatas, uint64 inCount);
 };

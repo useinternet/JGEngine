@@ -2,10 +2,10 @@
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
     "ModuleDependencies": [ "Core", "GameFrameWorks" ],
-    "ModuleName": "Game",
-    "ModulePath": "Source/Game/",
+    "ModuleName": "MyGame",
+    "ModulePath": "Source/MyGame/",
     "Defines": [
-      "_GAME"
+      "_MYGAME"
     ],
     "DevelopEngine": {
       "Config": "DebugConfig",

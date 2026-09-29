@@ -8,7 +8,7 @@ public:
 	static PString GraphicsShaderTemplate;
 	static PString MaterialConstantBufferContentsScript;
 	static PString MaterialSurfaceContentsScript;
-	static PString MaterialSceneContentsScript;
+	static PString MaterialScreenContentsScript;
 private:
 	// 시스템 Start()는 모듈 StartupModule보다 늦게 불리므로, 그 전에 템플릿이 필요하면 첫 접근 시 지연 로드한다.
 	mutable HHashMap<PName, PString> _shaderTemplates;

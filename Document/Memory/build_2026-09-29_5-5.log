@@ -1,0 +1,49 @@
+
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  CommandList.cpp
+  CommandQueue.cpp
+  DX12Shader.cpp
+  DescriptionAllocator.cpp
+  DynamicDescriptionAllocator.cpp
+  Fence.cpp
+  PipelineState.cpp
+  ResourceStagingManager.cpp
+  ResourceStateTracker.cpp
+  RootSignature.cpp
+  UploadAllocator.cpp
+  DX12ConstantBuffer.cpp
+  DX12FrameBuffer.cpp
+  DX12GraphicsCommand.cpp
+  DX12IndexBuffer.cpp
+  DX12Material.cpp
+  DX12StructuredBuffer.cpp
+  DX12Texture.cpp
+  DX12VertexBuffer.cpp
+  DirectX12API.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  JGGraphics.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\JG\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  DX12GUIBackend.cpp
+  GUIModule.cpp
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\GUI.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GUI.exp 개체를 생성하고 있습니다.
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll
+msbuild exit=0

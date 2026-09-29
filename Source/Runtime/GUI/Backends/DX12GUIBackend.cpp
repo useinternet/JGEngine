@@ -18,6 +18,19 @@
 
 #ifdef _DIRECTX12
 
+namespace
+{
+	PSharedPtr<PDirectX12API> findDX12API()
+	{
+		PSharedPtr<PJGGraphicsAPI> graphicsAPI;
+		if (HJGGraphicsModule* graphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>())
+		{
+			graphicsAPI = graphicsModule->GetGraphicsAPI();
+		}
+		return Cast<PDirectX12API>(graphicsAPI);
+	}
+}
+
 PDX12GUIBackend::PDX12GUIBackend() : PGUIBackend()
 {
 
@@ -77,6 +90,9 @@ void PDX12GUIBackend::Initialize()
 		SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+	// ImGui 메인 뷰포트의 정점/인덱스 버퍼는 BufferCount개를 돌려 쓴다. 엔진이 동시에 GPU에 올리는 프레임 수보다 적으면 안 된다. (5-5)
+	JG_CHECK((uint32)DX12API->GetArguments().BufferCount >= DX12API->GetFramesInFlight());
+
 	CurrentSrvIndex = SrvStartIndex;
 	IncreaseSize = DX12API->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
@@ -94,7 +110,21 @@ uint64 PDX12GUIBackend::GPUAllocate(TextureID textureID)
 
 void PDX12GUIBackend::NewFrame()
 {
-	CurrentSrvIndex = SrvStartIndex;
+	// 프레임 파이프라이닝(5-5): 앞 프레임의 GUI 드로우가 GPU에서 아직 이 힙의 슬롯을 읽고 있을 수 있다.
+	// 프레임 인덱스마다 다른 구간을 써서 그 프레임이 끝나기 전에는 덮지 않는다. (NewFrame은 그래픽 BeginFrame의 펜스 대기 뒤에 불린다)
+	uint32 framesInFlight = 1;
+	uint32 frameIndex     = 0;
+	PSharedPtr<PDirectX12API> DX12API = findDX12API();
+	if (DX12API.IsValid())
+	{
+		framesInFlight = DX12API->GetFramesInFlight();
+		frameIndex     = DX12API->GetFrameIndex();
+	}
+	const uint32 regionSize = (MaxSrvCount - SrvStartIndex) / framesInFlight;
+	SrvRegionStart  = SrvStartIndex + frameIndex * regionSize;
+	SrvRegionEnd    = SrvRegionStart + regionSize;
+	CurrentSrvIndex = SrvRegionStart;
+
 	ImGui_ImplDX12_NewFrame();
 
 #ifdef _PLATFORM_WINDOWS
@@ -134,6 +164,13 @@ void PDX12GUIBackend::NewFrame()
 
 void PDX12GUIBackend::Shutdown()
 {
+	// 앞선 프레임의 GUI 드로우가 GPU에서 아직 이 힙과 ImGui 리소스(폰트 텍스처, 정점/인덱스 버퍼)를 쓰고 있을 수 있다. 끝난 뒤 놓는다.
+	PSharedPtr<PDirectX12API> DX12API = findDX12API();
+	if (DX12API.IsValid())
+	{
+		DX12API->WaitForGPUIdle();
+	}
+
 	SrvDescriptorHeap.Reset(); SrvDescriptorHeap = nullptr;
 	CommandList.Reset();  CommandList = nullptr;
 	CommandAlloc.Reset(); CommandAlloc = nullptr;
@@ -163,7 +200,7 @@ void PDX12GUIBackend::OnUpdate(HDX12CommandList* cmdList, HDX12Resource* backBuf
 	ImGui::Render();
 	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
 
-	CurrentSrvIndex = SrvStartIndex;
+	CurrentSrvIndex = SrvRegionStart;
 }
 
 void PDX12GUIBackend::OnPresent()
@@ -213,11 +250,21 @@ ImTextureID PDX12GUIBackend::ConvertImGuiTextureID(TextureID id)
 	PSharedPtr<PDirectX12API> DX12API = Cast<PDirectX12API>(GraphicsAPI);
 	JG_CHECK(DX12API.IsValid());
 
+	// 이번 프레임 구간을 다 쓰면 다른 프레임의 구간(또는 힙 밖)을 덮지 않도록 마지막 슬롯을 다시 쓴다. 넘친 이미지는 잘못 보인다.
+	uint32 slot = CurrentSrvIndex++;
+	if (slot >= SrvRegionEnd)
+	{
+		if (slot == SrvRegionEnd)
+		{
+			JG_LOG(GUI, ELogLevel::Error, "GUI SRV slots for this frame are exhausted (%d). Increase MaxSrvCount", (int32)(SrvRegionEnd - SrvRegionStart));
+		}
+		slot = SrvRegionEnd - 1;
+	}
+
 	CD3DX12_CPU_DESCRIPTOR_HANDLE CPU(SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GPU(SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	CPU.Offset((int32)CurrentSrvIndex, (uint32)IncreaseSize);
-	GPU.Offset((int32)CurrentSrvIndex, (uint32)IncreaseSize);
-	CurrentSrvIndex++;
+	CPU.Offset((int32)slot, (uint32)IncreaseSize);
+	GPU.Offset((int32)slot, (uint32)IncreaseSize);
 
 	DX12API->GetDevice()->CopyDescriptorsSimple(1, CPU, { id }, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	return (ImTextureID)GPU.ptr;

@@ -1,11 +1,11 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
-    "ModuleDependencies": [ "Core", "GUI", "Game" ],
-    "ModuleName": "Editor",
-    "ModulePath": "Source/Editor/",
+    "ModuleDependencies": [ "Core", "GUI", "MyGame" ],
+    "ModuleName": "MyGameEditor",
+    "ModulePath": "Source/MyGameEditor/",
     "Defines": [
-      "_EDITOR"
+      "_MYGAMEEDITOR"
     ],
     "DevelopEngine": {
       "Config": "DebugConfig",

@@ -84,54 +84,12 @@ void PDX12IndexBuffer::SetDatas(const uint32* inDatas, uint64 inCount)
 
 	if (bGPULoad)
 	{
-		_shadowData.assign(inDatas, inDatas + inCount);
-		requestUpload();
+		requestUpload(inDatas, inCount);
 	}
 	else if (_cpuData != nullptr)
 	{
 		memcpy(_cpuData, inDatas, btSize);
 	}
-}
-
-void PDX12IndexBuffer::SetData(uint32 inData, uint64 inIndex)
-{
-	JG_CHECK(inIndex < _indexCount && IsValid());
-
-	uint32* datas = GetDatas();
-	if (datas == nullptr || inIndex >= _indexCount)
-	{
-		return;
-	}
-
-	datas[inIndex] = inData;
-
-	if (_loadMethod == EBufferLoadMethod::GPULoad)
-	{
-		// CPU 사본만 고쳤으므로 GPU에 다시 올린다. 같은 대상의 대기 요청은 하나로 합쳐진다.
-		requestUpload();
-	}
-}
-
-uint32* PDX12IndexBuffer::GetDatas() const
-{
-	if (_loadMethod == EBufferLoadMethod::GPULoad)
-	{
-		return _shadowData.empty() ? nullptr : (uint32*)_shadowData.data();
-	}
-	return _cpuData;
-}
-
-uint32 PDX12IndexBuffer::GetData(uint64 inIndex) const
-{
-	JG_CHECK(inIndex < _indexCount && IsValid());
-
-	const uint32* datas = GetDatas();
-	if (datas == nullptr || inIndex >= _indexCount)
-	{
-		return INDEX_NONE;
-	}
-
-	return datas[inIndex];
 }
 
 uint64 PDX12IndexBuffer::GetIndexCount() const
@@ -160,8 +118,6 @@ void PDX12IndexBuffer::SetLoadMethod(EBufferLoadMethod inLoadMethod)
 
 void PDX12IndexBuffer::Reset()
 {
-	_shadowData.clear();
-
 	if (_dx12Resource == nullptr)
 	{
 		return;
@@ -239,9 +195,9 @@ D3D12_CPU_DESCRIPTOR_HANDLE PDX12IndexBuffer::GetUAV() const
 	return _uav.CPU();
 }
 
-void PDX12IndexBuffer::requestUpload()
+void PDX12IndexBuffer::requestUpload(const uint32* inDatas, uint64 inCount)
 {
-	if (IsValid() == false || _shadowData.empty())
+	if (IsValid() == false || inDatas == nullptr || inCount == 0)
 	{
 		return;
 	}
@@ -253,5 +209,5 @@ void PDX12IndexBuffer::requestUpload()
 		return;
 	}
 
-	stagingManager->RequestBufferUpload(_dx12Resource, _shadowData.data(), _shadowData.size() * sizeof(uint32), D3D12_RESOURCE_STATE_INDEX_BUFFER, _name);
+	stagingManager->RequestBufferUpload(_dx12Resource, inDatas, inCount * sizeof(uint32), D3D12_RESOURCE_STATE_INDEX_BUFFER, _name);
 }

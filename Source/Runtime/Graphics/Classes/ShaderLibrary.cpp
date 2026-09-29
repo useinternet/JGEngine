@@ -4,7 +4,7 @@
 PString GShaderLibrary::GraphicsShaderTemplate = "graphics_shader_template";
 PString GShaderLibrary::MaterialConstantBufferContentsScript = "__PS_CONSTANT_BUFFER_CONTENTS_SCRIPT__";
 PString GShaderLibrary::MaterialSurfaceContentsScript        = "__PS_SURFACE_CONTENTS_SCRIPT__";
-PString GShaderLibrary::MaterialSceneContentsScript          = "__PS_SCENE_CONTENTS_SCRIPT__";
+PString GShaderLibrary::MaterialScreenContentsScript         = "__PS_SCREEN_CONTENTS_SCRIPT__";
 
 void GShaderLibrary::Start()
 {

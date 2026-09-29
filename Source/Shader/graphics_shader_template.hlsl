@@ -48,7 +48,7 @@ SamplerState _PointClamp_  : register(s3);
 SamplerState _LinearClamp_ : register(s4);
 SamplerState _AnisotropicClamp_ : register(s5);
 
-#if MATERIAL_DOMAIN_SCENE
+#if MATERIAL_DOMAIN_SCREEN
 static const float2 gTexCoords[6] =
 {
 	float2(0.0f, 1.0f),
@@ -66,24 +66,24 @@ struct VS_OUT
 	float2 TexC : TEXCOORD0;
 };
 
-struct PS_SCENE_OUTPUT
+struct PS_SCREEN_OUTPUT
 {
 	float4 final;
 };
 
-struct PS_SCENE_INPUT
+struct PS_SCREEN_INPUT
 {
 	float4 posH;
 	float2 tex;
 };
 
-PS_SCENE_OUTPUT PS_SCENE_FUNCTION(PS_SCENE_INPUT _input)
+PS_SCREEN_OUTPUT PS_SCREEN_FUNCTION(PS_SCREEN_INPUT _input)
 {
-	PS_SCENE_OUTPUT _output;
+	PS_SCREEN_OUTPUT _output;
 	_output.final    = float4(0.0f,0.0f,0.0f,0.0f);
 
 
-	__PS_SCENE_CONTENTS_SCRIPT__
+	__PS_SCREEN_CONTENTS_SCRIPT__
 
 	return _output;
 }
@@ -100,12 +100,12 @@ VS_OUT vs_main(uint vid : SV_VertexID)
 
 float4 ps_main(VS_OUT pin) : SV_TARGET
 {
-	PS_SCENE_INPUT input;
+	PS_SCREEN_INPUT input;
 	input.tex = pin.TexC;
 	input.posH = pin.PosH;
 
-	PS_SCENE_OUTPUT output;
-	output =  PS_SCENE_FUNCTION(input);
+	PS_SCREEN_OUTPUT output;
+	output =  PS_SCREEN_FUNCTION(input);
 
 	return output.final;
 }

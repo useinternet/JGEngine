@@ -1,9 +1,9 @@
 #pragma once
-#include "GameDefines.h"
+#include "MyGameDefines.h"
 #include "Misc/Module.h"
 
-// 인게임 전용 모듈. 게임 규칙 · 액터 · 게임 인스턴스를 둔다.
-class GAME_API HGameModule : public IModuleInterface
+// 게임 코드 모듈. 게임 실행과 에디터 환경 모두에서 로드된다.
+class MYGAME_API HMyGameModule : public IModuleInterface
 {
 protected:
 	virtual JGType GetModuleType() const override;

@@ -74,6 +74,7 @@ namespace HHLSL
 	constexpr const char* HSTarget = "hs_5_1";
 	constexpr const char* GSTarget = "gs_5_1";
 	constexpr const char* PSTarget = "ps_5_1";
-	constexpr const char* CSTarget = "cs_6_0";
-	constexpr const char* RTTarget = "lib_6_3";
+	// 컴파일러는 FXC(D3DCompile2)라 셰이더 모델 5.1까지만 된다. cs_6_0이면 컴퓨트 셰이더가 전부 컴파일에 실패했다. (5-4)
+	constexpr const char* CSTarget = "cs_5_1";
+	constexpr const char* RTTarget = "lib_6_3";   // DXC 전용(셰이더 모델 6.3). 지금 쓰는 곳은 없다.
 }

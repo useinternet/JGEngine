@@ -8,8 +8,8 @@ class IConstantBuffer;
 
 enum class GRAPHICS_API EMaterialDomain
 {
-	Surface,
-	Scene,
+	Surface,   // 메시 표면. G버퍼에 쓴다
+	Screen,    // 화면 전체(풀스크린 삼각형). 합성 같은 화면 공간 패스. (2026-09-29 Scene에서 이름 변경: PScene과 겹쳐서)
 };
 
 struct GRAPHICS_API HMaterialCompileArguments

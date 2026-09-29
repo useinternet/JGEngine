@@ -38,7 +38,7 @@ void HStaticSubMesh::SetData(PName inName, const HList<HVertex>& inVertices, con
 	{
 		HVertexBufferConstructArguments vertexArgs;
 		vertexArgs.Name = inName;
-		vertexArgs.LoadMethod = EBufferLoadMethod::GPULoad;   // 정적 메시는 DEFAULT 힙. 스테이징 관리자가 올리고 CPU 사본은 버퍼가 든다. (5-6)
+		vertexArgs.LoadMethod = EBufferLoadMethod::GPULoad;   // 정적 메시는 DEFAULT 힙. 스테이징 관리자가 올린다. CPU 사본은 에셋(Vertices/Indices)이 든다. (5-6, 5-26)
 		VertexBuffer = GetGraphicsAPI().CreateVertexBuffer(vertexArgs);
 	}
 	if (IndexBuffer == nullptr)
@@ -53,19 +53,23 @@ void HStaticSubMesh::SetData(PName inName, const HList<HVertex>& inVertices, con
 	if (inVertices.empty() || inIndices.empty())
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "%s : SubMesh has no vertices(%d) or indices(%d)", inName.ToString(), (int32)inVertices.size(), (int32)inIndices.size());
+		Vertices.clear();
+		Indices.clear();
 		return;
 	}
 
-	// HVertex -> HVertexData 슬라이스 복사로 vptr을 떼어낸다. GPU 스트라이드 = sizeof(HVertexData).
-	HList<HVertexData> packedVertices;
-	packedVertices.reserve(inVertices.size());
+	// HVertex -> HVertexData 슬라이스 복사로 vptr을 떼어낸다. 이 사본을 에셋이 든다(저장 · 경계 상자). GPU 스트라이드 = sizeof(HVertexData).
+	Vertices.clear();
+	Vertices.reserve(inVertices.size());
 	for (const HVertex& vertex : inVertices)
 	{
-		packedVertices.push_back(static_cast<const HVertexData&>(vertex));
+		Vertices.push_back(static_cast<const HVertexData&>(vertex));
 	}
+	Indices = inIndices;
 
-	VertexBuffer->SetDatas(packedVertices.data(), sizeof(HVertexData), packedVertices.size());
-	IndexBuffer->SetDatas(inIndices.data(), inIndices.size());
+	// 스테이징 관리자가 요청 시점에 스테이징으로 복사하므로 버퍼는 사본을 들지 않는다.
+	VertexBuffer->SetDatas(Vertices.data(), sizeof(HVertexData), Vertices.size());
+	IndexBuffer->SetDatas(Indices.data(), Indices.size());
 
 	SetName(inName);
 }
@@ -73,47 +77,16 @@ void HStaticSubMesh::SetData(PName inName, const HList<HVertex>& inVertices, con
 void HStaticSubMesh::GetVertices(HList<HVertex>& outVertices) const
 {
 	outVertices.clear();
-	if (VertexBuffer == nullptr || VertexBuffer->IsValid() == false)
+	outVertices.reserve(Vertices.size());
+	for (const HVertexData& vertex : Vertices)
 	{
-		return;
-	}
-
-	if (VertexBuffer->GetVertexSize() != sizeof(HVertexData))
-	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : VertexBuffer stride(%d) != sizeof(HVertexData)(%d)", Name.ToString(), (int32)VertexBuffer->GetVertexSize(), (int32)sizeof(HVertexData));
-		return;
-	}
-
-	const uint64 vertexCount = VertexBuffer->GetVertexCount();
-	const HVertexData* packedVertices = static_cast<const HVertexData*>(VertexBuffer->GetDatas());
-	if (packedVertices == nullptr)
-	{
-		return;
-	}
-
-	outVertices.reserve(vertexCount);
-	for (uint64 i = 0; i < vertexCount; ++i)
-	{
-		outVertices.push_back(HVertex(packedVertices[i]));
+		outVertices.push_back(HVertex(vertex));
 	}
 }
 
 void HStaticSubMesh::GetIndices(HList<uint32>& outIndices) const
 {
-	outIndices.clear();
-	if (IndexBuffer == nullptr || IndexBuffer->IsValid() == false)
-	{
-		return;
-	}
-
-	const uint64 indexCount = IndexBuffer->GetIndexCount();
-	const uint32* indices = IndexBuffer->GetDatas();
-	if (indices == nullptr)
-	{
-		return;
-	}
-
-	outIndices.assign(indices, indices + indexCount);
+	outIndices = Indices;
 }
 
 void HStaticSubMesh::WriteJson(PJsonData& json) const
@@ -140,6 +113,18 @@ void HStaticSubMesh::ReadJson(const PJsonData& json)
 	json.GetData("Indexes", &indexes);
 
 	SetData(Name, vertexes, indexes);
+}
+
+// ---------------------------------------------------------------- HRenderSubMesh
+
+bool HRenderSubMesh::IsValid() const
+{
+	if (VertexBuffer == nullptr || IndexBuffer == nullptr)
+	{
+		return false;
+	}
+
+	return VertexBuffer->IsValid() && IndexBuffer->IsValid();
 }
 
 // ---------------------------------------------------------------- PStaticMesh
@@ -206,7 +191,7 @@ bool PStaticMesh::IsValid() const
 		return false;
 	}
 
-	for (const HStaticSubMesh& subMesh : _subMeshes)
+	for (const HRenderSubMesh& subMesh : _subMeshes)
 	{
 		if (subMesh.IsValid() == false)
 		{
@@ -224,7 +209,17 @@ void PStaticMesh::Reset()
 
 void PStaticMesh::SetSubMeshes(const HList<HStaticSubMesh>& inSubMeshes)
 {
-	_subMeshes = inSubMeshes;
+	_subMeshes.clear();
+	_subMeshes.reserve(inSubMeshes.size());
+	for (const HStaticSubMesh& subMesh : inSubMeshes)
+	{
+		HRenderSubMesh renderSubMesh;
+		renderSubMesh.Name         = subMesh.Name;
+		renderSubMesh.VertexBuffer = subMesh.VertexBuffer;
+		renderSubMesh.IndexBuffer  = subMesh.IndexBuffer;
+		renderSubMesh.Material     = subMesh.Material;
+		_subMeshes.push_back(renderSubMesh);
+	}
 }
 
 void PStaticMesh::SetMaterial(uint32 inSlot, PSharedPtr<IRawMaterial> inMaterial)
@@ -238,7 +233,7 @@ void PStaticMesh::SetMaterial(uint32 inSlot, PSharedPtr<IRawMaterial> inMaterial
 	_subMeshes[inSlot].Material = inMaterial;
 }
 
-const HList<HStaticSubMesh>& PStaticMesh::GetSubMeshes() const
+const HList<HRenderSubMesh>& PStaticMesh::GetSubMeshes() const
 {
 	return _subMeshes;
 }
@@ -278,24 +273,14 @@ const uint64 JGStaticMesh::GetVertexCount(uint32 inSubMeshIndex) const
 {
 	JG_CHECK(inSubMeshIndex < GetSubMeshCount());
 
-	if (_subMeshes[inSubMeshIndex].IsValid() == false)
-	{
-		return 0;
-	}
-
-	return _subMeshes[inSubMeshIndex].VertexBuffer->GetVertexCount();
+	return (uint64)_subMeshes[inSubMeshIndex].Vertices.size();
 }
 
 const uint64 JGStaticMesh::GetIndexCount(uint32 inSubMeshIndex) const
 {
 	JG_CHECK(inSubMeshIndex < GetSubMeshCount());
 
-	if (_subMeshes[inSubMeshIndex].IsValid() == false)
-	{
-		return 0;
-	}
-
-	return _subMeshes[inSubMeshIndex].IndexBuffer->GetIndexCount();
+	return (uint64)_subMeshes[inSubMeshIndex].Indices.size();
 }
 
 const uint64 JGStaticMesh::GetSubMeshCount() const
@@ -307,26 +292,27 @@ const HVertexData& JGStaticMesh::GetVertex(uint32 inSubMeshIndex, uint32 inIndex
 {
 	JG_CHECK(inSubMeshIndex < GetSubMeshCount());
 
-	if (_subMeshes[inSubMeshIndex].IsValid() == false)
+	const HList<HVertexData>& vertices = _subMeshes[inSubMeshIndex].Vertices;
+	if (inIndex >= vertices.size())
 	{
 		static HVertexData nullVertex;
 		return nullVertex;
 	}
 
-	return _subMeshes[inSubMeshIndex].VertexBuffer->GetData<HVertexData>(inIndex);
+	return vertices[inIndex];
 }
 
 uint32 JGStaticMesh::GetIndex(uint32 inSubMeshIndex, uint32 inIndex) const
 {
 	JG_CHECK(inSubMeshIndex < GetSubMeshCount());
 
-	if (_subMeshes[inSubMeshIndex].IsValid() == false)
+	const HList<uint32>& indices = _subMeshes[inSubMeshIndex].Indices;
+	if (inIndex >= indices.size())
 	{
-		static uint32 nullVertex = INDEX_NONE;
-		return nullVertex;
+		return (uint32)INDEX_NONE;
 	}
 
-	return _subMeshes[inSubMeshIndex].IndexBuffer->GetData(inIndex);
+	return indices[inIndex];
 }
 
 HList<PSharedPtr<IRawMaterial>> JGStaticMesh::GetMaterials() const
@@ -400,7 +386,8 @@ void JGStaticMesh::SetData(const HList<PName>& subMeshNames, const HList<HList<H
 		HStaticSubMesh subMesh;
 		subMesh.SetData(subMeshNames[i], inVerties[i], inIndeies[i]);
 
-		_subMeshes.push_back(subMesh);
+		// 업로드 데이터는 SetData 안에서 스테이징으로 복사됐다. 사본을 옮겨 담아 두 벌이 되지 않게 한다.
+		_subMeshes.push_back(std::move(subMesh));
 	}
 
 	_bMeshDirty = true;
@@ -432,22 +419,10 @@ bool JGStaticMesh::CalculateBounds(HBBox& outBounds) const
 
 	for (const HStaticSubMesh& subMesh : _subMeshes)
 	{
-		if (subMesh.IsValid() == false || subMesh.VertexBuffer->GetVertexSize() != sizeof(HVertexData))
+		for (const HVertexData& vertex : subMesh.Vertices)
 		{
-			continue;
-		}
-
-		const uint64 vertexCount = subMesh.VertexBuffer->GetVertexCount();
-		const HVertexData* vertices = static_cast<const HVertexData*>(subMesh.VertexBuffer->GetDatas());
-		if (vertices == nullptr)
-		{
-			continue;
-		}
-
-		for (uint64 i = 0; i < vertexCount; ++i)
-		{
-			minPos = HVector3::Min(minPos, vertices[i].Position);
-			maxPos = HVector3::Max(maxPos, vertices[i].Position);
+			minPos = HVector3::Min(minPos, vertex.Position);
+			maxPos = HVector3::Max(maxPos, vertex.Position);
 			bHasVertex = true;
 		}
 	}

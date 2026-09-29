@@ -33,9 +33,28 @@ DevConsole은 입력창 + 간이 파서 + 전체 브로드캐스트뿐이고 등
 - 확인 시점에 다른 세션의 MSBuild 4개와 link 1개가 돌고 있었다. 빌드 전에 `tasklist`로 확인하고, 겹치면 worktree에서 검증한다(`jgengine-tool-quirks` 메모리 참고).
 
 ## 다음 작업자에게
-- 사용자가 결정할 것(분석 문서 §6): 레지스트리 위치(권장 Core 전역 시스템), 1차 범위(권장: 명령·help/list·출력 창·히스토리, CVar는 2차), 인자 문법(권장: `-name=value` 유지 + 위치 인자·따옴표, Try 변환). 결정이 나면 `Document/DevConsole_TODO.md`를 단계별로 만들고 이 파일 끝에 진행 기록을 한 줄씩 남긴다.
+- 할 일 목록은 **`Document/DevConsole_TODO.md`**(Phase 0 결정 4개 → 1 Core 레지스트리·파서·JGConsole → 2 출력 기반 → 3 DevConsole 창 → 4 연결·문서). Phase 0의 `결정 필요` 4개(위치·이름·문법·범위)는 착수 전에 사용자 확인을 받는다. Phase 1 이후 항목은 권장안 기준으로 적혀 있으니, 결정이 다르게 나면 해당 항목을 먼저 고친다.
 - 새 파일을 추가하면 JGBuildTool 재실행(vcxproj 글롭), JGCLASS 변경은 JGHeaderTool 재실행. 헤드리스 검증은 JGConsole에 명령 실행 경로를 붙이면 `JGConsole.exe <명령>`으로 할 수 있다(런처는 GUI 확인용).
 - 정적 저장소에 엔진 컨테이너(`HHashMap` 등)를 두면 DLL 언로드 때 크래시한다. 레지스트리는 전역 시스템 객체의 멤버로 둔다.
 
 ## 진행 기록
 - 2026-09-29 분석 문서와 이 기록 작성. 소스 변경 없음.
+- 2026-09-29 `Document/DevConsole_TODO.md` 작성. 소스 변경 없음.
+  TODO를 쓰면서 새로 확인한 사실:
+  - **대기 항목 5개**: Graphics 5-25·5-31, GameFrameWorks 1-2 `simrun`, 게임모듈 R8 `modtest`, 리슨서버 `nethost/netjoin`. 이 중 3개가 JGConsole(헤드리스)이라 Core 레지스트리 권장의 근거가 됐다.
+  - **`HGUI::Text` 서식 해석 버그**(`GUI.cpp:49-57`)가 이미 증상을 낸다. 메모리 통계 창 줄 `"%5.1f%%   %7u"`(`MemoryStatistics.cpp:135`)가 1차 서식 뒤 `12.5%   123`이 되고, ImGui가 `%   123`을 변환 지정자로 먹는다. 그래서 `2026-09-28_phase2_memwidget_capture.png`에서 usage 값에 `%`가 없고 peak 열이 비어 있다.
+  - **ImGui는 GUI.dll 밖으로 노출되지 않는다**(`IMGUI_API` 비어 있음, `imconfig.h:26-27`). ImGui를 직접 부르는 파일은 GUI 모듈 6개뿐이라 DevConsole은 HGUI 래퍼를 늘려야 한다.
+  - **JGConsole은 알 수 없는 명령도 종료 코드 0**이다(`Main.cpp:43-47`). 검증 스크립트의 오타를 못 잡는다.
+  - **GameFrameWorks_TODO 1-2가 `-repeat N`(공백 구분)으로 적혀 있어** 권장 문법(`-name=value`)과 다르다. 0-3이 확정되면 4-1에서 문구를 고친다.
+  - **Update·Destroy 순서**: 스케줄러는 `GScheduleGlobalSystem::Update` 한 번에 모든 버킷을 돌린다. 그래서 `GStringTable` 다음·`GModuleGlobalSystem` 앞에 등록한 시스템은 Update가 프레임 밖이고, Destroy가 모듈 해제 뒤가 된다. `ReadbackTextureImmediate`의 프레임 안 경고 기준은 `BeginFrame`~`OnFrameSubmitted`다(`ResourceStagingManager.cpp:506, 520`).
+  - 현황분석 §6의 "Core 델리게이트 §2-4·5 수정" 권장을 **제외로 바꿨다**. 남은 멀티캐스트 사용처는 인자가 단순하고, 브로드캐스트 중 해제가 없다(`RemoveAll`은 `GUIBackend.cpp:11-12`의 종료 경로뿐).
+  - GUI_TODO 1-6·1-9에 "DevConsole 트랙에서 처리" 표시와 `HGUI::Text` 참고 줄을 추가했다.
+- 2026-09-29 **Phase 0 결정**(사용자): Core 전역 시스템 / 이름 `ConsoleCommand` / 문법 권장안 그대로(`area.action`, 위치 인자 + `-name=value` + `-name`, 따옴표, `-name value` 불가) / 입력 히스토리 포함.
+  사용자 질문 "명령 등록은 어떻게 하나"에 답해 TODO에 **"명령 등록 방법"** 절을 추가했다. 내용: 모듈 예시(Devkit `devscene.readback`, `BindRaw`), JGConsole 예시(`simrun`, `BindLambda`), 등록 주체별 등록·해제 위치, 핸들러 규칙(반환값, `TryGet*` 기본값 패턴, 출력, 실행 시점, 스레드), 정적 자동 등록을 두지 않는 이유(`Module.cpp:98 → 113 → 147`: 정적 초기화가 `Link_Module` 전에 돈다).
+  JGConsole 예시는 등록·실행·해제를 `runCommandLine` 한 함수 안에서 끝낸다. `main`의 지역 엔진 컨테이너는 `GCoreSystem::Destroy` 뒤에 해제되기 때문이다. 1-3 구현 때 이 형태를 따른다. 소스 변경 없음.
+- 2026-09-29 사용자 질문 두 가지에 답해 TODO를 고쳤다.
+  - (1) "JGConsole.exe로 실행하면 프로세스를 띄우나?" → 아니다. 런처 콘솔은 같은 프로세스 안에서 실행하고, JGConsole.exe는 따로 실행하는 프로그램이다. 레지스트리는 프로세스마다 있다. TODO에 경로 표를 추가했다.
+  - (2) "언리얼처럼 전역 변수로 등록하면?" → **0-5 결정: 전역 변수 `HAutoConsoleCommand`가 기본.** 생성자는 포인터만 들고 바이너리별 목록(`static Head`, Core가 정적 라이브러리라 DLL·EXE마다 따로 있다)에 이어지기만 한다. 등록은 모듈 연결 때 한다(Source 엔진 `CON_COMMAND` 방식).
+  - 모듈 훅은 `IModuleInterface`의 비순수 가상 함수 `RegisterAutoConsoleCommands`/`UnregisterAutoConsoleCommands`로 한다. 모듈 객체가 자기 DLL에서 만들어지므로 가상 호출이 그 DLL의 사본(그 DLL의 목록)으로 간다. `GModuleGlobalSystem`이 `StartupModule` 직후(`Module.cpp:147`)와 `ShutdownModule` 직전(`:208`, `:250`)에 부른다. EXE 목록은 레지스트리 생성자/`Destroy`가 맡는다.
+  - 규칙: 캡처 없는 람다·정적 함수만 된다(모듈 상태는 `FindModule`로 찾는다). 파일 범위에만 선언한다. Core에는 선언하지 않는다(링커 제거 또는 바이너리마다 중복 등록). `Register` API는 동적인 경우·자체 테스트용으로 남긴다.
+  - Phase 1 번호가 바뀌었다: 1-3 신설(HAutoConsoleCommand + 모듈 훅), JGConsole 전환 1-4, 자체 테스트 1-5, 검증 1-6(GameFrameWorks 임시 전역 명령으로 훅 확인), 커밋 1-7. JGConsole 명령은 앞으로 명령마다 .cpp 하나로 추가한다. 세 트랙이 `Main.cpp`를 동시에 고치지 않게 하려는 것이다. 소스 변경 없음.

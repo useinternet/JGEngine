@@ -477,10 +477,10 @@ bool PDX12Material::generateShaderCode()
 	}
 
 	// 활성 도메인 자리에 머터리얼 코드를 넣고, 비활성 도메인 자리는 비운다.
-	const bool bSceneDomain = (_domain == EMaterialDomain::Scene);
+	const bool bScreenDomain = (_domain == EMaterialDomain::Screen);
 	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialConstantBufferContentsScript, constantBufferShaderCode);
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentsScript, bSceneDomain ? PString() : materialShaderCode);
-	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSceneContentsScript,   bSceneDomain ? materialShaderCode : PString());
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialSurfaceContentsScript, bScreenDomain ? PString() : materialShaderCode);
+	fullShaderCode.ReplaceAll(GShaderLibrary::MaterialScreenContentsScript,  bScreenDomain ? materialShaderCode : PString());
 
 	_fullShaderCode = std::move(fullShaderCode);
 
@@ -492,8 +492,8 @@ bool PDX12Material::compileShader(const HMaterialCompileArguments& inArgs)
 	HGraphicsShaderCompileArguments compileArgs;
 	compileArgs.SourceCode = GetFullShaderCode();
 	compileArgs.Flags      = EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader;
-	// 템플릿의 #if MATERIAL_DOMAIN_SCENE 분기 선택. Surface는 0으로 명시해 미정의 매크로에 의존하지 않는다.
-	compileArgs.Macros.push_back(HPair<PName, PName>(PName("MATERIAL_DOMAIN_SCENE"), PName(_domain == EMaterialDomain::Scene ? "1" : "0")));
+	// 템플릿의 #if MATERIAL_DOMAIN_SCREEN 분기 선택. Surface는 0으로 명시해 미정의 매크로에 의존하지 않는다.
+	compileArgs.Macros.push_back(HPair<PName, PName>(PName("MATERIAL_DOMAIN_SCREEN"), PName(_domain == EMaterialDomain::Screen ? "1" : "0")));
 
 	PString errorCode;
 	if (_graphicsShader->Compile(compileArgs, &errorCode) == false)

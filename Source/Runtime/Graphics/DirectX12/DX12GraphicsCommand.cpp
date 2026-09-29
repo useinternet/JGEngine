@@ -165,8 +165,18 @@ void PDX12GraphicsCommand::Draw(const HDrawArguments& inArgs)
 			continue;
 		}
 
-		// 서브메시 머터리얼. IMesh::GetMaterial이 없으면 기본 머터리얼을 돌려주므로 null은 오지 않는다.
-		PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(inArgs.Mesh->GetMaterial(i));
+		// 서브메시 머터리얼. 덮어쓰기(장면의 메시 배치)가 있으면 그것, 없으면 메시의 것.
+		// IMesh::GetMaterial은 없으면 기본 머터리얼을 돌려주므로 null은 오지 않는다.
+		PSharedPtr<IRawMaterial> material = nullptr;
+		if (inArgs.MaterialOverrides != nullptr && i < inArgs.MaterialOverrides->size())
+		{
+			material = (*inArgs.MaterialOverrides)[i];
+		}
+		if (material == nullptr)
+		{
+			material = inArgs.Mesh->GetMaterial(i);
+		}
+		PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(material);
 		if (dx12Material == nullptr || dx12Material->GetDomain() != EMaterialDomain::Surface)
 		{
 			JG_LOG(Graphics, ELogLevel::Error, "%s : SubMesh(%d) requires a Surface domain material", meshName, (int32)i);
@@ -197,7 +207,7 @@ void PDX12GraphicsCommand::Draw(const HDrawArguments& inArgs)
 	}
 }
 
-void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
+void PDX12GraphicsCommand::Draw(const HScreenDrawArguments& inArgs)
 {
 	JG_CHECK(_graphicsPSO != nullptr);
 
@@ -205,9 +215,9 @@ void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 
 	PSharedPtr<PDX12Material> dx12Material = Cast<PDX12Material>(inArgs.Material);
 	JG_CHECK(dx12Material != nullptr);
-	if (dx12Material->GetDomain() != EMaterialDomain::Scene)
+	if (dx12Material->GetDomain() != EMaterialDomain::Screen)
 	{
-		JG_LOG(Graphics, ELogLevel::Error, "%s : Draw(HSceneDrawArguments) requires a Scene domain material", dx12Material->GetName().ToString());
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Draw(HScreenDrawArguments) requires a Screen domain material", dx12Material->GetName().ToString());
 		return;
 	}
 
@@ -216,7 +226,7 @@ void PDX12GraphicsCommand::Draw(const HSceneDrawArguments& inArgs)
 		return;
 	}
 
-	// Scene 도메인은 SV_VertexID로 풀스크린을 그리므로 입력 레이아웃이 없다.
+	// Screen 도메인은 SV_VertexID로 풀스크린을 그리므로 입력 레이아웃이 없다.
 	_graphicsPSO->BindInputLayout(HInputLayout());
 	_graphicsPSO->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
 

@@ -262,7 +262,7 @@ void JGFBXAssetImporter::ReadMesh(const aiScene* scene, const aiMesh* mesh, HMes
 
 		if (multipleTex >= 2)
 		{
-			JG_LOG(Asset, ELogLevel::Warning, "This Mesh is multiple texcoord : {0}", inOutStock->Name);
+			JG_LOG(Asset, ELogLevel::Warning, "This Mesh is multiple texcoord : %s", inOutStock->Name);
 		}
 
 

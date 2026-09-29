@@ -80,7 +80,10 @@ ComPtr<ID3D12DescriptorHeap> PDynamicDescriptionAllocator::PushDescriptorTable(H
 				CD3DX12_GPU_DESCRIPTOR_HANDLE startGPU(_dx12Heap->GetGPUDescriptorHandleForHeapStart());
 
 				uint32 handleCount = (uint32)cache_pair.second.CPUHandles.size();
-				if (handleCount == 0) continue;
+				if (handleCount == 0)
+				{
+					continue;
+				}
 				CD3DX12_GPU_DESCRIPTOR_HANDLE gpu = startGPU.Offset(_pushedHandleOffset, _increaseSize);
 				CD3DX12_CPU_DESCRIPTOR_HANDLE cpu = startCPU.Offset(_pushedHandleOffset, _increaseSize);
 
@@ -88,7 +91,7 @@ ComPtr<ID3D12DescriptorHeap> PDynamicDescriptionAllocator::PushDescriptorTable(H
 				if (_pushedHandleOffset >= _numDescriptor)
 				{
 					_pushedHandleOffset = _numDescriptor;
-					JG_LOG(Graphics, ELogLevel::Error, "Need Add DynamicDescriptorAllocator Size  {0} => {1} ", _numDescriptor, _numDescriptor * 2);
+					JG_LOG(Graphics, ELogLevel::Error, "Need Add DynamicDescriptorAllocator Size %d => %d", (int32)_numDescriptor, (int32)(_numDescriptor * 2));
 				}
 
 				HList<uint32> srcDescriptorRangeSize(handleCount, 1);
@@ -164,7 +167,7 @@ void PDynamicDescriptionAllocator::RequestDescriptorHeap()
 		return;
 	}
 
-	JG_LOG(Graphics, ELogLevel::Error, "Resize DynamicDescriptorHeap Size {0} => {1}", _numDescriptor, _numDescriptor * 2);
+	JG_LOG(Graphics, ELogLevel::Error, "Resize DynamicDescriptorHeap Size %d => %d", (int32)_numDescriptor, (int32)(_numDescriptor * 2));
 
 	_numDescriptor *= 2;
 

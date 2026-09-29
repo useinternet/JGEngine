@@ -209,13 +209,13 @@ void PResourceStateTracker::RegisterResource(const PName& name, HDX12Resource* d
 	{
 		if ((*iter).second.Name != name)
 		{
-			JG_LOG(Graphics, ELogLevel::Error, "Add Counting Resource : {0}   Ref : {1}", resourceRefMap[d3dResource].Name, resourceRefMap[d3dResource].RefCount);
+			JG_LOG(Graphics, ELogLevel::Error, "Register %s : already registered as %s (Ref %d)", name, (*iter).second.Name, (int32)(*iter).second.RefCount);
 		}
 		(*iter).second.RefCount += 1;
 
 	}
 
-	JG_LOG(Graphics, ELogLevel::Trace, "Add Counting Resource : {0}   Ref : {1}", resourceRefMap[d3dResource].Name, resourceRefMap[d3dResource].RefCount);
+	JG_LOG(Graphics, ELogLevel::Trace, "Add Counting Resource : %s   Ref : %d", resourceRefMap[d3dResource].Name, (int32)resourceRefMap[d3dResource].RefCount);
 }
 void PResourceStateTracker::SetResourceName(ID3D12Resource* d3dResource, const PName& name)
 {
@@ -226,7 +226,7 @@ void PResourceStateTracker::SetResourceName(ID3D12Resource* d3dResource, const P
 	auto iter = resourceRefMap.find(d3dResource);
 	if (iter != resourceRefMap.end())
 	{
-		JG_LOG(Graphics, ELogLevel::Trace, "ReName Resource : {0} -> {1}", (*iter).second.Name, name);
+		JG_LOG(Graphics, ELogLevel::Trace, "ReName Resource : %s -> %s", (*iter).second.Name, name);
 		(*iter).second.Name = name;
 	}
 }
@@ -261,10 +261,10 @@ void PResourceStateTracker::UnRegisterResource(HDX12Resource* d3dResource)
 	{
 		(*iter).second.RefCount -= 1;
 
-		JG_LOG(Graphics, ELogLevel::Trace, "Remove Counting Resource : {0}   Ref : {1}", (*iter).second.Name, (*iter).second.RefCount);
+		JG_LOG(Graphics, ELogLevel::Trace, "Remove Counting Resource : %s   Ref : %d", (*iter).second.Name, (int32)(*iter).second.RefCount);
 		if ((*iter).second.RefCount <= 0)
 		{
-			JG_LOG(Graphics, ELogLevel::Trace, "UnRegister {0} in ResourceRefMap", (*iter).second.Name);
+			JG_LOG(Graphics, ELogLevel::Trace, "UnRegister %s in ResourceRefMap", (*iter).second.Name);
 			resourceRefMap.erase(iter);
 		}
 	}
