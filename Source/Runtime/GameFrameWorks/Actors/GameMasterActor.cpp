@@ -158,14 +158,14 @@ void JGGameMasterActor::SkipAll()
 	if (_activeCue != nullptr)
 	{
 		_activeCue->Skip();
-		_activeCue.Reset();
+		finishActiveCue();
 	}
 
 	while (_pendingEvents.empty() == false)
 	{
 		HGameplayEvent event = _pendingEvents.front();
 		_pendingEvents.pop_front();
-		applyBindingSideEffects(event);
+		applyBindingBeforeCue(event);
 
 		for (const PSharedPtr<JGGameplayCue>& prototype : _cuePrototypes)
 		{
@@ -181,6 +181,8 @@ void JGGameMasterActor::SkipAll()
 			}
 			break;
 		}
+
+		applyBindingAfterCue(event);
 	}
 }
 
@@ -222,6 +224,7 @@ void JGGameMasterActor::RebuildBindings()
 	_actorsByEntity.clear();
 	_pendingEvents.clear();
 	_activeCue.Reset();
+	_activeEvent = HGameplayEvent();
 
 	if (_gameMaster == nullptr)
 	{
@@ -260,7 +263,7 @@ void JGGameMasterActor::OnTick(float32 deltaSeconds)
 		{
 			return;
 		}
-		_activeCue.Reset();
+		finishActiveCue();
 	}
 
 	// 큐가 시작되지 않은 이벤트(맡는 큐 없음)와 즉시 완료되는 큐는 같은 프레임에 계속 넘어간다.
@@ -270,7 +273,7 @@ void JGGameMasterActor::OnTick(float32 deltaSeconds)
 		startNextCue();
 		if (_activeCue != nullptr && _activeCue->IsDone() == true)
 		{
-			_activeCue.Reset();
+			finishActiveCue();
 		}
 	}
 
@@ -291,6 +294,7 @@ void JGGameMasterActor::OnEndPlay()
 		_observer->Clear();
 	}
 	_activeCue.Reset();
+	_activeEvent = HGameplayEvent();
 	_pendingEvents.clear();
 	_bufferedCommands.clear();
 }
@@ -326,29 +330,35 @@ void JGGameMasterActor::onGameplayStateReplaced()
 	RebuildBindings();
 }
 
-void JGGameMasterActor::applyBindingSideEffects(const HGameplayEvent& event)
+void JGGameMasterActor::applyBindingBeforeCue(const HGameplayEvent& event)
 {
-	if (event.Kind == PName(HGameplayBuiltin::EventEntitySpawned))
+	if (event.Kind != PName(HGameplayBuiltin::EventEntitySpawned))
 	{
-		if (FindActor(event.Subject) == nullptr)
-		{
-			PSharedPtr<JGGameplayEntityActor> actor = SpawnActorForEntity(event.Subject, event);
-			if (actor != nullptr)
-			{
-				actor->SetEntityId(event.Subject);
-				BindActor(event.Subject, actor);
-			}
-		}
+		return;
+	}
+	if (FindActor(event.Subject) != nullptr)
+	{
 		return;
 	}
 
-	if (event.Kind == PName(HGameplayBuiltin::EventEntityDestroyed))
+	PSharedPtr<JGGameplayEntityActor> actor = SpawnActorForEntity(event.Subject, event);
+	if (actor != nullptr)
 	{
-		PSharedPtr<JGActor> actor = FindActor(event.Subject);
-		UnbindActor(event.Subject);
-		DestroyActorForEntity(event.Subject, actor);
+		actor->SetEntityId(event.Subject);
+		BindActor(event.Subject, actor);
+	}
+}
+
+void JGGameMasterActor::applyBindingAfterCue(const HGameplayEvent& event)
+{
+	if (event.Kind != PName(HGameplayBuiltin::EventEntityDestroyed))
+	{
 		return;
 	}
+
+	PSharedPtr<JGActor> actor = FindActor(event.Subject);
+	UnbindActor(event.Subject);
+	DestroyActorForEntity(event.Subject, actor);
 }
 
 bool JGGameMasterActor::startNextCue()
@@ -361,7 +371,7 @@ bool JGGameMasterActor::startNextCue()
 	HGameplayEvent event = _pendingEvents.front();
 	_pendingEvents.pop_front();
 
-	applyBindingSideEffects(event);
+	applyBindingBeforeCue(event);
 
 	for (const PSharedPtr<JGGameplayCue>& prototype : _cuePrototypes)
 	{
@@ -375,12 +385,22 @@ bool JGGameMasterActor::startNextCue()
 			continue;
 		}
 		cue->Begin(event, *this);
-		_activeCue = cue;
+		_activeCue   = cue;
+		_activeEvent = event;
 		return true;
 	}
 
 	// 맡는 큐가 없는 이벤트는 연출 없이 지나간다.
+	applyBindingAfterCue(event);
 	return true;
+}
+
+void JGGameMasterActor::finishActiveCue()
+{
+	_activeCue.Reset();
+	HGameplayEvent event = _activeEvent;
+	_activeEvent = HGameplayEvent();
+	applyBindingAfterCue(event);
 }
 
 void JGGameMasterActor::flushBufferedCommands()

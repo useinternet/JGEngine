@@ -1,0 +1,47 @@
+GameFrameWorks TODO Phase 1 (커널 버그 수정) 검증 (2026-09-29 21:45 ~ 2026-09-30 00:15)
+대상: 리뷰 Document/GameFrameWorks_설계코드리뷰_2026-09-28.md 의 재현 항목. 재현 코드 Document/Memory/tools/gfw_review_repro/ReviewRepro.cpp
+환경: 격리 워크트리(git worktree add --detach, HEAD 1308fd5) → 메인 트리. 리슨 서버 세션(Network)이 같은 시각 메인 트리의 GameMaster 파일을 고치고 있어 병합했다.
+
+===== 1. 수정 전 기준선 (워크트리, HEAD 1308fd5 그대로 + JGConsole 에 재현 코드) =====
+빌드: GameFrameWorks · JGConsole 오류 0. gmtest: GameMaster 60/60, 월드 15/15, 종료 코드 0
+simreview: 16줄 전부 [REPRODUCED]  (R1 R2 R3 R4 R5 R6a R9 R6b R7 R8 R17 R11 R12 R13 R14 R15)
+simreviewperf ×2 (한도 40 · 엔티티 302):
+  avg Submit 0.604 ms (스냅샷 20 이하) → 1.612 ms (한도 도달) x2.7
+  avg Submit 0.620 ms → 1.675 ms x2.7
+simreview256: 400 명령 크래시 없음 (메모리 Phase 2 성장형 풀. 리뷰 당시 HEAD 고정 풀에서는 75~100 명령에 크래시)
+
+===== 2. Phase 1 수정 후 (워크트리, Phase 1 만) =====
+빌드 오류 0 · 경고는 MSB8029(워크트리가 %TEMP% 아래) 뿐. gmtest: GameMaster 76/76, 월드 19/19, 종료 코드 0
+simreview: [NOT REPRODUCED] R1 R2 R3 R4 R5 R6a R6b R7 R8 R17 R11 R12 R13 R15 / [REPRODUCED] R9 R14 (백로그 C17 · C12)
+simreviewperf ×2: 0.373 → 0.362 ms (x1.0), 0.364 → 0.365 ms (x1.0)
+simreview256: 400 명령, 스냅샷 256 에서 유지, 크래시 없음
+주의: 첫 증분 빌드는 헤더 의존을 추적하지 못해(MSB8029) 고친 cpp 만 다시 컴파일했고, 옛 React 시그니처로 LNK2001 이 났다. -t:Rebuild 로 해결.
+
+===== 3. 리슨 서버 세션 변경과 병합 (워크트리: 그쪽 메인 트리 변경 전체 + Phase 1) =====
+겹친 파일 4개: GameMaster.cpp · GameMasterSelfTest.cpp · GameplayRuleEngine.cpp · GameplayState.h (그쪽 동의 후 병합, 그동안 그쪽은 편집 중지)
+  GameMaster.cpp        그쪽 버전 + Submit 거부 복원 · Undo 를 Pop(_state) 로, ImportDocument 대입을 std::move 로
+  GameplayState.h       Phase 1 버전 (그쪽 C1 수정과 같은 동작, Add<T> 경고만 뺌 — 그쪽 동의)
+  GameplayRuleEngine.cpp Phase 1 버전 (그쪽 내장 효과 IsAlive 검사와 같은 동작)
+  GameMasterSelfTest.cpp 그쪽 9 · 10 · 11 절 유지, React 시그니처 2곳, Phase 1 회귀는 12 절 (R1–R3 · R7 은 9 · 10 절이 맡음)
+Network/GameplayNetSelfTest.cpp:361 PNetThornsTrigger::React 시그니처만 HGameplayTriggerContext& 로
+결과: 빌드 오류 0. gmtest GameMaster 92/92 · 월드 19/19. simreview 는 2 와 같음. R10 x1.0 (0.370 → 0.358, 0.378 → 0.368)
+  net.test all 66/66. two-process OK (seq 1000, checksum 16006860866352003711, desyncs 0)
+
+===== 4. 메인 트리 (00:09 ~ 00:15) =====
+넣기 전 확인: 내 쪽만 바꾼 22개 파일이 메인 트리에서 HEAD 그대로, 겹친 4개 · Network 자체 테스트가 병합 시험 때와 같음
+넣은 뒤: 메인 트리 GameFrameWorks 가 3 의 워크트리와 내용 동일 (diff -r --strip-trailing-cr)
+GameFrameWorks.vcxproj · JGConsole.vcxproj (BuildProjectReferences=false) 오류 0
+JGConsole.exe gmtest: GameMaster 92 passed, 0 failed / World 19 passed, 0 failed / gmtest: OK, 종료 코드 0
+  [error] 1줄은 R5 회귀 테스트가 일부러 내는 것: "RequestChoice(TestAskInHandler) outside an effect Resolve is rejected"
+  [warning] 1줄은 11 절 Undo 가드 테스트의 것
+JGConsole.exe net.test all: Network self test 66 passed, 0 failed
+run_two_process.sh: host · ClientA · ClientB 모두 seq=1000 checksum=16006860866352003711 desyncs=0 → two-process: OK
+JGLauncher 30초 (crashwalk): Process exited with code 0, [error] · [critical] · D3D12 DebugLayer 0
+
+===== 5. 바뀐 동작 (게임 규칙 작성자가 알아야 할 것) =====
+- 트리거 React 는 이벤트를 낸 단계(효과 · 핸들러 · 페이즈 전이)가 끝난 뒤에 불리고, HGameplayTriggerContext(Enqueue 만, 상태 const)를 받는다
+- RequestChoice 는 효과 Resolve 안에서만 받는다. 핸들러에서 부르면 오류 로그 + false
+- 페이즈 전이는 효과 큐가 빈 뒤 단계(EGameplayPhaseStep)로 진행. 턴 종료 효과 → 다음 행동자 전, 라운드 시작 효과 → 순서 결정 전. EndTurn 효과는 TurnStart 에서도 받음
+- Add<T> 는 T* (죽은 ID 면 nullptr). 보드 · 영역 쓰기는 HGameplayState::SetBoardPosition · MoveToZone
+- const HGameplayState 의 Find/Get/Table 은 const
+- 이벤트 순서 · 체크섬 값이 전과 달라졌다 (같은 코드끼리는 결정론 유지, 2 프로세스 확인)

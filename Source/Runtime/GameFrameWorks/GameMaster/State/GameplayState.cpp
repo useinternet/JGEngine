@@ -11,11 +11,25 @@ HGameplayState::HGameplayState(const HGameplayState& rhs)
 	copyFrom(rhs);
 }
 
+HGameplayState::HGameplayState(HGameplayState&& rhs) noexcept
+{
+	moveFrom(rhs);
+}
+
 HGameplayState& HGameplayState::operator=(const HGameplayState& rhs)
 {
 	if (this != &rhs)
 	{
 		copyFrom(rhs);
+	}
+	return *this;
+}
+
+HGameplayState& HGameplayState::operator=(HGameplayState&& rhs) noexcept
+{
+	if (this != &rhs)
+	{
+		moveFrom(rhs);
 	}
 	return *this;
 }
@@ -39,6 +53,22 @@ void HGameplayState::copyFrom(const HGameplayState& rhs)
 	{
 		Tables.push_back(table->Clone());
 	}
+}
+
+void HGameplayState::moveFrom(HGameplayState& rhs) noexcept
+{
+	Entities = std::move(rhs.Entities);
+	Zones    = std::move(rhs.Zones);
+	Board    = std::move(rhs.Board);
+	Turn     = std::move(rhs.Turn);
+	Choice   = std::move(rhs.Choice);
+	for (int32 i = 0; i < RandomStreamCount; ++i)
+	{
+		Random[i] = rhs.Random[i];
+	}
+	Sequence = rhs.Sequence;
+	Seed     = rhs.Seed;
+	Tables   = std::move(rhs.Tables);
 }
 
 void HGameplayState::SeedAll(uint64 seed)
@@ -87,6 +117,24 @@ bool HGameplayState::IsAlive(const HGameplayEntityId& id) const
 	return Entities.IsAlive(id);
 }
 
+bool HGameplayState::SetBoardPosition(const HGameplayEntityId& id, const HGameplayCoord& coord)
+{
+	if (IsAlive(id) == false)
+	{
+		return false;
+	}
+	return Board.SetPosition(id, coord);
+}
+
+bool HGameplayState::MoveToZone(const HGameplayEntityId& id, const PName& zoneName)
+{
+	if (IsAlive(id) == false)
+	{
+		return false;
+	}
+	return Zones.MoveTo(id, zoneName);
+}
+
 HGameplayZone& HGameplayState::Zone(const PName& name)
 {
 	return Zones.FindOrAdd(name);
@@ -95,6 +143,18 @@ HGameplayZone& HGameplayState::Zone(const PName& name)
 const HGameplayZone* HGameplayState::FindZone(const PName& name) const
 {
 	return Zones.Find(name);
+}
+
+IGameplayComponentTable* HGameplayState::findTable(uint64 typeId) const
+{
+	for (const HSTLUniquePtr<IGameplayComponentTable>& table : Tables)
+	{
+		if (table->GetTypeId() == typeId)
+		{
+			return table.get();
+		}
+	}
+	return nullptr;
 }
 
 PString HGameplayState::ToJsonString() const

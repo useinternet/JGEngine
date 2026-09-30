@@ -31,6 +31,21 @@ class PSharedPtr;
 
 namespace PMemoryPrivate
 {
+	// 참조 수 두 개(강·약)를 한 덩어리로 둔다 (Memory_TODO 4-1, 2026-09-29).
+	// 강참조 수가 0 이 되면 GC 가 객체를 파괴하지만, 이 블록은 약참조가 모두 사라질 때까지 남는다(std::shared_ptr 의 제어 블록과 같은 규칙).
+	// 그래서 만료된 PWeakPtr 가 IsValid·Reset·재대입·소멸에서 카운터를 만져도 해제된 메모리가 아니다.
+	// 이전에는 GC 가 객체와 함께 카운터를 해제해서(WeakCount 무시) 남은 약참조가 해제된 메모리를 읽고 썼다.
+	// WeakCount = 약참조 수 + 1(객체가 살아 있는 동안 GC 가 들고 있는 몫). 0 이 되는 순간 블록을 해제한다(ReleaseWeakReference).
+	// CRT 힙(new/delete)에 둔다: 메모리 시스템(풀)이 내려간 뒤에 소멸하는 스마트 포인터도 카운터를 안전하게 만질 수 있게.
+	struct HMemoryControlBlock
+	{
+		HAtomicInt32 RefCount  = 0;   // 첫 멤버여야 한다: 블록 주소 = RefCount 주소 (Memory.cpp static_assert)
+		HAtomicInt32 WeakCount = 1;
+	};
+
+	// 약참조 몫 하나를 놓고, 마지막 몫이면 제어 블록을 해제한다. 어느 스레드에서든 부를 수 있다.
+	void ReleaseWeakReference(HAtomicInt32* inRefCount, HAtomicInt32* inWeakCount);
+
 	template<class T>
 	class PTemporaryOwner : public IMemoryObject
 	{
@@ -383,13 +398,10 @@ public:
 		set<T>(rhs);
 	}
 
+	// 객체가 이미 죽었어도 약참조 몫은 놓는다. 제어 블록은 약참조가 모두 사라질 때까지 살아 있다 (Memory_TODO 4-1).
+	// 이전에는 IsValid() 로 해제된 카운터를 읽었고, 죽은 객체면 몫을 놓지 않았다.
 	virtual ~PWeakPtr()
 	{
-		if (IsValid() == false)
-		{
-			return;
-		}
-
 		subWeakCount();
 	}
 public:
@@ -472,13 +484,29 @@ public:
 		}
 	}
 	
+	// 강참조 수가 0 보다 클 때만 1 올린다(CAS). 0 이면 GC 가 파괴했거나 파괴할 객체라 되살리지 않는다. (Memory_TODO 4-1)
+	// 이전에는 주소로 다시 찾아서(Wrap(_ptr)) 같은 주소에 새 객체가 들어오면 그 객체를 잡을 수 있었고, 검사와 증가 사이에 경합이 있었다.
 	PSharedPtr<T> Pin() const
 	{
-		if (IsValid() == false)
+		if (_ptr == nullptr || _pRefCount == nullptr)
 		{
 			return nullptr;
 		}
-		return GMemoryGlobalSystem::GetInstance().Wrap(_ptr);
+
+		int32 refCount = _pRefCount->load();
+		while (refCount > 0)
+		{
+			if (_pRefCount->compare_exchange_weak(refCount, refCount + 1) == true)
+			{
+				PSharedPtr<T> result;
+				result._ptr        = _ptr;
+				result._pRefCount  = _pRefCount;
+				result._pWeakCount = _pWeakCount;
+				return result;
+			}
+		}
+
+		return nullptr;
 	}
 
 public:
@@ -549,7 +577,7 @@ private:
 			// 같은 객체: rhs 가 들고 있던 약참조 하나는 우리가 대신 놓는다.
 			if (owner.pWeakCount != nullptr)
 			{
-				owner.pWeakCount->fetch_sub(1);
+				PMemoryPrivate::ReleaseWeakReference(owner.pRefCount, owner.pWeakCount);
 			}
 			return;
 		}
@@ -578,7 +606,7 @@ private:
 			return;
 		}
 
-		_pWeakCount->fetch_sub(1);
+		PMemoryPrivate::ReleaseWeakReference(_pRefCount, _pWeakCount);
 	}
 };
 
@@ -590,8 +618,7 @@ class GMemoryGlobalSystem : public GGlobalSystemInstance<GMemoryGlobalSystem>
 	{
 		void*  Ptr  = nullptr;
 		bool bIsClass = false;
-		std::unique_ptr<HAtomicInt32> RefCount;
-		std::unique_ptr<HAtomicInt32> WeakCount;
+		PMemoryPrivate::HMemoryControlBlock* Control = nullptr;   // 참조 수. 객체가 파괴돼도 약참조가 남아 있으면 살아 있다 (Memory_TODO 4-1)
 	};
 public:
 	mutable std::unordered_map<const void*, HMemoryBlock> AllocatedMemoryBlocks;
@@ -628,12 +655,11 @@ public:
 		HMemoryBlock memoryBlock;
 		memoryBlock.Ptr = Result._ptr;
 		memoryBlock.bIsClass = std::is_class<T>::value;
-		memoryBlock.RefCount = std::make_unique<HAtomicInt32>();
-		memoryBlock.WeakCount = std::make_unique<HAtomicInt32>();
+		memoryBlock.Control = new PMemoryPrivate::HMemoryControlBlock();
+		memoryBlock.Control->RefCount.store(1);   // Result 가 첫 강참조. WeakCount 1 은 객체가 살아 있는 동안 GC 가 들고 있는 몫
 
-		Result._pWeakCount = memoryBlock.WeakCount.get();
-		Result._pRefCount = memoryBlock.RefCount.get();
-		Result._pRefCount->fetch_add(1);
+		Result._pRefCount  = &memoryBlock.Control->RefCount;
+		Result._pWeakCount = &memoryBlock.Control->WeakCount;
 
 		{
 			HLockGuard<HRecursiveMutex> lock(Mutex);
@@ -681,7 +707,8 @@ public:
 
 		PSharedPtr<T> Result;
 		Result._ptr = static_cast<T*>(memoryBlock.Ptr);
-		Result._pRefCount = memoryBlock.RefCount.get();
+		Result._pRefCount  = &memoryBlock.Control->RefCount;
+		Result._pWeakCount = &memoryBlock.Control->WeakCount;   // 이전에는 비어 있어서, 이 강참조로 만든 약참조가 제어 블록을 붙들지 못했다 (4-1)
 		Result._pRefCount->fetch_add(1);
 
 		return Result;

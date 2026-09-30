@@ -1,9 +1,40 @@
 #include "PCH/PCH.h"
 #include "Core/GameFrameWorksModule.h"
 #include "Core/GameInstance.h"
+#include "Core/WorldSelfTest.h"
 #include "GameMaster/GameMasterSelfTest.h"
+#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
 JG_MODULE_IMPL(HGameFrameWorksModule, GAMEFRAMEWORKS_C_API)
+
+namespace
+{
+	// gmtest — GameMaster 커널 + 월드/게임 인스턴스 자체 검증(그래픽 없음).
+	// GameFrameWorks 가 연결된 프로세스에서 쓸 수 있다: JGConsole(시작할 때 연결), 프로젝트 모드 에디터(게임 모듈이 연결).
+	// 두 테스트는 자기 전용 PGameMaster / PWorld 를 만들어 쓰므로 에디터 안에서 돌려도 모듈의 게임 인스턴스를 건드리지 않는다.
+	bool executeGameMasterSelfTest(const HConsoleCommandArgs&)
+	{
+		int32 failures = PGameMasterSelfTest::Run();
+		failures += PWorldSelfTest::Run();
+
+		if (failures == 0)
+		{
+			JG_LOG(GameFrameWorks, ELogLevel::Info, "gmtest: OK (0 failures)");
+		}
+		else
+		{
+			JG_LOG(GameFrameWorks, ELogLevel::Error, "gmtest: FAILED (%d failures)", failures);
+		}
+
+		return failures == 0;
+	}
+
+	HAutoConsoleCommand GameMasterSelfTestCommand(
+		"gmtest",
+		"gmtest",
+		"Run the GameFrameWorks self tests (GameMaster kernel + world)",
+		&executeGameMasterSelfTest);
+}
 
 JGType HGameFrameWorksModule::GetModuleType() const
 {

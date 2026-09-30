@@ -66,10 +66,51 @@ const PString& PHeaderTool::HeaderToolDirectory()
 	return headerToolDir;
 }
 
+namespace
+{
+	// <Module>.module.json 에서 코드젠 대상 판단에 필요한 것만 읽는다.
+	class HModuleManifest : public IJsonable
+	{
+	public:
+		PString ModuleFormat;
+
+	protected:
+		virtual void ReadJson(const PJsonData& json) override
+		{
+			json.GetData("ModuleFormat", &ModuleFormat);
+		}
+	};
+
+	// 생성물이 그대로면 쓰지 않는다. 엔진 코드젠은 엔진 솔루션과 모든 게임 솔루션이 함께 읽으므로
+	// 매번 다시 쓰면 PreBuild 한 번이 모두를 재컴파일시킨다. (읽기 · 쓰기 모두 텍스트 모드라 줄바꿈이 같게 비교된다)
+	bool writeIfChanged(const PString& path, const PString& text)
+	{
+		PString existingText;
+		if (HFileHelper::Exists(path) == true && HFileHelper::ReadAllText(path, &existingText) == true)
+		{
+			if (existingText.GetRawString() == text.GetRawString())
+			{
+				return true;
+			}
+		}
+
+		return HFileHelper::WriteAllText(path, text);
+	}
+}
+
 bool PHeaderTool::Run()
 {
-	const HModuleSystemInfo& moduleSystemInfo = HModuleSystemInfo::Get();
-	_engineModuleSet = moduleSystemInfo.CodeGenableModuleSet;
+	// 코드젠 대상 모듈. 예전에는 BuildTool 이 쓴 module_system_info.json 을 읽어서 새 모듈은 PreBuild 를 두 번 돌려야 했다.
+	// 모듈 json 을 직접 훑으면 HeaderTool → BuildTool 한 번으로 맞는다.
+	// 게임 프로젝트는 게임 모듈만 만든다. 엔진 코드젠은 엔진 Temp/CodeGen 에 있고 엔진 PreBuild 가 맡는다.
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		collectSharedLibModules(_args.UserWorkDirectory, _args.UserWorkCategories, &_userModuleSet);
+	}
+	else
+	{
+		collectSharedLibModules(_args.EngineWorkDirectory, _args.EngineWorkCategories, &_engineModuleSet);
+	}
 
 	// header file 수집
 	collectionHeaderFiles();
@@ -81,12 +122,67 @@ bool PHeaderTool::Run()
 	return true;
 }
 
+void PHeaderTool::collectSharedLibModules(const PString& workDirectory, const HHashSet<PString>& workCategories, HHashSet<PString>* outModuleSet) const
+{
+	for (const PString& workCategory : workCategories)
+	{
+		PString categoryDirectory;
+		HFileHelper::CombinePath(workDirectory, workCategory, &categoryDirectory);
+		if (HFileHelper::IsDirectory(categoryDirectory) == false)
+		{
+			continue;
+		}
+
+		HList<PString> entries;
+		HFileHelper::FileListInDirectory(categoryDirectory, &entries, true);
+
+		for (const PString& entry : entries)
+		{
+			if (HFileHelper::IsDirectory(entry) == false)
+			{
+				continue;
+			}
+
+			PString moduleName;
+			HFileHelper::FileName(entry, &moduleName);
+
+			PString manifestPath;
+			HFileHelper::CombinePath(entry, moduleName + ".module.json", &manifestPath);
+			if (HFileHelper::Exists(manifestPath) == false)
+			{
+				continue;
+			}
+
+			PString manifestText;
+			PJson manifestJson;
+			HModuleManifest manifest;
+			if (HFileHelper::ReadAllText(manifestPath, &manifestText) == false
+				|| PJson::ToObject(manifestText, &manifestJson) == false
+				|| manifestJson.GetData("ModuleInfo", &manifest) == false)
+			{
+				JG_LOG(HeaderTool, ELogLevel::Error, "Fail read %s", manifestPath);
+				continue;
+			}
+
+			if (manifest.ModuleFormat == "SharedLib")
+			{
+				outModuleSet->insert(moduleName);
+			}
+		}
+	}
+}
+
 bool PHeaderTool::collectionHeaderFiles()
 {
 	const PArguments& args = getArguments();
-	
+
 	for (const PString& workCategory : _args.EngineWorkCategories)
 	{
+		if (HFileHelper::IsProjectMode() == true)
+		{
+			break;
+		}
+
 		PString dirPath;
 		HFileHelper::CombinePath(_args.EngineWorkDirectory, workCategory, &dirPath);
 
@@ -789,16 +885,26 @@ bool PHeaderTool::analysisEnumElement(const PString& line, HEnum* pEnum)
 
 bool PHeaderTool::generateCodeGenFiles()
 {
-	const PString& engineCodeGenPath = HFileHelper::EngineCodeGenDirectory();
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		return generateCodeGenFilesInternal(HFileHelper::ProjectCodeGenDirectory(), _userHeaderInfos, _userModuleSet);
+	}
+
+	return generateCodeGenFilesInternal(HFileHelper::EngineCodeGenDirectory(), _engineHeaderInfos, _engineModuleSet);
+}
+
+bool PHeaderTool::generateCodeGenFilesInternal(const PString& codeGenRootDirectory, const HList<HHeaderInfo>& headerInfos, const HHashSet<PString>& moduleSet)
+{
+	const PString& engineCodeGenPath = codeGenRootDirectory;
 	HHashMap<PString, HQueue<const HClass*>> collectedClassQueues;
 	HHashMap<PString, HQueue<const HEnum*>> collectedEnumQueues;
 
-	if (HFileHelper::Exists(engineCodeGenPath))
+	if (HFileHelper::Exists(engineCodeGenPath) == false)
 	{
 		HFileHelper::CreateDirectory(engineCodeGenPath);
 	}
 
-	for (const HHeaderInfo& headerInfo : _engineHeaderInfos)
+	for (const HHeaderInfo& headerInfo : headerInfos)
 	{
 		if (headerInfo.Classes.empty() == true && headerInfo.Enums.empty() == true)
 		{
@@ -836,7 +942,7 @@ bool PHeaderTool::generateCodeGenFiles()
 			continue;
 		}
 
-		if (HFileHelper::WriteAllText(headerFilePath, headerSourceCode) == false)
+		if (writeIfChanged(headerFilePath, headerSourceCode) == false)
 		{
 			// Error Log
 			continue;
@@ -857,7 +963,7 @@ bool PHeaderTool::generateCodeGenFiles()
 			continue;
 		}
 
-		if (HFileHelper::WriteAllText(cppFilePath, cppSourceCode) == false)
+		if (writeIfChanged(cppFilePath, cppSourceCode) == false)
 		{
 			// Error Log
 			continue;
@@ -874,7 +980,7 @@ bool PHeaderTool::generateCodeGenFiles()
 		}
 	}
 
-	for (const PString& moduleName : _engineModuleSet)
+	for (const PString& moduleName : moduleSet)
 	{
 		PString engineCodeGenRegisterCppCode;
 
@@ -896,21 +1002,12 @@ bool PHeaderTool::generateCodeGenFiles()
 		}
 
 		HFileHelper::CombinePath(codeGenPath, PString::Format("%s.codegen.generate.cpp", moduleName), &codeGenPath);
-		if (HFileHelper::WriteAllText(codeGenPath, engineCodeGenRegisterCppCode) == false)
+		if (writeIfChanged(codeGenPath, engineCodeGenRegisterCppCode) == false)
 		{
 			// Error Log
 			continue;
 		}
 	}
-
-	for (const HHeaderInfo& headerInfo : _userHeaderInfos)
-	{
-		// 아직
-	}
-
-
-
-
 
 	return true;
 }

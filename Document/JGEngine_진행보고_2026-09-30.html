@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JGEngine 진행 보고</title>
+<meta name="description" content="2026-09-30 기준 JGEngine 엔진 기반 7개 트랙의 진행 상황, 남은 일, 결정이 필요한 항목">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --meter-fill: #2a78d6; --meter-track: #cde2fb;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --meter-fill: #3987e5; --meter-track: #0d366b;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --meter-fill: #3987e5; --meter-track: #0d366b; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 0 0 8px; }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .callout { background: var(--callout); border-left: 4px solid var(--meter-fill); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .pct { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; margin-left: 6px; }
+  .meter { display: inline-block; width: 110px; height: 8px; border-radius: 4px; background: var(--meter-track); vertical-align: middle; overflow: hidden; }
+  .meter > span { display: block; height: 100%; background: var(--meter-fill); border-radius: 4px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-active { --dot: var(--neutral); }
+  .b-decide { --dot: var(--warning); }
+  .b-stalled { --dot: var(--serious); }
+  .b-stalled::before { border-radius: 2px; }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .card .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .card .goal { color: var(--ink-2); font-size: 14px; margin-bottom: 10px; }
+  .card h4 { font-size: 13px; color: var(--muted); margin: 12px 0 4px; letter-spacing: .02em; }
+  .card ul { margin: 0; padding-left: 18px; }
+  .card li { margin: 2px 0; }
+  .card .links { margin-top: 12px; font-size: 13px; }
+  a { color: var(--meter-fill); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0 0; }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } .meter { width: 80px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>JGEngine 진행 보고</h1>
+  <div class="meta">기준일 2026-09-30 · 엔진 기반 7개 트랙 · 상세 문서: <code>Document/Memory/README.md</code></div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 엔진 기반 7개 트랙 중 4개(Memory, DevConsole, GameModule, Server 1차)는 구현과 검증이 끝나 커밋만 남았습니다. Graphics는 렌더링 기반을 마치고 에셋 파이프라인 마무리 단계이며, GameFrameWorks는 규칙 커널과 월드 계층 1차 구현을 끝내고 다음 단계(월드와 렌더링 연결) 착수를 기다립니다. GUI는 전용 작업이 멈춰 있습니다.</p>
+    <p><strong>지금 필요한 것.</strong> 첫째, 전 트랙의 변경이 한 작업 트리에 커밋되지 않은 채 섞여 있어 <code>git add -A</code>로 한 번에 커밋해 기준선을 만드는 일입니다. 둘째, 후속 작업을 막고 있는 결정 두 가지(Graphics 에셋 저장 형식, Server 월드 연결 착수 여부)입니다. 결정 목록은 7절에 모았습니다.</p>
+  </div>
+
+  <div class="callout">
+    <strong>원칙 (지침서 1절)</strong>
+    우리는 게임 엔진을 만들고, 그 위에 보드 &amp; 카드 게임을 만듭니다. 지금의 초점은 엔진 기반입니다. 레퍼런스 게임(아컴호러 등)은 요구사항 확인용 참고 자료일 뿐이며, 이 보고서의 진척도 엔진 시스템 단위로만 측정했습니다.
+  </div>
+
+  <h2>1. 전체 현황 한눈에</h2>
+  <table>
+    <thead><tr><th>분야</th><th>엔진에서 맡는 역할</th><th>상태</th><th>진행률</th><th>다음 한 걸음</th></tr></thead>
+    <tbody>
+      <tr><td class="name">GameFrameWorks</td><td>턴제 규칙 커널(GameMaster)과 월드·액터·컴포넌트 계층. 게임이 올라가는 뼈대</td><td><span class="badge b-active">진행 중</span></td><td><span class="meter"><span style="width:70%"></span></span><span class="pct">70%</span></td><td>커밋 후 Phase 2: 메시·카메라 컴포넌트로 월드를 화면에 연결</td></tr>
+      <tr><td class="name">Memory</td><td>엔진 전체의 CPU 메모리 풀, 컨테이너 할당자, GC 객체 수명, 통계 창</td><td><span class="badge b-done">마무리</span></td><td><span class="meter"><span style="width:95%"></span></span><span class="pct">95%</span></td><td>4-1 커밋, 남은 항목 종결 확정 후 휴면</td></tr>
+      <tr><td class="name">Graphics</td><td>DX12 렌더러: 메시 드로우, 리소스 전송, 프레임 파이프라이닝, 장면 구조, 에셋 임포트</td><td><span class="badge b-decide">결정 대기</span></td><td><span class="meter"><span style="width:80%"></span></span><span class="pct">80%</span></td><td>에셋 저장 형식 결정(5-30) 후 머터리얼·색 공간·임포트 명령</td></tr>
+      <tr><td class="name">GameModule</td><td>게임 코드를 엔진 밖 프로젝트로 분리: 생성 배치, 템플릿, 빌드 도구, 에디터 로드</td><td><span class="badge b-done">마무리</span></td><td><span class="meter"><span style="width:85%"></span></span><span class="pct">85%</span></td><td>커밋(재빌드 exe·템플릿 필수), 선택 항목은 호스트 결정 뒤</td></tr>
+      <tr><td class="name">Server</td><td>리슨 서버: 호스트 권한 명령 중계와 결정론 복제, 세션·재접속</td><td><span class="badge b-decide">결정 대기</span></td><td><span class="meter"><span style="width:75%"></span></span><span class="pct">75%</span></td><td>현 빌드로 재검증 후 커밋, Phase 5(월드 연결) 착수 여부 결정</td></tr>
+      <tr><td class="name">DevConsole</td><td>콘솔 명령 시스템: 어느 모듈이든 한 줄로 명령 등록, 런처 창과 콘솔 exe 양쪽에서 실행</td><td><span class="badge b-done">마무리</span></td><td><span class="meter"><span style="width:95%"></span></span><span class="pct">95%</span></td><td>커밋. 이후 각 트랙이 자기 명령을 붙임</td></tr>
+      <tr><td class="name">GUI</td><td>ImGui 기반 개발 UI 모듈: 위젯 수명, 업데이트 경로, 백엔드 동기화</td><td><span class="badge b-stalled">정체</span></td><td><span class="meter"><span style="width:20%"></span></span><span class="pct">20%</span></td><td>기본 플래그 결정(1-2) 후 업데이트 경로 복구</td></tr>
+    </tbody>
+  </table>
+  <div class="legend small">
+    <span class="badge b-done">마무리 = 구현·검증 완료, 커밋만 남음</span>
+    <span class="badge b-active">진행 중 = 다음 항목 착수 가능</span>
+    <span class="badge b-decide">결정 대기 = 결정 없이는 다음 항목 불가</span>
+    <span class="badge b-stalled">정체 = 담당 세션 없음</span>
+  </div>
+  <p class="small" style="margin-top:8px">진행률은 각 트랙 TODO의 엔진 범위 항목 기준(완료 ÷ 전체, 보류·제외 항목은 분모에서 뺌)입니다. 산정 근거는 <code>Document/Memory/진행현황.md</code>에 있습니다.</p>
+
+  <h2>2. 지금 가장 중요한 세 가지</h2>
+  <table>
+    <tbody>
+      <tr><td class="name">1. 한 커밋으로 기준선 만들기</td><td>GameFrameWorks, Server, DevConsole, GameModule, Memory의 변경이 커밋되지 않은 채 한 작업 트리에 섞여 있고, 새 소스 폴더 여러 개가 아직 git에 추가되지 않았습니다. 콘솔 명령 코드에 여러 트랙이 의존하므로 트랙별로 나눠 커밋하면 빌드가 깨집니다. <code>git add -A</code>로 한 번에 커밋하고, 재빌드된 빌드 도구 exe 2개와 프로젝트 템플릿, 삭제된 JGDev_Graphics를 함께 넣어야 합니다. 체크리스트는 진행현황 5절.</td></tr>
+      <tr><td class="name">2. 막힌 결정 두 가지</td><td>Graphics의 에셋 저장 형식(4MB 텍스처가 73.7MB 파일로 저장되는 문제)이 에셋 파이프라인 전체를 막고 있고, Server의 월드 연결(Phase 5) 착수 여부가 네트워크 트랙의 다음 단계를 막고 있습니다.</td></tr>
+      <tr><td class="name">3. 공유 파일 조율</td><td>GameFrameWorks와 Server가 같은 GameMaster 파일을 고치고, DevConsole·GameModule이 같은 Core 파일을 고칩니다. 병렬 세션이 착수하기 전에 상대 트랙 현황 문서의 의존 절을 확인하는 규칙을 문서에 넣었습니다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 분야별 상세</h2>
+  <div class="grid">
+
+    <div class="card">
+      <div class="head"><h3>GameFrameWorks</h3><span class="badge b-active">진행 중 · 70%</span></div>
+      <div class="goal">보드·카드·턴제 게임이 올라갈 규칙 커널과 월드·액터 계층을 만듭니다. 어떤 게임에도 공통인 부분만 엔진에 둡니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>규칙 커널 1차 완성: 상태·명령·효과·이벤트 흐름, 페이즈 진행, 보드 4종, Undo, 저장·리플레이·체크섬.</li>
+        <li>월드 계층 1차 완성: 게임 인스턴스, 월드, 액터, 컴포넌트, 컨트롤러.</li>
+        <li>설계·코드 리뷰에서 재현된 버그 17건 중 15건 수정, 나머지 2건은 백로그.</li>
+        <li>헤드리스 자체 테스트 111/111 통과, 네트워크 테스트와 2프로세스 결정론 검사도 통과.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul>
+        <li>Phase 2: 메시 컴포넌트와 카메라로 월드를 화면에 연결, 개발용 뷰, 피킹. Graphics의 장면 API는 준비됨.</li>
+      </ul>
+      <h4>결정 필요</h4>
+      <ul><li>Phase 2 착수 순서, 개발용 뷰를 GUI 위젯으로 붙일지, 프로젝트 없는 에디터에서 자체 테스트 명령을 노출할지.</li></ul>
+      <div class="links"><a href="Memory/GameFrameWorks/현황.md">현황</a> · <a href="Memory/GameFrameWorks/TODO.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>Memory</h3><span class="badge b-done">마무리 · 95%</span></div>
+      <div class="goal">엔진 CPU 메모리를 한 곳에서 관리하고, 고갈·무음 실패·해제 메모리 접근이 없는 상태를 만듭니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>페이지 성장형 풀로 재설계. 고갈 크래시와 대형 할당 강제 종료 경로가 사라짐.</li>
+        <li>상주 메모리 428MB → 230MB, 60초 로그 31만 줄 → 211줄, 종료 시 남은 블록 0.</li>
+        <li>약참조가 해제 메모리를 읽던 결함 제거(재현 3회 → 0회), 새 풀이 드러낸 기존 결함 2건 수정.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul><li>4-1 커밋과 회귀 확인 1회. 나머지 항목은 "현재 문제 없음"으로 보류 표에 정리했고, 확정되면 트랙을 휴면 처리합니다.</li></ul>
+      <h4>결정 필요</h4>
+      <ul><li>보류 항목 종결 확정, 문자열 테이블 수명 정책(현행 유지 권장).</li></ul>
+      <div class="links"><a href="Memory/Memory/현황.md">현황</a> · <a href="Memory/Memory/TODO.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>Graphics</h3><span class="badge b-decide">결정 대기 · 80%</span></div>
+      <div class="goal">DX12 렌더러의 기반을 세우고, 메시 드로우부터 에셋 임포트·저장까지 한 흐름으로 이어지게 합니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>빌드 불가 상태 복구 → 첫 드로우 → 메시 드로우(G버퍼와 합성) → 종료 크래시 근절.</li>
+        <li>리소스 전송 관리자, 프레임 파이프라이닝(2프레임), 장면 데이터와 렌더러 분리(PScene).</li>
+        <li>FBX 임베디드 텍스처 임포트, 경계 상자 저장, 다수의 도구·로그 결함 수정.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul><li>에셋 저장 크기(5-30) → FBX 머터리얼·sRGB·밉맵 → 임포트 콘솔 명령 → 스왑체인 색 공간 → 리드백 덤프 명령.</li></ul>
+      <h4>결정 필요</h4>
+      <ul><li>에셋 저장 형식(현재 4MB 텍스처가 73.7MB), 출력 색 공간, 샘플 에셋 재저장 여부.</li></ul>
+      <div class="links"><a href="Memory/Graphics/현황.md">현황</a> · <a href="Memory/Graphics/TODO.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>GameModule</h3><span class="badge b-done">마무리 · 85%</span></div>
+      <div class="goal">게임 코드를 엔진 밖 프로젝트에 두고, 배치 두 개로 생성부터 에디터 로드까지 되게 합니다. 지침서 원칙의 구조적 근거입니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>설계 결정 7건 확정. 프로젝트 기술 파일(.jgproject), 엔진·프로젝트 루트 분리, 빌드 도구·헤더 도구의 프로젝트 모드.</li>
+        <li>생성 배치 2개, 템플릿 13파일, 사용자 가이드. 빈 폴더에서 생성 → 솔루션 → 빌드 → 에디터 로드까지 검증(오류 0, 종료 코드 0).</li>
+        <li>JGEditor가 옛 개발용 그래픽스 프로그램의 역할을 흡수, 런처는 JGEditor를 띄움.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul><li>커밋(재빌드된 도구 exe 2개와 템플릿이 빠지면 배치가 옛 exe를 부름). 선택 항목: 모듈 테스트 명령, 에디터 모듈 제외, Content 마운트.</li></ul>
+      <h4>결정 필요</h4>
+      <ul><li>게임을 단독으로 실행할 호스트(첫 목표에는 불필요), 선택 항목 착수 시점.</li></ul>
+      <div class="links"><a href="Memory/GameModule/현황.md">현황</a> · <a href="Memory/GameModule/TODO.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>Server</h3><span class="badge b-decide">결정 대기 · 75%</span></div>
+      <div class="goal">규칙 커널을 여러 기계에 복제하는 리슨 서버 기반. 싱글 플레이도 같은 세션 경로를 씁니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>전송 계층(TCP, 루프백 지연·유실 주입), 호스트·클라이언트 세션, 핸드셰이크, 명령 중계, 체크섬 비교, 재동기, 진행 중 입장, 재접속.</li>
+        <li>콘솔 명령 3종과 2프로세스 실행 스크립트. 테스트 66/66, 두 프로세스 체크섬 동일.</li>
+        <li>GameFrameWorks 1차 수정과 병합 후 재검증 완료.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul><li>현재 빌드로 검사 재실행 후 커밋. Phase 5: 게임 인스턴스가 세션을 소유하고 월드 액터와 연결.</li></ul>
+      <h4>결정 필요</h4>
+      <ul><li>Phase 5 착수 여부(원 지시는 Phase 4까지), 실행 인자를 붙일 프로세스, 최소 로비의 위치.</li></ul>
+      <div class="links"><a href="Memory/Server/현황.md">현황</a> · <a href="Memory/Server/TODO.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>DevConsole</h3><span class="badge b-done">마무리 · 95%</span></div>
+      <div class="goal">어느 모듈이든 전역 변수 한 줄로 콘솔 명령을 등록하고, 런처의 콘솔 창과 콘솔 exe 양쪽에서 실행하게 합니다.</div>
+      <h4>된 것</h4>
+      <ul>
+        <li>명령 레지스트리, 인자 파서, 자동 등록·해제(모듈 연결 시점). 자체 테스트 57/57.</li>
+        <li>콘솔 창(로그 뷰, 히스토리), 콘솔 exe 전환(종료 코드 0/1), GUI 텍스트 서식 결함 수정.</li>
+        <li>GameFrameWorks 자체 테스트 명령을 이 시스템 위로 이동, 옛 별칭 제거.</li>
+      </ul>
+      <h4>남은 것</h4>
+      <ul><li>커밋. 이후 Graphics·GameModule·Server가 자기 명령을 이 시스템으로 붙입니다.</li></ul>
+      <h4>결정 필요</h4>
+      <ul><li>프로젝트 없는 에디터에서 GameFrameWorks 명령 노출 여부.</li></ul>
+      <div class="links"><a href="Memory/Etc/현황.md">현황</a> · <a href="Memory/Etc/TODO_DevConsole.md">TODO</a></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>GUI</h3><span class="badge b-stalled">정체 · 20%</span></div>
+      <div class="goal">ImGui 기반 개발 UI 모듈의 확정 버그 수정과 위젯 수명 정리.</div>
+      <h4>된 것</h4>
+      <ul><li>32항목 중 5건. 모두 다른 트랙(Graphics 5-5, GameModule, DevConsole)이 지나가며 처리했고, 전용 작업은 09-21 이후 없습니다.</li></ul>
+      <h4>남은 것</h4>
+      <ul>
+        <li>위젯 업데이트 경로가 어느 위젯에서도 호출되지 않는 문제. GameFrameWorks가 개발용 뷰를 위젯으로 만들면 바로 걸립니다.</li>
+        <li>소규모 버그 4건, imgui.ini 처리.</li>
+      </ul>
+      <h4>결정 필요</h4>
+      <ul><li>위젯 기본 플래그, imgui.ini를 git에서 추적 해제할지(매 실행마다 바뀌어 커밋에 섞임).</li></ul>
+      <div class="links"><a href="Memory/Etc/현황.md">현황</a> · <a href="Memory/Etc/TODO_GUI.md">TODO</a></div>
+    </div>
+
+  </div>
+
+  <h2>4. 분야 간 연결</h2>
+  <table>
+    <thead><tr><th>연결</th><th>내용</th><th>지켜야 할 것</th></tr></thead>
+    <tbody>
+      <tr><td class="name">DevConsole → GameFrameWorks, Server, 콘솔 exe</td><td>세 트랙이 콘솔 명령 코드에 의존</td><td>같은 커밋에 포함</td></tr>
+      <tr><td class="name">GameFrameWorks ↔ Server</td><td>같은 GameMaster 파일을 고침. Server Phase 5는 GameFrameWorks 액터 파일도 고침</td><td>변경 후 네트워크 테스트·2프로세스 재검증, 착수 전 조율</td></tr>
+      <tr><td class="name">Graphics → GameFrameWorks</td><td>장면 API(PScene)를 Phase 2가 소비</td><td>API 준비됨, 카메라를 렌더러에 넘기는 주체는 GameFrameWorks</td></tr>
+      <tr><td class="name">GameModule ↔ DevConsole, GUI, Graphics</td><td>JGEditor가 검증 호스트. Core 파일 2개를 DevConsole과 함께 고침</td><td>파일 단위 분리 커밋 불가</td></tr>
+      <tr><td class="name">Memory ↔ Graphics</td><td>약참조 결함 해결로 Graphics 쪽 원인 항목 종결. 남은 두 항목은 Memory 보류 항목과 같은 것</td><td>Memory 보류 표 기준으로 미종결 유지</td></tr>
+      <tr><td class="name">GUI ← Graphics</td><td>GUI의 GPU 대기·SRV 구간 항목을 Graphics 5-5가 해결</td><td>GUI TODO에 완료 반영됨</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. 검증 상태</h2>
+  <table>
+    <thead><tr><th>검사</th><th>결과 (마지막 실행)</th></tr></thead>
+    <tbody>
+      <tr><td class="name">GameFrameWorks 자체 테스트 (gmtest)</td><td>111/111 통과 (09-30 00:15)</td></tr>
+      <tr><td class="name">네트워크 테스트 (net.test all)</td><td>66/66 통과, 2프로세스 체크섬 동일 (09-30 00:31). 이후 다른 트랙이 Bin을 재빌드해 현 빌드 재검증 필요</td></tr>
+      <tr><td class="name">콘솔 명령 자체 테스트 (console.selftest)</td><td>57/57 통과, 런처 60초 실행 종료 코드 0</td></tr>
+      <tr><td class="name">게임 프로젝트 생성 → 빌드 → 에디터 로드</td><td>빌드 오류 0, 실행 종료 코드 0, 엔진 단독 모드 산출물은 이전과 바이트 동일</td></tr>
+      <tr><td class="name">메모리 60초 회귀</td><td>종료 시 남은 블록 0, 약참조 재현 0회</td></tr>
+      <tr><td class="name">전체 빌드</td><td>16/16 프로젝트 성공(JGDev_Graphics 삭제 후 15 + 신규)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 위험 요소</h2>
+  <table>
+    <thead><tr><th>위험</th><th>영향</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr><td class="name">새 소스 폴더가 커밋에서 빠짐</td><td>클린 체크아웃이나 다른 PC에서 빌드 불가</td><td><code>git add -A</code>, 진행현황 5절 체크리스트</td></tr>
+      <tr><td class="name">Server 검증 뒤 Bin 재빌드</td><td>현 바이너리의 네트워크 검증 기록 없음</td><td>3종 검사 재실행 후 커밋</td></tr>
+      <tr><td class="name">Graphics 에셋 저장 형식 미결정</td><td>임포트를 실전에 쓸 수 없음(시작 시 Content 전부 로드)</td><td>결정 D-2</td></tr>
+      <tr><td class="name">GUI 업데이트 경로 미호출</td><td>GameFrameWorks 개발용 뷰를 위젯으로 만들면 즉시 걸림</td><td>GUI 1-2 결정 후 1-1/1-3을 GameFrameWorks 2-3 전에</td></tr>
+      <tr><td class="name">공유 파일 동시 편집</td><td>3-way 병합과 재검증 비용</td><td>착수 전 상대 트랙 현황의 의존 절 확인</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 결정이 필요한 항목</h2>
+  <table>
+    <thead><tr><th>#</th><th>분야</th><th>결정할 것</th><th>권고</th></tr></thead>
+    <tbody>
+      <tr><td>D-1</td><td class="name">공통</td><td>커밋 묶음과 시점</td><td><code>git add -A</code> 한 커밋</td></tr>
+      <tr><td>D-2</td><td class="name">Graphics</td><td>에셋 저장 형식 (5-30)</td><td>별도 바이너리 블롭 검토 후 결정</td></tr>
+      <tr><td>D-3</td><td class="name">Graphics</td><td>출력 색 공간 (5-14, 5-29와 함께)</td><td>8비트 sRGB로 시작</td></tr>
+      <tr><td>D-4</td><td class="name">Server</td><td>Phase 5 월드 연결 착수 여부</td><td>GameFrameWorks 2-1/2-2 뒤에 착수</td></tr>
+      <tr><td>D-5</td><td class="name">GameModule / Server</td><td>게임 단독 실행 호스트</td><td>첫 목표엔 불필요, JGEditor 유지 후 별도 결정</td></tr>
+      <tr><td>D-6</td><td class="name">GameFrameWorks</td><td>Phase 2 순서, 개발용 뷰 부착 경로</td><td>2-2 → 2-1 → 2-3 → 2-5, 뷰는 GUI 위젯</td></tr>
+      <tr><td>D-7</td><td class="name">GameFrameWorks / DevConsole</td><td>프로젝트 없는 에디터에서 자체 테스트 명령 노출</td><td>에디터 모듈 목록에 GameFrameWorks 추가</td></tr>
+      <tr><td>D-8</td><td class="name">Memory</td><td>보류 항목 종결 확정(휴면), 문자열 테이블 정책</td><td>모두 현행 유지</td></tr>
+      <tr><td>D-9</td><td class="name">GUI</td><td>위젯 기본 플래그, imgui.ini 추적 해제</td><td>업데이트 허용 기본값 + setter, 추적 해제</td></tr>
+      <tr><td>D-10</td><td class="name">Graphics</td><td>샘플 에셋 재저장(36MB 전체 변경)</td><td>D-2 결정 뒤 한 번에</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. 문서 구조와 이어가기</h2>
+  <p>이번에 <code>Document/Memory</code>를 분야별 폴더(현황.md, TODO.md, Files/)로 재편하고, 각 트랙의 마지막 세션 기록과 코드를 대조해 현황과 TODO를 최신화했습니다. 인덱스는 <code>Document/Memory/README.md</code>, 전체 보드는 <code>진행현황.md</code>, 원칙은 <code>지침서.md</code>입니다. 새 에이전트는 README → 지침서 → 분야 현황 → TODO 순으로 읽으면 바로 이어서 작업할 수 있습니다.</p>
+  <p>다른 PC에서 이어갈 때는 세 가지만 챙기면 됩니다. <code>git add -A</code>로 커밋해 push하고, 자동 메모리 폴더(<code>C:\Users\jgengine\.claude\projects\C--JG-JGEngine\memory</code>)를 같은 경로로 복사하고, 저장소를 <code>C:\JG\JGEngine</code>에 두고 첫 빌드는 Rebuild로 합니다. 대화 기록은 옮기지 않으므로 각 세션의 최신 상태는 이 문서들이 대신합니다.</p>
+
+  <p class="small" style="margin-top:32px">근거 문서: 각 분야의 현황.md 3절(검증 근거)과 Files/ 안의 캡처·로그·결과 파일. 이 보고서는 2026-09-30 재편 시점의 스냅샷입니다.</p>
+</main>
+</body>
+</html>

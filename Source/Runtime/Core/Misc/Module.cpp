@@ -3,6 +3,26 @@
 #include "Log.h"
 #include "Platform/Platform.h"
 #include "FileIO/Json.h"
+#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
+
+
+// 이 두 함수는 모듈 DLL 이 링크한 Core 사본에서 실행된다(모듈 클래스의 vtable 이 그 DLL 에 있다).
+// 그래서 HAutoConsoleCommand::RegisterAll 이 보는 목록도 그 DLL 의 것이다.
+void IModuleInterface::RegisterAutoConsoleCommands()
+{
+	if (GConsoleCommandGlobalSystem::IsValid())
+	{
+		HAutoConsoleCommand::RegisterAll(GConsoleCommandGlobalSystem::GetInstance());
+	}
+}
+
+void IModuleInterface::UnregisterAutoConsoleCommands()
+{
+	if (GConsoleCommandGlobalSystem::IsValid())
+	{
+		HAutoConsoleCommand::UnregisterAll(GConsoleCommandGlobalSystem::GetInstance());
+	}
+}
 
 
 void HModuleSystemInfo::WriteJson(PJsonData& json) const
@@ -21,7 +41,8 @@ HModuleSystemInfo HModuleSystemInfo::Get()
 	PString codeGenPath;
 	if (codeGenPath.Empty())
 	{
-		HFileHelper::CombinePath(HFileHelper::EngineCodeGenDirectory(), "module_system_info.json", &codeGenPath);
+		// 프로젝트 것을 읽는다. 게임 프로젝트면 엔진 + 게임 모듈이, 엔진 단독이면 엔진 모듈이 들어 있다(엔진 단독은 두 루트가 같다).
+		HFileHelper::CombinePath(HFileHelper::ProjectCodeGenDirectory(), "module_system_info.json", &codeGenPath);
 		if (HFileHelper::Exists(codeGenPath))
 		{
 			PJson Json;
@@ -43,7 +64,7 @@ HModuleSystemInfo HModuleSystemInfo::Get()
 const bool HModuleSystemInfo::Set(const HModuleSystemInfo& inSysInfo)
 {
 	static PString moduleSysInfoJsonPath;
-	HFileHelper::CombinePath(HFileHelper::EngineCodeGenDirectory(), "module_system_info.json", &moduleSysInfoJsonPath);
+	HFileHelper::CombinePath(HFileHelper::ProjectCodeGenDirectory(), "module_system_info.json", &moduleSysInfoJsonPath);
 
 	PJson json;
 	json.AddMember("module_sys", inSysInfo);
@@ -145,6 +166,7 @@ bool GModuleGlobalSystem::ConnectModule(const PString& moduleName)
 	}
 
 	moduleIf->StartupModule();
+	moduleIf->RegisterAutoConsoleCommands();
 
 	{
 		HLockGuard<HMutex> lock(_mutex);
@@ -205,6 +227,7 @@ bool GModuleGlobalSystem::DisconnectModule(const PString& moduleName)
 		}
 	}
 
+	moduleIf->UnregisterAutoConsoleCommands();
 	moduleIf->ShutdownModule();
 
 	{
@@ -247,6 +270,7 @@ void GModuleGlobalSystem::Destroy()
 			}
 		}
 
+		moduleIf->UnregisterAutoConsoleCommands();
 		moduleIf->ShutdownModule();
 
 		{

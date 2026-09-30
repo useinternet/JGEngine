@@ -47,6 +47,10 @@ public:
 
 	HModuleFilter ModuleFilters[(int32)EModuleFilter::Count];
 
+	// json 에 없는 실행 중 정보. 엔진 모듈이면 true, 게임 프로젝트 모듈이면 false.
+	// ModulePath · CodeGenPath 는 자기 루트 기준이라, 게임 프로젝트 솔루션에서는 엔진 모듈 경로에 엔진 루트를 붙여야 한다.
+	bool bEngineModule = true;
+
 	//PString DevelopEngineFilter;
 	//PString DevelopGameFilter;
 	//PString DevelopConfirmGameFilter;

@@ -1,0 +1,135 @@
+param(
+    [string]$Exe = "C:\Users\jgengine\AppData\Local\Temp\claude\C--JG-JGEngine\bfdd9da3-0c25-47ac-ab52-0b3e2e786cb4\scratchpad\wt\Bin\DevelopEngine\JGLauncher.exe",
+    [string]$WorkDir = "C:\Users\jgengine\AppData\Local\Temp\claude\C--JG-JGEngine\bfdd9da3-0c25-47ac-ab52-0b3e2e786cb4\scratchpad\wt\Bin\DevelopEngine",
+    [string]$OutPath = "C:\Users\jgengine\AppData\Local\Temp\claude\C--JG-JGEngine\bfdd9da3-0c25-47ac-ab52-0b3e2e786cb4\scratchpad\devconsole_ui.png",
+    [int]$WaitSeconds = 20,
+    [int]$RunSeconds = 60,
+    # 콘솔 입력줄 위치(창 캡처 기준 좌표). 입력 전에 여기를 클릭해 입력줄을 활성화한다.
+    [int]$ClickX = 500,
+    [int]$ClickY = 895
+)
+
+# DevConsole 창 입력 확인(DevConsole_TODO 3-4).
+# 키 입력은 런처 창에만 PostMessage(WM_CHAR / WM_KEYDOWN / WM_KEYUP)로 보낸다. 전경 창을 바꾸지 않으므로 다른 창에 키가 들어가지 않는다.
+# 엔진 창 프로시저는 모든 메시지를 ImGui_ImplWin32_WndProcHandler 로 넘긴다(DX12GUIBackend.cpp OnWndProc).
+$ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.Drawing
+
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32UiCheck {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT { public int X; public int Y; }
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+}
+"@
+
+function Post-Click([IntPtr]$hwnd, [int]$windowX, [int]$windowY) {
+    # 창 좌표(캡처 기준) → 클라이언트 좌표
+    $rect = New-Object Win32UiCheck+RECT
+    [Win32UiCheck]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $origin = New-Object Win32UiCheck+POINT
+    [Win32UiCheck]::ClientToScreen($hwnd, [ref]$origin) | Out-Null
+    $x = $windowX - ($origin.X - $rect.Left)
+    $y = $windowY - ($origin.Y - $rect.Top)
+    $lParam = [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))
+    # 세 메시지를 잇달아 넣는다. 실제 커서가 창 밖이면 ImGui 백엔드의 TrackMouseEvent 가 곧 WM_MOUSELEAVE 를 보내므로,
+    # 그보다 먼저 누름·뗌이 큐에 들어가 있어야 클릭 위치가 유지된다.
+    [Win32UiCheck]::PostMessage($hwnd, 0x0200, [IntPtr]::Zero, $lParam) | Out-Null   # WM_MOUSEMOVE
+    [Win32UiCheck]::PostMessage($hwnd, 0x0201, [IntPtr]1, $lParam) | Out-Null         # WM_LBUTTONDOWN (MK_LBUTTON)
+    [Win32UiCheck]::PostMessage($hwnd, 0x0202, [IntPtr]::Zero, $lParam) | Out-Null    # WM_LBUTTONUP
+    Start-Sleep -Milliseconds 500
+    Write-Output "Clicked client ($x, $y)"
+}
+
+$WM_KEYDOWN = 0x0100
+$WM_KEYUP   = 0x0101
+$WM_CHAR    = 0x0102
+$VK_RETURN  = 0x0D
+$VK_UP      = 0x26
+$VK_DOWN    = 0x28
+
+function Save-Capture([IntPtr]$hwnd, [string]$path) {
+    $rect = New-Object Win32UiCheck+RECT
+    [Win32UiCheck]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $width  = $rect.Right - $rect.Left
+    $height = $rect.Bottom - $rect.Top
+    $bmp = New-Object System.Drawing.Bitmap($width, $height)
+    $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+    $hdc = $gfx.GetHdc()
+    $ok = [Win32UiCheck]::PrintWindow($hwnd, $hdc, 2)
+    $gfx.ReleaseHdc($hdc)
+    $gfx.Dispose()
+    if (-not $ok) { Write-Output "PrintWindow failed" }
+    $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Write-Output "Saved $path"
+}
+
+function Post-Key([IntPtr]$hwnd, [int]$vk) {
+    [Win32UiCheck]::PostMessage($hwnd, $WM_KEYDOWN, [IntPtr]$vk, [IntPtr]1) | Out-Null
+    Start-Sleep -Milliseconds 80
+    [Win32UiCheck]::PostMessage($hwnd, $WM_KEYUP, [IntPtr]$vk, [IntPtr]0xC0000001L) | Out-Null
+    Start-Sleep -Milliseconds 120
+}
+
+function Post-Text([IntPtr]$hwnd, [string]$text) {
+    foreach ($c in $text.ToCharArray()) {
+        [Win32UiCheck]::PostMessage($hwnd, $WM_CHAR, [IntPtr][int]$c, [IntPtr]1) | Out-Null
+        Start-Sleep -Milliseconds 30
+    }
+}
+
+function Post-Line([IntPtr]$hwnd, [string]$text) {
+    Post-Text $hwnd $text
+    Post-Key $hwnd $VK_RETURN
+    Start-Sleep -Milliseconds 700
+}
+
+$proc = Start-Process -FilePath $Exe -WorkingDirectory $WorkDir -PassThru
+Write-Output "Started PID $($proc.Id)"
+
+$hwnd = [IntPtr]::Zero
+for ($i = 0; $i -lt 60; $i++) {
+    Start-Sleep -Milliseconds 500
+    $proc.Refresh()
+    if ($proc.HasExited) { Write-Output "Process exited early with code $($proc.ExitCode)"; exit 2 }
+    if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
+}
+if ($hwnd -eq [IntPtr]::Zero) { Write-Output "No main window"; $proc.Kill(); exit 3 }
+Write-Output "Main window: $hwnd"
+
+Start-Sleep -Seconds $WaitSeconds
+$proc.Refresh()
+if ($proc.HasExited) { Write-Output "Process exited during wait with code $($proc.ExitCode)"; exit 4 }
+
+Post-Click $hwnd $ClickX $ClickY
+Post-Line $hwnd "help"
+Post-Line $hwnd "test.echo hello"
+Post-Line $hwnd "nosuchcmd"
+Post-Line $hwnd "help %s %n"
+Start-Sleep -Seconds 1
+Save-Capture $hwnd ($OutPath -replace '\.png$', '_a_log.png')
+
+# ↑ 로 직전 명령 복원 → 캡처, ↓ 로 빈 줄로 돌아간 뒤 메모리 통계 창을 명령으로 연다(프레임 밖 실행 + 2-1 캡처)
+Post-Key $hwnd $VK_UP
+Start-Sleep -Seconds 1
+Save-Capture $hwnd ($OutPath -replace '\.png$', '_b_history.png')
+Post-Key $hwnd $VK_DOWN
+Post-Line $hwnd "test.openmem"
+Start-Sleep -Seconds 2
+Save-Capture $hwnd ($OutPath -replace '\.png$', '_c_memory.png')
+
+$remaining = $RunSeconds - $WaitSeconds - 14
+if ($remaining -gt 0) { Start-Sleep -Seconds $remaining }
+
+[Win32UiCheck]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+if (-not $proc.WaitForExit(40000)) { Write-Output "Timeout waiting exit, killing"; $proc.Kill(); exit 5 }
+Write-Output "ExitCode $($proc.ExitCode)"
+exit 0

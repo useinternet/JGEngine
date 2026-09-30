@@ -1,0 +1,75 @@
+2026-09-29 Network_TODO Phase 0-4 verification (listen server: host-authoritative command relay + deterministic replica)
+
+Where: isolated worktree (git worktree at HEAD 1308fd5 + this track's files), DevelopEngine|x64 debug build.
+Build: GameFrameWorks.vcxproj + JGConsole.vcxproj, BuildProjectReferences=false, 0 errors, 0 warnings in Network/ GameMaster/ NetCommands.
+
+---- JGConsole.exe gmtest ----
+baseline before changes: 75 PASS, 0 FAIL
+after changes:           96 PASS, 0 FAIL, exit 0   (new sections 9-11: 21 checks)
+  9  dead-id guard (review C1, R1-R3): SetBoardPosition / Add<T> / MoveToZone on a dead id keep the new entity
+     that reused the index (position (2,2), value 50), no phantom occupant, no ZoneChanged/BoardMoved, Add returns nullptr
+  10 ExportDocument / ImportDocument round trip keeps the checksum; R7: same trigger order after ImportDocument
+     (two same-priority triggers, sorted order gives (10 - 5 + 1) * 2 = 12, registration order would give 11);
+     rules fingerprint independent of registration order, changes when a handler is added
+  11 AgentRunner::Choose does not change state; Undo refused while disabled, works again when enabled
+
+---- JGConsole.exe net.test all ----  66 PASS, 0 FAIL, exit 0
+transport / loopback: connect, 1 MB message, 2-poll delay, Close delivers pending data before Disconnected(Closed),
+                      Break -> Disconnected(Error) both sides, closed port -> Refused
+transport / TCP 127.0.0.1 same process: connect, 32 B and 1 MB (1048576 bytes) intact, close -> Disconnected(Closed),
+                      closed port -> Refused
+codec: all CommandAccepted fields incl. uint64 checksum; compressed document 50000 -> 181 bytes; unknown type rejected
+session / handshake: protocol 101 != 1 refused; different-rules client joins, then closes on StartGame
+                      ("rules fingerprint mismatch (host 12672601389606245198, local 3506775382062652521)"); session full refused
+session / 1 host + 3 clients (loopback), random agents per slot:
+  [INFO] played 1001 commands in 3.69 s (debug build, 4 replicas in one process)   (second run: 4.03 s)
+  slots 1-3: desync 0 over every accepted command, applied 1001, final checksum 14787560067655809979 == host
+  commands sent by the clients themselves: 224 / 149 / 226; host player 200; host AI (enemy) 202; ResolveChoice 112
+  forged CommandRequest for another slot's actor -> CommandRejected "not your actor", host seq unchanged
+  [INFO] checksum cost: 5 entities 0.264 ms, 301 entities 5.149 ms (debug build)   (second run: 0.275 / 6.643 ms)
+recovery (loopback):
+  late join at seq 500 -> Document -> matches host, sends its own commands (21 in the next 100)
+  tampered replica (all Hp + 5) -> desync detected once at seq 616, dumps desync_slot1_seq616_local.json / _host.json,
+    recovered from the Document
+  link broken for slot 2 -> client Closed "connection lost", host OnPeerDisconnected(2) -> host AI plays slot 2
+    -> Reconnect with the same token at seq 742 -> slot 2 again, matches host
+  seq 1000: every replica matches the host; no other desync
+memory at exit: "Memory Chunk Shutdown ... live blocks 0, large live 0"
+
+---- two processes over TCP (Document/Memory/tools/net_two_process/run_two_process.sh) ----
+net.host: seq=1000 checksum=14320461349105283084 seconds=17.96 (exit 0)
+net.join: name=ClientA slot=1 seq=1000 checksum=14320461349105283084 desyncs=0 sent=206 reason=host closed the connection (exit 0)
+net.join: name=ClientB slot=2 seq=1000 checksum=14320461349105283084 desyncs=0 sent=234 reason=host closed the connection (exit 0)
+two-process: OK (seq 1000, checksum 14320461349105283084)
+
+---- main tree re-verification (after copying the 28 files; PreBuild once; GameFrameWorks + JGConsole rebuilt) ----
+build: 0 errors, 0 own warnings
+gmtest: 96 PASS, 0 FAIL, exit 0
+net.test all: 66 PASS, 0 FAIL, exit 0   ([INFO] 1001 commands in 3.91 s; checksum 0.280 ms / 5.804 ms)
+two-process (port 47772): host seq=1000 checksum=14320461349105283084, ClientA/ClientB same, desyncs=0, OK
+  -> the same checksum as the worktree build: two separate compiles of the same source give the same game.
+
+---- review repro (HEAD version of Document/Memory/tools/gfw_review_repro/ReviewRepro.cpp, worktree only) ----
+[NOT REPRODUCED] R1 SetBoardPosition(stale id): new entity E1.2 reuses B's index, its position=(2, 2), no occupant at (3,3)
+[NOT REPRODUCED] R2 Add<T>(stale id): new entity value=50, components on dead ids in Each<T>=0
+[NOT REPRODUCED] R3 MoveToZone(stale id): dead B in Graveyard=no, no ZoneChanged event
+[NOT REPRODUCED] R7 Load skips Finalize: marks=12 after Start and after Load, checksum equal
+still [REPRODUCED] (GFW TODO Phase 1, done by the GameFrameWorks session): R4 R5 R6a R6b R8 R9 R11 R12 R13 R14 R15 R17
+(the main tree's copy of ReviewRepro.cpp was already rewritten by that session for its Phase 1 API and does not compile against HEAD)
+
+---- launcher smoke run (worktree, crashwalk 30 s) ----
+JGLauncher exit code 0, [error]/[critical] lines 0 (the launcher loads GameFrameWorks.dll for reflection only)
+
+---- after the GameFrameWorks session merged GFW TODO Phase 1 into the main tree (2026-09-30 00:15) ----
+re-run by this session at 00:18 on the main tree's Bin (no rebuild):
+gmtest: 111 PASS, 0 FAIL, exit 0   (GameMaster 92 + world 19; sections 9-11 of this track kept)
+net.test all: 66 PASS, 0 FAIL, exit 0   ([INFO] 1001 commands in 3.23 s; checksum 0.264 ms / 5.043 ms)
+two-process (port 47773): host seq=1000 checksum=16006860866352003711, ClientA sent 206 / ClientB sent 234, desyncs=0, OK
+  -> the checksum value changed (trigger reaction and phase transition timing changed in Phase 1),
+     the three processes still agree. Same value as the GameFrameWorks session reported.
+
+---- net.* moved to the command registry (HAutoConsoleCommand in NetCommands.cpp, 2026-09-30 00:31) ----
+JGConsole rebuilt: 0 errors, 0 warnings in NetCommands.cpp / Main.cpp
+JGConsole.exe net.host -port=abc -> exit 1, "-port is not a number" + registry usage line (no exception, no abort dialog)
+JGConsole.exe (no args) help lists net.test / net.host / net.join
+gmtest 111/111, net.test all 66/66, two-process (port 47774) OK, checksum 16006860866352003711

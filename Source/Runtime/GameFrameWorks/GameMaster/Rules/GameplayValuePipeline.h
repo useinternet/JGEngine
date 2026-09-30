@@ -11,6 +11,7 @@ class GAMEFRAMEWORKS_API PGameplayValuePipeline
 public:
 	void DefineStages(const PName& valueKind, const HList<PName>& stages);
 	const HList<PName>* FindStages(const PName& valueKind) const;
+	const HList<HPair<PName, HList<PName>>>& All() const;
 	void Clear();
 
 	int32 Compute(const HGameplayContext& ctx, const PGameplayRegistry<JGGameplayModifier>& modifiers, const HGameplayValueQuery& query) const;

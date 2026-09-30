@@ -27,6 +27,9 @@ struct HCoreSystemArguments
 	ECoreSystemFlags Flags;
 	HRawString LaunchModule;
 
+	// 게임 프로젝트 폴더. 툴이 -project= 로 받은 값을 넘긴다.
+	// 비어 있으면 실행 위치 기준 "../../" 에 *.jgproject 가 있는지 보고, 없으면 엔진 단독으로 돈다.
+	HRawString ProjectDirectory;
 
 	HCoreSystemArguments() : Flags(ECoreSystemFlags::None) {}
 };
@@ -35,7 +38,13 @@ struct HCoreSystemGlobalValues
 {
 	PJWindow*		MainWindow;
 	HSTLSharedPtr<HWindowCallBacks> WindowCallBacks;
-	
+
+	// Create 가 한 번 정하는 루트. 모든 모듈(DLL)이 같은 값을 보도록 여기에 둔다. 읽는 쪽은 HFileHelper.
+	HRawString EngineDirectory;
+	HRawString ProjectDirectory;
+	HRawString ProjectName;
+	bool       bProjectMode = false;
+
 	HCoreSystemGlobalValues();
 };
 
@@ -63,6 +72,10 @@ public:
 	static void Destroy();
 	static HCoreSystemGlobalValues& GetGlobalValues();
 	static GCoreSystem& GetInstance();
+	static bool HasInstance()
+	{
+		return Instance != nullptr;
+	}
 
 	template<class T, class ...Args>
 	static void RegisterSystemInstance(Args... args)

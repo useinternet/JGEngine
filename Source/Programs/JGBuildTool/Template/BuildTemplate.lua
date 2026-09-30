@@ -1,9 +1,16 @@
+-- ENGINE_ROOT · WORKSPACE_NAME · START_PROJECT 는 JGBuildTool 이 이 파일 앞에 적는다.
+-- 엔진 솔루션: ENGINE_ROOT = "" (스크립트가 엔진 루트에 있다), WORKSPACE_NAME = "JGEngine"
+-- 게임 프로젝트 솔루션: 스크립트가 프로젝트 루트에 있고 ENGINE_ROOT 는 엔진 절대경로. 아래 산출물 경로는 프로젝트 기준이 된다.
+-- 앞에 적힌 값이 없으면(이전 JGBuildTool.exe) 엔진 솔루션 값으로 둔다.
+ENGINE_ROOT    = ENGINE_ROOT or ""
+WORKSPACE_NAME = WORKSPACE_NAME or "JGEngine"
+
 local GEN_PROJECT_FILE_PATH = "Temp/ProjectFiles/"
 local BIN_PATH        = "Bin/%{cfg.buildcfg}/"
 local OBJECT_PATH     = "Temp/Obj/%{cfg.buildcfg}/"
 local PCH_HEADER      = "PCH/PCH.h"
-local PCH_HEADER_PATH = "Source/PCH/PCH.h"
-local PCH_CPP_PATH    = "Source/PCH/PCH.cpp"
+local PCH_HEADER_PATH = ENGINE_ROOT .. "Source/PCH/PCH.h"
+local PCH_CPP_PATH    = ENGINE_ROOT .. "Source/PCH/PCH.cpp"
 
 function DebugConfig(defined)
     symbols       "On"
@@ -30,8 +37,11 @@ function ReleaseConfig(defined)
     runtime         "Release"
 end
 
-workspace "JGEngine"
+workspace (WORKSPACE_NAME)
     architecture "x64"
+    if START_PROJECT ~= nil then
+        startproject (START_PROJECT)
+    end
 
     configurations
     { 

@@ -51,6 +51,7 @@ struct GAMEFRAMEWORKS_API HGameplayZoneSet : public IJsonable
 	// 모든 영역에서 제거.
 	void RemoveEverywhere(const HGameplayEntityId& id);
 	// 다른 영역으로 이동 (뒤에 붙인다). 원래 영역이 없어도 대상에 넣는다.
+	// 엔티티 생존을 모른다. 규칙 코드는 HGameplayState::MoveToZone(죽은 ID 거부)을 쓴다.
 	bool MoveTo(const HGameplayEntityId& id, const PName& toZone);
 
 protected:

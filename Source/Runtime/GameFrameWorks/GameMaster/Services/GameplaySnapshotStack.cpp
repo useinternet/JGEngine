@@ -6,7 +6,7 @@ void PGameplaySnapshotStack::SetLimit(int32 limit)
 	_limit = limit < 1 ? 1 : limit;
 	while ((int32)_states.size() > _limit)
 	{
-		_states.erase(_states.begin());
+		_states.pop_front();
 	}
 }
 
@@ -20,7 +20,7 @@ void PGameplaySnapshotStack::Push(const HGameplayState& state)
 	_states.push_back(state);
 	while ((int32)_states.size() > _limit)
 	{
-		_states.erase(_states.begin());
+		_states.pop_front();
 	}
 }
 
@@ -30,7 +30,7 @@ bool PGameplaySnapshotStack::Pop(HGameplayState& outState)
 	{
 		return false;
 	}
-	outState = _states.back();
+	outState = std::move(_states.back());
 	_states.pop_back();
 	return true;
 }

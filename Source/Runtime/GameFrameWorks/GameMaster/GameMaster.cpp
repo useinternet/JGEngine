@@ -1,6 +1,7 @@
 #include "PCH/PCH.h"
 #include "GameMaster/GameMaster.h"
 #include "GameMaster/Services/GameplaySerializer.h"
+#include <algorithm>
 
 PGameMaster::PGameMaster()
 {
@@ -114,6 +115,15 @@ PSharedPtr<IGameplayAgent> PGameMaster::FindAgentForActor(const HGameplayEntityI
 	return FindAgent(_teamOfActor(_state, actor));
 }
 
+int32 PGameMaster::TeamOfActor(const HGameplayEntityId& actor) const
+{
+	if (_teamOfActor == nullptr)
+	{
+		return 0;
+	}
+	return _teamOfActor(_state, actor);
+}
+
 void PGameMaster::AddObserver(PSharedPtr<IGameplayObserver> observer)
 {
 	if (observer == nullptr)
@@ -199,11 +209,7 @@ EGameplaySubmitResult PGameMaster::Submit(const HGameplayCommand& command, HList
 	EGameplaySubmitResult result = _engine.Execute(_state, command, outEvents, outReason);
 	if (result == EGameplaySubmitResult::Rejected)
 	{
-		HGameplayState restored;
-		if (_snapshots.Pop(restored) == true)
-		{
-			_state = restored;
-		}
+		_snapshots.Pop(_state);
 		return result;
 	}
 
@@ -240,12 +246,16 @@ const HGameplayChoice* PGameMaster::GetPendingChoice() const
 
 bool PGameMaster::Undo()
 {
-	HGameplayState restored;
-	if (_snapshots.Pop(restored) == false)
+	if (_bUndoEnabled == false)
+	{
+		JG_LOG(GameMaster, ELogLevel::Warning, "PGameMaster::Undo: disabled while a network session is bound");
+		return false;
+	}
+
+	if (_snapshots.Pop(_state) == false)
 	{
 		return false;
 	}
-	_state = restored;
 	_log.PopLast();
 	notifyStateReplaced();
 	return true;
@@ -267,6 +277,16 @@ void PGameMaster::Restore(const HGameplayState& state)
 	notifyStateReplaced();
 }
 
+void PGameMaster::SetUndoEnabled(bool bEnabled)
+{
+	_bUndoEnabled = bEnabled;
+}
+
+bool PGameMaster::IsUndoEnabled() const
+{
+	return _bUndoEnabled;
+}
+
 bool PGameMaster::Save(const PString& path) const
 {
 	return PGameplaySerializer::SaveToFile(path, _initialState, _state, _log);
@@ -274,17 +294,37 @@ bool PGameMaster::Save(const PString& path) const
 
 bool PGameMaster::Load(const PString& path)
 {
+	PString text;
+	if (HFileHelper::ReadAllText(path, &text) == false)
+	{
+		JG_LOG(GameMaster, ELogLevel::Error, "PGameMaster::Load: cannot read %s", path);
+		return false;
+	}
+	return ImportDocument(text);
+}
+
+bool PGameMaster::ExportDocument(PString* outText) const
+{
+	return PGameplaySerializer::ToJsonText(_initialState, _state, _log, outText);
+}
+
+bool PGameMaster::ImportDocument(const PString& text)
+{
 	HGameplayState initial = _initialState;   // 등록된 테이블을 유지한 채 읽는다
 	HGameplayState current = _state;
 	PGameplayCommandLog log;
 
-	if (PGameplaySerializer::LoadFromFile(path, initial, current, log, _migrator.GetRawPointer()) == false)
+	if (PGameplaySerializer::FromJsonText(text, initial, current, log, _migrator.GetRawPointer()) == false)
 	{
 		return false;
 	}
 
-	_initialState = initial;
-	_state        = current;
+	// Start 를 거치지 않는 경로도 레지스트리 정렬을 맞춘다. 빠지면 같은 우선순위 트리거가 등록 순서로 반응해
+	// 원래 세션(Start 로 정렬됨)과 결과가 달라진다 (리뷰 C7 · R7).
+	_engine.Finalize();
+
+	_initialState = std::move(initial);
+	_state        = std::move(current);
 	_log          = log;
 	_snapshots.Clear();
 	_bStarted = _state.Turn.IsStarted();
@@ -295,6 +335,8 @@ bool PGameMaster::Load(const PString& path)
 
 bool PGameMaster::Replay(const HList<HGameplayCommand>& commands, HList<HGameplayEvent>& outEvents)
 {
+	_engine.Finalize();
+
 	_state = _initialState;
 	_snapshots.Clear();
 	_log.Clear();
@@ -324,6 +366,59 @@ bool PGameMaster::Replay(const HList<HGameplayCommand>& commands, HList<HGamepla
 uint64 PGameMaster::Checksum() const
 {
 	return _state.Checksum();
+}
+
+uint64 PGameMaster::RulesFingerprint() const
+{
+	HList<HRawString> lines;
+
+	for (const PSharedPtr<JGGameplayCommandHandler>& handler : _engine.Handlers.All())
+	{
+		lines.push_back("handler:" + handler->GetKind().ToString().GetRawString());
+	}
+	for (const PSharedPtr<JGGameplayEffect>& effect : _engine.Effects.All())
+	{
+		lines.push_back("effect:" + effect->GetKind().ToString().GetRawString());
+	}
+	for (const PSharedPtr<JGGameplayTrigger>& trigger : _engine.Triggers.All())
+	{
+		lines.push_back("trigger:" + trigger->GetKind().ToString().GetRawString() + "@" + std::to_string(trigger->GetPriority()));
+	}
+	for (const PSharedPtr<JGGameplayModifier>& modifier : _engine.Modifiers.All())
+	{
+		lines.push_back("modifier:" + modifier->GetKind().ToString().GetRawString() + "@" + modifier->GetValueKind().ToString().GetRawString() + "/" + modifier->GetStage().ToString().GetRawString());
+	}
+	for (const HSTLUniquePtr<IGameplayComponentTable>& table : _initialState.Tables)
+	{
+		lines.push_back("table:" + table->GetTypeName().ToString().GetRawString());
+	}
+	for (const HPair<PName, HList<PName>>& entry : _engine.ValuePipeline.All())
+	{
+		HRawString line = "stages:" + entry.first.ToString().GetRawString() + "=";
+		for (const PName& stage : entry.second)
+		{
+			line += stage.ToString().GetRawString() + ",";
+		}
+		lines.push_back(line);
+	}
+	lines.push_back("board:" + std::to_string((int32)_initialState.Board.Kind));
+	lines.push_back("schema:" + std::to_string(HGameplayState::SchemaVersion));
+
+	std::sort(lines.begin(), lines.end());
+
+	// FNV-1a 64
+	uint64 hash = 14695981039346656037ULL;
+	for (const HRawString& line : lines)
+	{
+		for (char c : line)
+		{
+			hash ^= (uint64)(uint8)c;
+			hash *= 1099511628211ULL;
+		}
+		hash ^= (uint64)'\n';
+		hash *= 1099511628211ULL;
+	}
+	return hash;
 }
 
 const PGameplayCommandLog& PGameMaster::GetCommandLog() const

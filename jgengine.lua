@@ -1,9 +1,18 @@
+ENGINE_ROOT = ""
+WORKSPACE_NAME = "JGEngine"
+-- ENGINE_ROOT · WORKSPACE_NAME · START_PROJECT 는 JGBuildTool 이 이 파일 앞에 적는다.
+-- 엔진 솔루션: ENGINE_ROOT = "" (스크립트가 엔진 루트에 있다), WORKSPACE_NAME = "JGEngine"
+-- 게임 프로젝트 솔루션: 스크립트가 프로젝트 루트에 있고 ENGINE_ROOT 는 엔진 절대경로. 아래 산출물 경로는 프로젝트 기준이 된다.
+-- 앞에 적힌 값이 없으면(이전 JGBuildTool.exe) 엔진 솔루션 값으로 둔다.
+ENGINE_ROOT    = ENGINE_ROOT or ""
+WORKSPACE_NAME = WORKSPACE_NAME or "JGEngine"
+
 local GEN_PROJECT_FILE_PATH = "Temp/ProjectFiles/"
 local BIN_PATH        = "Bin/%{cfg.buildcfg}/"
 local OBJECT_PATH     = "Temp/Obj/%{cfg.buildcfg}/"
 local PCH_HEADER      = "PCH/PCH.h"
-local PCH_HEADER_PATH = "Source/PCH/PCH.h"
-local PCH_CPP_PATH    = "Source/PCH/PCH.cpp"
+local PCH_HEADER_PATH = ENGINE_ROOT .. "Source/PCH/PCH.h"
+local PCH_CPP_PATH    = ENGINE_ROOT .. "Source/PCH/PCH.cpp"
 
 function DebugConfig(defined)
     symbols       "On"
@@ -30,8 +39,11 @@ function ReleaseConfig(defined)
     runtime         "Release"
 end
 
-workspace "JGEngine"
+workspace (WORKSPACE_NAME)
     architecture "x64"
+    if START_PROJECT ~= nil then
+        startproject (START_PROJECT)
+    end
 
     configurations
     { 
@@ -210,27 +222,9 @@ workspace "JGEngine"
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
 
 
-			project "JGDev_Graphics"
-				includedirs{ "Source/Editor/JGDev_Graphics/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGDev_Graphics/", "Source/Runtime/Core/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Devkit/", "Temp/CodeGen/Devkit/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
-				links{ "Core", "Graphics", "Asset", "Devkit", "GUI", }
-				SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/JGDev_Graphics/", {"_JGDEV_GRAPHICS", }, "Temp/CodeGen/JGDev_Graphics/")
-				filter "configurations:DevelopEngine"
-					DebugConfig()
-					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
-				filter "configurations:DevelopGame"
-					ConfirmConfig()
-					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
-				filter "configurations:ConfirmGame"
-					ConfirmConfig()
-					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
-				filter "configurations:ReleaseGame"
-					ReleaseConfig()
-					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
-
-
 			project "JGEditor"
-				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
-				links{ "Core", "GameFrameWorks", "Graphics", "GUI", }
+				includedirs{ "Source/Editor/JGEditor/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGEditor/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Devkit/", "Temp/CodeGen/Devkit/", "Source/Runtime/GUI/", "Temp/CodeGen/GUI/", }
+				links{ "Core", "GameFrameWorks", "Graphics", "Asset", "Devkit", "GUI", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Editor/JGEditor/", {"_JGEDITOR", }, "Temp/CodeGen/JGEditor/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()

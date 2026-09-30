@@ -10,6 +10,7 @@ struct GAMEFRAMEWORKS_API HGameplayTurnState : public IJsonable
 	int32                      OrderIndex = INDEX_NONE;
 	HGameplayEntityId        CurrentActor;
 	int32                      TurnCount  = 0;   // 시작 이후 진행한 턴 수
+	EGameplayPhaseStep       PendingStep = EGameplayPhaseStep::None;   // 효과 큐가 비면 진행할 전이 단계
 
 	bool IsStarted() const;
 	bool IsFinished() const;

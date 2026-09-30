@@ -18,6 +18,18 @@ enum class EGameplayPhase : int32
 	Finished,
 };
 
+// 페이즈 기계가 효과 큐가 빈 뒤에 이어 갈 전이 단계. 상태(HGameplayTurnState)에 들어가므로 선택 대기 · 저장 · 되돌리기에도 보존된다.
+// 한 단계가 낸 이벤트로 발동한 효과가 모두 해결된 다음에 다음 단계가 진행된다.
+enum class EGameplayPhaseStep : int32
+{
+	None = 0,
+	BeginRound,        // RoundStart 진입, RoundStarted 발행
+	ResolveOrder,      // OrderResolve 진입
+	BuildOrder,        // 행동 순서를 만들고 첫 행동자로
+	NextTurn,          // 다음 행동자의 TurnStart · TurnStarted. 남은 행동자가 없으면 RoundEnd · RoundEnded
+	EnterTurnMain,     // TurnMain 진입. 명령을 기다린다
+};
+
 // PGameMaster::Submit 의 결과.
 enum class EGameplaySubmitResult : int32
 {
@@ -84,7 +96,8 @@ namespace HGameplayBuiltin
 namespace HGameplayLimits
 {
 	// 한 명령에서 효과 연쇄가 이 깊이를 넘으면 중단하고 EffectDepthExceeded 이벤트를 낸다.
+	// 깊이는 명령 → 효과 → 이벤트 → 트리거 → 효과 … 인과 한 단계마다 1 씩 늘어난다.
 	constexpr int32 MaxEffectDepth = 64;
-	// 한 명령에서 해결하는 효과 총 개수 상한 (무한 루프 방어).
+	// 한 명령에서 해결하는 효과 총 개수 상한 (무한 루프 방어). 넘으면 남은 효과 · 트리거 반응을 버리고 페이즈 전이만 마친다.
 	constexpr int32 MaxEffectsPerCommand = 4096;
 }

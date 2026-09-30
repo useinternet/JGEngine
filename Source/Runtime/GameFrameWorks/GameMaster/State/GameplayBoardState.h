@@ -25,6 +25,7 @@ struct GAMEFRAMEWORKS_API HGameplayBoardState : public IJsonable
 
 	bool                    HasPosition(const HGameplayEntityId& id) const;
 	const HGameplayCoord* FindPosition(const HGameplayEntityId& id) const;
+	// 엔티티 생존을 모른다. 규칙 코드는 HGameplayState::SetBoardPosition(죽은 ID 거부)을 쓴다.
 	bool                    SetPosition(const HGameplayEntityId& id, const HGameplayCoord& coord);
 	bool                    ClearPosition(const HGameplayEntityId& id);
 

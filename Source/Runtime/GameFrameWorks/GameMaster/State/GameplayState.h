@@ -10,6 +10,7 @@
 
 // Gameplay 상태 전체. 값 타입 — 복사가 곧 스냅샷이다.
 // JGObject / PSharedPtr 을 안에 두지 않는다. 포인터 동일성이 없어야 결정론이 지켜지고 복사가 안전하다.
+// const 로 받은 상태로는 값을 바꿀 수 없다 (Find · Get · Table 의 const 판은 const 를 돌려준다).
 struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 {
 	static constexpr uint32 SchemaVersion     = 1;
@@ -26,7 +27,9 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 
 	HGameplayState();
 	HGameplayState(const HGameplayState& rhs);
+	HGameplayState(HGameplayState&& rhs) noexcept;
 	HGameplayState& operator=(const HGameplayState& rhs);
+	HGameplayState& operator=(HGameplayState&& rhs) noexcept;
 	virtual ~HGameplayState() = default;
 
 	// 난수
@@ -53,23 +56,21 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 	}
 
 	template<class T>
-	HGameplayComponentTable<T>* Table() const
+	HGameplayComponentTable<T>* Table()
 	{
-		uint64 typeId = JGType::GenerateTypeID<T>();
-		for (const HSTLUniquePtr<IGameplayComponentTable>& table : Tables)
-		{
-			if (table->GetTypeId() == typeId)
-			{
-				return static_cast<HGameplayComponentTable<T>*>(table.get());
-			}
-		}
-		return nullptr;
+		return static_cast<HGameplayComponentTable<T>*>(findTable(JGType::GenerateTypeID<T>()));
+	}
+
+	template<class T>
+	const HGameplayComponentTable<T>* Table() const
+	{
+		return static_cast<const HGameplayComponentTable<T>*>(findTable(JGType::GenerateTypeID<T>()));
 	}
 
 	template<class T>
 	bool Has(const HGameplayEntityId& id) const
 	{
-		HGameplayComponentTable<T>* table = Table<T>();
+		const HGameplayComponentTable<T>* table = Table<T>();
 		if (table == nullptr)
 		{
 			return false;
@@ -78,7 +79,7 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 	}
 
 	template<class T>
-	T* Find(const HGameplayEntityId& id) const
+	T* Find(const HGameplayEntityId& id)
 	{
 		HGameplayComponentTable<T>* table = Table<T>();
 		if (table == nullptr)
@@ -88,9 +89,20 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 		return table->Find(id);
 	}
 
+	template<class T>
+	const T* Find(const HGameplayEntityId& id) const
+	{
+		const HGameplayComponentTable<T>* table = Table<T>();
+		if (table == nullptr)
+		{
+			return nullptr;
+		}
+		return table->Find(id);
+	}
+
 	// 없으면 assert. 있는지 모르면 Find 를 쓴다.
 	template<class T>
-	T& Get(const HGameplayEntityId& id) const
+	T& Get(const HGameplayEntityId& id)
 	{
 		T* found = Find<T>(id);
 		JG_CHECK(found != nullptr);
@@ -98,11 +110,24 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 	}
 
 	template<class T>
-	T& Add(const HGameplayEntityId& id, const T& value = T())
+	const T& Get(const HGameplayEntityId& id) const
 	{
+		const T* found = Find<T>(id);
+		JG_CHECK(found != nullptr);
+		return *found;
+	}
+
+	// 없으면 만들고, 있으면 값을 덮어쓴다. 죽은 ID(파괴 뒤 늦게 온 요청)는 nullptr — 같은 번호를 재사용한 엔티티의 값을 덮지 않는다.
+	template<class T>
+	T* Add(const HGameplayEntityId& id, const T& value = T())
+	{
+		if (IsAlive(id) == false)
+		{
+			return nullptr;
+		}
 		HGameplayComponentTable<T>* table = Table<T>();
 		JG_CHECK(table != nullptr);
-		return table->Add(id, value);
+		return &table->Add(id, value);
 	}
 
 	template<class T>
@@ -120,7 +145,7 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 	template<class T, class Fn>
 	void Each(Fn fn) const
 	{
-		HGameplayComponentTable<T>* table = Table<T>();
+		const HGameplayComponentTable<T>* table = Table<T>();
 		if (table == nullptr)
 		{
 			return;
@@ -139,6 +164,10 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 		table->EachMutable(fn);
 	}
 
+	// 보드 · 영역 쓰기. 죽은 ID 는 false. Board · Zones 를 직접 쓰는 함수는 생존을 보지 않으므로 규칙 코드는 이쪽을 쓴다.
+	bool SetBoardPosition(const HGameplayEntityId& id, const HGameplayCoord& coord);
+	bool MoveToZone(const HGameplayEntityId& id, const PName& zoneName);
+
 	// 영역
 	HGameplayZone&       Zone(const PName& name);
 	const HGameplayZone* FindZone(const PName& name) const;
@@ -155,5 +184,7 @@ protected:
 	virtual void ReadJson(const PJsonData& json) override;
 
 private:
+	IGameplayComponentTable* findTable(uint64 typeId) const;
 	void copyFrom(const HGameplayState& rhs);
+	void moveFrom(HGameplayState& rhs) noexcept;
 };

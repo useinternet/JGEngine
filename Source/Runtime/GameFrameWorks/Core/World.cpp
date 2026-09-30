@@ -196,6 +196,13 @@ void PWorld::flushPendingSpawn()
 
 	for (PSharedPtr<JGActor>& actor : pending)
 	{
+		// 스폰된 틱 안에 파괴가 예약된 액터는 월드에 넣지 않는다.
+		if (actor->_bPendingDestroy == true)
+		{
+			actor->_world.Reset();
+			continue;
+		}
+
 		_actors.push_back(actor);
 		if (_bBegun == true)
 		{

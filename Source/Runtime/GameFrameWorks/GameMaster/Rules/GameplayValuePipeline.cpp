@@ -26,6 +26,11 @@ const HList<PName>* PGameplayValuePipeline::FindStages(const PName& valueKind) c
 	return nullptr;
 }
 
+const HList<HPair<PName, HList<PName>>>& PGameplayValuePipeline::All() const
+{
+	return _stagesByKind;
+}
+
 void PGameplayValuePipeline::Clear()
 {
 	_stagesByKind.clear();

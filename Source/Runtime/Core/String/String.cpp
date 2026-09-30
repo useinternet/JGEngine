@@ -419,7 +419,12 @@ void PString::GetRawWString(HRawWString* outWStr) const
 		return;
 	}
 
-	GStringTable::GetInstance().FindRawWString(GetStringTableID(), outWStr);
+	// 문자열 테이블에는 PName으로 등록된 문자열만 있다. Format 등으로 새로 만든 문자열은 없으므로("(null)"이 된다) 직접 변환한다.
+	if (GStringTable::GetInstance().FindRawWString(GetStringTableID(), outWStr) == false)
+	{
+		std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+		*outWStr = converter.from_bytes(_rawString);
+	}
 }
 
 void PString::setString(const HRawString& string)

@@ -1,0 +1,43 @@
+# Memory_TODO 4-1 (축소판: 약참조 카운터 수명) 재현·검증 기록 — 2026-09-29, DevelopEngine x64
+# 실행: Document/Memory/tools/crashwalk/crashwalk.exe JGLauncher.exe <Bin/DevelopEngine> <초> 40, stdout(spdlog 콘솔 싱크)에서 발췌.
+# 임시 코드(모두 제거함): GC 가 해제하던 참조 카운터(수정 뒤에는 제어 블록)를 해제하는 대신 표식값 0xDEAD8000 으로 채워 남겨 두고,
+# PSharedPtr/PWeakPtr 가 그 값을 만지면 위치별로 세어 경고. 표식값은 음수라 해제 메모리를 읽던 기존 동작(디버그 힙 0xDD → 음수)과 같다.
+
+## 1. 재현 — 수정 전 코드 + 표식 (25초)
+[warning][Memory]: [4-1 repro] freed counter touched #1 : PWeakPtr::IsValid (destructor, Pin included)    ← "Shutdown Graphics Module..." 직후 (모듈 해제 GC)
+[warning][Memory]: [4-1 repro] freed counter touched #2 : PWeakPtr::IsValid (destructor, Pin included)
+[warning][Memory]: [4-1 repro] before shutdown flush: weak IsValid 2, weak release 0, weak add 0, shared release 0, shared add 0
+[warning][Memory]: [4-1 repro] freed counter touched #3 : PWeakPtr::IsValid (destructor, Pin included)    ← 마지막 강제 정리(forceFlush) 중
+[warning][Memory]: [4-1 repro] after shutdown flush: weak IsValid 3, weak release 0, weak add 0, shared release 0, shared add 0
+Process exited with code 0
+# 결론: 해제된 카운터 읽기 3회, 모두 종료 중. 에셋 로드 완료 시점(로그 98~140행 부근)에는 0회.
+# (예상했던 "에셋 로드마다 HTaskHandle 소멸 때 읽기"는 스케줄러가 GC 와 GAssetDatabase::Update 사이에서 프레임 대부분을 써서 드물다)
+
+## 2. 수정 후 + 표식(해제 대신 표식) + JG_MEMTEST=weak 임시 테스트 (20초)
+[MemTest] begin weak (control blocks live 224)
+[MemTest] PASS  weak: alive object -> IsValid true, Pin non-null
+[MemTest] PASS  weak: after GC -> IsValid false, Pin null
+[MemTest] PASS  weak: copy and Reset of an expired weak pointer are safe
+[MemTest] weak: the new object does not reuse the destroyed object's address      ← 디버그 풀 격리(최근 해제 32개) 때문. 주소 재사용 케이스는 실제로 겪지 않음
+[MemTest] PASS  weak: Pin of a destroyed object stays null when its address is reused (old Pin looked the address up)
+[MemTest] PASS  weak: the new object is intact
+[MemTest] PASS  weak: weak from SharedWrap is valid while the object lives
+[MemTest] PASS  weak: weak from SharedWrap expires cleanly
+[MemTest] PASS  weak: every control block of the test objects was released (no leak)
+[MemTest] weak: 200 rounds, successful Pin while alive 21604639, after the strong count hit 0 0
+[MemTest] PASS  weak: no Pin succeeds after the strong count reached 0 (cross-thread)
+[MemTest] PASS  weak: the worker did pin the object while it was alive (the race was exercised)
+[MemTest] PASS  weak: control blocks balanced after the cross-thread rounds
+[MemTest] PASS  weak: no freed control block was touched during the test
+[MemTest] end weak: 0 failure(s)
+[4-1 repro] before shutdown flush: weak IsValid 0, weak release 0, weak add 0, shared release 0, shared add 0, control blocks live 45
+[4-1 repro] after shutdown flush: weak IsValid 0, weak release 0, weak add 0, shared release 0, shared add 0, control blocks live 0
+[ID: 0] Memory Chunk Shutdown. pages 15, committed 0.94 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+Process exited with code 0
+
+## 3. 수정 후 + 표식, 일반 실행 (25초)
+Graphics PSO created. cache size 1 / 2
+[4-1 repro] before shutdown flush: ... all 0, control blocks live 45
+[4-1 repro] after shutdown flush:  ... all 0, control blocks live 0
+live blocks 0 (두 청크), Process exited with code 0

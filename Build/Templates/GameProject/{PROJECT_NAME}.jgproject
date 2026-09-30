@@ -1,0 +1,8 @@
+{
+  "Project": {
+    "Name": "{PROJECT_NAME}",
+    "EngineRoot": "{ENGINE_ROOT}",
+    "GameModules": [ "{PROJECT_NAME}" ],
+    "EditorModules": [ "{PROJECT_NAME}Editor" ]
+  }
+}

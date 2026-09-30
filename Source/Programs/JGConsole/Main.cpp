@@ -1,50 +1,57 @@
 #include "PCH/PCH.h"
 
-#include <iostream>
-#include <string>
 #include "Core.h"
-#include "Memory/Allocator.h"
-#include "Math/Math.h"
 #include "Misc/Module.h"
-#include "GameMaster/GameMasterSelfTest.h"
-#include "Core/WorldSelfTest.h"
+#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
-using namespace std;
+// JGConsole.exe <명령> [인자...] — 명령 하나를 실행하고 끝나는 헤드리스 실행기.
+// 명령은 HAutoConsoleCommand 전역 변수로 선언한다. 모듈의 테스트 명령은 그 모듈에(예: GameFrameWorks 의 gmtest),
+// JGConsole 전용 명령은 이 프로그램에 명령마다 .cpp 하나로 둔다. 인자 없이 실행하면 help 를 출력한다.
+// 종료 코드: 성공 0, 실패·알 수 없는 명령 1.
 
 namespace
 {
-	// JGConsole.exe gmtest  — GameFrameWorks 의 GameMaster 커널 + 월드/게임 인스턴스 자체 검증 (그래픽 없음)
-	// 이전 이름 simtest 도 받는다 (리뷰 기록의 검증 절차 호환).
-	int runGameMasterSelfTest()
+	// 시작할 때 연결하는 엔진 모듈. 연결돼야 그 모듈이 선언한 명령(GameFrameWorks 의 gmtest 등)이 등록된다.
+	// 종료 때는 GModuleGlobalSystem::Destroy 가 역순으로 내린다.
+	const char* const CONSOLE_ENGINE_MODULES[] = { "GameFrameWorks" };
+
+	void connectEngineModules()
 	{
-		if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWorks") == false)
+		for (const char* moduleName : CONSOLE_ENGINE_MODULES)
 		{
-			cout << "gmtest: fail to connect GameFrameWorks module" << endl;
-			return 2;
+			if (GModuleGlobalSystem::GetInstance().ConnectModule(moduleName) == false)
+			{
+				JG_LOG(JGConsole, ELogLevel::Error, "Fail Connect %s Module", moduleName);
+			}
+		}
+	}
+
+	// argv[1..] 을 토큰 그대로 실행한다. CRT 가 이미 따옴표를 풀었으므로 줄로 다시 합치지 않는다.
+	// 엔진 컨테이너(HList)가 GCoreSystem::Destroy 전에 해제되도록 main 과 나눈다.
+	bool runCommandLine(int argc, char** argv)
+	{
+		GConsoleCommandGlobalSystem& commands = GConsoleCommandGlobalSystem::GetInstance();
+		if (argc <= 1)
+		{
+			return commands.Execute(PString("help"));
 		}
 
-		int32 failures = PGameMasterSelfTest::Run();
-		failures += PWorldSelfTest::Run();
-		cout << "gmtest: " << (failures == 0 ? "OK" : "FAILED") << " (" << failures << " failures)" << endl;
-		return failures == 0 ? 0 : 1;
+		HList<PString> tokens;
+		for (int i = 1; i < argc; ++i)
+		{
+			tokens.push_back(PString(argv[i]));
+		}
+
+		return commands.Execute(tokens);
 	}
 }
 
 int main(int argc, char** argv)
 {
-	string command;
-	if (argc > 1)
-	{
-		command = argv[1];
-	}
-
 	GCoreSystem::Create();
+	connectEngineModules();
 
-	int exitCode = 0;
-	if (command == "gmtest" || command == "simtest")
-	{
-		exitCode = runGameMasterSelfTest();
-	}
+	const int exitCode = runCommandLine(argc, argv) ? 0 : 1;
 
 	GCoreSystem::Destroy();
 	return exitCode;

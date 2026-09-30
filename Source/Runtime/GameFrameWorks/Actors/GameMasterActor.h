@@ -25,7 +25,8 @@ enum class EGameMasterActorSubmit : int32
 class PGameMasterActorObserver;
 
 // 연출자. PGameMaster 를 들고 이벤트를 큐(Cue)로 재생하며, 엔티티 ↔ 액터 표를 갖는다.
-//   Submit → GameMaster 실행 → 이벤트 목록 → (스폰/파괴 반영) → 큐 인스턴스 순차 재생 (프레임 틱)
+//   Submit → GameMaster 실행 → 이벤트 목록 → 큐 인스턴스 순차 재생 (프레임 틱)
+// 스폰된 엔티티의 액터는 그 이벤트의 큐가 시작하기 전에 만들고, 파괴된 엔티티의 액터는 그 큐가 끝난 뒤에 없앤다 (사망 연출이 액터를 쓴다).
 // 상태 교체(되돌리기 · 로드 · 리플레이) 시 바인딩을 전부 다시 만든다.
 JGCLASS()
 class GAMEFRAMEWORKS_API JGGameMasterActor : public JGActor
@@ -41,6 +42,7 @@ private:
 
 	HDeque<HGameplayEvent>    _pendingEvents;
 	PSharedPtr<JGGameplayCue> _activeCue;
+	HGameplayEvent            _activeEvent;   // 재생 중인 큐의 이벤트. 큐가 끝나면 파괴 바인딩을 적용한다
 	HDeque<HGameplayCommand>  _bufferedCommands;
 	EGameplayInputPolicy      _inputPolicy = EGameplayInputPolicy::Buffer;
 
@@ -96,8 +98,10 @@ protected:
 private:
 	void onGameplayEvents(const HList<HGameplayEvent>& events);
 	void onGameplayStateReplaced();
-	void applyBindingSideEffects(const HGameplayEvent& event);
+	void applyBindingBeforeCue(const HGameplayEvent& event);   // EntitySpawned → 액터 생성 · 바인딩
+	void applyBindingAfterCue(const HGameplayEvent& event);    // EntityDestroyed → 바인딩 해제 · 액터 파괴
 	bool startNextCue();
+	void finishActiveCue();
 	void flushBufferedCommands();
 	EGameMasterActorSubmit executeNow(const HGameplayCommand& command, PString* outReason);
 };

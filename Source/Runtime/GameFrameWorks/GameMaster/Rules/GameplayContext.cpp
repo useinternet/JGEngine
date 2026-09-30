@@ -35,9 +35,9 @@ int32 HGameplayContext::Compute(const PName& valueKind, const HGameplayEntityId&
 	return Engine.ContextCompute(*this, valueKind, subject, target, base);
 }
 
-void HGameplayContext::RequestChoice(const HGameplayChoice& choice)
+bool HGameplayContext::RequestChoice(const HGameplayChoice& choice)
 {
-	Engine.ContextRequestChoice(*this, choice);
+	return Engine.ContextRequestChoice(*this, choice);
 }
 
 HGameplayEntityId HGameplayContext::SpawnEntity(const PName& zoneName)
@@ -58,4 +58,27 @@ void HGameplayContext::FinishGame(int32 resultCode)
 const IGameplayBoard* HGameplayContext::Board() const
 {
 	return Engine.Board.GetRawPointer();
+}
+
+HGameplayTriggerContext::HGameplayTriggerContext(const HGameplayState& inState, PGameplayRuleEngine& inEngine, uint32 inCauseSequence, int32 inDepth)
+	: _engine(inEngine)
+	, State(inState)
+	, CauseSequence(inCauseSequence)
+	, Depth(inDepth)
+{
+}
+
+void HGameplayTriggerContext::Enqueue(const HGameplayEffectRequest& request)
+{
+	_engine.TriggerEnqueue(*this, request, /*bFront*/ false);
+}
+
+void HGameplayTriggerContext::EnqueueFront(const HGameplayEffectRequest& request)
+{
+	_engine.TriggerEnqueue(*this, request, /*bFront*/ true);
+}
+
+const IGameplayBoard* HGameplayTriggerContext::Board() const
+{
+	return _engine.Board.GetRawPointer();
 }

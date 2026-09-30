@@ -1,0 +1,93 @@
+DevConsole_TODO Phase 1~3 검증 증거 (2026-09-29, 격리 worktree = HEAD 1308fd5 + 이 트랙 변경)
+worktree 가 %TEMP% 아래라 증분 빌드는 헤더 변경을 놓친다(MSB8029). 아래 결과는 전체 Rebuild 기준이다.
+
+===== 빌드 (Rebuild, DevelopEngine|x64) =====
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\Users\jgengine\AppData\Local\Temp\claude\C--JG-JGEngine\bfdd9da3-0c25-47ac-ab52-0b3e2e786cb4\scratchpad\wt\Temp\ProjectFiles\Graphics.vcxproj]
+C++ 오류 0, 경고는 기준선 LNK4098 1건 (MSB8029 는 TEMP 위치 경고)
+
+===== 헤드리스 (JGConsole.exe) =====
+===== JGConsole.exe console.selftest =====
+console.selftest: OK (57/57)
+exit code: 0
+===== JGConsole.exe gmtest =====
+gmtest: OK (0 failures)
+exit code: 0
+===== JGConsole.exe simtest =====
+gmtest: OK (0 failures)
+exit code: 0
+===== JGConsole.exe gmtset =====
+exit code: 1
+===== JGConsole.exe  =====
+exit code: 0
+===== JGConsole.exe help gmtest =====
+exit code: 0
+===== JGConsole.exe help nosuch.command =====
+exit code: 1
+
+===== 모듈 훅 (1-6, 임시 전역 명령 test.autocmd 를 GameFrameWorks 에 넣어 확인 후 제거) =====
+[:18480:][info][GameFrameWorks]: GameFrameWorks module startup
+[:18480:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:47640:][info][GameFrameWorks]: GameFrameWorks module startup
+[:47640:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:57156:][info][GameFrameWorks]: GameFrameWorks module startup
+[:57156:][info][ConsoleCommand]: > test.autocmd
+[:57156:][info][GameFrameWorks]: test.autocmd executed in GameFrameWorks.dll
+[:57156:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:57156:][info][ConsoleCommand]: > test.autocmd
+[:57156:][error][ConsoleCommand]: Unknown command 'test.autocmd' (type help)
+test.modulehook: registeredBeforeConnect=0 connected=1 registeredAfterConnect=1 executed=1 disconnected=1 registeredAfterDisconnect=0 executeAfterDisconnect=0
+
+===== 런처 60초 회귀 (Phase 1 빌드, crashwalk) =====
+[:42160:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 15, committed 0.94 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:42160:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+Process exited with code 0 (0x00000000)
+
+===== 런처 창 입력 (Phase 2+3 빌드, 입력줄 클릭 + WM_CHAR/WM_KEYDOWN 를 런처 창에만 PostMessage) =====
+입력: help / test.echo hello / nosuchcmd / help %s %n / ↑ / ↓ / test.openmem  (test.echo = Devkit, test.openmem = DevStatistics 임시 전역 명령)
+캡처: 2026-09-29_devconsole_ui_log.png, _history.png, _memorywindow.png
+[:16868:][info][ConsoleCommand]: > help
+[:16868:][info][ConsoleCommand]: 3 commands (help <command> for usage):
+[:16868:][info][ConsoleCommand]:   help                         List all commands, or show the usage of one command
+[:16868:][info][ConsoleCommand]:   test.echo                    Temporary: echo the first argument from Devkit.dll
+[:16868:][info][ConsoleCommand]:   test.openmem                 Temporary: open the memory statistics window
+[:16868:][info][ConsoleCommand]: > test.echo hello
+[:16868:][info][Devkit]: test.echo (Devkit.dll): hello
+[:16868:][info][ConsoleCommand]: > nosuchcmd
+[:16868:][error][ConsoleCommand]: Unknown command 'nosuchcmd' (type help)
+[:16868:][info][ConsoleCommand]: > help %s %n
+[:16868:][error][ConsoleCommand]: Unknown command '%s'
+[:16868:][warning][ConsoleCommand]: 'help' failed. Usage: help [command]
+[:16868:][info][ConsoleCommand]: > test.openmem
+[:16868:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 16, committed 1.00 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:16868:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+종료 코드 0 (WM_CLOSE). [error] 2건은 일부러 친 잘못된 명령이다.
+
+===== 메인 트리 통합 후 (2026-09-30 00시, 다른 세션의 미커밋 변경 포함 상태) =====
+빌드: MSBuild JGEngine.sln DevelopEngine|x64 오류 0, C++ 경고 0, LNK4098 2건(Graphics 기준선 + GameFrameWorks)
+===== JGConsole.exe console.selftest =====
+console.selftest: OK (57/57)
+exit code: 0
+===== JGConsole.exe gmtest =====
+gmtest: OK (0 failures)
+exit code: 0
+===== JGConsole.exe simtest =====
+gmtest: OK (0 failures)
+exit code: 0
+===== JGConsole.exe gmtset =====
+exit code: 1
+===== JGConsole.exe  =====
+exit code: 0
+===== JGConsole.exe help gmtest =====
+exit code: 0
+===== JGConsole.exe help nosuch.command =====
+exit code: 1
+===== JGConsole.exe net.test transport =====
+net.test: OK (0 failures)
+exit code: 0
+--- 런처 60초 (crashwalk)
+[:60824:][warning][Asset]: NOT Support Asset Path
+[:57368:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:57368:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 15, committed 0.94 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:57368:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+Process exited with code 0 (0x00000000)
+PSO created: 2

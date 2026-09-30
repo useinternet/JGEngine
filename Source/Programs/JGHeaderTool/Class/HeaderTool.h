@@ -109,6 +109,9 @@ public:
 	bool Run();
 
 private:
+	// 카테고리 아래에서 <폴더명>.module.json 이 SharedLib 인 모듈을 모은다. 코드젠 대상이 이 집합이다.
+	void collectSharedLibModules(const PString& workDirectory, const HHashSet<PString>& workCategories, HHashSet<PString>* outModuleSet) const;
+
 	bool collectionHeaderFiles();
 	bool collectionHeaderFiles_Internal(const PString& inDir, const HHashSet<PString>& allowedModules, HList<HHeaderInfo>& inHeaderInfos);
 
@@ -129,6 +132,7 @@ private:
 	bool analysisEnumElement(const PString& line, HEnum* pEnum);
 
 	bool generateCodeGenFiles();
+	bool generateCodeGenFilesInternal(const PString& codeGenRootDirectory, const HList<HHeaderInfo>& headerInfos, const HHashSet<PString>& moduleSet);
 	bool generateCodeGenHeaderSourceCode(const HHeaderInfo& headerInfo, PString* outCode);
 	bool generateCodeGenCPPSoucreCode(const HHeaderInfo& headerInfo, PString* outCode);
 	bool generateCodeGenRegistration(const PString& inModuleName, HQueue<const HClass*>& collectedClassQueue, HQueue<const HEnum*>& collectedEnumQueue, PString* outCode);

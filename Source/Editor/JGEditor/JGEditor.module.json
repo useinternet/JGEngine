@@ -5,6 +5,8 @@
       "Core",
       "GameFrameWorks",
       "Graphics",
+      "Asset",
+      "Devkit",
       "GUI"
     ],
     "ModuleName": "JGEditor",

@@ -1,0 +1,257 @@
+msbuild 버전 17.14.40+3e7442088(.NET Framework용)
+
+  PCH.cpp
+  CoreSystem.cpp
+  FileHelper.cpp
+  Json.cpp
+  BBox.cpp
+  Frustum.cpp
+  Math.cpp
+  Matrix.cpp
+  Plane.cpp
+  Quaternion.cpp
+  Vector.cpp
+  Allocator.cpp
+  Memory.cpp
+  MemoryPool.cpp
+  DateTime.cpp
+  DevelopUnit.cpp
+  Guid.cpp
+  Log.cpp
+  Module.cpp
+  SequentialIDGenerator.cpp
+  Timer.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  Timespan.cpp
+  JGObject.cpp
+  ObjectGlobalSystem.cpp
+  ObjectGlobals.cpp
+  JWindow.cpp
+  Platform.cpp
+  WindowsJWindow.cpp
+  Name.cpp
+  Path.cpp
+  String.cpp
+  StringTable.cpp
+  Scheduler.cpp
+  Task.cpp
+  Thread.cpp
+  코드를 생성하고 있습니다...
+  Core.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Core.lib
+  PCH.cpp
+  PCH.cpp
+  PCH.cpp
+  PCH.cpp
+  Main.cpp
+  Asset.cpp
+  BuildTool.cpp
+  HeaderTool.cpp
+  AssetDatabase.cpp
+  Main.cpp
+  Main.cpp
+  AssetImporter.cpp
+  코드를 생성하고 있습니다...
+  코드를 생성하고 있습니다...
+  AssetModule.cpp
+  AssetPath.cpp
+  Asset.codegen.generate.cpp
+  Asset.generation.cpp
+  AssetImporter.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Asset.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Asset.exp 개체를 생성하고 있습니다.
+  JGBuildTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  JGHeaderTool.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  JGLauncher.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  Asset.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Asset.dll
+  PCH.cpp
+  Scene.cpp
+  SceneRenderer.cpp
+  ShaderLibrary.cpp
+  StaticMesh.cpp
+  Texture.cpp
+  CommandList.cpp
+  CommandQueue.cpp
+  DX12Shader.cpp
+  DescriptionAllocator.cpp
+  DirectX12Helper.cpp
+  DynamicDescriptionAllocator.cpp
+  Fence.cpp
+  PipelineState.cpp
+  ResourceStagingManager.cpp
+  ResourceStateTracker.cpp
+  RootSignature.cpp
+  UploadAllocator.cpp
+  DX12ConstantBuffer.cpp
+  DX12FrameBuffer.cpp
+  DX12GraphicsCommand.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  DX12IndexBuffer.cpp
+  DX12Material.cpp
+  DX12StructuredBuffer.cpp
+  DX12Texture.cpp
+  DX12VertexBuffer.cpp
+  DirectX12API.cpp
+  FBXAssetImporter.cpp
+  JGGraphics.cpp
+  JGGraphicsAPI.cpp
+  JGGraphicsCommand.cpp
+  JGGraphicsHelper.cpp
+  Main.cpp
+  FBXAssetImporter.generation.cpp
+  Graphics.codegen.generate.cpp
+  JGGraphicsDefine.generation.cpp
+  StaticMesh.generation.cpp
+  Texture.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\JG\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Graphics.dll
+  PCH.cpp
+  PCH.cpp
+  Main.cpp
+  DX12GUIBackend.cpp
+  AI.codegen.generate.cpp
+  GUIBackend.cpp
+  코드를 생성하고 있습니다...
+  GUIBackends.cpp
+  GUI.cpp
+  GUIModule.cpp
+  imgui.cpp
+  imgui_demo.cpp
+  imgui_draw.cpp
+  imgui_impl_dx12.cpp
+  imgui_impl_win32.cpp
+  imgui_tables.cpp
+  imgui_widgets.cpp
+  implot.cpp
+  implot_demo.cpp
+  implot_items.cpp
+  MenuTree.cpp
+     ..\..\Bin\DevelopEngine\AI.lib 라이브러리 및 ..\..\Bin\DevelopEngine\AI.exp 개체를 생성하고 있습니다.
+  Widget.cpp
+  WidgetComponent.cpp
+  AI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\AI.dll
+  GUI.codegen.generate.cpp
+  Widget.generation.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  WidgetComponent.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\GUI.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GUI.exp 개체를 생성하고 있습니다.
+  GUI.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GUI.dll
+  PCH.cpp
+  PCH.cpp
+  PCH.cpp
+  PCH.cpp
+  DevConsole.cpp
+  DevStatistics.cpp
+  DevFeature.cpp
+  Actor.cpp
+  DevConsoleModule.cpp
+  MemoryStatistics.cpp
+  DevScene.cpp
+  GameEntryActor.cpp
+  DevConsole.codegen.generate.cpp
+  DevStatistics.codegen.generate.cpp
+  DevSettings.cpp
+  GameMasterActor.cpp
+  DevConsole.generation.cpp
+  MemoryStatistics.generation.cpp
+  DevkitModule.cpp
+  GameplayControllerActor.cpp
+  코드를 생성하고 있습니다...
+  코드를 생성하고 있습니다...
+  DevFeature.generation.cpp
+  GameplayCue.cpp
+  DevScene.generation.cpp
+  GameplayEntityActor.cpp
+  DevSettings.generation.cpp
+  ActorComponent.cpp
+  Devkit.codegen.generate.cpp
+  GameplayEntityComponent.cpp
+  코드를 생성하고 있습니다...
+  GameFrameWorksModule.cpp
+  GameInstance.cpp
+  Transform.cpp
+  World.cpp
+  WorldSelfTest.cpp
+  GameplayAgent.cpp
+     ..\..\Bin\DevelopEngine\DevConsole.lib 라이브러리 및 ..\..\Bin\DevelopEngine\DevConsole.exp 개체를 생성하고 있습니다.
+     ..\..\Bin\DevelopEngine\DevStatistics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\DevStatistics.exp 개체를 생성하고 있습니다.
+  GameplayBoard.cpp
+  GameMaster.cpp
+  GameMasterSelfTest.cpp
+  GameplayCommand.cpp
+  GameplayEffectRequest.cpp
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  GameplayEvent.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  GameplayCommandHandler.cpp
+  GameplayContext.cpp
+  GameplayEffect.cpp
+  GameplayEffectQueue.cpp
+  GameplayModifier.cpp
+  GameplayOrderPolicy.cpp
+  DevConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  DevStatistics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  GameplayPhaseMachine.cpp
+  GameplayRuleEngine.cpp
+  GameplayTrigger.cpp
+  GameplayTriggerDispatcher.cpp
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll
+  GameplayValuePipeline.cpp
+  GameplayCommandLog.cpp
+  GameplaySerializer.cpp
+  GameplaySnapshotStack.cpp
+  GameplayBoardState.cpp
+  GameplayChoice.cpp
+  PCH.cpp
+  GameplayEntityId.cpp
+  GameplayEntityRegistry.cpp
+  GameplayRandomStream.cpp
+  GameplayState.cpp
+  코드를 생성하고 있습니다...
+  컴파일하고 있습니다...
+  GameplayTurnState.cpp
+  GameplayZone.cpp
+  Actor.generation.cpp
+  ActorComponent.generation.cpp
+  GameEntryActor.generation.cpp
+  GameFrameWorks.codegen.generate.cpp
+  GameInstance.generation.cpp
+  JGDevGraphicsTest.cpp
+  GameMasterActor.generation.cpp
+  JGDev_Graphics.cpp
+  GameplayCommandHandler.generation.cpp
+  JGDev_Graphics.codegen.generate.cpp
+  GameplayControllerActor.generation.cpp
+  코드를 생성하고 있습니다...
+  GameplayCue.generation.cpp
+  GameplayEffect.generation.cpp
+  GameplayEntityActor.generation.cpp
+  GameplayEntityComponent.generation.cpp
+  GameplayModifier.generation.cpp
+  GameplayTrigger.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\JGDev_Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\JGDev_Graphics.exp 개체를 생성하고 있습니다.
+     ..\..\Bin\DevelopEngine\GameFrameWorks.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GameFrameWorks.exp 개체를 생성하고 있습니다.
+  JGDev_Graphics.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGDev_Graphics.dll
+  GameFrameWorks.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  PCH.cpp
+  PCH.cpp
+  PCH.cpp
+  Main.cpp
+  JGEditor.cpp
+  Main.cpp
+  Game.codegen.generate.cpp
+  JGEditor.codegen.generate.cpp
+  코드를 생성하고 있습니다...
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Game.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Game.exp 개체를 생성하고 있습니다.
+     ..\..\Bin\DevelopEngine\JGEditor.lib 라이브러리 및 ..\..\Bin\DevelopEngine\JGEditor.exp 개체를 생성하고 있습니다.
+  Game.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Game.dll
+  JGConsole.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  JGEditor.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\JGEditor.dll

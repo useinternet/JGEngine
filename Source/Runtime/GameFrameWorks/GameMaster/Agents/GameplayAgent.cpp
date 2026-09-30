@@ -137,7 +137,7 @@ bool PGameplayGreedyAgent::ChooseOption(PGameMaster& gameMaster, const HGameplay
 
 // Runner ----------------------------------------------------------------------
 
-bool PGameplayAgentRunner::Step(PGameMaster& gameMaster, HList<HGameplayEvent>& outEvents, PString* outReason)
+bool PGameplayAgentRunner::Choose(PGameMaster& gameMaster, HGameplayCommand& outCommand)
 {
 	const HGameplayState& state = gameMaster.GetState();
 	if (state.Turn.IsStarted() == false || state.Turn.IsFinished() == true)
@@ -159,9 +159,9 @@ bool PGameplayAgentRunner::Step(PGameMaster& gameMaster, HList<HGameplayEvent>& 
 			return false;
 		}
 
-		HGameplayCommand resolve(PName(HGameplayBuiltin::CommandResolveChoice), state.Choice.Chooser);
-		resolve.Targets = selection;
-		return gameMaster.Submit(resolve, outEvents, outReason) != EGameplaySubmitResult::Rejected;
+		outCommand = HGameplayCommand(PName(HGameplayBuiltin::CommandResolveChoice), state.Choice.Chooser);
+		outCommand.Targets = selection;
+		return true;
 	}
 
 	if (state.Turn.CanAct() == false)
@@ -174,9 +174,13 @@ bool PGameplayAgentRunner::Step(PGameMaster& gameMaster, HList<HGameplayEvent>& 
 	{
 		return false;
 	}
+	return agent->ChooseCommand(gameMaster, state.Turn.CurrentActor, outCommand);
+}
 
+bool PGameplayAgentRunner::Step(PGameMaster& gameMaster, HList<HGameplayEvent>& outEvents, PString* outReason)
+{
 	HGameplayCommand command;
-	if (agent->ChooseCommand(gameMaster, state.Turn.CurrentActor, command) == false)
+	if (Choose(gameMaster, command) == false)
 	{
 		return false;
 	}

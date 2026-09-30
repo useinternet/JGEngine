@@ -1,5 +1,6 @@
 #include "PCH/PCH.h"
 #include "FileHelper.h"
+#include "CoreSystem.h"
 #include "Misc/Log.h"
 #include <fstream>
 
@@ -295,15 +296,146 @@ void HFileHelper::AbsolutePath(const PString& inPath, PString* outPath)
 	NormalizePath(outPath);
 }
 
+void HFileHelper::AbsoluteDirectory(const PString& inPath, PString* outPath)
+{
+	if (outPath == nullptr)
+	{
+		return;
+	}
+
+	(*outPath) = fs::absolute(inPath.GetRawString()).lexically_normal().string().c_str();
+	NormalizePath(outPath);
+
+	if (outPath->Empty() == false && outPath->EndWidth("/") == false)
+	{
+		outPath->Append("/");
+	}
+}
+
+namespace
+{
+	const char* const DEFAULT_ROOT_DIRECTORY = "../../";
+
+	// GCoreSystem 이 정한 값을 읽는다. Core 가 StaticLib 이라 이 파일의 static 은 모듈(DLL)마다 따로 있으므로
+	// 루트 자체는 모든 모듈이 같은 GCoreSystem 인스턴스(Link_Module 로 전달)에서 가져온다.
+	const HRawString& resolvedRoot(bool bEngineRoot)
+	{
+		static const HRawString fallback = DEFAULT_ROOT_DIRECTORY;
+		if (GCoreSystem::HasInstance() == false)
+		{
+			return fallback;
+		}
+
+		const HCoreSystemGlobalValues& values = GCoreSystem::GetGlobalValues();
+		const HRawString& root = bEngineRoot ? values.EngineDirectory : values.ProjectDirectory;
+		if (root.empty() == true)
+		{
+			return fallback;
+		}
+
+		return root;
+	}
+
+	void syncString(PString* outCached, const HRawString& value)
+	{
+		if (outCached->GetRawString() != value)
+		{
+			(*outCached) = value.c_str();
+		}
+	}
+}
+
 const PString& HFileHelper::EngineDirectory()
 {
 	static PString enginePath;
-	if (enginePath.Empty())
-	{
-		enginePath = "../../";
-	} 
+	syncString(&enginePath, resolvedRoot(true));
 
 	return enginePath;
+}
+
+const PString& HFileHelper::ProjectDirectory()
+{
+	static PString projectPath;
+	syncString(&projectPath, resolvedRoot(false));
+
+	return projectPath;
+}
+
+const PString& HFileHelper::ProjectName()
+{
+	static PString projectName;
+	if (GCoreSystem::HasInstance() == true)
+	{
+		syncString(&projectName, GCoreSystem::GetGlobalValues().ProjectName);
+	}
+
+	return projectName;
+}
+
+bool HFileHelper::IsProjectMode()
+{
+	if (GCoreSystem::HasInstance() == false)
+	{
+		return false;
+	}
+
+	return GCoreSystem::GetGlobalValues().bProjectMode;
+}
+
+const PString& HFileHelper::ProjectSourceDirectory()
+{
+	static PString projectSourcePath;
+	if (projectSourcePath.Empty())
+	{
+		CombinePath(ProjectDirectory(), "Source", &projectSourcePath);
+	}
+
+	return projectSourcePath;
+}
+
+const PString& HFileHelper::ProjectBinDirectory()
+{
+	static PString projectBinPath;
+	if (projectBinPath.Empty())
+	{
+		CombinePath(ProjectDirectory(), "Bin", &projectBinPath);
+		if (Exists(projectBinPath) == false)
+		{
+			CreateDirectory(projectBinPath);
+		}
+	}
+
+	return projectBinPath;
+}
+
+const PString& HFileHelper::ProjectTempDirectory()
+{
+	static PString projectTempPath;
+	if (projectTempPath.Empty())
+	{
+		CombinePath(ProjectDirectory(), "Temp", &projectTempPath);
+		if (Exists(projectTempPath) == false)
+		{
+			CreateDirectory(projectTempPath);
+		}
+	}
+
+	return projectTempPath;
+}
+
+const PString& HFileHelper::ProjectCodeGenDirectory()
+{
+	static PString projectCodeGenPath;
+	if (projectCodeGenPath.Empty())
+	{
+		CombinePath(ProjectTempDirectory(), "CodeGen", &projectCodeGenPath);
+		if (Exists(projectCodeGenPath) == false)
+		{
+			CreateDirectory(projectCodeGenPath);
+		}
+	}
+
+	return projectCodeGenPath;
 }
 
 const PString& HFileHelper::EngineBinDirectory()

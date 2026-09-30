@@ -240,9 +240,27 @@ const HList<HRenderSubMesh>& PStaticMesh::GetSubMeshes() const
 
 // ---------------------------------------------------------------- JGStaticMesh
 
+namespace
+{
+	// 정점이 없을 때의 경계 상자. min > max라 GetBounds가 false를 돌려준다.
+	HBBox makeEmptyBounds()
+	{
+		HBBox bounds;
+		bounds.min = HVector3(FLT_MAX);
+		bounds.max = HVector3(-FLT_MAX);
+		return bounds;
+	}
+
+	bool isValidBounds(const HBBox& inBounds)
+	{
+		return inBounds.min.x <= inBounds.max.x && inBounds.min.y <= inBounds.max.y && inBounds.min.z <= inBounds.max.z;
+	}
+}
+
 JGStaticMesh::JGStaticMesh()
 {
 	_bMeshDirty = true;
+	_bounds = makeEmptyBounds();
 }
 
 const uint64 JGStaticMesh::GetTotalVertexCount() const
@@ -390,6 +408,7 @@ void JGStaticMesh::SetData(const HList<PName>& subMeshNames, const HList<HList<H
 		_subMeshes.push_back(std::move(subMesh));
 	}
 
+	updateBounds();
 	_bMeshDirty = true;
 }
 
@@ -411,30 +430,28 @@ PSharedPtr<IMesh> JGStaticMesh::GetMesh()
 	return _mesh;
 }
 
-bool JGStaticMesh::CalculateBounds(HBBox& outBounds) const
+bool JGStaticMesh::GetBounds(HBBox& outBounds) const
 {
-	bool bHasVertex = false;
-	HVector3 minPos(FLT_MAX);
-	HVector3 maxPos(-FLT_MAX);
-
-	for (const HStaticSubMesh& subMesh : _subMeshes)
-	{
-		for (const HVertexData& vertex : subMesh.Vertices)
-		{
-			minPos = HVector3::Min(minPos, vertex.Position);
-			maxPos = HVector3::Max(maxPos, vertex.Position);
-			bHasVertex = true;
-		}
-	}
-
-	if (bHasVertex == false)
+	if (isValidBounds(_bounds) == false)
 	{
 		return false;
 	}
 
-	outBounds.min = minPos;
-	outBounds.max = maxPos;
+	outBounds = _bounds;
 	return true;
+}
+
+void JGStaticMesh::updateBounds()
+{
+	_bounds = makeEmptyBounds();
+	for (const HStaticSubMesh& subMesh : _subMeshes)
+	{
+		for (const HVertexData& vertex : subMesh.Vertices)
+		{
+			_bounds.min = HVector3::Min(_bounds.min, vertex.Position);
+			_bounds.max = HVector3::Max(_bounds.max, vertex.Position);
+		}
+	}
 }
 
 void JGStaticMesh::SetName(const PName& inName)
@@ -467,6 +484,12 @@ bool JGStaticMesh::IsValid() const
 
 void JGStaticMesh::OnLoadAsset_Thread()
 {
-	// 로드 스레드에서 ReadJson으로 _subMeshes가 채워진 뒤 불린다. 다음 GetMesh()에서 렌더 메시를 다시 만든다.
+	// 로드 스레드에서 ReadJson으로 _subMeshes · _bounds가 채워진 뒤 불린다. 다음 GetMesh()에서 렌더 메시를 다시 만든다.
+	// _bounds 없이 저장된 에셋(5-26 이전)은 정점으로 구한다. 다시 저장하면 이 경로를 타지 않는다.
+	if (isValidBounds(_bounds) == false)
+	{
+		updateBounds();
+		JG_LOG(Graphics, ELogLevel::Trace, "%s : no saved bounds (saved before 5-26), computed from vertices", GetName());
+	}
 	_bMeshDirty = true;
 }

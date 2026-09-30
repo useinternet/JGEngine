@@ -57,6 +57,68 @@ namespace
 		}
 	};
 
+	// 엔티티를 만들고 같은 명령 안에서 곧바로 파괴한다. 한 프레임에 EntitySpawned · EntityDestroyed 가 함께 온다 (R15).
+	class PWorldTestSpawnAndKillHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("WorldTestSpawnAndKill");
+		}
+
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			return true;
+		}
+
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			HGameplayEntityId id = ctx.SpawnEntity(PName("Units"));
+			ctx.DestroyEntity(id);
+		}
+	};
+
+	// 틱 안에서 액터를 스폰하고 같은 틱에 파괴한다 (R11).
+	class PWorldTestSpawnerActor : public JGActor
+	{
+	public:
+		PSharedPtr<JGActor> Spawned;
+
+	protected:
+		virtual void OnTick(float32 deltaSeconds) override
+		{
+			if (Spawned != nullptr)
+			{
+				return;
+			}
+			Spawned = GetWorld()->SpawnActor<JGActor>(PName("WorldTestZombie"));
+			Spawned->Destroy();
+		}
+	};
+
+	// 파괴 이벤트의 큐를 물어보는 순간 그 엔티티의 액터를 찾을 수 있는지 센다 (R13).
+	class PWorldTestDeathCue : public JGGameplayCue
+	{
+	public:
+		JGGameMasterActor* Owner = nullptr;
+		mutable int32 Asked = 0;
+		mutable int32 Found = 0;
+
+		virtual bool Accepts(const HGameplayEvent& event) const override
+		{
+			if (event.Kind != PName(HGameplayBuiltin::EventEntityDestroyed))
+			{
+				return false;
+			}
+			++Asked;
+			if (Owner != nullptr && Owner->FindActor(event.Subject) != nullptr)
+			{
+				++Found;
+			}
+			return true;
+		}
+	};
+
 	int32 countEntityActors(PSharedPtr<PWorld> world)
 	{
 		HList<PSharedPtr<JGGameplayEntityActor>> actors;
@@ -151,6 +213,92 @@ int32 PWorldSelfTest::Run()
 	// 언로드
 	gameInstance.UnloadWorld();
 	check(gameInstance.GetWorld() == nullptr && world->HasBegun() == false, "UnloadWorld ends play and clears the active world");
+
+	// 리뷰 재현 회귀 (R11 · R12 · R13 · R15). 게임 인스턴스와 상관없는 별도 월드에서 본다.
+	{
+		PSharedPtr<PWorld> reviewWorld = Allocate<PWorld>(PName("ReviewRegressionWorld"));
+		reviewWorld->BeginPlay();
+
+		// R11: 틱 안에서 스폰하고 같은 틱에 파괴한 액터는 월드에 들어가지 않는다
+		PSharedPtr<PWorldTestSpawnerActor> spawner = reviewWorld->SpawnActor<PWorldTestSpawnerActor>(PName("Spawner"));
+		tickFrames(reviewWorld, 3);
+		PSharedPtr<JGActor> zombie = spawner->Spawned;
+		bool bZombieInWorld = false;
+		for (const PSharedPtr<JGActor>& actor : reviewWorld->GetActors())
+		{
+			if (actor == zombie)
+			{
+				bZombieInWorld = true;
+			}
+		}
+		check(zombie != nullptr && bZombieInWorld == false && zombie->HasBegunPlay() == false, "R11 an actor spawned and destroyed in one tick never enters the world");
+
+		// R12: 부모가 있는 액터의 월드 위치
+		PSharedPtr<JGActor> parent = reviewWorld->SpawnActor<JGActor>(PName("Parent"));
+		PSharedPtr<JGActor> child  = reviewWorld->SpawnActor<JGActor>(PName("Child"));
+		parent->SetLocalPosition(HVector3(5.0f, 0.0f, 0.0f));
+		child->SetLocalPosition(HVector3(1.0f, 2.0f, 3.0f));
+		child->AttachTo(parent);
+		HVector3 position = child->GetWorldPosition();
+		check(position.x == 6.0f && position.y == 2.0f && position.z == 3.0f, PString::Format("R12 child world position (%.1f, %.1f, %.1f) == (6, 2, 3)", position.x, position.y, position.z));
+
+		// R13 · R15 는 GameMasterActor 로 본다
+		PSharedPtr<JGGameMasterActor> reviewMaster = reviewWorld->SpawnActor<JGGameMasterActor>(PName("ReviewGameMasterActor"));
+		PSharedPtr<PGameMaster> reviewSim = Allocate<PGameMaster>();
+		reviewSim->RegisterZone(PName("Units"));
+		reviewSim->RegisterHandler(Allocate<PWorldTestKillHandler>());
+		reviewSim->RegisterHandler(Allocate<PWorldTestSpawnAndKillHandler>());
+		reviewSim->SetOrderPolicy(Allocate<PGameplayZoneOrderPolicy>(PName("Units")));
+
+		HList<HGameplayEntityId> reviewUnits;
+		HGameplayState& reviewInitial = reviewSim->EditInitialState();
+		for (int32 i = 0; i < 2; ++i)
+		{
+			HGameplayEntityId id = reviewInitial.CreateEntity();
+			reviewInitial.Zone(PName("Units")).PushBack(id);
+			reviewUnits.push_back(id);
+		}
+
+		PSharedPtr<PWorldTestDeathCue> deathCue = Allocate<PWorldTestDeathCue>();
+		deathCue->Owner = reviewMaster.GetRawPointer();
+		reviewMaster->RegisterCue(deathCue);
+		reviewMaster->SetGameMaster(reviewSim);
+		reviewSim->Start(777);
+		tickFrames(reviewWorld, 3);
+
+		// R13: 사망 큐를 고르는 순간 액터가 아직 있고, 큐가 끝나면 없어진다
+		bool bBoundBefore = reviewMaster->FindActor(reviewUnits[1]) != nullptr;
+		HGameplayCommand reviewKill(PName("WorldTestKill"), reviewUnits[0]);
+		reviewKill.Targets.push_back(reviewUnits[1]);
+		PString reviewReason;
+		reviewMaster->Submit(reviewKill, &reviewReason);
+		tickFrames(reviewWorld, 3);
+		check(bBoundBefore == true && deathCue->Asked == 1 && deathCue->Found == 1 && reviewMaster->FindActor(reviewUnits[1]) == nullptr,
+			PString::Format("R13 the death cue finds its actor (asked %d, found %d) and the actor goes after the cue", deathCue->Asked, deathCue->Found));
+
+		// R15: 한 프레임에 스폰 · 파괴가 함께 와도 좀비 액터가 남지 않는다
+		reviewMaster->Submit(HGameplayCommand(PName("WorldTestSpawnAndKill"), reviewUnits[0]), &reviewReason);
+		tickFrames(reviewWorld, 3);
+		int32 zombies = 0;
+		int32 entityActors = 0;
+		for (const PSharedPtr<JGActor>& actor : reviewWorld->GetActors())
+		{
+			PSharedPtr<JGGameplayEntityActor> typed = RawDynamicCast<JGGameplayEntityActor>(actor);
+			if (typed == nullptr)
+			{
+				continue;
+			}
+			++entityActors;
+			if (typed->IsPendingDestroy() == true)
+			{
+				++zombies;
+			}
+		}
+		check(zombies == 0 && entityActors == (int32)reviewSim->GetState().Entities.Count(),
+			PString::Format("R15 spawn + destroy in one frame leaves no zombie (entity actors %d, alive entities %u)", entityActors, reviewSim->GetState().Entities.Count()));
+
+		reviewWorld->EndPlay();
+	}
 
 	std::cout << "== World self test: " << check.Passed << " passed, " << check.Failures << " failed ==" << std::endl;
 	JG_LOG(WorldSelfTest, ELogLevel::Info, "World self test: %d passed, %d failed", check.Passed, check.Failures);

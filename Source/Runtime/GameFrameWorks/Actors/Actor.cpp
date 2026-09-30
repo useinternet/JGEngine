@@ -85,8 +85,9 @@ HVector3 JGActor::GetWorldPosition() const
 	{
 		return LocalTransform.Position;
 	}
+	// 행 벡터 규약이라 이동 성분은 4행이다. Get_C(열, 행).
 	HMatrix world = GetWorldMatrix();
-	return HVector3(world.Get_C(3, 0), world.Get_C(3, 1), world.Get_C(3, 2));
+	return HVector3(world.Get_C(0, 3), world.Get_C(1, 3), world.Get_C(2, 3));
 }
 
 bool JGActor::AttachTo(PSharedPtr<JGActor> parent)

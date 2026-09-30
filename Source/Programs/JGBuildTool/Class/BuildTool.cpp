@@ -23,14 +23,14 @@ bool PBuildTool::Run()
 
 	// Step 1. Engine Module ���� ���� 
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 1. Engine Collection Module Infos..");
-	if (collectionModuleInfos(arguments.EngineWorkDirectory, arguments.EngineWorkCategories, _engineModuleInfoMap) == false)
+	if (collectionModuleInfos(arguments.EngineWorkDirectory, arguments.EngineWorkCategories, true, _engineModuleInfoMap) == false)
 	{
 		return false;
 	}
 
 	// Step 2. User Module ���� ���� 
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 2. User Collection Module Infos..");
-	if (collectionModuleInfos(arguments.UserWorkDirectory, arguments.UserWorkCategories, _userModuleInfoMap) == false)
+	if (collectionModuleInfos(arguments.UserWorkDirectory, arguments.UserWorkCategories, false, _userModuleInfoMap) == false)
 	{
 		return false;
 	}
@@ -48,7 +48,19 @@ bool PBuildTool::Run()
 
 	// Step 5. make Build
 	JG_LOG(BuildTool, ELogLevel::Info, "Step 5. Make Project Files..");
-	if (makeProjectFiles() == false)
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		if (makeGameProjectFiles() == false)
+		{
+			return false;
+		}
+
+		if (copyThirdPartyBinaries() == false)
+		{
+			return false;
+		}
+	}
+	else if (makeProjectFiles() == false)
 	{
 		return false;
 	}
@@ -95,7 +107,7 @@ const PArguments& PBuildTool::getArguments() const
 	return _arguments;
 }
 
-bool PBuildTool::collectionModuleInfos(const PString& workDir, const HHashSet<PString>& workCategories, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap)
+bool PBuildTool::collectionModuleInfos(const PString& workDir, const HHashSet<PString>& workCategories, bool bEngineModule, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap)
 {
 	if (HFileHelper::Exists(workDir) == false)
 	{
@@ -112,6 +124,12 @@ bool PBuildTool::collectionModuleInfos(const PString& workDir, const HHashSet<PS
 		PString categoryName;
 		HFileHelper::FileName(categoryPath, &categoryName);
 
+		// 카테고리가 아닌 항목은 먼저 건너뛴다. 게임 프로젝트 루트에는 .jgproject · 배치 파일 같은 파일이 있다.
+		if (workCategories.find(categoryName) == workCategories.end())
+		{
+			continue;
+		}
+
 		if (HFileHelper::Exists(categoryPath) == false)
 		{
 			JG_LOG(BuildTool, ELogLevel::Critical, "work category(%s) doesn't exist.", categoryName);
@@ -124,12 +142,7 @@ bool PBuildTool::collectionModuleInfos(const PString& workDir, const HHashSet<PS
 			continue;
 		}
 
-		if (workCategories.find(categoryName) == workCategories.end())
-		{
-			continue;
-		}
-
-		collectionModuleInfosInternal(categoryName, categoryPath, outModuleInfoMap);
+		collectionModuleInfosInternal(categoryName, categoryPath, bEngineModule, outModuleInfoMap);
 	}
 
 	uint64 totalCount = 0;
@@ -162,7 +175,7 @@ bool PBuildTool::collectionModuleInfos(const PString& workDir, const HHashSet<PS
 	return true;
 }
 
-void PBuildTool::collectionModuleInfosInternal(const PString& categoryName, const PString& inCategoryPath, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap)
+void PBuildTool::collectionModuleInfosInternal(const PString& categoryName, const PString& inCategoryPath, bool bEngineModule, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap)
 {
 	HList<PString> modulePathList;
 	HFileHelper::FileListInDirectory(inCategoryPath, &modulePathList, true);
@@ -189,7 +202,9 @@ void PBuildTool::collectionModuleInfosInternal(const PString& categoryName, cons
 		{
 			continue;
 		}
-		
+
+		moduleInfo.bEngineModule = bEngineModule;
+
 		outModuleInfoMap[categoryName].push_back(moduleInfo);
 		_moduleInfoPool[moduleName] = moduleInfo;
 	}
@@ -210,20 +225,39 @@ bool PBuildTool::generateBuildScript()
 	}
 
 
-	PString buildScript;
-	if (HFileHelper::ReadAllText(getBuildScriptTemplatePath(), &buildScript) == false)
+	PString templateScript;
+	if (HFileHelper::ReadAllText(getBuildScriptTemplatePath(), &templateScript) == false)
 	{
 		return false;
 	}
+
+	// 템플릿(BuildTemplate.lua)이 쓰는 값. 엔진 솔루션은 ENGINE_ROOT 가 "" 라 경로 문자열이 예전과 같다.
+	PString buildScript;
+	buildScript.AppendLine(PString::Format("ENGINE_ROOT = \"%s\"", getEngineRootPrefix()));
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		buildScript.AppendLine(PString::Format("WORKSPACE_NAME = \"%s\"", HFileHelper::ProjectName()));
+		buildScript.AppendLine("START_PROJECT = \"JGLauncher\"");
+	}
+	else
+	{
+		buildScript.AppendLine("WORKSPACE_NAME = \"JGEngine\"");
+	}
+	buildScript.Append(templateScript);
 	buildScript.AppendLine("");
 	buildScript.AppendLine(engineModuleScript);
 	buildScript.AppendLine(userModuleScript);
 
-	const PArguments& arguments = getArguments();
-
 	PString resultPath;
-	HFileHelper::CombinePath(BuildToolDirectory(), SCRIPT_NAME, &resultPath);
-	
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		resultPath = getGameProjectScriptPath();
+	}
+	else
+	{
+		HFileHelper::CombinePath(BuildToolDirectory(), SCRIPT_NAME, &resultPath);
+	}
+
 	if (HFileHelper::WriteAllText(resultPath, buildScript) == false)
 	{
 		return false;
@@ -257,17 +291,19 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 			outScript.Append("project \"").Append(moduleInfo.ModuleName).AppendLine("\"");
 			outScript.Append("\t\t\t\t");
 
-			PString thirdPartyPath = arguments.ThirdPartyDirectory;
-			thirdPartyPath.ReplaceAll(HFileHelper::EngineDirectory(), "");
+			const PString enginePrefix = getEngineRootPrefix();
+			const PString modulePrefix = getModuleRootPrefix(moduleInfo);
+
+			PString thirdPartyPath = enginePrefix + toEngineRelativePath(arguments.ThirdPartyDirectory);
 
 			PString includeDirs;
-			includeDirs.Append("\"").Append(moduleInfo.ModulePath).Append("\", ");
+			includeDirs.Append("\"").Append(modulePrefix).Append(moduleInfo.ModulePath).Append("\", ");
 			includeDirs.Append("\"").Append(thirdPartyPath).Append("\", ");
-			includeDirs.Append("\"").Append("Source/").Append("\", ");
+			includeDirs.Append("\"").Append(enginePrefix).Append("Source/").Append("\", ");
 
 			if (bIsSharedLib)
 			{
-				includeDirs.Append("\"").Append(moduleInfo.CodeGenPath).Append("\", ");
+				includeDirs.Append("\"").Append(modulePrefix).Append(moduleInfo.CodeGenPath).Append("\", ");
 			}
 
 			PString links;
@@ -296,13 +332,14 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 				}
 
 				const PModuleInfo& dependencyModule = _moduleInfoPool[moduleName];
+				const PString dependencyPrefix = getModuleRootPrefix(dependencyModule);
 
-				includeDirs.Append("\"").Append(dependencyModule.ModulePath).Append("\", ");
+				includeDirs.Append("\"").Append(dependencyPrefix).Append(dependencyModule.ModulePath).Append("\", ");
 				links.Append("\"").Append(moduleName).Append("\", ");
 
 				if (dependencyModule.ModuleFormat == "SharedLib")
 				{
-					includeDirs.Append("\"").Append(dependencyModule.CodeGenPath).Append("\", ");
+					includeDirs.Append("\"").Append(dependencyPrefix).Append(dependencyModule.CodeGenPath).Append("\", ");
 				}
 			}
 
@@ -333,7 +370,7 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 			}
 
 			outScript.Append("\"").Append(moduleInfo.ModuleFormat).Append("\", ");
-			outScript.Append("\"").Append(moduleInfo.ModulePath).Append("\", ");
+			outScript.Append("\"").Append(modulePrefix).Append(moduleInfo.ModulePath).Append("\", ");
 
 			if (defines.Empty() == false)
 			{
@@ -342,7 +379,7 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 
 			if (bIsSharedLib)
 			{
-				outScript.Append(PString(", \"") + moduleInfo.CodeGenPath + "\"");
+				outScript.Append(PString(", \"") + modulePrefix + moduleInfo.CodeGenPath + "\"");
 			}
 			
 			outScript.AppendLine(")");
@@ -405,7 +442,14 @@ void PBuildTool::insertIncludePCHHeaderCodeInternal(const HHashMap<PString, HLis
 	{
 		for (const PModuleInfo& moduleInfo : pair.second)
 		{
-			PString modulePath = HFileHelper::EngineDirectory() / moduleInfo.ModulePath;
+			// 게임 프로젝트 솔루션을 만들 때는 엔진 소스를 건드리지 않는다 (엔진 쪽은 엔진 PreBuild 가 맡는다).
+			if (HFileHelper::IsProjectMode() == true && moduleInfo.bEngineModule == true)
+			{
+				continue;
+			}
+
+			const PString& rootDirectory = moduleInfo.bEngineModule ? HFileHelper::EngineDirectory() : HFileHelper::ProjectDirectory();
+			PString modulePath = rootDirectory / moduleInfo.ModulePath;
 
 			HList<PString> cppFileList;
 
@@ -421,11 +465,13 @@ void PBuildTool::insertIncludePCHHeaderCodeInternal(const HHashMap<PString, HLis
 				}
 
 				uint64 pos = cppText.Find("#include \"PCH/PCH.h\"");
-				if (pos == PString::NPOS)
+				if (pos != PString::NPOS)
 				{
-					cppText.Insert("#include \"PCH/PCH.h\"\n", 0);
+					// 이미 있으면 쓰지 않는다. 다시 쓰면 mtime 이 바뀌어 매 생성마다 전체 재컴파일이 된다.
+					continue;
 				}
 
+				cppText.Insert("#include \"PCH/PCH.h\"\n", 0);
 				if (HFileHelper::WriteAllText(cppFilePath, cppText) == false)
 				{
 					JG_LOG(BuildTool, ELogLevel::Error, "Module: %s: Fail Insert Include PCH.H Code", moduleInfo.ModuleName);
@@ -492,6 +538,79 @@ bool PBuildTool::makeProjectFiles()
 	//HFileHelper::RemoveFileOrDirectory(premakeTempFilePath);
 
 	return true;
+}
+
+bool PBuildTool::makeGameProjectFiles()
+{
+	// 스크립트는 generateBuildScript 가 프로젝트 루트에 썼다. premake 는 엔진 것을 그대로 쓰고 엔진 트리에는 아무것도 쓰지 않는다.
+	PString premakePath;
+	HFileHelper::CombinePath(HFileHelper::EngineBuildDirectory(), PREMAKE_FILE_NAME, &premakePath);
+	HFileHelper::AbsolutePath(premakePath, &premakePath);
+
+	const PString scriptPath = getGameProjectScriptPath();
+
+	// cmd /c 는 명령 전체가 따옴표로 시작하면 바깥 따옴표를 벗기므로 한 겹 더 감싼다.
+	PString command;
+	command.Append("\"\"").Append(premakePath).Append("\" vs2022 --file=\"").Append(scriptPath).Append("\"\"");
+
+	JG_LOG(BuildTool, ELogLevel::Trace, "Run: %s", command);
+	int32 exitCode = system(command.GetCStr());
+	if (exitCode != 0)
+	{
+		JG_LOG(BuildTool, ELogLevel::Error, "premake failed (%d): %s", exitCode, scriptPath);
+		return false;
+	}
+
+	return true;
+}
+
+bool PBuildTool::copyThirdPartyBinaries() const
+{
+	// 모든 모듈이 PCH.h 의 #pragma comment(lib) 로 zlibstatic.lib · assimp-mt.lib 를 링크하고(libdirs = Bin/<Config>),
+	// Graphics.dll 은 실행 시 assimp-vc143-mt.dll 을 찾는다. assimp-mt.lib 가 가리키는 DLL 이름이 assimp-vc143-mt.dll 이라
+	// ThirdParty 의 assimp-mt.dll(같은 파일)을 그 이름으로 복사한다. 엔진 Bin 에는 손으로 복사돼 있던 것들이다.
+	struct HThirdPartyFile
+	{
+		const char* Source;
+		const char* Target;
+	};
+
+	static const HThirdPartyFile files[] =
+	{
+		{ "ThirdParty/zlib/zlibstatic.lib",  "zlibstatic.lib" },
+		{ "ThirdParty/assimp/assimp-mt.lib", "assimp-mt.lib" },
+		{ "ThirdParty/assimp/assimp-mt.dll", "assimp-vc143-mt.dll" },
+	};
+
+	static const char* configurations[] = { "DevelopEngine", "DevelopGame", "ConfirmGame", "ReleaseGame" };
+
+	bool bResult = true;
+	for (const char* configuration : configurations)
+	{
+		PString binDirectory;
+		HFileHelper::CombinePath(HFileHelper::ProjectBinDirectory(), configuration, &binDirectory);
+		std::error_code errorCode;
+		fs::create_directories(binDirectory.GetRawString(), errorCode);
+
+		for (const HThirdPartyFile& file : files)
+		{
+			PString sourcePath;
+			HFileHelper::CombinePath(HFileHelper::EngineDirectory(), file.Source, &sourcePath);
+
+			PString targetPath;
+			HFileHelper::CombinePath(binDirectory, file.Target, &targetPath);
+
+			// 실행 중인 게임이 DLL 을 잡고 있어도 실패하지 않도록 바뀐 파일만 덮어쓴다.
+			fs::copy_file(sourcePath.GetRawString(), targetPath.GetRawString(), fs::copy_options::update_existing, errorCode);
+			if (errorCode.value() != 0)
+			{
+				JG_LOG(BuildTool, ELogLevel::Error, "Fail copy %s -> %s: %s", sourcePath, targetPath, errorCode.message().c_str());
+				bResult = false;
+			}
+		}
+	}
+
+	return bResult;
 }
 
 bool PBuildTool::findModuleInfo(const PString& modulePath, PModuleInfo* outModuleInfo) const
@@ -590,6 +709,11 @@ PString PBuildTool::getDefines(const PModuleInfo& moduleInfo, EModuleFilter filt
 
 PString PBuildTool::getUserProjectName() const
 {
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		return HFileHelper::ProjectName();
+	}
+
 	const PArguments& arguments = getArguments();
 
 	PString UserProjectName;
@@ -602,4 +726,54 @@ const PString& PBuildTool::getBuildScriptTemplatePath() const
 {
 	const PArguments& arguments = getArguments();
 	return arguments.BuildScriptTemplatePath;
+}
+
+PString PBuildTool::getGameProjectScriptPath() const
+{
+	return HFileHelper::ProjectDirectory() + HFileHelper::ProjectName() + ".lua";
+}
+
+PString PBuildTool::getEngineRootPrefix() const
+{
+	if (HFileHelper::IsProjectMode() == false)
+	{
+		return PString();
+	}
+
+	PString engineDirectory;
+	HFileHelper::AbsoluteDirectory(HFileHelper::EngineDirectory(), &engineDirectory);
+	return engineDirectory;
+}
+
+PString PBuildTool::getModuleRootPrefix(const PModuleInfo& moduleInfo) const
+{
+	if (moduleInfo.bEngineModule == true)
+	{
+		return getEngineRootPrefix();
+	}
+
+	// 게임 모듈 경로는 프로젝트 루트 기준이고 스크립트도 프로젝트 루트에 있다.
+	return PString();
+}
+
+PString PBuildTool::toEngineRelativePath(const PString& path) const
+{
+	PString normalizedPath;
+	HFileHelper::AbsoluteDirectory(path, &normalizedPath);
+
+	PString engineDirectory;
+	HFileHelper::AbsoluteDirectory(HFileHelper::EngineDirectory(), &engineDirectory);
+
+	if (PString::ToLower(normalizedPath).StartWidth(PString::ToLower(engineDirectory)) == false)
+	{
+		return path;
+	}
+
+	normalizedPath.Remove(0, engineDirectory.Length());
+	if (normalizedPath.EndWidth("/") == true)
+	{
+		normalizedPath.PopBack();
+	}
+
+	return normalizedPath;
 }

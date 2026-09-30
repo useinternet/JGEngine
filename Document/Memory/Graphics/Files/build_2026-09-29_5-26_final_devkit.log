@@ -1,0 +1,13 @@
+
+  PCH.cpp
+  DevFeature.cpp
+  DevScene.cpp
+  DevSettings.cpp
+  DevkitModule.cpp
+  DevFeature.generation.cpp
+  DevScene.generation.cpp
+  DevSettings.generation.cpp
+  Devkit.codegen.generate.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  Devkit.vcxproj -> C:\JG\JGEngine\Bin\DevelopEngine\Devkit.dll

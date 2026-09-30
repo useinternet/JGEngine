@@ -25,13 +25,29 @@ enum class ELogLevel
 	Critical,
 };
 
+// 최근 로그 한 줄(DevConsole 로그 뷰). Text 는 "[Category]: 본문" 이다.
+struct HLogLine
+{
+	ELogLevel Level = ELogLevel::Info;
+	PString   Text;
+};
+
+class PRecentLogSink;
+
 class GLogGlobalSystem : public GGlobalSystemInstance<GLogGlobalSystem>
 {
 	mutable std::shared_ptr<spdlog::logger> _logger;
+	// Info 이상 최근 줄 버퍼. Log.cpp 에 정의한다.
+	std::shared_ptr<PRecentLogSink> _recentSink;
 
 public:
 	GLogGlobalSystem();
 	virtual ~GLogGlobalSystem();
+
+public:
+	// 최근 로그(Info 이상, 최대 1024줄). serial 은 줄이 추가될 때마다 늘어난다 → 바뀐 프레임에만 GetRecentLogs 로 복사한다.
+	uint64 GetLogSerial() const;
+	void   GetRecentLogs(HList<HLogLine>& OutLines) const;
 
 public:
 	template<class ...Args>

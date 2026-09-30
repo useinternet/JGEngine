@@ -98,6 +98,10 @@ class GRAPHICS_API JGStaticMesh : public JGAsset
 	JGPROPERTY()
 	HList<HStaticSubMesh> _subMeshes;
 
+	// 모든 서브메시 정점의 경계 상자. 임포트(SetData) 때 구해 에셋에 저장한다. 정점이 없으면 min > max. (5-26)
+	JGPROPERTY()
+	HBBox _bounds;
+
 	// 렌더 메시. _subMeshes와 같은 버퍼를 참조하며 GetMesh()에서 지연 생성한다. 직렬화 대상이 아니다.
 	PSharedPtr<PStaticMesh> _mesh;
 	bool _bMeshDirty;
@@ -125,8 +129,8 @@ public:
 
 	// 렌더러에 넘길 IMesh. 서브메시가 바뀌었으면(SetData, 로드) 다시 만든다.
 	PSharedPtr<IMesh> GetMesh();
-	// 모든 서브메시 정점을 순회해 경계 상자를 구한다. 정점이 하나도 없으면 false.
-	bool CalculateBounds(HBBox& outBounds) const;
+	// 에셋에 저장된 경계 상자. 정점이 하나도 없으면 false.
+	bool GetBounds(HBBox& outBounds) const;
 
 	// JGObject 
 	virtual void SetName(const PName& inName) override;
@@ -137,4 +141,8 @@ public:
 protected:
 	virtual void OnLoadAsset_Thread() override;
 	// ~JGAsset
+
+private:
+	// _subMeshes의 CPU 사본으로 _bounds를 다시 구한다.
+	void updateBounds();
 };

@@ -57,7 +57,10 @@ public:
 class GAMEFRAMEWORKS_API PGameplayAgentRunner
 {
 public:
-	// 한 걸음 진행. 에이전트가 없거나 게임이 끝났으면 false.
+	// 명령만 고른다 (Submit 하지 않는다). 선택 대기 중이면 ResolveChoice 명령. 에이전트가 없거나 게임이 끝났으면 false.
+	// 네트워크 호스트 세션은 이것으로 고른 명령을 자기 실행 경로(방송 포함)로 넣는다.
+	static bool Choose(PGameMaster& gameMaster, HGameplayCommand& outCommand);
+	// 한 걸음 진행 (Choose + Submit). 에이전트가 없거나 게임이 끝났으면 false.
 	static bool Step(PGameMaster& gameMaster, HList<HGameplayEvent>& outEvents, PString* outReason = nullptr);
 	// 최대 maxSteps 걸음. 실제 진행한 걸음 수.
 	static int32 Run(PGameMaster& gameMaster, int32 maxSteps, HList<HGameplayEvent>* outEvents = nullptr);

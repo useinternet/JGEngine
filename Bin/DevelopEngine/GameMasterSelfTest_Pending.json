@@ -54,7 +54,8 @@
                 "Index": 0,
                 "Generation": 0
             },
-            "TurnCount": 0
+            "TurnCount": 0,
+            "PendingStep": 0
         },
         "Choice": {
             "bPending": false,
@@ -231,7 +232,8 @@
                 "Index": 0,
                 "Generation": 1
             },
-            "TurnCount": 1
+            "TurnCount": 1,
+            "PendingStep": 0
         },
         "Choice": {
             "bPending": true,

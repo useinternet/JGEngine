@@ -16,6 +16,6 @@ bool JGGameplayTrigger::Matches(const HGameplayState& state, const HGameplayEven
 	return false;
 }
 
-void JGGameplayTrigger::React(HGameplayContext& ctx, const HGameplayEvent& event)
+void JGGameplayTrigger::React(HGameplayTriggerContext& ctx, const HGameplayEvent& event)
 {
 }

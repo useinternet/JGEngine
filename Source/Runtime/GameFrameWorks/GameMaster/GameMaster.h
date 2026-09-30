@@ -27,7 +27,8 @@ class GAMEFRAMEWORKS_API PGameMaster : public IMemoryObject
 	HList<HPair<int32, PSharedPtr<IGameplayAgent>>> _agentsByTeam;
 	std::function<int32(const HGameplayState&, const HGameplayEntityId&)> _teamOfActor;
 
-	bool _bStarted = false;
+	bool _bStarted     = false;
+	bool _bUndoEnabled = true;
 
 public:
 	// Submit 결과와 같은 이벤트 목록을 구독으로도 받을 수 있다.
@@ -99,6 +100,8 @@ public:
 	void SetTeamOfActorFunction(const std::function<int32(const HGameplayState&, const HGameplayEntityId&)>& teamOfActor);
 	PSharedPtr<IGameplayAgent> FindAgent(int32 team) const;
 	PSharedPtr<IGameplayAgent> FindAgentForActor(const HGameplayEntityId& actor) const;
+	// 행동자의 팀(조작 주체) 번호. 팀 함수가 없으면 0 (FindAgentForActor 와 같은 규칙).
+	int32 TeamOfActor(const HGameplayEntityId& actor) const;
 
 	void AddObserver(PSharedPtr<IGameplayObserver> observer);
 	void RemoveObserver(PSharedPtr<IGameplayObserver> observer);
@@ -124,11 +127,20 @@ public:
 	int32            UndoCount() const;
 	HGameplayState Snapshot() const;
 	void             Restore(const HGameplayState& state);
+	// 네트워크 세션이 붙어 있는 동안 세션이 끈다. 한 기계만 되돌리면 즉시 어긋나기 때문이다.
+	void SetUndoEnabled(bool bEnabled);
+	bool IsUndoEnabled() const;
 
 	bool Save(const PString& path) const;
 	bool Load(const PString& path);
+	// 저장 문서(초기 상태 + 현재 상태 + 명령 로그)를 파일 없이 텍스트로. 입장 · 재동기에 쓴다.
+	bool ExportDocument(PString* outText) const;
+	bool ImportDocument(const PString& text);
 	bool Replay(const HList<HGameplayCommand>& commands, HList<HGameplayEvent>& outEvents);
 	uint64 Checksum() const;
+	// 등록된 규칙의 지문 (명령 · 효과 · 트리거 · 수정자 종류, 컴포넌트 테이블, 수치 단계, 보드, 스키마).
+	// 기계마다 같은 규칙 세트인지 확인한다. 등록 순서와 무관하다.
+	uint64 RulesFingerprint() const;
 	const PGameplayCommandLog& GetCommandLog() const;
 	const HGameplayState&      GetInitialState() const;
 

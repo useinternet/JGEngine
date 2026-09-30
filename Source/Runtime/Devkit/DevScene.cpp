@@ -264,7 +264,7 @@ void JGDevScene::FitCameraToMesh()
 	}
 
 	HBBox bounds;
-	if (Mesh->CalculateBounds(bounds) == false)
+	if (Mesh->GetBounds(bounds) == false)
 	{
 		return;
 	}

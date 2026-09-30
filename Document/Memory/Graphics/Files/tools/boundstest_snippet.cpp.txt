@@ -1,0 +1,91 @@
+// 5-26 (3) 경계 상자 저장 검증용 임시 코드 (2026-09-29). Source/Runtime/Devkit/DevScene.cpp 에 넣어 쓰고 검증 뒤 뺀다.
+// 결과: Document/Memory/2026-09-29_Phase5-7_PScene_설계.md "검증" 절
+//
+// 사용
+//   1. 테스트 FBX: Document/Memory/tools/fbx_embedded_texture/ 의 생성기로 EmbeddedTextureTest.fbx 를 만든다 (메시 이름 EmbeddedTextureQuad)
+//   2. (A) include 목록 끝에:  #include "Importers/FBXAssetImporter.h"
+//      (B) 아래 namespace 블록을 JGDevScene::OnInitialize() 앞에
+//      (C) JGDevScene::OnInitialize() 끝(RequestMeshLoad() 뒤)에:  runBoundsTestIfRequested();
+//   3. Devkit 빌드 후
+//      JG_BOUNDSTEST=<fbx 절대 경로>  -> 임포트(저장) + 디스크에서 다시 로드 + 비교
+//      JG_BOUNDSTEST=verify           -> 시작 로드(GAssetDatabase)로 올라온 에셋만 비교
+//   4. 로그 "BoundsTest : ... saved yes ... -> PASS" 확인. "no saved bounds" 줄은 예전 형식 Sample.jgasset 한 줄만 나와야 한다
+//   5. 끝나면 코드를 빼고 Content/TempAsset/BoundsTest 를 지운다 (Content 아래 .jgasset 은 매 시작마다 전부 로드된다)
+
+// [BOUNDSTEST-TEMP begin] 5-26 (3) 검증용 임시 코드: FBX 임포트(저장) -> 디스크에서 다시 로드 -> 저장된 경계 상자 == 정점으로 다시 구한 값
+namespace
+{
+	void onBoundsTestMeshLoaded(const PString& inAssetPath, PWeakPtr<JGAsset> inAsset)
+	{
+		PSharedPtr<JGAsset> asset = inAsset.Pin();
+		if (asset.IsValid() == false || (asset->GetType() == JGType::GenerateType<JGStaticMesh>()) == false)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "BoundsTest : %s is not loaded as JGStaticMesh -> FAIL", inAssetPath);
+			return;
+		}
+
+		PSharedPtr<JGStaticMesh> mesh = Cast<JGStaticMesh>(asset);
+		HBBox saved;
+		const bool bHasSaved = mesh->GetBounds(saved);
+
+		HVector3 minPos(FLT_MAX);
+		HVector3 maxPos(-FLT_MAX);
+		uint64 vertexCount = 0;
+		for (uint32 subMeshIndex = 0; subMeshIndex < (uint32)mesh->GetSubMeshCount(); ++subMeshIndex)
+		{
+			for (uint32 vertexIndex = 0; vertexIndex < (uint32)mesh->GetVertexCount(subMeshIndex); ++vertexIndex)
+			{
+				const HVertexData& vertex = mesh->GetVertex(subMeshIndex, vertexIndex);
+				minPos = HVector3::Min(minPos, vertex.Position);
+				maxPos = HVector3::Max(maxPos, vertex.Position);
+				++vertexCount;
+			}
+		}
+
+		const bool bSame = bHasSaved
+			&& saved.min.x == minPos.x && saved.min.y == minPos.y && saved.min.z == minPos.z
+			&& saved.max.x == maxPos.x && saved.max.y == maxPos.y && saved.max.z == maxPos.z;
+		JG_LOG(Devkit, bSame ? ELogLevel::Info : ELogLevel::Error,
+			"BoundsTest : %s vertex %d, saved %s min(%.4f, %.4f, %.4f) max(%.4f, %.4f, %.4f), recomputed min(%.4f, %.4f, %.4f) max(%.4f, %.4f, %.4f) -> %s",
+			inAssetPath, (int32)vertexCount, PString(bHasSaved ? "yes" : "no"),
+			saved.min.x, saved.min.y, saved.min.z, saved.max.x, saved.max.y, saved.max.z,
+			minPos.x, minPos.y, minPos.z, maxPos.x, maxPos.y, maxPos.z, PString(bSame ? "PASS" : "FAIL"));
+	}
+
+	void runBoundsTestIfRequested()
+	{
+		char value[1024] = {};
+		size_t valueLength = 0;
+		if (getenv_s(&valueLength, value, sizeof(value), "JG_BOUNDSTEST") != 0 || valueLength <= 1)
+		{
+			return;
+		}
+
+		// verify: 임포트 없이 시작 로드(GAssetDatabase)로 올라온 에셋만 검사한다.
+		const PString option = value;
+		if ((option == PString("verify")) == false)
+		{
+			PString destDirectory;
+			HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "TempAsset/BoundsTest", &destDirectory);
+			HFileHelper::CreateDirectory(destDirectory);
+
+			PSharedPtr<PFBXAssetImportArguments> importArgs = Allocate<PFBXAssetImportArguments>();
+			importArgs->SrcPath  = option;
+			importArgs->DestPath = destDirectory;
+			importArgs->Flags    = EFBXAssetImportFlags::Import_StaticMesh;
+
+			PSharedPtr<JGFBXAssetImporter> importer = Allocate<JGFBXAssetImporter>();
+			const bool bImported = importer->Import(importArgs);
+			JG_LOG(Devkit, bImported ? ELogLevel::Info : ELogLevel::Error, "BoundsTest : Import(%s) -> %s, %s", option, destDirectory, PString(bImported ? "ok" : "failed"));
+		}
+
+		// 테스트 FBX(make_embedded_texture_fbx)의 메시 이름이 에셋 이름이 된다.
+		const PString assetPath("/JGEngine/TempAsset/BoundsTest/EmbeddedTextureQuad.jgasset");
+		GAssetDatabase::GetInstance().LoadAssetAsync(HAssetPath(assetPath),
+			POnLoadCompelete::CreateLambda([assetPath](PWeakPtr<JGAsset> InAsset)
+			{
+				onBoundsTestMeshLoaded(assetPath, InAsset);
+			}));
+	}
+}
+// [BOUNDSTEST-TEMP end]
