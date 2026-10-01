@@ -1,0 +1,112 @@
+GameGUI 검증 기록 (2026-09-30 밤 ~ 2026-10-01 00:4x, GUI 세션)
+=====================================================================
+[이력] 이 기록의 구조(별도 GameGUI 모듈)는 같은 날 오전 사용자 지시로 GameFrameWorks UI/(JGGameWidget, CommonUI식)로 바뀌었다.
+       지금 기록: Document/Memory/GameFrameWorks/Files/2026-10-01_GameUI_GFW_verify.txt. §4 의 발견(crashwalk · D3D12 종료 보고)은 그대로 유효.
+요청: 사용자 "GameGUI 시스템을 설계문서 => 기반 => 최소 요소 => 검증 까지 진행해줘" (진행현황 D-12 착수)
+설계: GameGUI_설계_2026-09-30.md (§7 검증 기준, §10 구현 결과)   TODO: ../TODO_GameGUI.md   현황: ../현황.md §6
+커밋: 안 함(사용자가 한다). 전부 미커밋.
+
+---------------------------------------------------------------------
+§0 작업 방식
+---------------------------------------------------------------------
+- 메인 트리(C:\Develop\JGEngine)를 다른 세션들이 동시에 편집 · 빌드 중이라 격리 워크트리에서 구현했다.
+  git worktree add --detach <scratchpad>\wt_gamegui HEAD → 메인 트리 미커밋 변경(Bin · Document · jg_log 제외) 적용 + 미추적 파일 복사
+  → git add -A (스테이징만, 커밋 없음: git diff 가 내 변경만 보이게) → 메인 Bin 의 JGBuildTool/JGHeaderTool 복사 → PreBuild.
+- %TEMP% 아래 워크트리는 헤더 변경 뒤 증분 빌드가 놓치므로(FileTracker 가 TEMP 경로를 추적하지 않음) 전체 Rebuild.
+  `-t:X:Rebuild` 를 여러 개 한 번에 주면 Core.lib 를 두고 경합(LNK1104) → 솔루션 전체 Rebuild 한 번으로.
+
+---------------------------------------------------------------------
+§1 V1 헤드리스 셀프 테스트
+---------------------------------------------------------------------
+명령: Bin\DevelopEngine\JGConsole.exe gamegui.selftest   (JGConsole 이 CONSOLE_ENGINE_MODULES 로 GameGUI 를 연결)
+그룹: utf8 · layout(배율 min · 앵커 · 피벗 · 중첩) · pointer/button(판정 순서 · 소비 · 캡처 · 안/밖 뗌 · 호버 색) ·
+      drawlist(사각형 수 · 배치 합치기 · 클립 잘라내기 · 빈 사각형) · font(맑은 고딕: 'A' · '한' 글리프 비트맵, 측정, 아틀라스, 두 번째 호출에 글리프 수 불변) ·
+      module order(정렬 순서 · 위 캔버스가 먼저 소비)
+워크트리  : [GameGUI]: gamegui.selftest: OK (64/64), skipped groups 0   종료 0, live blocks 0
+메인 Bin  : [GameGUI]: gamegui.selftest: OK (64/64), skipped groups 0   종료 0, live blocks 0   (00:31)
+구현 중 고친 것: "두 줄 폭 = 긴 줄 폭" 기대값 오류("A\nBB" ≥ "AB" 가정) → 높이 검사 + 폭 == max(Measure("A"), Measure("BB")) 로 분리.
+                에디터 안 실행 때 글리프 수 +1 흔들림 대비 → "두 번째 호출에 수 불변" 검사로.
+
+---------------------------------------------------------------------
+§2 V2 검증 게임 (에디터 Scene Viewport 실제 클릭)
+---------------------------------------------------------------------
+게임: tools/gamegui_demo_testgame/ (소스 5개 + gamegui_e2e.ps1 + README). 월드 = X Bot + 궤도 카메라, HUD 캔버스 1920x1080:
+      위 띠(반투명, 입력 받음) + "GameGUI 데모 · 턴 N"(44) + 두 줄 오른쪽 정렬 힌트, 카드 뒷면 2장, "손패 Hand (2)", 주황 End Turn 버튼.
+스크립트: 런처 실행 → 25초 → PrintWindow 캡처 → 주황 픽셀(화면 sRGB 249,179,89 ±6, 중앙값 ±200 필터)로 버튼 상자 → 버튼 크기로
+      뷰포트 이미지 사각형 역산 → PostMessage(런처 창에만) MOVE/DOWN/UP: 버튼 · 위 띠(50%, 4%) · 월드 가운데(50%, 50%) · 버튼 → 캡처 → WM_CLOSE.
+
+(a) 워크트리 엔진 게임 (00:09, 빌드 244초)
+    Orange pixels 3358, box (590,429)-(701,463) → 이미지 추정 (82,132)-(714,476)
+    [JGEditor]: SceneViewport Click (0.891, 0.911): game UI (not picked)
+    [GameGUIDemo]: GameGUIDemo End Turn clicked (turn 2)
+    [JGEditor]: SceneViewport Click (0.503, 0.078): game UI (not picked)
+    [JGEditor]: SceneViewport Click (0.503, 0.517): nothing (no controller in the world)
+    [JGEditor]: SceneViewport Click (0.891, 0.911): game UI (not picked)
+    [GameGUIDemo]: GameGUIDemo End Turn clicked (turn 3)
+    [error]/[critical] 0, 경고는 기존 2줄(Asset "NOT Support Asset Path", DevScene 프레임 안 즉시 리드백), 종료 GameGUIDemo → GameGUI, live blocks 0, ExitCode 0
+
+(b) 메인 트리 엔진 게임 — README 절차 그대로 새로 생성 (00:34~00:39)
+    CreateGameProject.bat <scratchpad>\Games\Main\GameGUIDemo GameGUIDemo → 소스 5개 복사 → GenerateProjectFiles.bat(종료 0, sln 에 GameGUI 프로젝트)
+    → MSBuild GameGUIDemo.sln 266초, 오류 0, 경고 MSB8029(%TEMP% 중간 폴더) · LNK4098 뿐, 16개 산출물(GameGUI.dll · GameGUIDemo.dll 포함)
+    → gamegui_e2e.ps1: (a)와 같은 좌표 · 같은 로그 6줄(턴 2 → 턴 3), 텍스처는 C:/Develop/JGEngine/Content/RawResources/... (744x1039) 2장,
+      글꼴 C:/Windows/Fonts/malgun.ttf, [error]/[critical] 0, live blocks 0, ExitCode 0.
+    → 캡처 2장이 (a)의 캡처와 바이트까지 같다(SHA256 1FF4934E27CC… / 219E0821FE9D…). 저장: 2026-10-01_gamegui_e2e_{before,after}.png
+(c) 디버거 아래 20초(스크래치패드 dbgcount, HUD 를 매 프레임 그림): D3D12 디버그 메시지(OutputDebugString) 실행 중 0건.
+    종료 때만 "Process is terminating ... Live Producer 1 · Live Object 11" — §4 의 기준선과 같은 수.
+
+화면 확인: before = "턴 1", after = "턴 3". 한글(데모 · 턴 · 손패 · 게임 전용 · 아님 · 턴 종료)과 영어가 섞여 보이고, 카드 2장 · 반투명 띠 아래 월드가 보인다.
+색: 코드 선형 색이 sRGB 로 표시돼 옅다(ImGui 와 같음, Graphics D-3) — 스크립트는 변환된 색으로 찾는다.
+
+---------------------------------------------------------------------
+§3 V3 회귀
+---------------------------------------------------------------------
+                          워크트리(23:53)              메인 Bin(00:31~00:33)
+console.selftest          OK (64/64)                   OK (64/64)        (error 줄은 음성 검사)
+gmtest                    GameMaster 92 · World 64     GameMaster 92 · World 64
+net.test all              101 passed                   101 passed
+프로젝트 없는 런처         종료 0 · 오류 0 · live 0      30초 뒤 WM_CLOSE → 종료 0 · 오류 0 · live 0
+DevScene 리드백 PNG 2장    git status 변화 없음          git status 변화 없음 (saved ok 2줄)
+경고                      기존 2줄뿐                    기존 2줄뿐
+참고: Memory Chunk [ID: 1] "remote pending 44 (total 55)" 는 GameGUI 전 메인 트리 실행과 같은 값(기준선).
+
+---------------------------------------------------------------------
+§4 알아낸 것 (도구 · 기존 동작)
+---------------------------------------------------------------------
+(1) crashwalk 가 이 PC 에서 창을 못 닫는다.
+    crashwalk.exe <wt>\Bin\DevelopEngine\JGLauncher.exe <wt>\Bin\DevelopEngine 60 → 240초가 지나도 "WM_CLOSE posted" 없음. 런처는 응답 중(CPU 증가).
+    원인 측정(스크래치패드 dbgcount: 디버그 이벤트를 종류별로 세고, 이벤트가 계속 와도 시간이 되면 WM_CLOSE):
+      --- t=10s events in last 5000ms: Exception_406D1388_first=574      (SetThreadName, 초당 ~113)
+      SetThreadName 'NVFBCAsyncThread' target 4294967295 from thread 11920 at 00007FFB2AED41CA
+    → NVIDIA 드라이버(NvFBC) 스레드가 디버거 아래에서 스레드 이름 예외를 계속 던진다. crashwalk 는 WaitForDebugEvent(200ms) 가 시간 초과될 때만
+      타이머를 확인하므로(crashwalk.cpp:151-173) 영영 WM_CLOSE 를 안 보낸다. GameGUI 전 메인 트리 런처도 같은 비율(563/5s) → 엔진 무관, 환경(드라이버 · 오버레이) 요인.
+      09-30 21:41 에는 같은 도구가 정상 종료했으니 그 뒤 켜진 것으로 보인다.
+    처리: 런처는 WM_CLOSE 를 손으로 보내 종료(코드 0, 정상 종료 경로). 도구 수정(타이머를 매 루프 확인)은 별도 세션으로 제안했다(공용 도구).
+(2) 종료 때 D3D12 live object 보고: "Live Producer ... Refcount: 1" + "Live Object : 11". 메인 트리(GameGUI 전) · 워크트리 · 검증 게임 모두 같은 11개 → 기존 동작.
+    jg_log 에는 안 나온다(OutputDebugString). Graphics 현황 §5 에 기록.
+(3) 새 글리프가 생기면 글꼴 아틀라스 텍스처를 통째로 다시 만든다: 클릭마다(턴 숫자 2 · 3 이 처음 나올 때) GameGUIFontAtlas_malgun Register → 옛 것 Remove.
+    정상 동작이지만 4MB 업로드 → TODO GG-H4.
+
+---------------------------------------------------------------------
+§5 메인 트리 반영 (00:25~00:31)
+---------------------------------------------------------------------
+- 수정 14파일: 메인 트리 파일 해시(git hash-object) == 워크트리 스냅샷(인덱스 blob) → 그 뒤 아무도 안 바꿈 → 워크트리 파일을 그대로 복사(줄 끝 형식 · BOM 동일 확인:
+  CRLF 12개, LF 2개(SceneViewport.h/.cpp), BOM 없음). 복사 직전에 해시를 다시 비교했다.
+  Graphics: JGGraphicsDefine.h, JGGraphicsCommand.h, DirectX12/DX12GraphicsCommand.h/.cpp, DirectX12/Classes/CommandList.h/.cpp, DirectX12/DirectX12API.h/.cpp, Classes/ShaderLibrary.h/.cpp
+  JGEditor: JGEditor.module.json, Widgets/SceneViewport.h/.cpp (메인 트리에서 미추적 — JGEditor E-1 새 파일)
+  JGConsole: Main.cpp
+  → git diff --stat(추적 12파일): 261 insertions, 8 deletions
+- 새 파일 25개: Source/Runtime/GameGUI/ 24개, Source/Shader/draw2d.hlsl
+- 복사 안 함: 워크트리 JGEngine.sln · jgengine.lua · jgengine.bat(워크트리 절대 경로) · Temp/ · jg_log
+- 메인 트리 GenerateProjectFiles.bat(PreBuild): 종료 0, "Recognize CodeGenable Module : GameGUI", JGEngine.sln 에 GameGUI 프로젝트
+- 메인 트리 MSBuild JGEngine.sln DevelopEngine|x64 -m: 263초, 오류 0, 경고 2(LNK4098). PreBuild 가 생성 파일을 다시 써서 Core 부터 다시 컴파일됐다.
+  링크: JGLauncher, JGHeaderTool, JGBuildTool, Asset, Graphics, AI, GameGUI, GUI, DevConsole, DevStatistics, Devkit, GameFrameWorks, JGConsole, JGEditor (00:27~00:31)
+  빌드 전 확인: 다른 세션의 cl/link/엔진 MSBuild 없음(떠 있던 MSBuild 24784 는 Rider 백엔드의 임시 프로젝트 평가).
+- 반영 뒤: §1 · §3 메인 Bin 열, §2 (b)(c).
+- 워크트리 제거: git worktree remove --force <scratchpad>\wt_gamegui (스크래치패드의 워크트리 엔진 검증 게임 (a)도 더는 빌드되지 않는다 — (b)가 대체).
+
+---------------------------------------------------------------------
+§6 완료 기준 대조 (설계 §7)
+---------------------------------------------------------------------
+V1  UTF-8 · 배율/앵커/피벗 · 판정 순서/소비 · 버튼 상태 기계 · 그리기 목록 · 글꼴 전부 통과, 종료 0 ........................ 충족 (64/64)
+V2  월드 위 HUD(패널 · 카드 2 · 한글+영어 · 버튼) 보임, 버튼 클릭 → 로그 · 글자 갱신 · 피킹 안 함, 버튼 밖 클릭 → 피킹 ........ 충족 (설계의 로그 예 "End Turn clicked (1)" 은 실제 "(turn 2)" 형식)
+V3  런처 종료 0 · 오류 0 · live 0, 리드백 PNG 불변, gmtest · console.selftest 통과 ........................................... 충족 (+ net.test all 101)

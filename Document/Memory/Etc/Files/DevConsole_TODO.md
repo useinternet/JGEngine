@@ -15,7 +15,7 @@
 | Graphics_TODO 5-25 DevScene 리드백 덤프 | 런처 (Devkit) | 메시 로드 30프레임 뒤 자동 실행 |
 | Graphics_TODO 5-31 FBX 임포트 진입점 | 런처 (임포터가 Graphics 모듈에 있음) | 호출하는 코드 없음. 임시 스니펫으로만 검증 |
 | GameFrameWorks_TODO 1-2 `simrun <file> -repeat N` | JGConsole | 미구현 (argv 하드코딩 구조) |
-| `게임모듈_사전작업_분석_2026-09-29.md` R8 `modtest <Module>` | JGConsole | 미구현 |
+| `게임모듈_사전작업_분석_2026-09-29.md` R8 `modtest <Module>` | JGConsole | **구현됨 2026-09-30** — `module.test <Module>` (`JGConsole/ModuleCommands.cpp`, GameModule 트랙) |
 | `리슨서버_설계방안_2026-09-29.md` 4단계 `nethost` / `netjoin` | JGConsole | 미구현 |
 
 검증 루프(모든 단계 공통):

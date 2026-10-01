@@ -14,16 +14,6 @@ public: \
 	} \
 private: \
 
-enum class GUI_API EWidgetFlags
-{
-	None = 0,
-	AllowAlwaysUpdate = 0x001,
-	AllowAlwaysUpdateFrame  = 0x002,
-	AllowUpdate = 0x004,
-	AllowUpdateFrame = 0x008,
-};
-JG_ENUM_FLAG(EWidgetFlags)
-
 struct GUI_API HWidgetLayout
 {
 	HVector2 ContentSize;
@@ -44,17 +34,13 @@ private:
 	JGPROPERTY()
 	HList<PSharedPtr<JGWidgetComponent>> WidgetComponents;
 
-	
-	// Flags 및 윈도우 사이즈 
-	EWidgetFlags WidgetFlags;
-
 protected:
 	virtual void OnInitialize() {}
 	virtual void OnShutdown() {}
 	virtual void OnOpen() {}
 	virtual void OnClose() {}
+	// 열려 있는 동안 매 프레임 불린다. Update 단계라 GUI 생성(GraphicsBegin) 뒤, GUI 드로우(GraphicsEnd) 앞이다.
 	virtual void OnUpdate() {}
-	virtual void OnUpdateFrame() {}
 	virtual void OnLayout(const HWidgetLayout& InLayout) {}
 	virtual void OnGenerateGUI() {}
 
@@ -74,13 +60,11 @@ protected:
 
 public:
 	bool IsOpen() const { return bOpen; }
-	EWidgetFlags GetFlags() const { return WidgetFlags; }
 
 private:
 	void SetupLayout();
 	void GenerateGUI();
 	void Update();
-	void UpdateFrame();
 	void Open();
 	void Close();
 	void Initialize();

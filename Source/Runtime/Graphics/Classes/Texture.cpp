@@ -58,7 +58,8 @@ void JGTexture::WriteJson(PJsonData& json) const
 		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail read pixels from GPU. Pixels are not written", texInfo.Name);
 	}
 
-	json.AddMember("Pixels", compressedPixels);
+	// 압축 픽셀은 base64 문자열 하나로 쓴다. 바이트마다 숫자 하나인 배열은 1024² 노이즈(압축 4.2MB)가 73.7MB였다. (5-30)
+	json.AddBinaryMember("Pixels", compressedPixels.data(), compressedPixels.size());
 }
 
 void JGTexture::ReadJson(const PJsonData& json)
@@ -138,8 +139,23 @@ void JGTexture::ReadJson(const PJsonData& json)
 		JG_LOG(Graphics, ELogLevel::Error, "Fail Read Json in Texture");
 	}
 
+	// 5-30 이후 에셋은 base64 문자열, 그 전 에셋은 바이트마다 숫자 하나인 배열이다. 둘 다 읽는다.
+	// FindMember는 값을 옮겨 오므로 한 번만 찾고, 찾은 값의 형식을 보고 읽는다.
 	HList<uint8> compressedPixels;
-	if (json.GetData("Pixels", &compressedPixels) == false)
+	PJsonData pixelsJson;
+	bool bReadPixels = json.FindMember("Pixels", &pixelsJson);
+	if (bReadPixels)
+	{
+		if (pixelsJson.IsString())
+		{
+			bReadPixels = pixelsJson.GetBinaryData(&compressedPixels);
+		}
+		else
+		{
+			bReadPixels = pixelsJson.GetData(&compressedPixels);
+		}
+	}
+	if (bReadPixels == false)
 	{
 		JG_LOG(Graphics, ELogLevel::Error, "Fail Read Json in Texture");
 	}

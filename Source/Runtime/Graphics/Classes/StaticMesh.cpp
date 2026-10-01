@@ -93,13 +93,12 @@ void HStaticSubMesh::WriteJson(PJsonData& json) const
 {
 	json.AddMember("SubMeshName", Name);
 
-	HList<HVertex> vertexes;
-	GetVertices(vertexes);
-	json.AddMember("Vertexes", vertexes);
-
-	HList<uint32> indexes;
-	GetIndices(indexes);
-	json.AddMember("Indexes", indexes);
+	// 정점 · 인덱스는 CPU 사본의 바이트를 그대로 base64 문자열로 쓴다. (5-30)
+	// 숫자 배열로 쓰면 float 하나가 들여쓰기를 포함해 약 50바이트라 X Bot(정점 28,464 · 인덱스 147,336)이 36MB였다.
+	// 스트라이드를 함께 적어 두어, HVertexData 배치가 바뀐 뒤 옛 에셋을 읽으면 조용히 깨지지 않고 오류를 낸다.
+	json.AddMember("VertexStride", (uint32)sizeof(HVertexData));
+	json.AddBinaryMember("Vertexes", Vertices.data(), (uint64)Vertices.size() * sizeof(HVertexData));
+	json.AddBinaryMember("Indexes", Indices.data(), (uint64)Indices.size() * sizeof(uint32));
 }
 
 void HStaticSubMesh::ReadJson(const PJsonData& json)
@@ -109,8 +108,49 @@ void HStaticSubMesh::ReadJson(const PJsonData& json)
 	HList<HVertex> vertexes;
 	HList<uint32> indexes;
 
-	json.GetData("Vertexes", &vertexes);
-	json.GetData("Indexes", &indexes);
+	// 5-30 이후 에셋은 base64 문자열, 그 전 에셋은 숫자 배열이다. 둘 다 읽는다.
+	// FindMember는 값을 옮겨 오므로 한 번만 찾고, 찾은 값의 형식을 보고 읽는다.
+	PJsonData vertexJson;
+	PJsonData indexJson;
+	json.FindMember("Vertexes", &vertexJson);
+	json.FindMember("Indexes", &indexJson);
+	if (vertexJson.IsString())
+	{
+		uint32 vertexStride = 0;
+		json.GetData("VertexStride", &vertexStride);
+
+		HList<uint8> vertexBytes;
+		HList<uint8> indexBytes;
+		const bool bDecoded = vertexJson.GetBinaryData(&vertexBytes) && indexJson.GetBinaryData(&indexBytes);
+		if (bDecoded == false || vertexStride != sizeof(HVertexData)
+			|| vertexBytes.size() % sizeof(HVertexData) != 0 || indexBytes.size() % sizeof(uint32) != 0)
+		{
+			JG_LOG(Graphics, ELogLevel::Error, "%s : Fail read mesh data (stride %d / %d, vertex %d bytes, index %d bytes)",
+				Name.ToString(), (int32)vertexStride, (int32)sizeof(HVertexData), (int32)vertexBytes.size(), (int32)indexBytes.size());
+		}
+		else
+		{
+			const uint64 vertexCount = vertexBytes.size() / sizeof(HVertexData);
+			vertexes.reserve(vertexCount);
+			for (uint64 i = 0; i < vertexCount; ++i)
+			{
+				HVertexData vertex;
+				memcpy(&vertex, vertexBytes.data() + i * sizeof(HVertexData), sizeof(HVertexData));
+				vertexes.push_back(HVertex(vertex));
+			}
+
+			indexes.resize(indexBytes.size() / sizeof(uint32));
+			if (indexes.empty() == false)
+			{
+				memcpy(indexes.data(), indexBytes.data(), indexBytes.size());
+			}
+		}
+	}
+	else
+	{
+		vertexJson.GetData(&vertexes);
+		indexJson.GetData(&indexes);
+	}
 
 	SetData(Name, vertexes, indexes);
 }

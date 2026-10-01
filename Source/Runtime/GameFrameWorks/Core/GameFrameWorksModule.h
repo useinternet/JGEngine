@@ -6,7 +6,9 @@ class JGGameInstance;
 class JGClass;
 
 // 게임 프레임워크 모듈. 생명주기만 맡는다: 게임 인스턴스를 만들어 소유하고 프레임마다 틱하며 종료 시 정리한다.
-// 월드 API 는 JGGameInstance 가 제공한다. Graphics · GUI 를 스스로 연결하지 않는다 (헤드리스 가능).
+// 월드 API 는 JGGameInstance 가 제공한다. Graphics 를 스스로 연결하지 않고 GUI 는 쓰지 않는다 (헤드리스 가능).
+// 월드를 보여 주는 창(씬 뷰포트 · Gameplay DevView)은 JGEditor 가 가진다.
+// 게임 화면 UI(JGGameWidget, UI/)는 GFW 안에 있고 게임 인스턴스가 관리자를 가진다. 그리기 · 입력은 호스트(씬 뷰포트)가 넘긴다.
 class GAMEFRAMEWORKS_API HGameFrameWorksModule : public IModuleInterface
 {
 	PSharedPtr<JGGameInstance> _gameInstance;

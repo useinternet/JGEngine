@@ -1,0 +1,299 @@
+[:17484:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 14123944519325219429. pages are created on first request
+[:17484:][info][Core]: Active Thread: [179446537]
+[:17484:][info][Core]: Active Thread: [2750204313]
+[:17484:][info][Core]: Active Thread: [1204142261]
+[:17484:][info][Core]: Active Thread: [1099742480]
+[:17484:][info][Core]: Active Thread: [1446198291]
+[:17484:][info][Core]: Active Thread: [3917438881]
+[:17484:][info][Core]: Active Thread: [2052279661]
+[:17484:][info][Core]: Active Thread: [3976543109]
+[:17484:][info][Core]: Active Thread: [1813538843]
+[:17484:][info][Core]: Active Thread: [219207320]
+[:17484:][info][Core]: Active Thread: [1237661762]
+[:17484:][info][Core]: Active Thread: [2923862654]
+[:17484:][info][Core]: Active Thread: [1752058535]
+[:17484:][info][Core]: Active Thread: [481835047]
+[:17484:][info][Core]: Active Thread: [4084936364]
+[:17484:][info][Core]: Active Thread: [2067107892]
+[:17484:][info][Core]: Active Thread: [3339577025]
+[:17484:][info][Core]: Active Thread: [2131094715]
+[:17484:][info][Core]: Active Thread: [2472354887]
+[:17484:][info][Core]: Active Thread: [2509113502]
+[:17484:][info][Core]: Active Thread: [734595399]
+[:17484:][info][Core]: Active Thread: [569656605]
+[:17484:][info][Core]: Active Thread: [1216463977]
+[:17484:][info][Core]: Active Thread: [2282877009]
+[:17484:][info][Core]: Active Thread: [1963310275]
+[:17484:][info][Core]: Active Thread: [1920025584]
+[:17484:][info][Core]: Active Thread: [3187116469]
+[:17484:][info][Core]: Active Thread: [2168166374]
+[:17484:][info][Core]: Active Thread: [42885942]
+[:17484:][info][Core]: Active Thread: [2778215131]
+[:17484:][info][Core]: Active Thread: [1590774084]
+[:17484:][info][Core]: Active Thread: [2116709963]
+[:17484:][info][Core]: Active Thread Totoal Count: 32 
+[:17484:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:17484:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:17484:][trace][Graphics]: DirectX12 Init Start
+[:17484:][trace][Graphics]: Success Create D3D12Device
+[:17484:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:17484:][info][Graphics]: VideoMemory : 16050  MB
+[:17484:][trace][Graphics]: Create DescriptorAllocator...
+[:17484:][trace][Graphics]: Create CommandQueue...
+[:17484:][trace][Graphics]: Create ResourceStagingManager...
+[:17484:][trace][Graphics]: Create FrameBuffer...
+[:17484:][trace][Graphics]: Create Default Resources...
+[:17484:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:17484:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:17484:][info][Graphics]: Start Collect Shader in (../../Source/Shader)
+[:17484:][trace][Graphics]: Collect compute_shader_template
+[:17484:][trace][Graphics]: Collect graphics_shader_template
+[:17484:][trace][Graphics]: Collect scene_shader
+[:17484:][info][Graphics]: Complete Collect Shader
+[:17484:][trace][Graphics]: DirectX12 Init End
+[:17484:][trace][Graphics]: Startup Graphics Module...
+[:17484:][trace][Asset]: Startup Asset Module...
+[:17484:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.88 MB)
+[:17484:][trace][Graphics]: Register DevScene_Output in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_Output   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Depth   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_DepthStencil   Ref : 1
+[:17484:][trace][Graphics]: Register DevScene_CompositeMaterial in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_CompositeMaterial   Ref : 1
+[:17484:][warning][Asset]: NOT Support Asset Path
+[:17484:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:17484:][trace][Graphics]: Register FormatTest_Noise in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise   Ref : 1
+[:17484:][trace][Graphics]: Register FormatTest_Noise_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register FormatTest_Noise_ReadbackStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise_ReadbackStaging   Ref : 1
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise_ReadbackStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise_ReadbackStaging in ResourceRefMap
+[:17484:][trace][Core]: JGTexture: Success Save at C:\Users\jgeng\AppData\Local\Temp\claude\C--Develop-JGEngine\9193bcec-7d3c-4353-a17a-b7a057729448\scratchpad\formattest_out/Noise_New.jgasset
+[:17484:][warning][Asset]: NOT Support Asset Path
+[:17484:][trace][Graphics]: Register FormatTest_Noise in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise   Ref : 1
+[:17484:][trace][Graphics]: Register FormatTest_Noise_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise_UploadStaging   Ref : 1
+[:17484:][trace][Core]: Success Load at C:\Users\jgeng\AppData\Local\Temp\claude\C--Develop-JGEngine\9193bcec-7d3c-4353-a17a-b7a057729448\scratchpad\formattest_out/Noise_New.jgasset
+[:17484:][info][Devkit]: FormatTest : texture 1024x1024 saved ok (430.9 ms), file 5594954 bytes, load 601.7 ms
+[:17484:][trace][Graphics]: Register FormatTest_Noise_ReadbackStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : FormatTest_Noise_ReadbackStaging   Ref : 1
+[:17484:][trace][JGEditor]: Startup JGEditor Module...
+[:17484:][info][Core]: Recognized Class List...
+[:17484:][debug][Core]: - JGGameplayEntityComponent
+[:17484:][debug][Core]: - JGAssetImporter
+[:17484:][debug][Core]: - JGMemoryStatistcs
+[:17484:][debug][Core]: - JGGameplayEntityActor
+[:17484:][debug][Core]: - JGDevConsole
+[:17484:][debug][Core]: - JGAsset
+[:17484:][debug][Core]: - JGDevFeature
+[:17484:][debug][Core]: - JGDevScene
+[:17484:][debug][Core]: - JGDevSettings
+[:17484:][debug][Core]: - JGActor
+[:17484:][debug][Core]: - JGGameEntryActor
+[:17484:][debug][Core]: - JGGameMasterActor
+[:17484:][debug][Core]: - JGGameplayControllerActor
+[:17484:][debug][Core]: - JGGameplayCue
+[:17484:][debug][Core]: - JGActorComponent
+[:17484:][debug][Core]: - JGGameInstance
+[:17484:][debug][Core]: - JGGameplayCommandHandler
+[:17484:][debug][Core]: - JGGameplayEffect
+[:17484:][debug][Core]: - JGGameplayModifier
+[:17484:][debug][Core]: - JGGameplayTrigger
+[:17484:][debug][Core]: - JGStaticMesh
+[:17484:][debug][Core]: - JGTexture
+[:17484:][debug][Core]: - JGFBXAssetImporter
+[:17484:][debug][Core]: - JGWidget
+[:17484:][debug][Core]: - JGWidgetComponent
+[:17484:][trace][Asset]: Start Load Assets in ../../Content
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise in ResourceRefMap
+[:4748:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 4875961112852642835. pages are created on first request
+[:4748:][warning][Asset]: NOT Support Asset Path
+[:17484:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:17484:][trace][Graphics]: Graphics PSO created. cache size 1
+[:17484:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise_ReadbackStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise_ReadbackStaging in ResourceRefMap
+[:4748:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:4748:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:4748:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:17484:][info][Devkit]: FormatTest : texture readback 1024x1024, 4194304 bytes -> PASS
+[:17484:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : FormatTest_Noise   Ref : 0
+[:17484:][trace][Graphics]: UnRegister FormatTest_Noise in ResourceRefMap
+[:4748:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:4748:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:4748:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:4748:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:4748:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:4748:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:4748:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:17484:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:17484:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:17484:][trace][Core]: JGStaticMesh: Success Save at C:\Users\jgeng\AppData\Local\Temp\claude\C--Develop-JGEngine\9193bcec-7d3c-4353-a17a-b7a057729448\scratchpad\formattest_out/Sample_New.jgasset
+[:17484:][warning][Asset]: NOT Support Asset Path
+[:17484:][info][Memory]: [ID: 0] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.44 MB)
+[:17484:][info][Memory]: [ID: 0] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.94 MB)
+[:17484:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:17484:][info][Memory]: [ID: 0] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 5.19 MB)
+[:17484:][info][Memory]: [ID: 0] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 5.44 MB)
+[:17484:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:17484:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:17484:][info][Memory]: [ID: 0] class 1048576 B grew to 4 pages (4 blocks, growth #3, chunk committed 6.44 MB)
+[:17484:][info][Memory]: [ID: 0] class 524288 B grew to 3 pages (3 blocks, growth #2, chunk committed 6.94 MB)
+[:17484:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:17484:][info][Memory]: [ID: 0] class 1048576 B grew to 5 pages (5 blocks, growth #4, chunk committed 7.94 MB)
+[:17484:][info][Memory]: [ID: 0] class 262144 B grew to 3 pages (3 blocks, growth #2, chunk committed 8.19 MB)
+[:17484:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:17484:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:17484:][trace][Core]: Success Load at C:\Users\jgeng\AppData\Local\Temp\claude\C--Develop-JGEngine\9193bcec-7d3c-4353-a17a-b7a057729448\scratchpad\formattest_out/Sample_New.jgasset
+[:17484:][info][Devkit]: FormatTest : mesh saved ok (143.7 ms). old file 36177587 bytes load 1215.5 ms, new file 2912269 bytes load 278.1 ms. submesh 2, vertex 28464, index 147336, data same, bounds same -> PASS
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Graphics PSO created. cache size 2
+[:17484:][trace][Graphics]: Beta_Surface : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Surface : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Joints : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Joints : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Surface : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Surface : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Joints : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Beta_Joints : upload target was destroyed before recording. dropped
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 1
+[:17484:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:17484:][trace][Graphics]: Register DevScene_Output_ReadbackStaging in ResourceRefMap
+[:17484:][trace][Graphics]: Add Counting Resource : DevScene_Output_ReadbackStaging   Ref : 1
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_Output_ReadbackStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_Output_ReadbackStaging in ResourceRefMap
+[:17484:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:17484:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
+[:17484:][trace][Asset]: Shutdown Asset Module...
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_Output   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_Output in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_DepthStencil   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_DepthStencil in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Depth   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_GBuffer_Depth in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : DevScene_CompositeMaterial   Ref : 0
+[:17484:][trace][Graphics]: UnRegister DevScene_CompositeMaterial in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:17484:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:17484:][trace][Graphics]: Shutdown Graphics Module...
+[:17484:][trace][JGEditor]: Shutdown JGEditor Module...
+[:17484:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 15, committed 0.94 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:17484:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 45 (total 56), large live 0

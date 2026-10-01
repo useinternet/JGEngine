@@ -1,0 +1,27 @@
+{
+  "ModuleInfo": {
+    "ModuleFormat": "SharedLib",
+    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GameFrameWorks" ],
+    "ModuleName": "GameUIDemo",
+    "ModulePath": "Source/GameUIDemo/",
+    "Defines": [
+      "_GAMEUIDEMO"
+    ],
+    "DevelopEngine": {
+      "Config": "DebugConfig",
+      "Defines": []
+    },
+    "DevelopGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ConfirmGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ReleaseGame": {
+      "Config": "ReleaseConfig",
+      "Defines": []
+    }
+  }
+}

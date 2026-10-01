@@ -78,6 +78,7 @@ PSharedPtr<PGameplayHostSession> PGameplayHostSession::CreateListenServer(PShare
 
 EGameplaySessionSubmit PGameplayHostSession::SubmitLocal(const HGameplayCommand& command, PString* outReason)
 {
+	adoptStartedGameMaster();
 	if (_state != EGameplaySessionState::Playing)
 	{
 		setReason(outReason, "game not started");
@@ -110,7 +111,8 @@ bool PGameplayHostSession::StartGame(uint64 seed)
 	{
 		return false;
 	}
-	_state = EGameplaySessionState::Playing;
+	_state          = EGameplaySessionState::Playing;
+	_bGameAnnounced = true;
 
 	if (_mode == EGameplayNetMode::ListenServer)
 	{
@@ -129,6 +131,7 @@ bool PGameplayHostSession::StartGame(uint64 seed)
 void PGameplayHostSession::Tick(float32 deltaSeconds)
 {
 	_time += deltaSeconds;
+	adoptStartedGameMaster();
 
 	if (_transport != nullptr)
 	{
@@ -226,6 +229,47 @@ int32 PGameplayHostSession::GetConnectedPeerCount() const
 void PGameplayHostSession::SetMaxAgentStepsPerTick(int32 steps)
 {
 	_maxAgentStepsPerTick = steps < 0 ? 0 : steps;
+}
+
+void PGameplayHostSession::onBound()
+{
+	_bGameAnnounced = false;
+	adoptStartedGameMaster();
+}
+
+void PGameplayHostSession::onUnbound()
+{
+	// 월드가 바뀌는 중이다. 다음 GameMaster 가 붙어 시작할 때까지 명령을 받지 않고, 그사이 입장한 클라에게 문서를 보내지 않는다.
+	if (_state == EGameplaySessionState::Playing)
+	{
+		_state = EGameplaySessionState::Ready;
+	}
+	_bGameAnnounced = false;
+}
+
+// 게임이 세션을 거치지 않고 PGameMaster::Start 를 불렀으면(붙기 전에 시작 · 세션 이전 코드) 그 게임을 이어받는다.
+// 이미 들어와 있는 클라에게는 지금 상태를 문서로 보낸다 (시작 뒤 명령이 진행됐을 수 있어 StartGame 으로는 부족하다).
+void PGameplayHostSession::adoptStartedGameMaster()
+{
+	if (_bGameAnnounced == true || _gameMaster == nullptr || _gameMaster->IsStarted() == false || _state == EGameplaySessionState::Closed)
+	{
+		return;
+	}
+
+	_bGameAnnounced = true;
+	_state          = EGameplaySessionState::Playing;
+	JG_LOG(Network, ELogLevel::Info, "PGameplayHostSession: adopted a game started outside the session (seq %u)", _gameMaster->GetState().Sequence);
+
+	if (_mode == EGameplayNetMode::ListenServer)
+	{
+		for (const HGameplayPlayerSlot& slot : _slots)
+		{
+			if (slot.bConnected == true && slot.Slot != _localSlot && slot.Peer != NetPeerNone)
+			{
+				sendDocument(slot.Peer);
+			}
+		}
+	}
 }
 
 // ---- 권한 실행 ------------------------------------------------------------------

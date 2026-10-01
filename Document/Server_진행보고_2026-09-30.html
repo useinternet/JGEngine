@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Server 진행 보고</title>
+<meta name="description" content="2026-09-30 기준 Server(리슨 서버) 트랙: 끝난 단계, 오늘 확인한 것, 남은 일, 결정이 필요한 항목">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .callout { background: var(--callout); border-left: 4px solid var(--accent); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 16px; }
+  .stat .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-todo { --dot: var(--neutral); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Server 진행 보고</h1>
+  <div class="meta">2026-09-30 기준 · 리슨 서버(네트워크) 트랙 · 근거: <code>Document/Memory/Server</code> 현황·TODO, 코드와 git 대조, 오늘 다시 돌린 검사</div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 리슨 서버 1차 범위인 Phase 0~4(커널 준비, 전송, 세션과 명령 중계, 입장·재접속·재동기, 2프로세스 결정론)는 구현과 검증을 마쳤습니다. 이 변경은 09-30 17:30 커밋 <code>4c8ac73</code>에 들어갔습니다. 다음 단계인 Phase 5(월드 연결, 7항목)는 시작하지 않았습니다. 받은 지시가 "Phase 4까지"였기 때문입니다.</p>
+    <p><strong>지금 필요한 것.</strong> Phase 5를 시작할지, 시작한다면 언제 할지 정해 주셔야 합니다(5절). 착수 전에 할 작은 확인은 하나 남았습니다. 커밋된 빌드로 2프로세스 검사를 한 번 더 돌리는 일입니다.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">27 / 27</div><div class="k">Phase 0~4 구현 항목 완료</div></div>
+    <div class="stat"><div class="v">0 / 7</div><div class="k">Phase 5 (월드 연결) 착수 안 함</div></div>
+    <div class="stat"><div class="v">18 파일 · 4,913줄</div><div class="k"><code>Network/</code> 17개와 <code>NetCommands.cpp</code>, 이 중 자체 테스트 1,480줄</div></div>
+  </div>
+
+  <div class="callout">
+    <strong>문서 정정</strong>
+    Server 현황·TODO와 진행현황에는 "전부 미커밋"으로 적혀 있었습니다. git으로 확인해 보니 <code>4c8ac73</code>(09-30 17:30)에 <code>Network/</code> 전체, <code>NetCommands.cpp</code>, GameMaster 변경이 모두 들어 있고 작업 트리도 깨끗합니다. 오늘 세 문서를 고쳤습니다.
+  </div>
+
+  <h2>1. 단계별 진행</h2>
+  <table>
+    <tr><th>단계</th><th>내용</th><th>상태</th><th>검증 근거</th></tr>
+    <tr><td class="name">Phase 0 커널 준비</td><td><code>PGameMaster</code>에 저장 문서 내보내기·가져오기, 규칙 지문(fingerprint), 죽은 ID 쓰기 가드, AI 선택과 제출 분리, 네트워크 모드 되돌리기 차단을 추가했습니다</td><td><span class="badge b-done">완료 09-29</span></td><td><code>gmtest</code> 9~11절. 문서 왕복 뒤 체크섬이 같습니다</td></tr>
+    <tr><td class="name">Phase 1 전송</td><td>Winsock 비블로킹 TCP(길이 프레이밍, 정상 종료), 한 프로세스 테스트용 루프백, 메시지 코덱</td><td><span class="badge b-done">완료 09-29</span></td><td>1MB 왕복, 닫기 순서, 연결 유실, 연결 거부 확인. 저장 문서가 50,000바이트에서 181바이트로 압축됩니다</td></tr>
+    <tr><td class="name">Phase 2 명령 중계</td><td>호스트만 명령을 승인해 모두에게 방송하고, 클라는 복제본에 같은 명령을 적용해 체크섬을 비교합니다</td><td><span class="badge b-done">완료 09-29</span></td><td>호스트 1대와 클라 3대가 1,001개 명령을 불일치 0건으로 처리했습니다. 위조 명령, 프로토콜 불일치, 만석, 규칙 불일치는 거부됩니다</td></tr>
+    <tr><td class="name">Phase 3 복구</td><td>게임 도중 입장, 재접속(같은 토큰이면 같은 슬롯), 불일치 뒤 재동기, 끊김 알림</td><td><span class="badge b-done">완료 09-29</span></td><td>순번 500에 입장, 616에서 변조를 잡아 덤프 2개를 남기고 복구, 연결이 끊기면 호스트 AI가 대신 둠, 742에 재접속</td></tr>
+    <tr><td class="name">Phase 4 2프로세스 결정론</td><td>실제 프로세스 3개(호스트 1, 클라 2)를 TCP로 붙여 결과를 비교합니다</td><td><span class="badge b-done">완료 09-29</span></td><td>세 프로세스 모두 순번 1000에서 체크섬이 같고 불일치 0건, 약 18초. 따로 컴파일한 두 빌드도 같은 값을 냈습니다</td></tr>
+    <tr><td class="name">커밋</td><td>GameFrameWorks Phase 1, DevConsole 변경과 한 커밋으로 묶었습니다</td><td><span class="badge b-done">완료 09-30</span></td><td><code>4c8ac73</code> "문서 정리"</td></tr>
+    <tr><td class="name">Phase 5 월드 연결</td><td>게임 인스턴스와 액터가 세션을 거치게 하고, 실행 인자, 최소 로비, 실행 파일 2개로 한 판을 끝까지 두는 검증</td><td><span class="badge b-decide">착수 지시 대기</span></td><td>코드에서 착수하지 않은 상태를 확인했습니다(4절)</td></tr>
+  </table>
+
+  <h2>2. 오늘 확인한 것</h2>
+  <table>
+    <tr><th>확인</th><th>결과</th></tr>
+    <tr><td class="name">커밋 상태</td><td><code>4c8ac73</code>에 네트워크 코드 전체가 들어 있고 작업 트리가 깨끗합니다</td></tr>
+    <tr><td class="name">검사한 바이너리</td><td><code>Bin/DevelopEngine</code>의 <code>JGConsole.exe</code>와 <code>GameFrameWorks.dll</code>은 HEAD 커밋본과 바이트 단위로 같습니다(수정 시각은 19:29)</td></tr>
+    <tr><td class="name"><code>gmtest</code></td><td><span class="badge b-done">통과</span> 종료 코드 0, 출력에 FAIL 없음</td></tr>
+    <tr><td class="name"><code>net.test all</code></td><td><span class="badge b-done">통과</span> 종료 코드 0, FAIL 없음. 명령 1,001개를 3.20초에 처리(디버그 빌드, 한 프로세스 안에 복제본 4개). 종료 시 남은 메모리 블록 0</td></tr>
+    <tr><td class="name">2프로세스 검사</td><td><span class="badge b-todo">이번에 돌리지 않음</span> 마지막 통과는 09-30 00:31. 커밋된 빌드로 한 번 더 돌려야 합니다(약 18초)</td></tr>
+    <tr><td class="name">Phase 5 코드</td><td><code>GameInstance.h</code>에 세션이 없고, <code>GameMasterActor.cpp:425</code>의 <code>executeNow</code>는 아직 <code>_gameMaster-&gt;Submit</code>을 직접 부릅니다. 착수하지 않은 것이 맞습니다</td></tr>
+  </table>
+  <p class="small">이번 실행 출력에서 "N PASS, M FAIL" 요약 줄을 따로 뽑지 못해 검사 개수(지난번 기준 111개와 66개)는 적지 않았습니다. 기록은 <code>Memory/Server/Files/2026-09-29_net_phase0-4_results.txt</code> 끝에 있습니다.</p>
+
+  <h2>3. 지금 구조</h2>
+  <table>
+    <tr><th>계층</th><th>하는 일</th></tr>
+    <tr><td class="name">전송</td><td><code>INetTransport</code> 뒤에 <code>PNetTcpTransport</code>와 <code>PNetLoopbackTransport</code>가 있습니다. 전송 계층은 바이트만 다루고 게임을 모르며, 메인 스레드에서 Poll합니다. IPv4만 지원합니다</td></tr>
+    <tr><td class="name">메시지</td><td>12종. 형식은 <code>[종류][플래그][JSON 본문]</code>이고 저장 문서만 zlib으로 압축합니다. 프로토콜 버전은 1입니다</td></tr>
+    <tr><td class="name">호스트 세션</td><td><code>PGameplayHostSession</code>(싱글플레이 · 리슨 서버 겸용). 도착 순서로 줄을 세우고, 명령 소유를 검사하고, 커널에 제출한 뒤 방송합니다. AI 구동, 핑(1초)과 타임아웃(10초), 입장·재접속 처리도 맡습니다</td></tr>
+    <tr><td class="name">클라 세션</td><td><code>PGameplayClientSession</code>. 명령은 한 번에 하나씩 보내고, 틀린 명령은 로컬 검증에서 먼저 거절합니다. 체크섬을 비교해 어긋나면 양쪽 상태를 덤프하고 재동기를 요청합니다</td></tr>
+    <tr><td class="name">커널</td><td><code>PGameMaster</code>. 호스트 쪽이 원본이고 클라 쪽은 복제본입니다. 커널은 네트워크를 모릅니다</td></tr>
+    <tr><td class="name">검증 명령</td><td><code>JGConsole.exe net.test</code> · <code>net.host</code> · <code>net.join</code>, 2프로세스 실행기 <code>Document/Memory/tools/net_two_process/run_two_process.sh</code></td></tr>
+  </table>
+  <p class="small">원칙: 싱글플레이도 같은 세션 경로(Standalone 호스트)를 탑니다. 게임 규칙과 연출 코드는 넷 모드를 몰라도 됩니다. 이 구조는 특정 게임에 묶이지 않아 어떤 턴제 보드·카드 게임에도 그대로 쓸 수 있습니다.</p>
+
+  <h2>4. 남은 일</h2>
+  <table>
+    <tr><th>ID</th><th>항목</th><th>지금 코드</th><th>선행 조건</th></tr>
+    <tr><td class="name">V-1</td><td>커밋된 빌드로 2프로세스 검사 재실행</td><td>gmtest와 net.test는 오늘 통과</td><td>없음</td></tr>
+    <tr><td class="name">5-1</td><td><code>JGGameInstance</code>가 세션을 소유하고, 틱을 세션 다음에 월드 순서로 돌리고, 월드 이동을 알리고, 종료 시 정리</td><td>세션 멤버가 없고 <code>Tick</code>은 월드만 돕니다</td><td>착수 지시, GameFrameWorks와 조율</td></tr>
+    <tr><td class="name">5-2</td><td><code>JGGameMasterActor</code>의 명령 제출이 세션을 거치게 하기</td><td><code>executeNow</code>가 커널에 직접 제출</td><td>5-1</td></tr>
+    <tr><td class="name">5-2b</td><td>엔트리 액터 규약: 규칙 등록은 모두, 초기 상태와 시작은 권한 쪽만</td><td>문서화 안 됨</td><td>5-2</td></tr>
+    <tr><td class="name">5-3</td><td>컨트롤러가 내가 조작하는 행동자만 명령하게 하기</td><td>그런 경로가 없음</td><td>5-2. GFW 2-5 피킹과 같은 파일</td></tr>
+    <tr><td class="name">5-4</td><td>실행 인자 <code>-host</code> · <code>-join</code> · <code>-name</code></td><td>런처 <code>main()</code>에 인자가 없음</td><td>게임을 띄울 실행 호스트 결정</td></tr>
+    <tr><td class="name">5-5</td><td>최소 로비(슬롯 목록, 준비, 시작)</td><td>없음. 엔진 API(<code>GetSlots</code> · <code>SetSlotControllers</code> · <code>StartGame</code>)는 있음</td><td>로비 위치 결정</td></tr>
+    <tr><td class="name">5-6</td><td>실행 파일 2개(호스트와 클라)로 한 판을 끝까지 두기</td><td>없음</td><td>5-1~5-5</td></tr>
+    <tr><td class="name">N-1</td><td><code>net.test</code>를 GameFrameWorks 모듈로 옮기기(작은 정리)</td><td>JGConsole에 있음</td><td>Phase 5 착수 때 함께</td></tr>
+  </table>
+
+  <h2>5. 결정이 필요한 것</h2>
+  <table>
+    <tr><th>#</th><th>결정</th><th>권고</th><th>막고 있는 것</th></tr>
+    <tr><td class="name">D-4</td><td>Phase 5 착수 여부와 시점</td><td>GameFrameWorks Phase 2의 2-1(카메라)과 2-2(메시 컴포넌트)가 끝난 뒤 시작합니다. 순서는 5-1 → 5-2 → 5-2b·5-3이 좋습니다. 이 셋은 창 없이 콘솔에서 검증할 수 있습니다</td><td>5-1~5-6</td></tr>
+    <tr><td class="name">D-5</td><td>5-4 실행 인자를 붙일 프로세스</td><td>지금 런처는 에디터를 띄우는 프로세스입니다. 게임을 단독으로 띄울 실행 호스트를 게임 프로젝트 트랙에서 정한 뒤, 거기에 붙이는 것이 맞습니다</td><td>5-4</td></tr>
+    <tr><td class="name">로비</td><td>5-5 최소 로비를 둘 곳</td><td>엔진 GameFrameWorks의 개발용 ImGui 뷰에 최소형으로 둡니다. 엔진은 슬롯·준비·시작 API만 제공하고, 실제 로비 화면은 게임이 만듭니다</td><td>5-5</td></tr>
+  </table>
+
+  <h2>6. 주의할 점</h2>
+  <ul>
+    <li><strong>GameMaster 공유.</strong> GameFrameWorks 트랙이 GameMaster를 바꾸면 <code>net.test all</code>과 2프로세스 검사도 다시 돌려야 합니다. 규칙이 바뀌면 체크섬 값 자체는 달라지므로, 세 프로세스가 같은 값을 내는지만 봅니다.</li>
+    <li><strong>파일 겹침.</strong> Phase 5는 <code>JGGameInstance</code>, <code>JGGameMasterActor</code>, <code>JGGameplayControllerActor</code>를 고칩니다. GameFrameWorks Phase 2(2-4 시퀀서, 2-5 피킹)도 같은 파일을 고치므로 착수 전에 조율해야 합니다.</li>
+    <li><strong>결정론 규칙.</strong> 규칙 코드는 시계, 로컬 설정, 부동소수를 쓰면 안 됩니다. 컴포넌트 필드는 모두 기본값으로 초기화해야 합니다. 초기화하지 않은 값은 릴리스 빌드에서야 불일치로 드러납니다.</li>
+    <li><strong>체크섬 비용.</strong> 명령마다 상태 전체를 해시합니다. 엔티티 301개에서 5~6.6ms(디버그)라 턴제에는 문제가 없습니다. 엔티티가 수천 개로 늘면 증분 해시를 검토합니다(보류).</li>
+    <li><strong>범위 밖(보류).</strong> 비공개 손패 같은 은닉 정보, 포트 개방 없는 인터넷 플레이(Steam·UDP·릴레이), IPv6, 클라 예측. 필요해질 때 다시 꺼냅니다.</li>
+  </ul>
+
+  <h2>7. 참고 문서</h2>
+  <ul>
+    <li><a href="Memory/Server/현황.md">Server 현황</a> · <a href="Memory/Server/TODO.md">Server TODO</a> · <a href="Memory/진행현황.md">전체 진행현황</a></li>
+    <li><a href="Memory/Server/Files/리슨서버_구조설계_2026-09-29.md">리슨 서버 구조 설계</a> · <a href="Memory/Server/Files/리슨서버_설계방안_2026-09-29.md">설계 방안 비교</a></li>
+    <li><a href="Memory/Server/Files/2026-09-29_net_phase0-4_results.txt">검증 결과 원문</a> · <a href="JGEngine_진행보고_2026-09-30.html">JGEngine 전체 진행 보고</a></li>
+  </ul>
+</main>
+</body>
+</html>

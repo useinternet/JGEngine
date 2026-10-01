@@ -11,7 +11,8 @@ namespace
 {
 	// gmtest — GameMaster 커널 + 월드/게임 인스턴스 자체 검증(그래픽 없음).
 	// GameFrameWorks 가 연결된 프로세스에서 쓸 수 있다: JGConsole(시작할 때 연결), 프로젝트 모드 에디터(게임 모듈이 연결).
-	// 두 테스트는 자기 전용 PGameMaster / PWorld 를 만들어 쓰므로 에디터 안에서 돌려도 모듈의 게임 인스턴스를 건드리지 않는다.
+	// 월드 테스트의 게임 인스턴스 절만 모듈의 게임 인스턴스로 월드를 로드 · 언로드한다. 이미 월드가 있으면(에디터에서 게임이 도는 중) 그 절은 건너뛰고,
+	// 나머지는 자기 전용 PGameMaster / PWorld 를 쓰므로 에디터 안에서 돌려도 게임 월드를 건드리지 않는다.
 	bool executeGameMasterSelfTest(const HConsoleCommandArgs&)
 	{
 		int32 failures = PGameMasterSelfTest::Run();
@@ -126,8 +127,10 @@ void HGameFrameWorksModule::replaceGameInstance(PSharedPtr<JGGameInstance> insta
 		{
 			JG_LOG(GameFrameWorks, ELogLevel::Warning, "ReplaceGameInstance: active world will be unloaded");
 		}
-		// 엔트리 클래스는 이어받는다.
+		// 엔트리 클래스와 세션(연결) · 게임 UI(떠 있는 화면)는 이어받는다.
 		instance->SetEntryClass(_gameInstance->GetEntryClass());
+		instance->_session = _gameInstance->detachSession();
+		instance->_ui      = _gameInstance->detachUI();
 		_gameInstance->shutdown();
 		_gameInstance.Reset();
 	}

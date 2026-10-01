@@ -4,6 +4,115 @@
 #include "Object/ObjectGlobalSystem.h"
 #include "rapidjson/prettywriter.h"
 
+namespace
+{
+	constexpr char Base64Alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	// base64 글자 -> 6비트 값. base64 글자가 아니면 -1.
+	int32 base64Value(char inChar)
+	{
+		if (inChar >= 'A' && inChar <= 'Z')
+		{
+			return inChar - 'A';
+		}
+		if (inChar >= 'a' && inChar <= 'z')
+		{
+			return inChar - 'a' + 26;
+		}
+		if (inChar >= '0' && inChar <= '9')
+		{
+			return inChar - '0' + 52;
+		}
+		if (inChar == '+')
+		{
+			return 62;
+		}
+		if (inChar == '/')
+		{
+			return 63;
+		}
+		return -1;
+	}
+
+	// 3바이트 -> 4글자. 끝이 3바이트로 나눠떨어지지 않으면 '='로 채운다. (RFC 4648)
+	void encodeBase64(const uint8* inData, uint64 inSize, HRawString& outText)
+	{
+		outText.clear();
+		outText.reserve((inSize + 2) / 3 * 4);
+
+		uint64 i = 0;
+		for (; i + 3 <= inSize; i += 3)
+		{
+			const uint32 triple = ((uint32)inData[i] << 16) | ((uint32)inData[i + 1] << 8) | (uint32)inData[i + 2];
+			outText.push_back(Base64Alphabet[(triple >> 18) & 0x3F]);
+			outText.push_back(Base64Alphabet[(triple >> 12) & 0x3F]);
+			outText.push_back(Base64Alphabet[(triple >> 6) & 0x3F]);
+			outText.push_back(Base64Alphabet[triple & 0x3F]);
+		}
+
+		const uint64 remain = inSize - i;
+		if (remain == 1)
+		{
+			const uint32 triple = (uint32)inData[i] << 16;
+			outText.push_back(Base64Alphabet[(triple >> 18) & 0x3F]);
+			outText.push_back(Base64Alphabet[(triple >> 12) & 0x3F]);
+			outText.push_back('=');
+			outText.push_back('=');
+		}
+		else if (remain == 2)
+		{
+			const uint32 triple = ((uint32)inData[i] << 16) | ((uint32)inData[i + 1] << 8);
+			outText.push_back(Base64Alphabet[(triple >> 18) & 0x3F]);
+			outText.push_back(Base64Alphabet[(triple >> 12) & 0x3F]);
+			outText.push_back(Base64Alphabet[(triple >> 6) & 0x3F]);
+			outText.push_back('=');
+		}
+	}
+
+	bool decodeBase64(const char* inText, uint64 inLength, HList<uint8>& outData)
+	{
+		outData.clear();
+		if (inLength % 4 != 0)
+		{
+			return false;
+		}
+		outData.reserve(inLength / 4 * 3);
+
+		for (uint64 i = 0; i < inLength; i += 4)
+		{
+			// '='는 마지막 4글자 묶음의 끝에만 온다. 다른 자리의 '='는 base64Value에서 걸러진다.
+			int32 padding = 0;
+			if (i + 4 == inLength && inText[i + 3] == '=')
+			{
+				padding = (inText[i + 2] == '=') ? 2 : 1;
+			}
+
+			uint32 triple = 0;
+			for (int32 j = 0; j < 4 - padding; ++j)
+			{
+				const int32 value = base64Value(inText[i + j]);
+				if (value < 0)
+				{
+					outData.clear();
+					return false;
+				}
+				triple |= (uint32)value << (18 - 6 * j);
+			}
+
+			outData.push_back((uint8)(triple >> 16));
+			if (padding < 2)
+			{
+				outData.push_back((uint8)(triple >> 8));
+			}
+			if (padding < 1)
+			{
+				outData.push_back((uint8)triple);
+			}
+		}
+		return true;
+	}
+}
+
 PJsonData::PJsonData(PJson* ownerJson, bool bIsRoot)
 	: _pOwnerJson(ownerJson)
 	, _bIsRoot(bIsRoot)
@@ -133,6 +242,37 @@ int32 PJsonData::GetSize() const
 bool PJsonData::IsValid() const
 {
 	return _pOwnerJson != nullptr;
+}
+
+void PJsonData::AddBinaryMember(const PString& key, const void* data, uint64 size)
+{
+	if (_pOwnerJson == nullptr)
+	{
+		return;
+	}
+
+	// PString을 거치지 않는다. PString은 만들 때마다 문자열 전체로 해시를 구한다.
+	HRawString text;
+	encodeBase64((const uint8*)data, (data != nullptr) ? size : 0, text);
+
+	rapidjson::Value val;
+	val.SetString(text.data(), (rapidjson::SizeType)text.size(), _pOwnerJson->GetAllocator());
+	addMemberInternal(key, val);
+}
+
+bool PJsonData::GetBinaryData(HList<uint8>* outData) const
+{
+	if (IsValid() == false || outData == nullptr || _value.IsString() == false)
+	{
+		return false;
+	}
+
+	return decodeBase64(_value.GetString(), (uint64)_value.GetStringLength(), *outData);
+}
+
+bool PJsonData::IsString() const
+{
+	return _value.IsString();
 }
 
 PJsonData PJsonData::CreateJsonData() const

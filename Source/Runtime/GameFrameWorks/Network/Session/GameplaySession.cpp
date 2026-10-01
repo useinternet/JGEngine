@@ -110,13 +110,7 @@ HGameplayEntityId PGameplaySession::GetInputActor() const
 	{
 		return HGameplayEntityId::None();
 	}
-
-	const HGameplayState& state = _gameMaster->GetState();
-	if (state.Choice.bPending == true)
-	{
-		return state.Choice.Chooser;
-	}
-	return state.Turn.CurrentActor;
+	return _gameMaster->GetState().FirstInputActor();
 }
 
 bool PGameplaySession::slotControls(const HGameplayPlayerSlot& slot, const HGameplayEntityId& actor) const

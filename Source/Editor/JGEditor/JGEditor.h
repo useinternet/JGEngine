@@ -24,5 +24,6 @@ protected:
 private:
 	void openDefaultWidgets();
 	void connectProjectModules();
+	void openSceneViewport();
 	void disconnectProjectModules();
 };

@@ -14,6 +14,8 @@
 #include "DirectX12/DX12IndexBuffer.h"
 #include "DirectX12/DX12Material.h"
 #include "Classes/ResourceStagingManager.h"
+#include "Classes/DX12Shader.h"
+#include "Classes/ShaderLibrary.h"
 
 PDirectX12API::~PDirectX12API()
 {
@@ -104,6 +106,8 @@ void PDirectX12API::Destroy()
 	}
 	_defaultMaterial = nullptr;
 	_defaultTexture  = nullptr;
+	_draw2DShader    = nullptr;
+	_bDraw2DShaderTried = false;
 	_frameBuffer = nullptr;
 	_csuAllocator = nullptr;
 	_rtvAllocator = nullptr;
@@ -728,6 +732,11 @@ PSharedPtr<IRawTexture> HDirectXAPI::GetDefaultTexture()
 	PDirectX12API* dx12API = getDX12API();
 	return (dx12API != nullptr) ? dx12API->GetDefaultTexture() : nullptr;
 }
+PSharedPtr<IRawGraphicsShader> HDirectXAPI::GetDraw2DShader()
+{
+	PDirectX12API* dx12API = getDX12API();
+	return (dx12API != nullptr) ? dx12API->GetDraw2DShader() : nullptr;
+}
 PSharedPtr<PResourceStagingManager> HDirectXAPI::GetResourceStagingManager()
 {
 	PDirectX12API* dx12API = getDX12API();
@@ -777,4 +786,35 @@ void PDirectX12API::WaitForGPUIdle()
 	{
 		_commandQueue->Flush();
 	}
+}
+
+PSharedPtr<IRawGraphicsShader> PDirectX12API::GetDraw2DShader()
+{
+	if (_bDraw2DShaderTried)
+	{
+		return _draw2DShader;
+	}
+	_bDraw2DShaderTried = true;
+
+	const PString& shaderCode = GShaderLibrary::GetInstance().GetShaderCode(PString("draw2d"));
+	if (shaderCode.Empty())
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "2D draw shader (draw2d.hlsl) is not in the shader directory");
+		return nullptr;
+	}
+
+	PSharedPtr<PDX12GraphicsShader> shader = Allocate<PDX12GraphicsShader>();
+	HGraphicsShaderCompileArguments compileArgs;
+	compileArgs.SourceCode = shaderCode;
+	compileArgs.Flags      = EShaderCompileFlags::Allow_VertexShader | EShaderCompileFlags::Allow_PixelShader;
+
+	PString errorText;
+	if (shader->Compile(compileArgs, &errorText) == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "Fail Compile 2D draw shader : %s", errorText);
+		return nullptr;
+	}
+
+	_draw2DShader = shader;
+	return _draw2DShader;
 }

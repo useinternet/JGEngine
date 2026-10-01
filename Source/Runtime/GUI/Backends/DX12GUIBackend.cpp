@@ -49,6 +49,11 @@ void PDX12GUIBackend::Initialize()
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 //	io.Fonts->AddFontFromFileTTF("../../Source/Font/Consolas.ttf", 16.0f);
+	// 글꼴 순서 = EGUIFont (HGUI::PushFont). 0 = 기본(ProggyClean 13px), 1 = 큰 글꼴(같은 글꼴 26px — 픽셀 글꼴이라 정수 배만 선명하다)
+	io.Fonts->AddFontDefault();
+	ImFontConfig LargeFontConfig;
+	LargeFontConfig.SizePixels = 26.0f;
+	io.Fonts->AddFontDefault(&LargeFontConfig);
 	ImGui::StyleColorsDark();
 
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
@@ -182,6 +187,8 @@ void PDX12GUIBackend::Shutdown()
 
 	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
+
+	PGUIBackend::Shutdown();
 }
 
 

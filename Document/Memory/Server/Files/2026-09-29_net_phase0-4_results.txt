@@ -73,3 +73,10 @@ JGConsole rebuilt: 0 errors, 0 warnings in NetCommands.cpp / Main.cpp
 JGConsole.exe net.host -port=abc -> exit 1, "-port is not a number" + registry usage line (no exception, no abort dialog)
 JGConsole.exe (no args) help lists net.test / net.host / net.join
 gmtest 111/111, net.test all 66/66, two-process (port 47774) OK, checksum 16006860866352003711
+
+---- V-1 (partial) after the user commit 4c8ac73 (2026-09-30 17:30), run 2026-09-30 evening ----
+Bin/DevelopEngine/JGConsole.exe and GameFrameWorks.dll: mtime 19:29, byte-identical to HEAD (git hash-object == HEAD blob)
+gmtest: exit 0, no FAIL line in the output
+net.test all: exit 0, no FAIL line in the output ([INFO] played 1001 commands in 3.20 s; Memory Chunk Shutdown live blocks 0, large live 0)
+  -> the "N PASS, M FAIL" summary line was not captured this time (output format may have changed with the registry move); counts not recorded
+two-process (run_two_process.sh): NOT run in this session -- still open under V-1

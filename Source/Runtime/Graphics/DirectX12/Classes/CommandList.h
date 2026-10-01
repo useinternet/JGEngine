@@ -101,6 +101,9 @@ public:
 	void FlushVertexBuffer();
 
 	void BindIndexBuffer(const D3D12_INDEX_BUFFER_VIEW& view);
+	// 매 프레임 바뀌는 정점 · 인덱스(2D 그리기 등)를 업로드 할당자에 복사해 바인드한다. 한 번에 한 페이지를 넘으면 false.
+	bool BindDynamicVertexBuffer(const void* inData, uint64 inVertexCount, uint64 inVertexSize);
+	bool BindDynamicIndexBuffer(const uint32* inData, uint64 inIndexCount);
 	void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology);
 
 	void DrawIndexed(uint32 indexCount, uint32 instancedCount = 1, uint32 startIndexLocation = 0, uint32 startVertexLocation = 0, uint32 startInstanceLocation = 0);

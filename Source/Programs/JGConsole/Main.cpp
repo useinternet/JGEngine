@@ -11,7 +11,7 @@
 
 namespace
 {
-	// 시작할 때 연결하는 엔진 모듈. 연결돼야 그 모듈이 선언한 명령(GameFrameWorks 의 gmtest 등)이 등록된다.
+	// 시작할 때 연결하는 엔진 모듈. 연결돼야 그 모듈이 선언한 명령(GameFrameWorks 의 gmtest · gameui.selftest 등)이 등록된다.
 	// 종료 때는 GModuleGlobalSystem::Destroy 가 역순으로 내린다.
 	const char* const CONSOLE_ENGINE_MODULES[] = { "GameFrameWorks" };
 

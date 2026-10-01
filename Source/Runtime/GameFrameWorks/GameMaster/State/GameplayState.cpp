@@ -135,6 +135,48 @@ bool HGameplayState::MoveToZone(const HGameplayEntityId& id, const PName& zoneNa
 	return Zones.MoveTo(id, zoneName);
 }
 
+void HGameplayState::CollectInputActors(HList<HGameplayEntityId>& outActors) const
+{
+	if (Turn.IsStarted() == false || Turn.IsFinished() == true)
+	{
+		return;
+	}
+	if (Choice.bPending == true)
+	{
+		outActors.push_back(Choice.Chooser);
+		return;
+	}
+	// 죽은 행동자를 거르지 않는다. 기본 흐름에서 차례 중에 죽은 행동자도 EndTurn 으로 차례를 넘길 수 있어야 한다.
+	for (const HGameplayEntityId& actor : Turn.Actors)
+	{
+		outActors.push_back(actor);
+	}
+}
+
+bool HGameplayState::IsInputActor(const HGameplayEntityId& id) const
+{
+	if (id.IsValid() == false || Turn.IsStarted() == false || Turn.IsFinished() == true)
+	{
+		return false;
+	}
+	if (Choice.bPending == true)
+	{
+		return Choice.Chooser == id;
+	}
+	return Turn.IsActor(id);
+}
+
+HGameplayEntityId HGameplayState::FirstInputActor() const
+{
+	HList<HGameplayEntityId> actors;
+	CollectInputActors(actors);
+	if (actors.empty() == true)
+	{
+		return HGameplayEntityId::None();
+	}
+	return actors[0];
+}
+
 HGameplayZone& HGameplayState::Zone(const PName& name)
 {
 	return Zones.FindOrAdd(name);

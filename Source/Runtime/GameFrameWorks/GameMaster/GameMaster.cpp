@@ -46,6 +46,16 @@ void PGameMaster::SetOrderPolicy(PSharedPtr<IGameplayOrderPolicy> policy)
 	_engine.OrderPolicy = policy;
 }
 
+void PGameMaster::SetFlow(PSharedPtr<IGameplayFlow> flow)
+{
+	_engine.Flow = flow;
+}
+
+PSharedPtr<IGameplayFlow> PGameMaster::GetFlow() const
+{
+	return _engine.Flow;
+}
+
 void PGameMaster::SetBoard(EGameplayBoardKind kind, int32 width, int32 height)
 {
 	SetBoard(IGameplayBoard::Create(kind), width, height);
@@ -402,6 +412,7 @@ uint64 PGameMaster::RulesFingerprint() const
 		lines.push_back(line);
 	}
 	lines.push_back("board:" + std::to_string((int32)_initialState.Board.Kind));
+	lines.push_back("flow:" + _engine.GetActiveFlow().GetName().ToString().GetRawString());
 	lines.push_back("schema:" + std::to_string(HGameplayState::SchemaVersion));
 
 	std::sort(lines.begin(), lines.end());

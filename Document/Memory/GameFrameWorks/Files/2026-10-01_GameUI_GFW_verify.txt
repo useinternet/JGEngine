@@ -1,0 +1,102 @@
+게임 UI(GameFrameWorks UI/, JGGameWidget · CommonUI식) 검증 기록 — 2026-10-01 오전, GUI 세션
+=====================================================================================
+요청: 사용자 "내가 생각한거하고 조금 달라서, GameUI를 모듈로 따로 때는게 아니고 GameFrameWork 모듈 안에 있는거고, JGWidget 처럼 JGGameWidget 이용해서, 하고싶어. 언리얼의CommonUI 처럼"
+확인 질문 2개 → 사용자 선택: 작성 방식 "유지형 CommonUI식", 범위 "이전 + CommonUI 핵심"(포커스 이동 · 탭 · 게임패드는 다음).
+설계: GameUI_설계_2026-10-01.md   TODO: ../TODO_GameUI.md (GG-7)   현황: ../현황.md §10
+커밋: 안 함(사용자가 한다). 전부 미커밋.
+
+---------------------------------------------------------------------
+§0 작업 방식
+---------------------------------------------------------------------
+- 메인 트리(C:\Develop\JGEngine)를 다른 세션(JGEditor: 에디터 레이아웃 복원)이 동시에 고치고 있어 격리 워크트리에서 작업했다.
+  git worktree add --detach <scratchpad>\wt_gameui HEAD → `git diff --binary --output=<patch>`(PowerShell 파이프로 저장하면 한글이 깨진다 — 첫 시도에서 겪음) 적용
+  + 미추적 40파일 복사 → git add -A(스테이징만) → 메인 Bin 의 JGBuildTool/JGHeaderTool 복사 → PreBuild.
+- 그 세션과 메시지로 조율: 그쪽은 GUIModule.h/.cpp · JGEditor.cpp, 이쪽은 GUI.h/.cpp · GUIDefines.h(추가만) · SceneViewport · JGEditor.module.json — 겹침 없음.
+
+---------------------------------------------------------------------
+§1 바꾼 것
+---------------------------------------------------------------------
+새 GFW UI/ 24파일: GameUI.h, GameUIDefines.h(EGameUILayer · EGameWidgetInputMode · 포인터 이벤트), GameUIStyle.h(HGameUITextStyle · HGameUIButtonStyle),
+  GameUIUtf8.h, GameUIFile.h, GameUIFont, GameUIDrawList, GameUIRenderer(옛 GameGUI 코드 이름만 변경), GameUIElement(+SetEnabled, 꺼진 부모가 자식 판정을 가로챔),
+  GameUIImage, GameUIText(필드별 스타일 덮어쓰기 + 관리자 기본), GameUIButton(스타일 · 비활성 모습 · 비활성은 클릭 안 함),
+  GameWidget(JGCLASS JGGameWidget), GameUIManager(레이어 스택 · 라우팅 · 뒤로가기 · 기본 스타일 · 글꼴/텍스처 캐시), GameUISelfTest(gameui.selftest).
+수정 11파일: GFW Core/GameInstance.h/.cpp(+31/-0, +9/-1: _ui · GetUI · Tick 의 Update · init/shutdown · detachUI), Core/GameFrameWorksModule.cpp(교체 때 UI 넘김) · .h(주석),
+  GUI/GUIDefines.h(EGUIKey) · GUI.h/.cpp(IsWindowFocused · IsKeyPressed, 끝에 추가), JGEditor Widgets/SceneViewport.h/.cpp(대상 JGGameInstance::GetUI, forwardPointerToGameUI, handleBackKey),
+  JGEditor.module.json(GameGUI 의존 삭제), JGConsole/Main.cpp(GameGUI 연결 삭제).
+삭제: Source/Runtime/GameGUI/ 24파일, Bin/DevelopEngine/GameGUI.{dll,exp,lib,pdb}, Temp/CodeGen/GameGUI, Temp/ProjectFiles/GameGUI.*, Temp/Obj/.../GameGUI.
+그대로: Graphics 2D 그리기 경로(H2DDrawArguments · draw2d.hlsl).
+
+---------------------------------------------------------------------
+§2 V1 헤드리스 (gameui.selftest, 111 검사)
+---------------------------------------------------------------------
+그룹: utf8 5 · layout 13(PushWidget<T> 포함) · pointer/button 19 · drawlist+draw 11(스택 아래 위젯 안 그림 · 레이어 아래부터 · Shutdown 이 트리 비움) · font 13 ·
+      stack lifecycle 17(훅 순서 "B:init A:deactivate B:activate" · DeactivateWidget → 아래 재활성 · 다른 레이어 동시 활성 · OnUpdate 는 활성만 · 다시 Push 하면 init 부터 ·
+      가려진 위젯 제거는 shutdown 만 · FindWidget 위 레이어부터 · PushWidgetByClass · ClearAllWidgets 위 레이어부터) ·
+      routing 12(HUD 클릭 · 빈 곳은 월드로 · 위 레이어 먼저 · Game 모드 레이어는 아래로 넘김 · Menu 모드는 아래 레이어 · 빈 곳 · 휠 차단 · 가려진 버튼 호버 없음 · 클릭 처리기 안에서 닫기) ·
+      back 5(HUD 는 처리 없음 · 기본 뒤로가기 = 닫기 · 처리 안 하는 Menu 위젯이 막음 · false 를 돌려주면 아래 처리 위젯으로 · 순서) ·
+      disabled/style 15(비활성 버튼 막기만 · 비활성 부모 · 기본/직접/관리자 기본 스타일 색 · 비활성 · 꺼진 부모 아래 버튼 · 호버 색 · 글자 필드별 상속) · instance 1   = 111
+워크트리: [GameUI]: gameui.selftest: OK (111/111), skipped groups 0   종료 0, live blocks 0. 경고 1줄 "PushWidget: JGGameWidget is already in the Game stack" = 음성 검사.
+메인 Bin : 같은 결과 (09:49)
+처음 쓴 기대값 하나를 고쳤다: 훅 순서를 "A:deactivate B:init B:activate" 로 적었는데 구현(= CommonUI 순서: 새 위젯 생성 → 이전 비활성 → 새 활성)은 "B:init A:deactivate B:activate".
+
+---------------------------------------------------------------------
+§3 V2 검증 게임 (에디터 Scene Viewport 실제 입력)
+---------------------------------------------------------------------
+게임: tools/gameui_demo_testgame/ — HUD(JGGameUIDemoHUD, Game 레이어) + 일시정지 메뉴(JGGameUIDemoPauseMenu, Menu 레이어 · 입력 모드 Menu · 뒤로가기 처리).
+스크립트: gameui_e2e.ps1 — 캡처 → 주황 End Turn 을 색으로 찾아 이미지 사각형 역산 → 기준 해상도 좌표로 PostMessage(런처 창에만) 클릭 9번 + Esc 1번 → 캡처 3장.
+
+(a) 워크트리 엔진 게임 (09:39 생성 · 빌드 255초 오류 0)
+    첫 실행: Menu 클릭이 "Click (0.920, 0.081): game UI (not picked)" — 위 띠(패널)가 받고 Menu 버튼은 안 받음(Menu clicked 로그 없음). 원인: 스크립트가 이미지 세로 크기를
+      버튼 높이(35px, 실제 ~36.2px)로 역산해 3% 짧게 잡음 → 기준 y 48 이 87 로 빗나감(버튼 16~80). 엔진 문제 아님 → 세로 = 가로 × 720/1280(렌더 타깃 비율)로 고침.
+      이 실행에서도 확인된 것: 비활성 Draw 클릭 막힘 · 월드 피킹 · 오류 0 · 종료 0.
+    두 번째 실행 (09:4x), 로그 순서:
+      1  SceneViewport Click (0.889, 0.908): game UI (not picked) + GameUIDemo End Turn clicked (turn 2)
+      2  SceneViewport Click (0.920, 0.050): game UI (not picked) + GameUIDemo Menu clicked + GameUI push JGGameUIDemoPauseMenu on Menu (stack 1) + pause menu activated
+      3  SceneViewport Click (0.889, 0.908): game UI (not picked)         ← End Turn 막힘(턴 그대로)
+      4  SceneViewport Click (0.256, 0.500): game UI (not picked)         ← 빈 곳도 막힘
+      5  GameUI remove JGGameUIDemoPauseMenu from Menu (stack 0) + pause menu closed + GameUI back handled by JGGameUIDemoPauseMenu + SceneViewport Back (Esc): handled by game UI
+      6  SceneViewport Click (0.889, 0.908): game UI (not picked) + End Turn clicked (turn 3)
+      7  SceneViewport Click (0.256, 0.500): nothing (no controller in the world)   ← 월드 피킹
+      8  SceneViewport Click (0.730, 0.908): game UI (not picked)         ← 비활성 Draw, "Draw clicked while disabled" 없음
+      9  Menu clicked + push PauseMenu    10  Click (0.503, 0.592) + Resume clicked + remove PauseMenu + pause menu closed
+      종료: GameUIDemo HUD deactivated(게임 ShutdownModule 의 ClearAllWidgets) → Shutdown GameUIDemo Module, live blocks 0, ExitCode 0.
+      [error]/[critical] 0, 경고는 기존 2줄(Asset NOT Support Asset Path, DevScene 프레임 안 즉시 리드백).
+    캡처: before(턴 1, HUD) · menu(턴 2, 어두운 막 + 일시정지 패널, 뒤 HUD 보임) · after(턴 3, 메뉴 없음, Draw 비활성 모습).
+
+(b) 메인 트리 엔진 게임 — README 절차 그대로 새로 생성 (09:50 생성 · 빌드 285초 오류 0, 경고 MSB8029 · LNK4098 뿐)
+    gameui_e2e.ps1: (a) 두 번째 실행과 같은 좌표 · 같은 로그 순서(1~10 단계 전부, 턴 2 → 메뉴 → 막힘 2번 → Esc 닫힘 → 턴 3 → 월드 피킹 → Draw 막힘 → 메뉴 → Resume 닫힘).
+      텍스처는 C:/Develop/JGEngine/Content/RawResources/... (744x1039) 2장, 글꼴 malgun.ttf. [error]/[critical] 0, 경고 1줄(Asset — DevScene 경고는 아래 §4 이유로 없음),
+      live blocks 0, ExitCode 0. 캡처 저장: 2026-10-01_gameui_{before,menu,after}.png(이 폴더). (a) 와 바이트가 다른 것은 에디터 배치 차이(DevFeature 창 없음)뿐.
+(c) 디버거 아래 20초(스크래치패드 dbgcount, HUD 를 매 프레임 그림): D3D12 디버그 메시지(OutputDebugString) 실행 중 0건. 종료 때만 Live Producer 1 · Live Object 11 = 기준선과 같은 수.
+
+---------------------------------------------------------------------
+§4 V3 회귀
+---------------------------------------------------------------------
+                          워크트리(09:39~09:40)        메인 Bin(09:49~09:50)
+gameui.selftest           111/111                      111/111
+gmtest                    GameMaster 92 · World 64     GameMaster 92 · World 64
+console.selftest          64/64                        64/64           (error 줄은 음성 검사)
+net.test all              101 passed                   101 passed
+프로젝트 없는 런처         —                            30초 뒤 WM_CLOSE → 종료 0 · [error] 0 · live 0 (dbgcount: 이벤트가 계속 와도 시간이 되면 닫는다)
+DevScene 리드백 PNG        —                            검사 안 됨: JGEditor 세션이 09:07 에 JGEditor.cpp 의 DevFeature 시작 열기 · 메뉴를 지워 DevScene 이 뜨지 않는다
+                                                        (그 세션 변경, 이 작업과 무관). PNG 는 바뀌지 않았다. 리드백 회귀를 다시 쓰려면 DevFeature 를 여는 경로가 필요 — GUI · Graphics 검증 방법 갱신 필요
+참고: Memory Chunk [ID: 1] "remote pending 44 (total 55)" 는 기준선과 같은 값.
+
+---------------------------------------------------------------------
+§5 메인 트리 반영 (09:46~09:49)
+---------------------------------------------------------------------
+- 수정 11파일: 메인 트리 파일 해시(git hash-object) == 워크트리 스냅샷(인덱스 blob) → 그사이 아무도 안 바꿈 → 워크트리 파일을 그대로 복사(줄 끝 · BOM 동일 확인: CRLF 9 · LF 2(SceneViewport) · BOM 1(GUIDefines)).
+  복사 직전에 해시를 다시 비교했다. 같은 시각 JGEditor 세션이 바꾼 GUIModule.h/.cpp · JGEditor.cpp 는 이 목록에 없다(메시지로 확인).
+- 새 24파일 복사(Source/Runtime/GameFrameWorks/UI/), 복사 뒤 39파일 해시 비교 차이 0.
+- 삭제: Source/Runtime/GameGUI/(24), Bin/DevelopEngine/GameGUI.{dll,exp,lib,pdb}, Temp/CodeGen/GameGUI, Temp/ProjectFiles/GameGUI.vcxproj(.filters/.user), Temp/Obj/DevelopEngine/DevelopEngine/GameGUI.
+- 엔진 GenerateProjectFiles.bat(PreBuild): 종료 0, JGEngine.sln 에 GameGUI 없음, Temp/CodeGen/GameFrameWorks/GameWidget.generation.{h,cpp}, GFW vcxproj 에 UI 24파일.
+- 메인 트리 MSBuild JGEngine.sln DevelopEngine|x64 -m: 증분 48초, 오류 0, 경고 LNK4098 만. 링크: GUI · DevStatistics · DevConsole · Devkit · GameFrameWorks · JGConsole · JGEditor.
+  빌드 전 확인: cl/link 없음(떠 있던 MSBuild 는 노드 재사용 대기 · Rider 임시 프로젝트 평가).
+- 워크트리 제거: git worktree remove --force <scratchpad>\wt_gameui.
+
+---------------------------------------------------------------------
+§6 완료 기준 대조 (설계 §6)
+---------------------------------------------------------------------
+V1  옛 검사 + 스택 수명 · 레이어 순서 · Menu 차단 · 뒤로가기 · 비활성 · 스타일 상속 · Push 중 닫기 ................ 충족 (111/111, 워크트리 · 메인)
+V2  End Turn → 턴 +1, Menu → 메뉴(Menu 레이어), 메뉴 동안 HUD 버튼 · 월드 막힘, Esc → 닫힘, 다시 턴 +1, 월드 피킹 ............ 충족 (워크트리 · 메인 엔진 게임 둘 다)
+V3  gmtest · console.selftest · net.test all, 런처 종료 0 · 오류 0 · live 0 ............................................ 충족 (리드백 PNG 는 DevScene 이 기본으로 안 떠서 검사 안 됨 — §4)

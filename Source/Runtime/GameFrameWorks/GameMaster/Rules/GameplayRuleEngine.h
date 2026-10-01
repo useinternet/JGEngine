@@ -9,11 +9,12 @@
 #include "GameMaster/Rules/GameplayEffectQueue.h"
 #include "GameMaster/Rules/GameplayTriggerDispatcher.h"
 #include "GameMaster/Rules/GameplayValuePipeline.h"
-#include "GameMaster/Rules/GameplayPhaseMachine.h"
+#include "GameMaster/Rules/GameplayFlow.h"
+#include "GameMaster/Rules/GameplayRoundTurnFlow.h"
 #include "GameMaster/Boards/GameplayBoard.h"
 
 // 검증 · 실행 오케스트레이션. 명령 → 핸들러 → 효과 큐 루프 → 트리거 → 선택 대기 중단 · 재개.
-// 루프 한 바퀴: 방금 끝난 단계(핸들러 · 효과 · 페이즈 전이)가 낸 이벤트의 트리거 반응 → 효과 하나 해결. 큐가 비면 예약된 페이즈 전이 단계.
+// 루프 한 바퀴: 방금 끝난 단계(핸들러 · 효과 · 흐름 단계)가 낸 이벤트의 트리거 반응 → 효과 하나 해결. 큐가 비면 흐름(IGameplayFlow)의 예약된 단계.
 // 상태를 소유하지 않는다. 어떤 HGameplayState 에도 적용할 수 있어 AI 가 복사본 위에서 같은 규칙을 돌린다.
 class GAMEFRAMEWORKS_API PGameplayRuleEngine : public IMemoryObject
 {
@@ -23,13 +24,14 @@ public:
 	PGameplayRegistry<JGGameplayTrigger>        Triggers;
 	PGameplayRegistry<JGGameplayModifier>       Modifiers;
 	PGameplayValuePipeline                        ValuePipeline;
-	PSharedPtr<IGameplayOrderPolicy>              OrderPolicy;
+	PSharedPtr<IGameplayOrderPolicy>              OrderPolicy;   // 기본 흐름의 행동 순서. 게임 흐름도 쓸 수 있다
 	PSharedPtr<IGameplayBoard>                    Board;
+	PSharedPtr<IGameplayFlow>                     Flow;          // 게임 흐름. null 이면 기본 흐름(PGameplayRoundTurnFlow)
 
 private:
 	PGameplayEffectQueue       _queue;
 	PGameplayTriggerDispatcher _dispatcher;
-	PGameplayPhaseMachine      _phaseMachine;
+	PGameplayRoundTurnFlow     _defaultFlow;
 
 	// 실행 중 임시 상태
 	HList<HGameplayEvent>* _outEvents        = nullptr;
@@ -43,8 +45,11 @@ public:
 	PGameplayRuleEngine() = default;
 	virtual ~PGameplayRuleEngine() = default;
 
-	// 페이즈 기계 시작. 첫 라운드 · 첫 턴까지 진행하고 그 이벤트를 돌려준다.
+	// 흐름 시작. GameStarted 를 내고 흐름이 첫 대기 지점(명령 대기 · 선택 대기 · 종료)에 닿을 때까지 진행한 뒤 그 이벤트를 돌려준다.
 	EGameplaySubmitResult Start(HGameplayState& state, HList<HGameplayEvent>& outEvents);
+
+	// 지금 쓰는 흐름 (Flow 가 없으면 기본 흐름).
+	const IGameplayFlow& GetActiveFlow() const;
 
 	bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const;
 	EGameplaySubmitResult Execute(HGameplayState& state, const HGameplayCommand& command, HList<HGameplayEvent>& outEvents, PString* outReason);
@@ -61,9 +66,12 @@ public:
 	HGameplayEntityId ContextSpawnEntity(HGameplayContext& ctx, const PName& zoneName);
 	bool  ContextDestroyEntity(HGameplayContext& ctx, const HGameplayEntityId& id);
 	void  ContextFinishGame(HGameplayContext& ctx, int32 resultCode);
+	void  ContextSetStep(HGameplayContext& ctx, const PName& step);
+	void  ContextSetActors(HGameplayContext& ctx, const HList<HGameplayEntityId>& actors);
 	void  TriggerEnqueue(const HGameplayTriggerContext& ctx, const HGameplayEffectRequest& request, bool bFront);
 
 private:
+	IGameplayFlow& activeFlow();
 	EGameplaySubmitResult runQueue(HGameplayState& state, uint32 causeSequence);
 	void resolveOne(HGameplayState& state, const HGameplayEffectRequest& request, uint32 causeSequence);
 	bool resolveBuiltin(HGameplayContext& ctx, const HGameplayEffectRequest& request);

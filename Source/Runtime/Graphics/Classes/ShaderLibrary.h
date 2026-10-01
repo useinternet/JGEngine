@@ -20,6 +20,8 @@ public:
 
 public:
 	const PString& GetGraphicsShaderTemplateCode() const;
+	// 셰이더 폴더에 있는 .hlsl 파일의 내용. 이름은 확장자 없는 파일 이름(예: "draw2d"). 없으면 빈 문자열.
+	const PString& GetShaderCode(const PString& inName) const;
 
 private:
 	void loadTemplates() const;

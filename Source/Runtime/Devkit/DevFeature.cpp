@@ -49,7 +49,7 @@ void JGDevFeature::OnLayout(const HWidgetLayout& InLayout)
 		DevScene->SetupLayout(Layout);
 	}
 
-	if (DevScene.IsValid())
+	if (DevSettings.IsValid())
 	{
 		HWidgetComponentLayout Layout;
 		Layout.ContentSize = HVector2(250, WidgetContentSize.y);

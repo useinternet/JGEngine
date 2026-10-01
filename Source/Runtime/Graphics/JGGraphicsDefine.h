@@ -452,3 +452,49 @@ struct HScreenDrawArguments
 {
 	PSharedPtr<IRawMaterial> Material;
 };
+
+// 2D 그리기(IJGGraphicsCommand::Draw(const H2DDrawArguments&))의 정점. GPU에 그대로 올라가는 POD.
+// 좌표는 렌더 타깃 픽셀(왼쪽 위 원점, 아래로 +y).
+struct H2DVertex
+{
+	HVector2     Position;
+	HVector2     Texcoord;
+	HLinearColor Color;
+
+	static HInputLayout GetInputLayout()
+	{
+		HInputLayout layout;
+		layout.Add(EShaderDataType::Float2, "POSITION", 0);
+		layout.Add(EShaderDataType::Float2, "TEXCOORD", 0);
+		layout.Add(EShaderDataType::Float4, "COLOR", 0);
+		return layout;
+	}
+};
+static_assert(sizeof(H2DVertex) == 32, "H2DVertex must match the input layout (float2 + float2 + float4 = 32 bytes)");
+
+// 2D 그리기 한 배치. 인덱스 [IndexOffset, IndexOffset + IndexCount)를 Texture(없으면 기본 흰 텍스처)로 그리고,
+// 클립 사각형(렌더 타깃 픽셀) 밖은 시저로 자른다. 클립이 비어 있으면 그리지 않는다.
+struct H2DDrawCommand
+{
+	PSharedPtr<IRawTexture> Texture;
+	int32  ClipLeft    = 0;
+	int32  ClipTop     = 0;
+	int32  ClipRight   = 0;
+	int32  ClipBottom  = 0;
+	uint32 IndexOffset = 0;
+	uint32 IndexCount  = 0;
+};
+
+// 화면 공간 2D 삼각형 배치(게임 UI 등). 정점 · 인덱스 · 명령은 호출 동안만 읽는다.
+// 알파 블렌드, 깊이 · 컬링 없음. 셰이더는 엔진 내장(Source/Shader/draw2d.hlsl).
+struct H2DDrawArguments
+{
+	const H2DVertex*      Vertices     = nullptr;
+	uint64                VertexCount  = 0;
+	const uint32*         Indices      = nullptr;
+	uint64                IndexCount   = 0;
+	const H2DDrawCommand* Commands     = nullptr;
+	uint64                CommandCount = 0;
+	// 렌더 타깃 크기(픽셀). 정점 좌표를 NDC로 바꿀 때 쓴다.
+	HVector2              TargetSize;
+};

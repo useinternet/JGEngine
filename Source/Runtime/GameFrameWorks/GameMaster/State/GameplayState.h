@@ -168,6 +168,12 @@ struct GAMEFRAMEWORKS_API HGameplayState : public IJsonable
 	bool SetBoardPosition(const HGameplayEntityId& id, const HGameplayCoord& coord);
 	bool MoveToZone(const HGameplayEntityId& id, const PName& zoneName);
 
+	// 지금 명령을 낼 수 있는 행동자 (입력 행동자). 선택 대기면 선택자 한 명, 아니면 흐름이 정한 Turn.Actors. 시작 전 · 끝난 뒤는 없다.
+	// 컨트롤러 입력 · 네트워크 세션 · AI 러너가 이것을 본다.
+	void              CollectInputActors(HList<HGameplayEntityId>& outActors) const;
+	bool              IsInputActor(const HGameplayEntityId& id) const;
+	HGameplayEntityId FirstInputActor() const;   // 한 명씩 행동하는 흐름에서의 편의. 없으면 None
+
 	// 영역
 	HGameplayZone&       Zone(const PName& name);
 	const HGameplayZone* FindZone(const PName& name) const;

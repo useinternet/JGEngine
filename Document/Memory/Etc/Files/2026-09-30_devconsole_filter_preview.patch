@@ -1,0 +1,902 @@
+diff --git a/Source/Editor/DevConsole/DevConsole.cpp b/Source/Editor/DevConsole/DevConsole.cpp
+index 20f57e7..1f99e08 100644
+--- a/Source/Editor/DevConsole/DevConsole.cpp
++++ b/Source/Editor/DevConsole/DevConsole.cpp
+@@ -1,19 +1,152 @@
+ #include "PCH/PCH.h"
+ #include "DevConsole.h"
+-#include "GUI.h"
+-#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
++#include <algorithm>
+ 
+ namespace
+ {
+-	constexpr uint64 MaxHistoryLines = 64;
++	constexpr uint64 MaxHistoryLines  = 64;
++	constexpr int32  MaxCandidateRows = 10;
+ 
+ 	const HLinearColor LogColorWarning = HLinearColor(1.0f, 0.82f, 0.35f, 1.0f);
+ 	const HLinearColor LogColorError   = HLinearColor(1.0f, 0.42f, 0.42f, 1.0f);
++	const HLinearColor PreviewColorDim = HLinearColor(0.62f, 0.62f, 0.62f, 1.0f);
++
++	char toLowerAscii(char InChar)
++	{
++		if (InChar >= 'A' && InChar <= 'Z')
++		{
++			return static_cast<char>(InChar - 'A' + 'a');
++		}
++
++		return InChar;
++	}
++
++	bool isBlank(char InChar)
++	{
++		return InChar == ' ' || InChar == '\t';
++	}
++
++	// InLowerWord 는 이미 소문자다. ASCII 만 대소문자를 무시한다(한글 등 나머지 바이트는 그대로 비교).
++	bool containsIgnoreCase(const HRawString& InText, const HRawString& InLowerWord)
++	{
++		const HRawString::const_iterator Found = std::search(InText.begin(), InText.end(), InLowerWord.begin(), InLowerWord.end(),
++			[](char InTextChar, char InWordChar)
++			{
++				return toLowerAscii(InTextChar) == InWordChar;
++			});
++		return Found != InText.end();
++	}
++
++	// 글자 필터 "a, b, -c" → 보일 낱말 {a, b}, 숨길 낱말 {c}. 낱말의 앞뒤 공백을 떼고 소문자로 바꾸며 빈 낱말은 버린다.
++	struct HLogFilter
++	{
++		HList<HRawString> Includes;
++		HList<HRawString> Excludes;
++	};
++
++	HLogFilter parseLogFilter(const PString& InFilterText)
++	{
++		HLogFilter Filter;
++		const HRawString& Text = InFilterText.GetRawString();
++
++		uint64 Begin = 0;
++		while (Begin <= Text.size())
++		{
++			uint64 End = Text.find(',', Begin);
++			if (End == HRawString::npos)
++			{
++				End = Text.size();
++			}
++
++			uint64 WordBegin = Begin;
++			uint64 WordEnd   = End;
++			while (WordBegin < WordEnd && isBlank(Text[WordBegin]))
++			{
++				++WordBegin;
++			}
++			while (WordEnd > WordBegin && isBlank(Text[WordEnd - 1]))
++			{
++				--WordEnd;
++			}
++
++			bool bExclude = false;
++			if (WordBegin < WordEnd && Text[WordBegin] == '-')
++			{
++				bExclude = true;
++				++WordBegin;
++			}
++
++			if (WordBegin < WordEnd)
++			{
++				HRawString Word = Text.substr(WordBegin, WordEnd - WordBegin);
++				std::transform(Word.begin(), Word.end(), Word.begin(), &toLowerAscii);
++				if (bExclude)
++				{
++					Filter.Excludes.push_back(Word);
++				}
++				else
++				{
++					Filter.Includes.push_back(Word);
++				}
++			}
++
++			Begin = End + 1;
++		}
++
++		return Filter;
++	}
++
++	bool passLogFilter(const HRawString& InLine, const HLogFilter& InFilter)
++	{
++		for (const HRawString& Word : InFilter.Excludes)
++		{
++			if (containsIgnoreCase(InLine, Word))
++			{
++				return false;
++			}
++		}
++
++		if (InFilter.Includes.empty())
++		{
++			return true;
++		}
++
++		for (const HRawString& Word : InFilter.Includes)
++		{
++			if (containsIgnoreCase(InLine, Word))
++			{
++				return true;
++			}
++		}
++
++		return false;
++	}
++
++	// 입력줄의 첫 낱말(명령 이름)과 그 뒤에 공백이 있는지(인자를 치는 중인지).
++	void splitCommandName(const PString& InText, PString& OutName, bool& bOutTypingArgs)
++	{
++		const HRawString& Text = InText.GetRawString();
++
++		uint64 NameBegin = 0;
++		while (NameBegin < Text.size() && isBlank(Text[NameBegin]))
++		{
++			++NameBegin;
++		}
++
++		uint64 NameEnd = NameBegin;
++		while (NameEnd < Text.size() && isBlank(Text[NameEnd]) == false)
++		{
++			++NameEnd;
++		}
++
++		OutName        = Text.substr(NameBegin, NameEnd - NameBegin).c_str();
++		bOutTypingArgs = NameEnd < Text.size();
++	}
+ }
+ 
+ void JGDevConsole::OnInitialize()
+ {
+-
++	InputKeyHandler.BindRaw(this, &JGDevConsole::onInputKey);
+ }
+ 
+ void JGDevConsole::OnLayout(const HWidgetLayout& InLayout)
+@@ -24,11 +157,112 @@ void JGDevConsole::OnLayout(const HWidgetLayout& InLayout)
+ void JGDevConsole::OnGenerateGUI()
+ {
+ 	refreshLogLines();
++	generateFilterBar();
++	generateLogView();
++
++	if (HGUI::InputTextWithHistory("DevConsoleInput", CommandText, History, HistoryPos, InputKeyHandler))
++	{
++		submitCommand();
++	}
++
++	// 입력줄 바로 뒤에 부른다(직전 항목 = 입력줄 기준으로 위치와 포커스를 본다).
++	generateCommandPreview();
++}
++
++PString  JGDevConsole::GetTitleName() const
++{
++	return "DevConsole";
++}
++
++const  HGuid& JGDevConsole::GetGUID() const
++{
++	return GetStaticGUID();
++}
++
++void JGDevConsole::refreshLogLines()
++{
++	const uint64 Serial = GLogGlobalSystem::GetInstance().GetLogSerial();
++	if (Serial == LogSerial)
++	{
++		return;
++	}
++
++	LogSerial = Serial;
++	GLogGlobalSystem::GetInstance().GetRecentLogs(LogLines);
++
++	InfoCount    = 0;
++	WarningCount = 0;
++	ErrorCount   = 0;
++	for (const HLogLine& Line : LogLines)
++	{
++		if (Line.Level == ELogLevel::Error || Line.Level == ELogLevel::Critical)
++		{
++			++ErrorCount;
++		}
++		else if (Line.Level == ELogLevel::Warning)
++		{
++			++WarningCount;
++		}
++		else
++		{
++			++InfoCount;
++		}
++	}
++
++	rebuildVisibleLines();
++}
++
++void JGDevConsole::rebuildVisibleLines()
++{
++	const HLogFilter Filter = parseLogFilter(FilterText);
++
++	VisibleLines.clear();
++	for (uint32 LineIndex = 0; LineIndex < static_cast<uint32>(LogLines.size()); ++LineIndex)
++	{
++		const HLogLine& Line = LogLines[LineIndex];
++
++		bool bLevelShown = bShowInfo;
++		if (Line.Level == ELogLevel::Error || Line.Level == ELogLevel::Critical)
++		{
++			bLevelShown = bShowError;
++		}
++		else if (Line.Level == ELogLevel::Warning)
++		{
++			bLevelShown = bShowWarning;
++		}
++
++		if (bLevelShown && passLogFilter(Line.Text.GetRawString(), Filter))
++		{
++			VisibleLines.push_back(LineIndex);
++		}
++	}
++}
++
++void JGDevConsole::generateFilterBar()
++{
++	// 라벨의 ### 뒤가 ID 다. 줄 수가 바뀌어도 같은 체크박스로 남는다. 네 항목을 모두 매 프레임 그려야 하므로 |= 로 모은다.
++	bool bChanged = false;
++	bChanged |= HGUI::Checkbox(PString::Format("Info (%u)###LogInfo", InfoCount), bShowInfo);
++	HGUI::SameLine();
++	bChanged |= HGUI::Checkbox(PString::Format("Warning (%u)###LogWarning", WarningCount), bShowWarning);
++	HGUI::SameLine();
++	bChanged |= HGUI::Checkbox(PString::Format("Error (%u)###LogError", ErrorCount), bShowError);
++	HGUI::SameLine();
++	bChanged |= HGUI::InputTextWithHint("DevConsoleFilter", "Filter: word, -exclude (comma separated)", FilterText, -1.0f);
++
++	if (bChanged)
++	{
++		rebuildVisibleLines();
++	}
++}
+ 
++void JGDevConsole::generateLogView()
++{
+ 	// 아래에 입력줄 한 줄 자리를 남기고 나머지를 로그 뷰로 쓴다.
+ 	HGUI::BeginChild("##DevConsoleLog", HVector2(0.0f, -HGUI::GetFrameHeightWithSpacing()));
+-	for (const HLogLine& Line : LogLines)
++	for (const uint32 LineIndex : VisibleLines)
+ 	{
++		const HLogLine& Line = LogLines[LineIndex];
+ 		if (Line.Level == ELogLevel::Error || Line.Level == ELogLevel::Critical)
+ 		{
+ 			HGUI::Text(Line.Text, LogColorError);
+@@ -43,33 +277,151 @@ void JGDevConsole::OnGenerateGUI()
+ 		}
+ 	}
+ 	HGUI::EndChild(true);
++}
+ 
+-	if (HGUI::InputTextWithHistory("DevConsoleInput", CommandText, History, HistoryPos))
++void JGDevConsole::generateCommandPreview()
++{
++	// 입력줄에 포커스가 없으면(다른 곳을 눌렀거나 Enter 를 친 프레임) 보이지 않는다.
++	if (HGUI::IsItemActive() == false)
+ 	{
+-		submitCommand();
++		return;
+ 	}
+-}
+ 
+-PString  JGDevConsole::GetTitleName() const
+-{
+-	return "DevConsole";
++	syncCommandPreview(CommandText);
++	if (PreviewName.Empty())
++	{
++		return;
++	}
++
++	HGUI::BeginTooltipAboveItem("##DevConsolePreview");
++	if (bPreviewUsage)
++	{
++		if (Candidates.empty())
++		{
++			HGUI::Text(PString::Format("Unknown command '%s'", PreviewName), LogColorError);
++		}
++		else
++		{
++			HGUI::Text(PString::Format("Usage: %s", Candidates[0].Usage));
++			HGUI::Text(PString::Format("  %s", Candidates[0].Description), PreviewColorDim);
++		}
++	}
++	else if (Candidates.empty())
++	{
++		HGUI::Text(PString::Format("No command contains '%s'", PreviewName), PreviewColorDim);
++	}
++	else
++	{
++		const int32 RowCount = HMath::Min(static_cast<int32>(Candidates.size()), MaxCandidateRows);
++		if (static_cast<int32>(Candidates.size()) > RowCount)
++		{
++			HGUI::Text(PString::Format("... %d more", static_cast<int32>(Candidates.size()) - RowCount), PreviewColorDim);
++		}
++
++		// 가장 잘 맞는 후보(0번)를 맨 아래, 입력줄 바로 위에 그린다. ↑ 를 누를수록 위로 올라간다.
++		for (int32 Row = RowCount - 1; Row >= 0; --Row)
++		{
++			const HConsoleCommandInfo& Candidate = Candidates[Row];
++			HGUI::Selectable(PString::Format("%-28s %s", Candidate.Name, Candidate.Description), Row == CandidatePos);
++		}
++	}
++	HGUI::EndTooltip();
+ }
+ 
+-const  HGuid& JGDevConsole::GetGUID() const
++void JGDevConsole::syncCommandPreview(const PString& InText)
+ {
+-	return GetStaticGUID();
++	// ↑ 로 불러온 히스토리 줄을 고치면 히스토리 보기를 끝낸다. 다음 ↑ 는 가장 최근 줄부터다.
++	if (HistoryPos >= 0)
++	{
++		const bool bRecalledLine = HistoryPos < static_cast<int32>(History.size()) && History[HistoryPos].GetRawString() == InText.GetRawString();
++		if (bRecalledLine == false)
++		{
++			HistoryPos = -1;
++		}
++	}
++
++	// ↑/↓ 로 입력줄을 후보 이름으로 바꾼 상태면 목록을 그대로 둔다.
++	if (CandidatePos >= 0 && CandidatePos < static_cast<int32>(Candidates.size())
++		&& Candidates[CandidatePos].Name.GetRawString() == InText.GetRawString())
++	{
++		return;
++	}
++
++	const bool bHistory = HistoryPos >= 0;
++	if (CandidatePos < 0 && bHistory == bPreviewHistory && InText.GetRawString() == PreviewText.GetRawString())
++	{
++		return;
++	}
++
++	PreviewText     = InText;
++	bPreviewHistory = bHistory;
++	CandidatePos    = -1;
++	Candidates.clear();
++
++	bool bTypingArgs = false;
++	splitCommandName(InText, PreviewName, bTypingArgs);
++	if (PreviewName.Empty())
++	{
++		return;
++	}
++
++	GConsoleCommandGlobalSystem::GetInstance().FindCommands(PreviewName, Candidates);
++
++	// 인자를 치는 중이거나 히스토리 줄이면 이름이 같은 명령 하나만 남긴다(사용법 모드).
++	bPreviewUsage = bTypingArgs || bHistory;
++	if (bPreviewUsage)
++	{
++		const PString Name = HConsoleCommandArgs::NormalizeName(PreviewName);
++		const HList<HConsoleCommandInfo>::iterator Exact = std::find_if(Candidates.begin(), Candidates.end(), [&Name](const HConsoleCommandInfo& InInfo)
++			{
++				return InInfo.Name.GetRawString() == Name.GetRawString();
++			});
++
++		if (Exact == Candidates.end())
++		{
++			Candidates.clear();
++		}
++		else
++		{
++			const HConsoleCommandInfo Found = *Exact;
++			Candidates.clear();
++			Candidates.push_back(Found);
++		}
++	}
+ }
+ 
+-void JGDevConsole::refreshLogLines()
++bool JGDevConsole::onInputKey(EGUIInputTextKey InKey, PString& InOutText)
+ {
+-	const uint64 Serial = GLogGlobalSystem::GetInstance().GetLogSerial();
+-	if (Serial == LogSerial)
++	syncCommandPreview(InOutText);
++
++	// 후보 목록이 떠 있을 때만 가로챈다. 아니면 기본 동작(↑/↓ = 히스토리, Tab = 아무것도 안 함).
++	if (PreviewName.Empty() || bPreviewUsage || Candidates.empty())
+ 	{
+-		return;
++		return false;
+ 	}
+ 
+-	LogSerial = Serial;
+-	GLogGlobalSystem::GetInstance().GetRecentLogs(LogLines);
++	if (InKey == EGUIInputTextKey::Tab)
++	{
++		// 인자를 칠 수 있게 공백을 붙인다. 다음 프레임에 사용법 모드로 바뀐다.
++		PString Completed = Candidates[HMath::Max(CandidatePos, 0)].Name;
++		Completed.Append(" ");
++		InOutText = Completed;
++		return true;
++	}
++
++	// 목록은 입력줄 위로 쌓인다. ↑ = 입력줄에서 멀어지는 쪽(덜 맞는 후보), ↓ = 가까워지는 쪽. -1 은 친 글자 그대로.
++	const int32 RowCount = HMath::Min(static_cast<int32>(Candidates.size()), MaxCandidateRows);
++	if (InKey == EGUIInputTextKey::Up)
++	{
++		CandidatePos = HMath::Min(CandidatePos + 1, RowCount - 1);
++	}
++	else
++	{
++		CandidatePos = HMath::Max(CandidatePos - 1, -1);
++	}
++
++	InOutText = (CandidatePos >= 0) ? Candidates[CandidatePos].Name : PreviewText;
++	return true;
+ }
+ 
+ void JGDevConsole::submitCommand()
+diff --git a/Source/Editor/DevConsole/DevConsole.h b/Source/Editor/DevConsole/DevConsole.h
+index 339ee12..108a599 100644
+--- a/Source/Editor/DevConsole/DevConsole.h
++++ b/Source/Editor/DevConsole/DevConsole.h
+@@ -1,6 +1,8 @@
+ #pragma once
+ #include "Widget.h"
+ #include "WidgetComponent.h"
++#include "GUI.h"
++#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
+ #include "DevConsoleDefines.h"
+ 
+ #include "DevConsole.generation.h"
+@@ -8,6 +10,15 @@
+ // 콘솔 창. 위쪽은 최근 로그(Info 이상), 아래쪽은 명령 입력줄이다.
+ // 명령은 Core 의 GConsoleCommandGlobalSystem 에 등록돼 있고, 이 창은 입력한 줄을 Submit 으로 넘긴다(다음 프레임 끝, 프레임 밖에서 실행).
+ // 명령을 만드는 방법은 ConsoleCommand/ConsoleCommandGlobalSystem.h 상단 주석을 본다.
++//
++// 로그 필터(맨 위 줄): 레벨 체크박스 Info / Warning / Error(Critical 포함, 괄호 안은 버퍼에 있는 줄 수)와 글자 필터.
++//   글자 필터는 쉼표로 나눈 낱말이고 대소문자를 무시한다. "-낱말" 은 그 낱말이 든 줄을 숨기고,
++//   나머지 낱말이 있으면 그중 하나가 든 줄만 보인다. 예: "gmtest"  "-[Core],-[Memory]"  "[ConsoleCommand],[GameFrameWorks]"
++// 명령 미리보기(입력줄에 포커스가 있을 때 입력줄 위):
++//   이름을 치는 중이면 이름에 친 글자가 든 명령 목록(앞부분 일치 먼저, 가장 잘 맞는 것이 입력줄 바로 위).
++//   ↑/↓ = 후보를 골라 입력줄에 넣는다(↓ 로 끝까지 내리면 친 글자로 돌아간다). Tab = 고른 후보(없으면 가장 잘 맞는 후보)로 완성하고 공백을 붙인다.
++//   이름 뒤에 공백을 쳤거나(인자 입력 중) ↑ 로 불러온 히스토리 줄이면 그 명령의 Usage 와 설명, 없는 이름이면 빨간 줄을 보인다.
++//   후보 목록이 없을 때 ↑/↓ 는 히스토리를 오간다.
+ JGCLASS()
+ class JGDevConsole : public JGWidget
+ {
+@@ -20,10 +31,30 @@ private:
+ 	HList<HLogLine> LogLines;
+ 	uint64          LogSerial = 0;
+ 
++	// 로그 필터. VisibleLines 는 필터를 통과한 LogLines 의 인덱스이고, 로그나 필터가 바뀐 프레임에만 다시 만든다.
++	PString       FilterText;
++	bool          bShowInfo    = true;
++	bool          bShowWarning = true;
++	bool          bShowError   = true;
++	uint32        InfoCount    = 0;
++	uint32        WarningCount = 0;
++	uint32        ErrorCount   = 0;
++	HList<uint32> VisibleLines;
++
+ 	// 입력 히스토리. 최근 64줄, 직전 줄과 같으면 다시 넣지 않는다. 창을 닫았다 열어도 유지된다(위젯 객체가 남는다).
+ 	HList<PString> History;
+ 	int32          HistoryPos = -1;
+ 
++	// 명령 미리보기. PreviewText 는 미리보기를 만든 입력줄 글자다(↑/↓ 로 후보를 고르는 동안에는 사용자가 친 글자 그대로 남는다).
++	// 목록 모드면 Candidates 가 후보(가장 잘 맞는 것 먼저)이고, 사용법 모드(bPreviewUsage)면 이름이 같은 명령 하나 또는 빈 목록이다.
++	PString                    PreviewText;
++	PString                    PreviewName;
++	bool                       bPreviewUsage   = false;
++	bool                       bPreviewHistory = false;
++	HList<HConsoleCommandInfo> Candidates;
++	int32                      CandidatePos = -1;   // -1 = 고르지 않음(입력줄 = 친 글자), 0 = 가장 잘 맞는 후보
++	HGUIInputTextKeyDelegate   InputKeyHandler;     // OnInitialize 에서 onInputKey 에 묶는다
++
+ public:
+ 	virtual void OnInitialize() override;
+ 	virtual void OnLayout(const HWidgetLayout& InLayout) override;
+@@ -34,5 +65,11 @@ public:
+ 
+ private:
+ 	void refreshLogLines();
++	void rebuildVisibleLines();
++	void generateFilterBar();
++	void generateLogView();
++	void generateCommandPreview();
++	void syncCommandPreview(const PString& InText);
++	bool onInputKey(EGUIInputTextKey InKey, PString& InOutText);
+ 	void submitCommand();
+ };
+diff --git a/Source/Programs/JGConsole/ConsoleCommandSelfTest.cpp b/Source/Programs/JGConsole/ConsoleCommandSelfTest.cpp
+index beceb50..43b2080 100644
+--- a/Source/Programs/JGConsole/ConsoleCommandSelfTest.cpp
++++ b/Source/Programs/JGConsole/ConsoleCommandSelfTest.cpp
+@@ -1,6 +1,7 @@
+ #include "PCH/PCH.h"
+ 
+ #include <iostream>
++#include <algorithm>
+ #include "Core.h"
+ #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
+ 
+@@ -197,6 +198,72 @@ namespace
+ 		check(commands.Execute(PString("help test.selftest.nosuch")) == false, "auto: help <unknown> fails");
+ 	}
+ 
++	bool commandNamesEqual(const HList<HConsoleCommandInfo>& InCommands, std::initializer_list<const char*> InExpected)
++	{
++		if (InCommands.size() != InExpected.size())
++		{
++			return false;
++		}
++
++		uint64 index = 0;
++		for (const char* expected : InExpected)
++		{
++			if (InCommands[index].Name.GetRawString() != expected)
++			{
++				return false;
++			}
++			++index;
++		}
++
++		return true;
++	}
++
++	bool hasCommandName(const HList<HConsoleCommandInfo>& InCommands, const char* InName)
++	{
++		return std::any_of(InCommands.begin(), InCommands.end(), [InName](const HConsoleCommandInfo& InInfo)
++			{
++				return InInfo.Name.GetRawString() == InName;
++			});
++	}
++
++	// DevConsole 입력 미리보기가 쓰는 이름 검색
++	void testFindCommands()
++	{
++		GConsoleCommandGlobalSystem& commands = GConsoleCommandGlobalSystem::GetInstance();
++		registerTestCommand("test.find.beta", &executeEcho);
++		registerTestCommand("Test.Find.Alpha", &executeEcho);
++		registerTestCommand("xtest.find", &executeEcho);
++
++		HList<HConsoleCommandInfo> found;
++		commands.FindCommands(PString("test.find"), found);
++		check(commandNamesEqual(found, { "test.find.alpha", "test.find.beta", "xtest.find" }), "find: names starting with the text first, then names containing it");
++
++		commands.FindCommands(PString("TEST.FIND.A"), found);
++		check(commandNamesEqual(found, { "test.find.alpha" }), "find: case-insensitive");
++		check(found.size() == 1 && found[0].Usage.GetRawString() == "Test.Find.Alpha"
++			&& found[0].Description.GetRawString() == "console.selftest temporary command", "find: usage and description are copied");
++
++		commands.FindCommands(PString("find"), found);
++		check(commandNamesEqual(found, { "test.find.alpha", "test.find.beta", "xtest.find" }), "find: names containing the text are sorted by name");
++
++		commands.FindCommands(PString("test.find.nosuch"), found);
++		check(found.empty(), "find: no match");
++
++		commands.FindCommands(PString(""), found);
++		const bool bSorted = std::is_sorted(found.begin(), found.end(), [](const HConsoleCommandInfo& InLeft, const HConsoleCommandInfo& InRight)
++			{
++				return InLeft.Name.GetRawString() < InRight.Name.GetRawString();
++			});
++		check(bSorted && hasCommandName(found, "help") && hasCommandName(found, "console.selftest") && hasCommandName(found, "test.find.alpha"),
++			"find: empty text lists every command by name");
++
++		commands.Unregister("test.find.alpha");
++		commands.Unregister("test.find.beta");
++		commands.Unregister("xtest.find");
++		commands.FindCommands(PString("test.find"), found);
++		check(found.empty(), "find: unregistered commands are gone");
++	}
++
+ 	bool hasRecentLog(const HList<HLogLine>& InLines, const char* InText, ELogLevel InLevel)
+ 	{
+ 		for (const HLogLine& line : InLines)
+@@ -243,6 +310,7 @@ namespace
+ 		testArgs();
+ 		testRegistry();
+ 		testAutoCommands();
++		testFindCommands();
+ 		testRecentLogs();
+ 
+ 		std::cout << "console.selftest: " << (GFailureCount == 0 ? "OK" : "FAILED")
+diff --git a/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.cpp b/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.cpp
+index 5923ed0..436ee3b 100644
+--- a/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.cpp
++++ b/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.cpp
+@@ -124,6 +124,39 @@ bool GConsoleCommandGlobalSystem::IsRegistered(const PString& InName) const
+ 	return _commands.contains(HConsoleCommandArgs::NormalizeName(InName));
+ }
+ 
++void GConsoleCommandGlobalSystem::FindCommands(const PString& InText, HList<HConsoleCommandInfo>& OutCommands) const
++{
++	OutCommands.clear();
++
++	// 등록된 이름은 소문자다(Register). 찾는 글자도 같은 방식으로 바꾼다.
++	const HRawString text = HConsoleCommandArgs::NormalizeName(InText).GetRawString();
++	for (const HPair<const PString, HConsoleCommandDesc>& pair : _commands)
++	{
++		if (pair.first.GetRawString().find(text) == HRawString::npos)
++		{
++			continue;
++		}
++
++		HConsoleCommandInfo info;
++		info.Name        = pair.second.Name;
++		info.Usage       = pair.second.Usage;
++		info.Description = pair.second.Description;
++		OutCommands.push_back(info);
++	}
++
++	std::sort(OutCommands.begin(), OutCommands.end(), [&text](const HConsoleCommandInfo& InLeft, const HConsoleCommandInfo& InRight)
++		{
++			const bool bLeftPrefix  = InLeft.Name.GetRawString().starts_with(text);
++			const bool bRightPrefix = InRight.Name.GetRawString().starts_with(text);
++			if (bLeftPrefix != bRightPrefix)
++			{
++				return bLeftPrefix;
++			}
++
++			return InLeft.Name.GetRawString() < InRight.Name.GetRawString();
++		});
++}
++
+ bool GConsoleCommandGlobalSystem::Execute(const PString& InLine)
+ {
+ 	HList<PString> tokens;
+diff --git a/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h b/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h
+index 93b4111..cba680a 100644
+--- a/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h
++++ b/Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h
+@@ -41,6 +41,14 @@ struct HConsoleCommandDesc
+ 	HConsoleCommandDelegate Handler;
+ };
+ 
++// FindCommands 결과(목록 표시용). 핸들러는 담지 않는다: 사본이 명령을 등록한 모듈 DLL 의 코드를 가리킨 채 모듈보다 오래 남지 않게.
++struct HConsoleCommandInfo
++{
++	PString Name;
++	PString Usage;
++	PString Description;
++};
++
+ // 명령 레지스트리. 메인 스레드 전용이다.
+ // GCoreSystem::Create 에서 GStringTable 다음, GModuleGlobalSystem 앞에 등록한다.
+ // 그래서 Update 는 스케줄러의 모든 버킷(프레임) 뒤에, Destroy 는 모듈이 모두 해제된 뒤에 온다.
+@@ -63,6 +71,9 @@ public:
+ 	bool Register(const HConsoleCommandDesc& InDesc);
+ 	bool Unregister(const PString& InName);
+ 	bool IsRegistered(const PString& InName) const;
++	// 이름에 InText 가 들어 있는 명령(대소문자 무시). InText 로 시작하는 이름이 먼저 오고, 각 묶음 안은 이름순이다.
++	// InText 가 비면 전부 이름순. DevConsole 입력 미리보기가 쓴다.
++	void FindCommands(const PString& InText, HList<HConsoleCommandInfo>& OutCommands) const;
+ 
+ 	// 즉시 실행한다. 빈 줄은 true. 없는 명령·따옴표 오류·핸들러 실패면 false.
+ 	bool Execute(const PString& InLine);
+diff --git a/Source/Runtime/GUI/GUI.cpp b/Source/Runtime/GUI/GUI.cpp
+index d89fbd0..31e57bb 100644
+--- a/Source/Runtime/GUI/GUI.cpp
++++ b/Source/Runtime/GUI/GUI.cpp
+@@ -138,6 +138,79 @@ void HGUI::Image(uint64 InTextureID, const HVector2& InSize)
+ 	ImGui::Image(ImTexID, ImSize);
+ }
+ 
++bool HGUI::Checkbox(const PString& InName, bool& InOutValue)
++{
++	return ImGui::Checkbox(InName.GetCStr(), &InOutValue);
++}
++
++namespace
++{
++	// 가변 길이 버퍼 (imgui_stdlib 의 std::string 판과 같은 방식). UserData 는 std::string*.
++	int inputTextResizeCallback(ImGuiInputTextCallbackData* InData)
++	{
++		if (InData->EventFlag == ImGuiInputTextFlags_CallbackResize)
++		{
++			std::string* Buffer = static_cast<std::string*>(InData->UserData);
++			Buffer->resize(InData->BufTextLen);
++			InData->Buf = Buffer->data();
++		}
++
++		return 0;
++	}
++}
++
++bool HGUI::InputTextWithHint(const PString& InName, const PString& InHint, PString& InOutStr, float32 InWidth)
++{
++	std::string Buffer = InOutStr.GetRawString();
++	const PString InputTextKey = PString("##") + InName;
++
++	if (InWidth != 0.0f)
++	{
++		ImGui::PushItemWidth(InWidth);
++	}
++
++	const bool bChanged = ImGui::InputTextWithHint(InputTextKey.GetCStr(), InHint.GetCStr(), Buffer.data(), Buffer.capacity() + 1,
++		ImGuiInputTextFlags_CallbackResize, &inputTextResizeCallback, &Buffer);
++
++	if (InWidth != 0.0f)
++	{
++		ImGui::PopItemWidth();
++	}
++
++	if (bChanged)
++	{
++		InOutStr = Buffer.c_str();
++	}
++
++	return bChanged;
++}
++
++bool HGUI::IsItemActive()
++{
++	return ImGui::IsItemActive();
++}
++
++void HGUI::BeginTooltipAboveItem(const PString& InName)
++{
++	// 창의 왼쪽 아래를 직전 항목의 왼쪽 위(줄 간격만큼 위)에 맞춘다. 그래서 내용이 늘면 위로 자란다.
++	const ImVec2 ItemMin = ImGui::GetItemRectMin();
++	ImGui::SetNextWindowPos(ImVec2(ItemMin.x, ItemMin.y - ImGui::GetStyle().ItemSpacing.y), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
++	// 배경을 불투명하게 한다. 기본 PopupBg 알파 0.94 는 GUI 가 sRGB 로 출력되면서 뒤 글자가 밝게 비친다(로그 뷰 위에 겹쳐 읽기 어렵다).
++	ImGui::SetNextWindowBgAlpha(1.0f);
++
++	// BeginTooltip 과 같은 창 설정이지만 이름을 따로 둔다(마우스 툴팁 "##Tooltip_00" 과 내용이 섞이지 않게).
++	// 입력·포커스·내비게이션을 가져가지 않으므로 입력줄에 계속 칠 수 있다.
++	const ImGuiWindowFlags Flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove
++		| ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking
++		| ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
++	ImGui::Begin(InName.GetCStr(), nullptr, Flags);
++}
++
++void HGUI::EndTooltip()
++{
++	ImGui::End();
++}
++
+ void HGUI::BeginChild(const PString& InName, const HVector2& InSize)
+ {
+ 	// 반환값과 상관없이 EndChild 를 불러야 한다(ImGui 규칙).
+@@ -164,11 +237,41 @@ namespace
+ {
+ 	struct HInputTextHistoryContext
+ 	{
+-		std::string*          Buffer;
+-		const HList<PString>* History;
+-		int32*                HistoryPos;
++		std::string*                    Buffer;
++		const HList<PString>*           History;
++		int32*                          HistoryPos;
++		const HGUIInputTextKeyDelegate* KeyHandler;
+ 	};
+ 
++	// ↑/↓/Tab 을 호출 쪽 키 처리기에 넘긴다. 처리기가 처리했으면(true) 입력줄을 처리기가 돌려준 글자로 바꾸고 true.
++	bool dispatchInputTextKey(ImGuiInputTextCallbackData* InData, const HGUIInputTextKeyDelegate& InKeyHandler)
++	{
++		if (InKeyHandler.IsBound() == false)
++		{
++			return false;
++		}
++
++		EGUIInputTextKey Key = EGUIInputTextKey::Tab;
++		if (InData->EventFlag == ImGuiInputTextFlags_CallbackHistory)
++		{
++			Key = (InData->EventKey == ImGuiKey_UpArrow) ? EGUIInputTextKey::Up : EGUIInputTextKey::Down;
++		}
++
++		PString Text(InData->Buf);
++		if (InKeyHandler.Execute(Key, Text) == false)
++		{
++			return false;
++		}
++
++		if (Text.GetRawString() != InData->Buf)
++		{
++			InData->DeleteChars(0, InData->BufTextLen);
++			InData->InsertChars(0, Text.GetCStr());
++		}
++
++		return true;
++	}
++
+ 	int inputTextHistoryCallback(ImGuiInputTextCallbackData* InData)
+ 	{
+ 		HInputTextHistoryContext* Context = static_cast<HInputTextHistoryContext*>(InData->UserData);
+@@ -181,7 +284,13 @@ namespace
+ 			return 0;
+ 		}
+ 
+-		if (InData->EventFlag != ImGuiInputTextFlags_CallbackHistory)
++		if (InData->EventFlag != ImGuiInputTextFlags_CallbackHistory && InData->EventFlag != ImGuiInputTextFlags_CallbackCompletion)
++		{
++			return 0;
++		}
++
++		// 호출 쪽이 먼저 처리한다(콘솔 명령 자동완성). 처리하지 않은 ↑/↓ 만 히스토리를 오간다.
++		if (dispatchInputTextKey(InData, *Context->KeyHandler) || InData->EventFlag != ImGuiInputTextFlags_CallbackHistory)
+ 		{
+ 			return 0;
+ 		}
+@@ -225,10 +334,11 @@ namespace
+ 	}
+ }
+ 
+-bool HGUI::InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos)
++bool HGUI::InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos,
++	const HGUIInputTextKeyDelegate& InKeyHandler)
+ {
+ 	std::string Buffer = InOutStr.GetRawString();
+-	HInputTextHistoryContext Context{ &Buffer, &InHistory, &InOutHistoryPos };
++	HInputTextHistoryContext Context{ &Buffer, &InHistory, &InOutHistoryPos, &InKeyHandler };
+ 
+ 	// 창이 처음 뜰 때 입력줄에 포커스를 둔다.
+ 	if (ImGui::IsWindowAppearing())
+@@ -237,7 +347,11 @@ bool HGUI::InputTextWithHistory(const PString& InName, PString& InOutStr, const
+ 	}
+ 
+ 	const PString InputTextKey = PString("##") + InName;
+-	const ImGuiInputTextFlags Flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackResize;
++	ImGuiInputTextFlags Flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackResize;
++	if (InKeyHandler.IsBound())
++	{
++		Flags |= ImGuiInputTextFlags_CallbackCompletion;
++	}
+ 
+ 	ImGui::PushItemWidth(-1.0f);
+ 	const bool bEntered = ImGui::InputText(InputTextKey.GetCStr(), Buffer.data(), Buffer.capacity() + 1, Flags, &inputTextHistoryCallback, &Context);
+diff --git a/Source/Runtime/GUI/GUI.h b/Source/Runtime/GUI/GUI.h
+index 1405e4e..9aa78be 100644
+--- a/Source/Runtime/GUI/GUI.h
++++ b/Source/Runtime/GUI/GUI.h
+@@ -1,6 +1,17 @@
+ #pragma once
+ #include "GUIDefines.h"
+ 
++// InputTextWithHistory 가 호출 쪽 키 처리기에 먼저 넘기는 키(콘솔 명령 자동완성).
++enum class EGUIInputTextKey
++{
++	Up,
++	Down,
++	Tab,
++};
++
++// InOutText 는 지금 입력줄 글자다. true 를 돌려주면 입력줄을 InOutText 로 바꾸고 기본 동작(↑/↓ = 히스토리)을 하지 않는다.
++JG_DECLARE_DELEGATE_RET(HGUIInputTextKeyDelegate, bool, EGUIInputTextKey, PString&)
++
+ 
+ struct HPlotBarGroupsArguments
+ {
+@@ -24,6 +35,17 @@ public:
+ 	static void PlotTest();
+ 	static bool Selectable(const PString& InName, bool bSelected, ESelectableFlags InFlags = ESelectableFlags::None, const HVector2& InSize = HVector2(0, 0));
+ 	static void Image(uint64 InTextureID, const HVector2& InSize);
++	// 누른 프레임에 true(InOutValue 가 바뀐다).
++	static bool Checkbox(const PString& InName, bool& InOutValue);
++	// 한 줄 입력. 비어 있으면 InHint 를 흐리게 보여 준다. 글자가 바뀐 프레임에 true.
++	// InWidth 0 은 기본 폭, 음수는 오른쪽 끝에서 그만큼 뺀 폭(-1 = 끝까지). 라벨은 그리지 않는다.
++	static bool InputTextWithHint(const PString& InName, const PString& InHint, PString& InOutStr, float32 InWidth = 0.0f);
++	// 직전 항목이 입력을 받는 중이면 true(입력줄에 포커스가 있다).
++	static bool IsItemActive();
++	// 직전 항목(입력줄 등) 바로 위에 붙는 툴팁 창. 맨 위에 그려지고 입력·포커스를 가져가지 않는다. 내용이 늘면 위로 자란다.
++	// InName 은 창 ID 다(보이지 않는다). 짝으로 EndTooltip 을 부른다.
++	static void BeginTooltipAboveItem(const PString& InName);
++	static void EndTooltip();
+ 
+ 	// 스크롤 영역. InSize 의 0 은 남은 공간 전부, 음수는 남은 공간에서 그만큼 뺀 크기다(ImGui 규칙). EndChild 는 항상 부른다.
+ 	static void BeginChild(const PString& InName, const HVector2& InSize);
+@@ -33,7 +55,9 @@ public:
+ 	static float32 GetFrameHeightWithSpacing();
+ 	// 한 줄 입력(가로 전체). Enter 면 true. 창이 처음 뜰 때와 Enter 뒤에 포커스를 둔다.
+ 	// ↑/↓ 로 InHistory 를 오간다. InOutHistoryPos 는 호출 쪽이 보관한다(-1 = 새 줄, 0.. = 오래된 것부터).
+-	static bool InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos);
++	// InKeyHandler 가 묶여 있으면 ↑/↓/Tab 을 먼저 넘긴다. Tab 은 이때만 입력줄이 받는다(없으면 ImGui 기본 = 다음 항목으로 이동).
++	static bool InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos,
++		const HGUIInputTextKeyDelegate& InKeyHandler = HGUIInputTextKeyDelegate());
+ private:
+ 
+ };
+\ No newline at end of file

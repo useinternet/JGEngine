@@ -18,6 +18,8 @@ public:
 
 	virtual void Write(PJsonData& json) const = 0;
 	virtual bool Read(const PJsonData& json) = 0;
+	// 엔티티 하나의 값을 json 의 "Value" 로 쓴다 (DevView 인스펙터). 값이 없으면 false. 읽기 전용이라 결정론 · 체크섬과 무관하다.
+	virtual bool WriteEntity(const HGameplayEntityId& id, PJsonData& json) const = 0;
 };
 
 // 타입 T 의 컴포넌트를 엔티티 인덱스로 보관한다. T 는 값 타입이고 IJsonable 을 구현해야 한다.
@@ -128,6 +130,17 @@ public:
 		{
 			Add(ids[i], values[i]);
 		}
+		return true;
+	}
+
+	virtual bool WriteEntity(const HGameplayEntityId& id, PJsonData& json) const override
+	{
+		const T* value = Find(id);
+		if (value == nullptr)
+		{
+			return false;
+		}
+		json.AddMember("Value", *value);
 		return true;
 	}
 	// ~IGameplayComponentTable

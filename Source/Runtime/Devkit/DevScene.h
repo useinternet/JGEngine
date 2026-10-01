@@ -42,6 +42,7 @@ public:
 	virtual void OnInitialize() override;
 	virtual void OnShutdown() override;
 	virtual void OnLayout(const HWidgetComponentLayout& InLayout) override;
+	virtual void OnUpdate() override;
 	virtual void OnGenerateGUI() override;
 
 private:

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GameGUI 진행 보고</title>
+<meta name="description" content="2026-10-01 기준 GameGUI(게임 전용 런타임 UI) 트랙: 설계 → 기반 → 최소 요소 → 검증 결과, 구조, 사용법, 한계, 다음 후보">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .callout { background: var(--callout); border-left: 4px solid var(--accent); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .callout p:last-child { margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 16px; }
+  .stat .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-todo { --dot: var(--neutral); }
+  .b-note { --dot: var(--serious); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  figure { margin: 16px 0 0; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--ring); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  ul, ol { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  pre { font: 13px/1.5 Consolas, "D2Coding", monospace; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 8px 0 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 8px; }
+  .box { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+  .box h4 { margin: 0 0 6px; font-size: 14px; }
+  .box p { font-size: 13px; color: var(--ink-2); margin: 0; }
+  .box.accent { border-color: var(--accent); }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="lead" style="margin-bottom:16px"><p><strong>대체됨 (10-01 오전).</strong> 이 보고서의 구조(별도 <code>GameGUI</code> 모듈)는 같은 날 오전 사용자 지시로 GameFrameWorks 안 <code>JGGameWidget</code>(CommonUI식)으로 바뀌었습니다. 최신 보고서는 <code>GameUI_진행보고_2026-10-01.html</code>입니다. 아래 2D 그리기 · 글꼴 · 요소 내용은 그대로 유효합니다.</p></div>
+  <h1>GameGUI 진행 보고</h1>
+  <div class="meta">2026-10-01 00:4x 기준 · 새 트랙 Etc / GameGUI(게임 전용 런타임 UI) · 요청: "GameGUI 시스템을 설계문서 → 기반 → 최소 요소 → 검증까지 진행" · 전부 <strong>미커밋</strong></div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 게임이 플레이어에게 보여 주는 UI를 맡는 새 모듈 <code>GameGUI</code>를 만들었습니다. ImGui(GUI 모듈)는 에디터와 개발 도구 전용으로 그대로 두고, GameGUI는 ImGui에도 GameFrameWorks에도 의존하지 않습니다. 네 단계를 모두 끝냈습니다: 설계 문서 → 기반(Graphics 2D 그리기 경로, 한글 글꼴, 이미지 파일, 포인터 입력) → 최소 요소(캔버스, 이미지, 글자, 버튼) → 검증.</p>
+    <p><strong>결과.</strong> 헤드리스 셀프 테스트 64/64. 검증용 게임을 에디터에서 띄우니 월드 위에 HUD(반투명 띠, 한글 글자, 카드 2장, 버튼)가 보였습니다. 창에 실제 클릭을 보내 확인한 결과도 기대와 같습니다. 버튼을 누르면 턴이 올라가고, UI 위를 누르면 월드 피킹이 일어나지 않으며, UI 밖을 누르면 평소처럼 피킹됩니다. 기존 회귀 테스트도 모두 통과했습니다. 본 트리에 반영해 전체 빌드(오류 0)한 뒤 같은 검증을 다시 돌렸고, 화면 캡처가 워크트리 결과와 바이트까지 같았습니다.</p>
+    <p><strong>남은 일.</strong> 커밋(사용자)입니다. 다음 기능(드래그, 줄바꿈, 레이아웃 그룹 등)은 게임에서 요구가 생길 때 보류 목록에서 고르면 됩니다. 새로 정할 것은 없습니다.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">64 / 64</div><div class="k"><code>gamegui.selftest</code> (GPU 없이, 6그룹)</div></div>
+    <div class="stat"><div class="v">4 / 4</div><div class="k">에디터 실제 클릭 검증(버튼 2 · 패널 · 월드)</div></div>
+    <div class="stat"><div class="v">0</div><div class="k">본 트리 전체 빌드 오류(263초) · 실행 오류 로그 · D3D12 실행 중 메시지 · 남은 메모리 블록</div></div>
+    <div class="stat"><div class="v">25 + 14</div><div class="k">새 파일(모듈 24 + 셰이더 1, 약 2,500줄) + 수정 파일(Graphics 10 · JGEditor 3 · JGConsole 1)</div></div>
+  </div>
+
+  <h2>1. 화면</h2>
+  <p>검증용 게임 <code>GameGUIDemo</code>(엔진 밖)를 에디터 프로젝트 모드로 띄운 Scene Viewport입니다. X Bot이 있는 월드 위에 게임 모듈이 만든 HUD가 그려져 있습니다.</p>
+  <div class="shots">
+    <figure>
+      <img src="Memory/Etc/Files/2026-10-01_gamegui_e2e_before.png" alt="에디터 Scene Viewport. 월드 위 위쪽 반투명 띠에 'GameGUI 데모 · 턴 1'과 오른쪽 두 줄 안내 글자, 왼쪽 아래 '손패 Hand (2)'와 카드 뒷면 2장, 오른쪽 아래 주황 'End Turn · 턴 종료' 버튼">
+      <figcaption>클릭 전: "턴 1".</figcaption>
+    </figure>
+    <figure>
+      <img src="Memory/Etc/Files/2026-10-01_gamegui_e2e_after.png" alt="같은 화면에서 위쪽 글자가 'GameGUI 데모 · 턴 3'으로 바뀐 모습">
+      <figcaption>클릭 4번(버튼 · 띠 · 월드 · 버튼) 뒤: "턴 3". 띠와 월드를 누른 클릭은 턴을 바꾸지 않았습니다.</figcaption>
+    </figure>
+  </div>
+  <p class="small">색이 코드에 적은 값보다 옅게 보입니다. 출력 텍스처(FP16)가 선형 값으로 표시되며 sRGB로 바뀌기 때문이고, ImGui 화면도 같습니다. 색 공간은 Graphics 결정 D-3을 따르게 됩니다.</p>
+
+  <h2>2. 구조</h2>
+  <div class="flow">
+    <div class="box">
+      <h4>게임 모듈 (엔진 밖)</h4>
+      <p><code>ConnectModule("GameGUI")</code> → 캔버스 생성 → <code>AddChild&lt;PGameGUIButton&gt;</code> → <code>OnClicked</code>에 게임 명령을 연결. 그리기는 부르지 않습니다.</p>
+    </div>
+    <div class="box accent">
+      <h4>GameGUI 모듈</h4>
+      <p>캔버스(기준 해상도·배율·정렬 순서) · 요소 트리(앵커·피벗) · Image · Text · Button · 글꼴 아틀라스 · 그리기 목록. 의존은 Core · Asset · Graphics뿐입니다.</p>
+    </div>
+    <div class="box">
+      <h4>호스트 (에디터 Scene Viewport)</h4>
+      <p>매 프레임 월드를 그린 뒤 같은 출력 텍스처 위에 캔버스를 그립니다. 마우스 입력은 GameGUI에 먼저 주고, UI가 받으면 피킹·궤도·줌을 하지 않습니다.</p>
+    </div>
+    <div class="box">
+      <h4>Graphics</h4>
+      <p>새 2D 그리기 <code>IJGGraphicsCommand::Draw(H2DDrawArguments)</code>. 정점과 인덱스를 매 프레임 올리고, 배치마다 텍스처와 클립을 바꾸고, 알파 블렌드를 쓰는 내장 셰이더 <code>draw2d.hlsl</code>로 그립니다. 머터리얼 경로는 건드리지 않았습니다.</p>
+    </div>
+  </div>
+  <p class="small">나중에 단독 실행 호스트(D-5, 보류)가 생겨도 같은 두 호출(<code>RenderCanvases</code>, <code>HandlePointer</code>)만 부르면 됩니다. 게임 코드는 바뀌지 않습니다.</p>
+
+  <h2>3. 만든 것</h2>
+  <table>
+    <tr><th>단계</th><th>내용</th><th>상태</th></tr>
+    <tr><td class="name">설계</td><td>요구사항(보드·카드 게임 공통), 구조와 의존 방향, 2D 경로, 글꼴·이미지·입력, 좌표 규칙(배율 = min(타깃/기준), 요소 사각형 = 부모 + 앵커×부모 크기 + 위치 − 피벗×크기), 호스트, 검증 기준, "나중" 목록. 구현 뒤 달라진 점은 §10에 적었습니다.</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">기반 ① 2D 경로</td><td><code>H2DVertex</code>(32바이트) · <code>H2DDrawCommand</code> · <code>H2DDrawArguments</code>, DX12 구현(알파 블렌드, 컬링 없음, 배치마다 텍스처·시저, 끝나면 상태 복원), 동적 정점·인덱스 버퍼, 내장 셰이더</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">기반 ② 글꼴</td><td>stb_truetype. 글자와 픽셀 크기별로 글리프를 캐시하고, 1024×1024 아틀라스에 줄 단위로 배치합니다. 자간과 줄바꿈(<code>\n</code>)을 지원하고 UTF-8을 해석합니다. 한글도 됩니다(개발용 기본 글꼴은 시스템 맑은 고딕)</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">기반 ③ 이미지</td><td>PNG·JPG 파일(stb_image)을 RGBA8 텍스처로 읽습니다. 경로별로 캐시합니다</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">기반 ④ 입력</td><td>호스트가 넣는 포인터 이벤트(Move/Down/Up/Wheel/Leave). 위에 있는 요소부터 판정하고, 누른 요소가 뗄 때까지 입력을 잡습니다(캡처). 처리했는지를 반환합니다</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">최소 요소</td><td>캔버스, Image(패널로도 사용), Text(정렬·색·크기), Button(보통·호버·누름 색, 라벨, <code>OnClicked</code>). 버튼은 누른 채 자기 위에서 떼야 클릭입니다</td><td><span class="badge b-done">완료</span></td></tr>
+    <tr><td class="name">호스트 연결</td><td>JGEditor Scene Viewport(렌더 뒤 그리기, 입력 먼저 판정, 결과 로그)</td><td><span class="badge b-done">완료</span></td></tr>
+  </table>
+
+  <h2>4. 게임에서 쓰는 법</h2>
+  <pre><code>// 게임 모듈 StartupModule
+GModuleGlobalSystem::GetInstance().ConnectModule("GameGUI");
+HGameGUIModule* gameGUI = GModuleGlobalSystem::GetInstance().FindModule&lt;HGameGUIModule&gt;();
+PSharedPtr&lt;PGameGUICanvas&gt; hud = gameGUI-&gt;CreateCanvas(PName("HUD"), HVector2(1920.0f, 1080.0f));
+
+PSharedPtr&lt;PGameGUIButton&gt; endTurn = hud-&gt;GetRoot()-&gt;AddChild&lt;PGameGUIButton&gt;(PName("EndTurn"));
+endTurn-&gt;SetLayout(HVector2(1, 1), HVector2(1, 1), HVector2(-40, -40), HVector2(340, 110));   // 오른쪽 아래
+endTurn-&gt;SetLabel(PString("End Turn · 턴 종료"));
+endTurn-&gt;OnClicked.AddLambda([this]() { /* 게임 명령 제출 */ });
+
+// 게임 모듈 ShutdownModule: 람다가 this를 잡았으면 캔버스를 먼저 뗀다
+gameGUI-&gt;RemoveCanvas(hud);</code></pre>
+  <p class="small">게임의 <code>module.json</code> 의존 목록에 <code>GameGUI</code>를 추가합니다(템플릿에는 넣지 않았습니다). 전체 예는 <code>Memory/Etc/Files/tools/gamegui_demo_testgame/</code>에 있습니다.</p>
+
+  <h2>5. 검증</h2>
+  <table>
+    <tr><th>#</th><th>방법</th><th>결과</th></tr>
+    <tr><td class="name">V1</td><td><code>JGConsole.exe gamegui.selftest</code>: UTF-8, 레이아웃(배율·앵커·피벗·중첩), 입력(판정 순서·처리·캡처·밖에서 떼기), 그리기 목록(배치 합치기·클립), 글꼴(영문·한글 글리프, 측정, 아틀라스), 모듈(캔버스 순서)</td><td><span class="badge b-done">64/64</span> 워크트리 · 본 트리 모두</td></tr>
+    <tr><td class="name">V2</td><td>검증 게임을 에디터에서 실행하고, 런처 창에만 PostMessage로 클릭 4번을 보냈습니다. 버튼 위치는 캡처에서 버튼 색으로 찾았습니다</td><td><span class="badge b-done">통과</span> 버튼 → 턴 2 → 턴 3, 띠 클릭 "game UI (not picked)", 월드 클릭은 피킹 경로. 오류 0, 종료 0, 메모리 블록 0. 본 트리 엔진으로 README 절차대로 새로 만든 게임에서도 같은 결과이고 캡처가 바이트 동일</td></tr>
+    <tr><td class="name">V3</td><td>기존 회귀: <code>console.selftest</code>, <code>gmtest</code>, <code>net.test all</code>, 프로젝트 없는 런처 실행, DevScene 리드백 PNG</td><td><span class="badge b-done">통과</span> 64 · 156 · 101, 런처 종료 0 · 오류 0 · 메모리 블록 0, PNG 변화 없음</td></tr>
+    <tr><td class="name">추가</td><td>디버거 아래에서 HUD를 20초 그리며 D3D12 디버그 메시지를 확인</td><td><span class="badge b-done">0건</span> (종료 때 보고는 GameGUI 전과 같은 수)</td></tr>
+  </table>
+  <p class="small">작업 방식: 다른 세션들이 본 트리를 동시에 편집·빌드하고 있어서, 격리 워크트리에서 구현하고 검증한 뒤 본 트리에 반영했습니다. 제가 고친 파일 14개는 그사이 아무도 바꾸지 않았음을 해시로 확인하고 그대로 복사했습니다. 반영 뒤 PreBuild와 전체 빌드를 했습니다. 워크트리는 지웠습니다.</p>
+
+  <h2>6. 한계와 알아둘 것</h2>
+  <table>
+    <tr><th>항목</th><th>지금</th></tr>
+    <tr><td class="name">보이는 곳</td><td>호스트는 에디터 Scene Viewport 하나입니다. 이 창은 월드가 있는 프로젝트 모드에서만 열리므로, 월드 없는 화면(타이틀 등)이나 단독 실행은 아직 안 됩니다(D-5와 함께).</td></tr>
+    <tr><td class="name">글꼴</td><td>개발용 기본 글꼴로 시스템 맑은 고딕을 씁니다. <strong>시스템 글꼴은 배포하면 안 되므로</strong> 게임은 라이선스가 맞는 글꼴을 Content에 넣고 <code>LoadFont</code>로 씁니다. 아틀라스는 한 장이고, 새 글자가 생기면 아틀라스 전체를 다시 올립니다.</td></tr>
+    <tr><td class="name">글자 배치</td><td><code>\n</code> 줄바꿈과 정렬만 됩니다. 자동 줄바꿈, 리치 텍스트, 잘라내기는 없습니다.</td></tr>
+    <tr><td class="name">이미지</td><td>밉맵이 없어서 크게 줄이면 계단이 생깁니다. 9-slice도 없습니다.</td></tr>
+    <tr><td class="name">입력</td><td>마우스 포인터만 받습니다. 드래그 앤 드롭, 키보드·패드 포커스, 비활성 버튼은 없습니다.</td></tr>
+    <tr><td class="name">색</td><td>화면에서 옅게 보입니다(ImGui와 같은 원인, D-3).</td></tr>
+  </table>
+
+  <h2>7. 다음 후보 (요구가 생기면)</h2>
+  <p>아래 항목은 TODO 보류 표(GG-H1~H12)에 "다시 볼 조건"과 함께 있습니다. 지금 착수할 항목은 없습니다.</p>
+  <ul>
+    <li>드래그 앤 드롭: 손패에서 카드를 끌어 내는 흐름을 만들 때. 캡처는 이미 있습니다.</li>
+    <li>레이아웃 그룹(가로 줄, 부채꼴): 줄 세우기 코드가 두 번째로 필요해질 때.</li>
+    <li>자동 줄바꿈, 로컬라이제이션: 카드 설명문을 넣을 때.</li>
+    <li>트윈·애니메이션: GameFrameWorks 2-4 시퀀서와 함께.</li>
+    <li>단독 실행 호스트와 플랫폼 입력: D-5가 풀릴 때.</li>
+  </ul>
+
+  <h2>8. 할 일과 발견</h2>
+  <table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td class="name"><span class="badge b-decide">커밋</span></td><td>사용자가 합니다. 새 파일(미추적) <code>Source/Runtime/GameGUI/</code> 24개, <code>Source/Shader/draw2d.hlsl</code>, <code>Bin/DevelopEngine/GameGUI.*</code>가 빠지지 않게 해 주세요. <code>SceneViewport.h/.cpp</code>는 JGEditor 이관(E-1)으로 새로 생긴 미추적 파일이라 JGEditor 커밋과 함께 들어가야 합니다. 목록은 <code>Memory/Etc/TODO_GameGUI.md</code> 커밋 체크리스트에 있습니다.</td></tr>
+    <tr><td class="name"><span class="badge b-todo">게임 프로젝트</span></td><td>본 트리 엔진을 쓰는 기존 게임 프로젝트는 배치 2(<code>GenerateProjectFiles.bat</code>)를 다시 돌려야 합니다. 새 모듈이 생겼고 JGEditor가 GameGUI를 링크하기 때문입니다.</td></tr>
+    <tr><td class="name"><span class="badge b-note">crashwalk</span></td><td>이 PC에서 공용 검증 도구 crashwalk가 60초가 지나도 창을 닫지 못합니다. 원인을 재어 보니 NVIDIA 드라이버 스레드(<code>NVFBCAsyncThread</code>)가 디버거 아래에서 스레드 이름 예외를 초당 약 113번 던지고, crashwalk는 200ms 동안 조용할 때만 타이머를 확인합니다. 엔진과는 무관합니다. 도구 수정은 별도 세션으로 제안해 두었습니다(칩).</td></tr>
+    <tr><td class="name"><span class="badge b-note">D3D12 종료 보고</span></td><td>프로세스를 끝낼 때 D3D12 디버그 레이어가 살아 있는 객체 11개를 보고합니다. GameGUI 전 본 트리에서도 같은 수라 기존 동작이며, Graphics 현황에 기록했습니다.</td></tr>
+  </table>
+
+  <h2>9. 문서 위치</h2>
+  <ul>
+    <li>설계와 구현 결과: <code>Memory/Etc/Files/GameGUI_설계_2026-09-30.md</code> (§10)</li>
+    <li>TODO(완료 이력, 보류 12, 커밋 체크리스트): <code>Memory/Etc/TODO_GameGUI.md</code></li>
+    <li>현황(코드 위치, 함정, 검증 방법): <code>Memory/Etc/현황.md</code> §6</li>
+    <li>검증 기록: <code>Memory/Etc/Files/2026-10-01_GameGUI_verify.txt</code></li>
+    <li>검증 게임과 스크립트: <code>Memory/Etc/Files/tools/gamegui_demo_testgame/</code></li>
+    <li>전체 보드: <code>Memory/진행현황.md</code> (Etc / GameGUI 행, D-12 결정됨)</li>
+  </ul>
+</main>
+</body>
+</html>

@@ -75,9 +75,9 @@ void HMainMenuTree::GenerateMainMenuGUIInternal(const HMainMenuNode& InNode)
 		if (bVisibility)
 		{
 			bool bEnable = true;
-			if (InNode.Item.Visibility.IsBound())
+			if (InNode.Item.CanAction.IsBound())
 			{
-				bEnable = InNode.Item.Visibility.Execute();
+				bEnable = InNode.Item.CanAction.Execute();
 			}
 
 			if (ImGui::MenuItem(InNode.Name.GetCStr(), nullptr, nullptr, bEnable))

@@ -1,0 +1,1048 @@
+diff --git a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUIDefines.h b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUIDefines.h
+index ceec5ab..9073ec3 100644
+--- a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUIDefines.h
++++ b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUIDefines.h
+@@ -61,6 +61,38 @@ enum class EGUIColor
+ 	TabSelectedOverline,
+ 	TabDimmed,
+ 	TabDimmedSelected,
++	// 편집기 창 테마(콘솔 등): 입력칸 · 체크박스 · 드롭다운 · 스크롤바
++	ChildBackground,
++	FrameBackground,
++	FrameBackgroundHovered,
++	FrameBackgroundActive,
++	CheckMark,
++	Header,
++	HeaderHovered,
++	HeaderActive,
++	Button,
++	ButtonHovered,
++	ButtonActive,
++	TextDisabled,
++	ScrollbarBackground,
++	ScrollbarGrab,
++	ScrollbarGrabHovered,
++	ScrollbarGrabActive,
++	Separator,
++};
++
++// HGUI::PushStyleVar 대상. 값의 형이 정해져 있다(float32 / HVector2 — 다른 형으로 부르면 ImGui 가 assert 한다).
++enum class EGUIStyleVar
++{
++	FrameRounding,      // float32
++	FrameBorderSize,    // float32
++	PopupRounding,      // float32
++	ChildRounding,      // float32
++	ScrollbarSize,      // float32
++	ScrollbarRounding,  // float32
++	FramePadding,       // HVector2
++	ItemSpacing,        // HVector2
++	WindowPadding,      // HVector2
+ };
+ 
+ // HGUI::PushFont 대상. 순서는 DX12GUIBackend::Initialize 가 글꼴을 넣는 순서와 같다.
+diff --git a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUI.h b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUI.h
+index 93ef350..72e64c2 100644
+--- a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUI.h
++++ b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUI.h
+@@ -82,8 +82,8 @@ public:
+ 	// 직전 항목이 입력을 받는 중이면 true(입력줄에 포커스가 있다).
+ 	static bool IsItemActive();
+ 	// 직전 항목(입력줄 등) 바로 위에 붙는 툴팁 창. 맨 위에 그려지고 입력·포커스를 가져가지 않는다. 내용이 늘면 위로 자란다.
+-	// InName 은 창 ID 다(보이지 않는다). 짝으로 EndTooltip 을 부른다.
+-	static void BeginTooltipAboveItem(const PString& InName);
++	// InName 은 창 ID 다(보이지 않는다). InExtraGap 은 줄 간격에 더 띄울 픽셀(항목이 패널 안에 있으면 패널 여백만큼). 짝으로 EndTooltip 을 부른다.
++	static void BeginTooltipAboveItem(const PString& InName, float32 InExtraGap = 0.0f);
+ 	static void EndTooltip();
+ 
+ 	// 스크롤 영역. InSize 의 0 은 남은 공간 전부, 음수는 남은 공간에서 그만큼 뺀 크기다(ImGui 규칙). EndChild 는 항상 부른다.
+@@ -95,8 +95,9 @@ public:
+ 	// 한 줄 입력(가로 전체). Enter 면 true. 창이 처음 뜰 때와 Enter 뒤에 포커스를 둔다.
+ 	// ↑/↓ 로 InHistory 를 오간다. InOutHistoryPos 는 호출 쪽이 보관한다(-1 = 새 줄, 0.. = 오래된 것부터).
+ 	// InKeyHandler 가 묶여 있으면 ↑/↓/Tab 을 먼저 넘긴다. Tab 은 이때만 입력줄이 받는다(없으면 ImGui 기본 = 다음 항목으로 이동).
++	// InHint 는 비어 있을 때 흐리게 보이는 안내 글자다.
+ 	static bool InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos,
+-		const HGUIInputTextKeyDelegate& InKeyHandler = HGUIInputTextKeyDelegate());
++		const HGUIInputTextKeyDelegate& InKeyHandler = HGUIInputTextKeyDelegate(), const PString& InHint = PString());
+ 
+ 	// 누른 프레임에 true. InSize 0 은 글자에 맞춘 크기.
+ 	static bool Button(const PString& InName, const HVector2& InSize = HVector2(0, 0));
+@@ -158,4 +159,31 @@ public:
+ 	static bool IsWindowFocused();
+ 	// 이번 프레임에 눌렸나. 누르고 있는 동안 반복하지 않는다.
+ 	static bool IsKeyPressed(EGUIKey InKey);
++
++public:
++	// ---- 편집기 창 테마 · 콘솔 ----
++	// 화면에 보일 색(sRGB 0xRRGGBB)을 GUI 에 넘길 선형 색으로 바꾼다. GUI 는 선형 버퍼에 그린 뒤 sRGB 로 인코딩해 내보내므로
++	// sRGB 값을 그대로 넘기면 옅게 뜬다(ImGui 창 배경 0.06 이 #454545 로 보인다). 출력 색 공간이 바뀌면(Graphics 5-14) 이 함수를 고친다.
++	static HLinearColor DisplayColor(uint32 InRGB, float32 InAlpha = 1.0f);
++	// 모서리 · 테두리 · 여백 같은 모양 값을 잠시 바꾼다. 값의 형은 EGUIStyleVar 주석을 따른다. Push 한 만큼 Pop 한다.
++	static void PushStyleVar(EGUIStyleVar InTarget, float32 InValue);
++	static void PushStyleVar(EGUIStyleVar InTarget, const HVector2& InValue);
++	static void PopStyleVar(int32 InCount = 1);
++	// 입력칸 · 버튼 한 줄 높이(글자 + 위아래 여백)
++	static float32 GetFrameHeight();
++	static float32 CalcTextWidth(const PString& InText);
++	// 같은 줄의 입력칸 · 버튼과 글자 높이를 맞춘다(입력칸 앞 글자 앞에 부른다).
++	static void AlignTextToFramePadding();
++	// 체크박스. bMixed 면 일부만 켜진 상태(가로줄)로 그린다("전체" 항목). 누르면 InOutValue 가 바뀌고 true.
++	static bool Checkbox(const PString& InName, bool& InOutValue, bool bMixed);
++	// 켜고 끄는 알약 모양 버튼(필터 칩): 색 점 + InLabel + 흐린 InTrailing(개수 등). 켜져 있으면 InAccent 로 물든다. 누른 프레임에 true(InOutOn 이 바뀐다).
++	// InId 는 같은 창 안의 ID 다(보이지 않는다 — 라벨 · 개수가 바뀌어도 같은 항목).
++	static bool ToggleChip(const PString& InId, const PString& InLabel, const PString& InTrailing, const HLinearColor& InAccent, bool& InOutOn);
++	// 드롭다운. 닫혀 있을 때 InPreview 를 보인다. BeginCombo 가 true 일 때만 내용을 그리고 EndCombo 를 부른다(ImGui 규칙).
++	// 안의 체크박스를 눌러도 닫히지 않는다(바깥을 누르거나 Esc 로 닫힌다). InWidth 0 은 기본 폭.
++	static bool BeginCombo(const PString& InName, const PString& InPreview, float32 InWidth = 0.0f);
++	static void EndCombo();
++	// 다음에 그릴 한 줄 뒤를 보이는 창 폭만큼 InBackground 로 칠하고 왼쪽 끝에 InAccentWidth 픽셀 막대를 InAccent 로 칠한다(로그 줄 · 목록 선택 강조).
++	// 커서는 움직이지 않는다. 이어진 줄을 칠하면 줄 간격까지 덮어 한 띠로 보인다.
++	static void HighlightLine(const HLinearColor& InBackground, const HLinearColor& InAccent, float32 InAccentWidth = 2.0f);
+ };
+\ No newline at end of file
+diff --git a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUI.cpp b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUI.cpp
+index 4428b8d..a9131f3 100644
+--- a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/GUI.cpp
++++ b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Runtime/GUI/GUI.cpp
+@@ -52,10 +52,44 @@ ImGuiCol ToImGui(EGUIColor InColor)
+ 	case EGUIColor::TabSelectedOverline:   return ImGuiCol_TabSelectedOverline;
+ 	case EGUIColor::TabDimmed:             return ImGuiCol_TabDimmed;
+ 	case EGUIColor::TabDimmedSelected:     return ImGuiCol_TabDimmedSelected;
++	case EGUIColor::ChildBackground:        return ImGuiCol_ChildBg;
++	case EGUIColor::FrameBackground:        return ImGuiCol_FrameBg;
++	case EGUIColor::FrameBackgroundHovered: return ImGuiCol_FrameBgHovered;
++	case EGUIColor::FrameBackgroundActive:  return ImGuiCol_FrameBgActive;
++	case EGUIColor::CheckMark:              return ImGuiCol_CheckMark;
++	case EGUIColor::Header:                 return ImGuiCol_Header;
++	case EGUIColor::HeaderHovered:          return ImGuiCol_HeaderHovered;
++	case EGUIColor::HeaderActive:           return ImGuiCol_HeaderActive;
++	case EGUIColor::Button:                 return ImGuiCol_Button;
++	case EGUIColor::ButtonHovered:          return ImGuiCol_ButtonHovered;
++	case EGUIColor::ButtonActive:           return ImGuiCol_ButtonActive;
++	case EGUIColor::TextDisabled:           return ImGuiCol_TextDisabled;
++	case EGUIColor::ScrollbarBackground:    return ImGuiCol_ScrollbarBg;
++	case EGUIColor::ScrollbarGrab:          return ImGuiCol_ScrollbarGrab;
++	case EGUIColor::ScrollbarGrabHovered:   return ImGuiCol_ScrollbarGrabHovered;
++	case EGUIColor::ScrollbarGrabActive:    return ImGuiCol_ScrollbarGrabActive;
++	case EGUIColor::Separator:              return ImGuiCol_Separator;
+ 	}
+ 	return ImGuiCol_Text;
+ }
+ 
++ImGuiStyleVar ToImGui(EGUIStyleVar InStyleVar)
++{
++	switch (InStyleVar)
++	{
++	case EGUIStyleVar::FrameRounding:     return ImGuiStyleVar_FrameRounding;
++	case EGUIStyleVar::FrameBorderSize:   return ImGuiStyleVar_FrameBorderSize;
++	case EGUIStyleVar::PopupRounding:     return ImGuiStyleVar_PopupRounding;
++	case EGUIStyleVar::ChildRounding:     return ImGuiStyleVar_ChildRounding;
++	case EGUIStyleVar::ScrollbarSize:     return ImGuiStyleVar_ScrollbarSize;
++	case EGUIStyleVar::ScrollbarRounding: return ImGuiStyleVar_ScrollbarRounding;
++	case EGUIStyleVar::FramePadding:      return ImGuiStyleVar_FramePadding;
++	case EGUIStyleVar::ItemSpacing:       return ImGuiStyleVar_ItemSpacing;
++	case EGUIStyleVar::WindowPadding:     return ImGuiStyleVar_WindowPadding;
++	}
++	return ImGuiStyleVar_FrameRounding;
++}
++
+ 
+ void HGUI::SameLine()
+ {
+@@ -211,11 +245,11 @@ bool HGUI::IsItemActive()
+ 	return ImGui::IsItemActive();
+ }
+ 
+-void HGUI::BeginTooltipAboveItem(const PString& InName)
++void HGUI::BeginTooltipAboveItem(const PString& InName, float32 InExtraGap)
+ {
+-	// 창의 왼쪽 아래를 직전 항목의 왼쪽 위(줄 간격만큼 위)에 맞춘다. 그래서 내용이 늘면 위로 자란다.
++	// 창의 왼쪽 아래를 직전 항목의 왼쪽 위(줄 간격 + InExtraGap 만큼 위)에 맞춘다. 그래서 내용이 늘면 위로 자란다.
+ 	const ImVec2 ItemMin = ImGui::GetItemRectMin();
+-	ImGui::SetNextWindowPos(ImVec2(ItemMin.x, ItemMin.y - ImGui::GetStyle().ItemSpacing.y), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
++	ImGui::SetNextWindowPos(ImVec2(ItemMin.x, ItemMin.y - ImGui::GetStyle().ItemSpacing.y - InExtraGap), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+ 	// 배경을 불투명하게 한다. 기본 PopupBg 알파 0.94 는 GUI 가 sRGB 로 출력되면서 뒤 글자가 밝게 비친다(로그 뷰 위에 겹쳐 읽기 어렵다).
+ 	ImGui::SetNextWindowBgAlpha(1.0f);
+ 
+@@ -356,7 +390,7 @@ namespace
+ }
+ 
+ bool HGUI::InputTextWithHistory(const PString& InName, PString& InOutStr, const HList<PString>& InHistory, int32& InOutHistoryPos,
+-	const HGUIInputTextKeyDelegate& InKeyHandler)
++	const HGUIInputTextKeyDelegate& InKeyHandler, const PString& InHint)
+ {
+ 	std::string Buffer = InOutStr.GetRawString();
+ 	HInputTextHistoryContext Context{ &Buffer, &InHistory, &InOutHistoryPos, &InKeyHandler };
+@@ -375,7 +409,9 @@ bool HGUI::InputTextWithHistory(const PString& InName, PString& InOutStr, const
+ 	}
+ 
+ 	ImGui::PushItemWidth(-1.0f);
+-	const bool bEntered = ImGui::InputText(InputTextKey.GetCStr(), Buffer.data(), Buffer.capacity() + 1, Flags, &inputTextHistoryCallback, &Context);
++	const bool bEntered = InHint.Empty()
++		? ImGui::InputText(InputTextKey.GetCStr(), Buffer.data(), Buffer.capacity() + 1, Flags, &inputTextHistoryCallback, &Context)
++		: ImGui::InputTextWithHint(InputTextKey.GetCStr(), InHint.GetCStr(), Buffer.data(), Buffer.capacity() + 1, Flags, &inputTextHistoryCallback, &Context);
+ 	ImGui::PopItemWidth();
+ 
+ 	// ImGui 는 Enter 에서 입력줄의 포커스를 푼다(ConfigInputTextEnterKeepActive = false). 연속 입력을 위해 다시 잡는다.
+@@ -854,4 +890,180 @@ bool HGUI::IsKeyPressed(EGUIKey InKey)
+ 	return ImGui::IsKeyPressed(Key, false);
+ }
+ 
++namespace
++{
++	float32 srgbChannelToLinear(uint32 InChannel)
++	{
++		const float32 Value = static_cast<float32>(InChannel) / 255.0f;
++		if (Value <= 0.04045f)
++		{
++			return Value / 12.92f;
++		}
++		return powf((Value + 0.055f) / 1.055f, 2.4f);
++	}
++}
++
++HLinearColor HGUI::DisplayColor(uint32 InRGB, float32 InAlpha)
++{
++	return HLinearColor(srgbChannelToLinear((InRGB >> 16) & 0xFF), srgbChannelToLinear((InRGB >> 8) & 0xFF), srgbChannelToLinear(InRGB & 0xFF), InAlpha);
++}
++
++void HGUI::PushStyleVar(EGUIStyleVar InTarget, float32 InValue)
++{
++	ImGui::PushStyleVar(ToImGui(InTarget), InValue);
++}
++
++void HGUI::PushStyleVar(EGUIStyleVar InTarget, const HVector2& InValue)
++{
++	ImGui::PushStyleVar(ToImGui(InTarget), ImVec2(InValue.x, InValue.y));
++}
++
++void HGUI::PopStyleVar(int32 InCount)
++{
++	ImGui::PopStyleVar(InCount);
++}
++
++float32 HGUI::GetFrameHeight()
++{
++	return ImGui::GetFrameHeight();
++}
++
++float32 HGUI::CalcTextWidth(const PString& InText)
++{
++	return ImGui::CalcTextSize(InText.GetCStr()).x;
++}
++
++void HGUI::AlignTextToFramePadding()
++{
++	ImGui::AlignTextToFramePadding();
++}
++
++bool HGUI::Checkbox(const PString& InName, bool& InOutValue, bool bMixed)
++{
++	if (bMixed == false)
++	{
++		return Checkbox(InName, InOutValue);
++	}
++
++	// 일부만 켜진 상태는 ImGui 가 가로줄로 그린다. 누르면 InOutValue 가 뒤집힌다(호출 쪽은 false 를 넘기므로 "전부 켜기"가 된다).
++	ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true);
++	const bool bPressed = ImGui::Checkbox(InName.GetCStr(), &InOutValue);
++	ImGui::PopItemFlag();
++	return bPressed;
++}
++
++bool HGUI::ToggleChip(const PString& InId, const PString& InLabel, const PString& InTrailing, const HLinearColor& InAccent, bool& InOutOn)
++{
++	ImGuiWindow* Window = ImGui::GetCurrentWindow();
++	if (Window->SkipItems)
++	{
++		return false;
++	}
++
++	const ImGuiStyle& Style        = ImGui::GetStyle();
++	const ImGuiID     Id           = Window->GetID(InId.GetCStr());
++	const float32     Height       = ImGui::GetFrameHeight();
++	const float32     DotSize      = 6.0f;
++	const float32     PaddingX     = 9.0f;
++	const float32     Gap          = 6.0f;
++	const ImVec2      LabelSize    = ImGui::CalcTextSize(InLabel.GetCStr());
++	const ImVec2      TrailingSize = InTrailing.Empty() ? ImVec2(0.0f, 0.0f) : ImGui::CalcTextSize(InTrailing.GetCStr());
++	const float32     Width        = PaddingX + DotSize + Gap + LabelSize.x + (InTrailing.Empty() ? 0.0f : Gap + TrailingSize.x) + PaddingX;
++
++	const ImVec2 Min = Window->DC.CursorPos;
++	const ImRect Bounds(Min, ImVec2(Min.x + Width, Min.y + Height));
++	ImGui::ItemSize(Bounds, Style.FramePadding.y);
++	if (ImGui::ItemAdd(Bounds, Id) == false)
++	{
++		return false;
++	}
++
++	bool bHovered = false;
++	bool bHeld    = false;
++	const bool bPressed = ImGui::ButtonBehavior(Bounds, Id, &bHovered, &bHeld);
++	if (bPressed)
++	{
++		InOutOn = !InOutOn;
++		ImGui::MarkItemEdited(Id);
++	}
++
++	// 켜짐: 강조색으로 옅게 물든 바탕 + 강조색 테두리 · 점. 꺼짐: 바탕 없이 흐린 글자 · 점(마우스를 올리면 바탕만).
++	const ImVec4 Accent      = ToImGui(InAccent).Value;
++	ImU32        Background  = 0;
++	ImU32        BorderColor = ImGui::GetColorU32(ImGuiCol_Border);
++	if (InOutOn)
++	{
++		// 알파는 선형 공간에서 섞이고 sRGB 로 나가 눈에는 더 진하게 보인다 → 낮게 둔다.
++		Background  = ImGui::GetColorU32(ImVec4(Accent.x, Accent.y, Accent.z, bHovered ? 0.16f : 0.10f));
++		BorderColor = ImGui::GetColorU32(ImVec4(Accent.x, Accent.y, Accent.z, 0.65f));
++	}
++	else if (bHovered)
++	{
++		Background = ImGui::GetColorU32(ImGuiCol_FrameBgHovered);
++	}
++
++	ImDrawList*   DrawList = Window->DrawList;
++	const float32 Rounding = Height * 0.5f;
++	if (Background != 0)
++	{
++		DrawList->AddRectFilled(Bounds.Min, Bounds.Max, Background, Rounding);
++	}
++	DrawList->AddRect(Bounds.Min, Bounds.Max, BorderColor, Rounding, 0, 1.0f);
++
++	const ImVec2 DotCenter(Bounds.Min.x + PaddingX + DotSize * 0.5f, Bounds.Min.y + Height * 0.5f);
++	DrawList->AddCircleFilled(DotCenter, DotSize * 0.5f, InOutOn ? ImGui::GetColorU32(Accent) : ImGui::GetColorU32(ImGuiCol_TextDisabled));
++
++	const float32 TextY = Bounds.Min.y + Style.FramePadding.y;
++	float32       TextX = Bounds.Min.x + PaddingX + DotSize + Gap;
++	DrawList->AddText(ImVec2(TextX, TextY), ImGui::GetColorU32(InOutOn ? ImGuiCol_Text : ImGuiCol_TextDisabled), InLabel.GetCStr());
++	if (InTrailing.Empty() == false)
++	{
++		TextX += LabelSize.x + Gap;
++		DrawList->AddText(ImVec2(TextX, TextY), ImGui::GetColorU32(ImGuiCol_TextDisabled), InTrailing.GetCStr());
++	}
++
++	return bPressed;
++}
++
++bool HGUI::BeginCombo(const PString& InName, const PString& InPreview, float32 InWidth)
++{
++	const PString ComboKey = PString("##") + InName;
++	if (InWidth != 0.0f)
++	{
++		ImGui::SetNextItemWidth(InWidth);
++	}
++	return ImGui::BeginCombo(ComboKey.GetCStr(), InPreview.GetCStr(), ImGuiComboFlags_HeightLarge);
++}
++
++void HGUI::EndCombo()
++{
++	ImGui::EndCombo();
++}
++
++void HGUI::HighlightLine(const HLinearColor& InBackground, const HLinearColor& InAccent, float32 InAccentWidth)
++{
++	ImGuiWindow* Window = ImGui::GetCurrentWindow();
++	if (Window->SkipItems)
++	{
++		return;
++	}
++
++	// 줄 간격의 절반씩 위아래로 넓혀 이어진 줄이 한 띠로 보이게 한다. 폭은 보이는 안쪽 영역 전부(가로 스크롤과 상관없이).
++	const float32 HalfGap = ImGui::GetStyle().ItemSpacing.y * 0.5f;
++	const float32 Top     = Window->DC.CursorPos.y - HalfGap;
++	const float32 Bottom  = Window->DC.CursorPos.y + ImGui::GetTextLineHeight() + HalfGap;
++	if (Bottom < Window->ClipRect.Min.y || Top > Window->ClipRect.Max.y)
++	{
++		return;
++	}
++
++	const float32 Left  = Window->InnerClipRect.Min.x;
++	const float32 Right = Window->InnerClipRect.Max.x;
++	Window->DrawList->AddRectFilled(ImVec2(Left, Top), ImVec2(Right, Bottom), ToImGui(InBackground));
++	if (InAccentWidth > 0.0f)
++	{
++		Window->DrawList->AddRectFilled(ImVec2(Left, Top), ImVec2(Left + InAccentWidth, Bottom), ToImGui(InAccent));
++	}
++}
++
+ 
+diff --git a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/DevConsole.h b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Editor/DevConsole/DevConsole.h
+index 108a599..69307ca 100644
+--- a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/DevConsole.h
++++ b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Editor/DevConsole/DevConsole.h
+@@ -7,18 +7,40 @@
+ 
+ #include "DevConsole.generation.h"
+ 
+-// 콘솔 창. 위쪽은 최근 로그(Info 이상), 아래쪽은 명령 입력줄이다.
++// 콘솔 창. 위에서부터 도구줄(로그 필터), 최근 로그(Info 이상), 명령 입력줄이다. 색은 메모리 통계 창과 같은 팔레트다.
+ // 명령은 Core 의 GConsoleCommandGlobalSystem 에 등록돼 있고, 이 창은 입력한 줄을 Submit 으로 넘긴다(다음 프레임 끝, 프레임 밖에서 실행).
+ // 명령을 만드는 방법은 ConsoleCommand/ConsoleCommandGlobalSystem.h 상단 주석을 본다.
+ //
+-// 로그 필터(맨 위 줄): 레벨 체크박스 Info / Warning / Error(Critical 포함, 괄호 안은 버퍼에 있는 줄 수)와 글자 필터.
+-//   글자 필터는 쉼표로 나눈 낱말이고 대소문자를 무시한다. "-낱말" 은 그 낱말이 든 줄을 숨기고,
+-//   나머지 낱말이 있으면 그중 하나가 든 줄만 보인다. 예: "gmtest"  "-[Core],-[Memory]"  "[ConsoleCommand],[GameFrameWorks]"
++// 로그 필터(도구줄): 세 조건을 모두 통과한 줄만 보인다.
++//   레벨 칩 Info / Warn / Error(Critical 포함, 옆 숫자는 버퍼에 있는 줄 수) — 눌러서 켜고 끈다.
++//   카테고리 드롭다운 — 로그 줄의 "[Category]: " 접두어로 모은 카테고리 체크박스. 맨 위 All 은 전부 켜고 끄며, 일부만 켜져 있으면 가로줄로 보인다.
++//     새로 나타난 카테고리는 켜진 채로 들어온다. 접두어가 없는 줄은 "(no category)" 다.
++//   검색 — 쉼표로 나눈 낱말, 대소문자 무시. "-낱말" 은 그 낱말이 든 줄을 숨기고, 나머지 낱말이 있으면 그중 하나가 든 줄만 보인다.
++// 로그 줄: 카테고리 열(흐림) + 본문. 경고 · 오류 줄은 색 띠와 왼쪽 막대로 강조하고, 입력한 명령의 에코 줄("> ...")은 파란 글자다.
+ // 명령 미리보기(입력줄에 포커스가 있을 때 입력줄 위):
+ //   이름을 치는 중이면 이름에 친 글자가 든 명령 목록(앞부분 일치 먼저, 가장 잘 맞는 것이 입력줄 바로 위).
+ //   ↑/↓ = 후보를 골라 입력줄에 넣는다(↓ 로 끝까지 내리면 친 글자로 돌아간다). Tab = 고른 후보(없으면 가장 잘 맞는 후보)로 완성하고 공백을 붙인다.
+ //   이름 뒤에 공백을 쳤거나(인자 입력 중) ↑ 로 불러온 히스토리 줄이면 그 명령의 Usage 와 설명, 없는 이름이면 빨간 줄을 보인다.
+ //   후보 목록이 없을 때 ↑/↓ 는 히스토리를 오간다.
++
++// 로그 카테고리 하나(드롭다운의 체크박스 한 줄)
++struct HDevConsoleLogCategory
++{
++	PString Name;            // "[Core]: ..." 의 Core. 접두어가 없는 줄은 빈 이름
++	uint32  LineCount = 0;   // 지금 버퍼에 있는 줄 수. 버퍼에서 밀려나 0 이 돼도 목록에 남겨 켜고 끈 상태를 지킨다
++	bool    bVisible  = true;
++};
++
++// 로그 한 줄의 그리기 정보. 로그가 바뀐 프레임에만 만든다.
++struct HDevConsoleLogRow
++{
++	PString   CategoryColumn;          // 카테고리 이름을 열 폭에 맞춰 공백으로 채운 것
++	PString   Body;                    // "[Category]: " 뒤 본문(접두어가 없으면 줄 전체)
++	uint32    CategoryIndex = 0;       // Categories 인덱스
++	ELogLevel Level         = ELogLevel::Info;
++	bool      bCommandEcho  = false;   // 입력한 명령의 에코 줄([ConsoleCommand]: > ...)
++};
++
+ JGCLASS()
+ class JGDevConsole : public JGWidget
+ {
+@@ -27,19 +49,21 @@ class JGDevConsole : public JGWidget
+ private:
+ 	PString CommandText;
+ 
+-	// 로그 뷰. GLogGlobalSystem 의 serial 이 바뀐 프레임에만 다시 복사한다.
+-	HList<HLogLine> LogLines;
+-	uint64          LogSerial = 0;
++	// 로그 뷰. GLogGlobalSystem 의 serial 이 바뀐 프레임에만 다시 복사하고 Rows · Categories 를 다시 만든다.
++	HList<HLogLine>           LogLines;
++	HList<HDevConsoleLogRow>  LogRows;
++	uint64                    LogSerial = 0;
+ 
+ 	// 로그 필터. VisibleLines 는 필터를 통과한 LogLines 의 인덱스이고, 로그나 필터가 바뀐 프레임에만 다시 만든다.
+-	PString       FilterText;
+-	bool          bShowInfo    = true;
+-	bool          bShowWarning = true;
+-	bool          bShowError   = true;
+-	uint32        InfoCount    = 0;
+-	uint32        WarningCount = 0;
+-	uint32        ErrorCount   = 0;
+-	HList<uint32> VisibleLines;
++	PString                        FilterText;
++	bool                           bShowInfo    = true;
++	bool                           bShowWarning = true;
++	bool                           bShowError   = true;
++	uint32                         InfoCount    = 0;
++	uint32                         WarningCount = 0;
++	uint32                         ErrorCount   = 0;
++	HList<HDevConsoleLogCategory>  Categories;   // 이름순
++	HList<uint32>                  VisibleLines;
+ 
+ 	// 입력 히스토리. 최근 64줄, 직전 줄과 같으면 다시 넣지 않는다. 창을 닫았다 열어도 유지된다(위젯 객체가 남는다).
+ 	HList<PString> History;
+@@ -54,6 +78,7 @@ private:
+ 	HList<HConsoleCommandInfo> Candidates;
+ 	int32                      CandidatePos = -1;   // -1 = 고르지 않음(입력줄 = 친 글자), 0 = 가장 잘 맞는 후보
+ 	HGUIInputTextKeyDelegate   InputKeyHandler;     // OnInitialize 에서 onInputKey 에 묶는다
++	bool                       bInputActive = false; // 지난 프레임에 입력줄에 포커스가 있었나(입력줄 테두리 색)
+ 
+ public:
+ 	virtual void OnInitialize() override;
+@@ -65,9 +90,12 @@ public:
+ 
+ private:
+ 	void refreshLogLines();
++	void rebuildLogRows();
+ 	void rebuildVisibleLines();
+-	void generateFilterBar();
++	void generateToolbar();
++	bool generateCategoryCombo();
+ 	void generateLogView();
++	void generateInputBar();
+ 	void generateCommandPreview();
+ 	void syncCommandPreview(const PString& InText);
+ 	bool onInputKey(EGUIInputTextKey InKey, PString& InOutText);
+diff --git a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/DevConsole.cpp b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Editor/DevConsole/DevConsole.cpp
+index 1f99e08..61cd57c 100644
+--- a/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/base2/DevConsole.cpp
++++ b/C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/8113cd65-b666-4634-a282-4a04741c11a6/scratchpad/wt2/Source/Editor/DevConsole/DevConsole.cpp
+@@ -4,12 +4,103 @@
+ 
+ namespace
+ {
+-	constexpr uint64 MaxHistoryLines  = 64;
+-	constexpr int32  MaxCandidateRows = 10;
++	constexpr uint64  MaxHistoryLines   = 64;
++	constexpr int32   MaxCandidateRows  = 10;
++	constexpr int32   MaxCategoryColumn = 16;     // 카테고리 열 최대 글자 수(더 길면 자른다)
++	constexpr float32 PanelGap          = 6.0f;   // 도구줄 · 로그 · 입력줄 패널 사이
++	constexpr float32 InputBarPadding   = 22.0f;  // 입력줄 패널 = 입력칸 높이 + 안쪽 여백 위아래 10 + 테두리 1 · 1
++
++	// 두 sRGB 색을 섞는다(메모리 통계 창과 같은 방식). 줄 강조 띠는 강조색을 패널 색 쪽으로 섞은 같은 계열의 어두운 색이다.
++	uint32 mixRGB(uint32 InFrom, uint32 InTo, float32 InAmount)
++	{
++		uint32 Result = 0;
++		for (uint32 Shift = 0; Shift <= 16; Shift += 8)
++		{
++			const float32 From = static_cast<float32>((InFrom >> Shift) & 0xFF);
++			const float32 To   = static_cast<float32>((InTo >> Shift) & 0xFF);
++			Result |= static_cast<uint32>(From + (To - From) * InAmount + 0.5f) << Shift;
++		}
++		return Result;
++	}
++
++	// 팔레트 — 메모리 통계 창(DevStatistics/MemoryStatistics.cpp)과 같은 값(sRGB). HGUI::DisplayColor 로 바꿔 넘긴다.
++	const uint32 SurfaceRGB  = 0x1a1a19;
++	const uint32 RaisedRGB   = 0x242423;
++	const uint32 AccentRGB   = 0x3987e5;
++	const uint32 WarningRGB  = 0xfab219;
++	const uint32 CriticalRGB = 0xd03b3b;
++
++	const HLinearColor ColorPage          = HGUI::DisplayColor(0x0d0d0d);
++	const HLinearColor ColorSurface       = HGUI::DisplayColor(SurfaceRGB);
++	const HLinearColor ColorField         = HGUI::DisplayColor(0x121211);    // 검색칸 · 드롭다운 바탕
++	const HLinearColor ColorFieldHover    = HGUI::DisplayColor(0x232322);
++	const HLinearColor ColorRaised        = HGUI::DisplayColor(RaisedRGB);   // 팝업 · 미리보기
++	const HLinearColor ColorRaisedHover   = HGUI::DisplayColor(0x2e2e2c);
++	const HLinearColor ColorBorder        = HGUI::DisplayColor(0x313130);
++	const HLinearColor ColorBorderStrong  = HGUI::DisplayColor(0x464644);
++	const HLinearColor ColorTextPrimary   = HGUI::DisplayColor(0xffffff);
++	const HLinearColor ColorTextSecondary = HGUI::DisplayColor(0xc3c2b7);    // Info 줄 본문
++	const HLinearColor ColorTextMuted     = HGUI::DisplayColor(0x898781);    // 카테고리 열 · 안내 · 개수
++	const HLinearColor ColorAccent        = HGUI::DisplayColor(AccentRGB);   // Info 칩 · 선택 · 프롬프트
++	const HLinearColor ColorCommand       = HGUI::DisplayColor(0x6aa7f0);    // 입력한 명령의 에코 줄
++	const HLinearColor ColorWarning       = HGUI::DisplayColor(WarningRGB);
++	const HLinearColor ColorCritical      = HGUI::DisplayColor(CriticalRGB);
++	const HLinearColor ColorErrorText     = HGUI::DisplayColor(0xf07070);    // 어두운 바탕에서 읽히는 밝은 빨강
++	const HLinearColor ColorWarningRow    = HGUI::DisplayColor(mixRGB(SurfaceRGB, WarningRGB, 0.10f));
++	const HLinearColor ColorErrorRow      = HGUI::DisplayColor(mixRGB(SurfaceRGB, CriticalRGB, 0.14f));
++	const HLinearColor ColorSelectedRow   = HGUI::DisplayColor(mixRGB(RaisedRGB, AccentRGB, 0.30f));
++	const HLinearColor ColorFocusBorder   = HGUI::DisplayColor(mixRGB(SurfaceRGB, AccentRGB, 0.70f));
++	const HLinearColor ColorScrollGrab    = HGUI::DisplayColor(0x3a3a38);
++	const HLinearColor ColorScrollGrabHot = HGUI::DisplayColor(0x4c4c49);
++
++	// 이 창 안의 항목(입력칸 · 체크박스 · 드롭다운 · 스크롤바 · 팝업)을 팔레트로 물들인다. 창 틀 · 탭은 다른 창과 같게 둔다.
++	// 넣은 개수를 돌려준다(그만큼 PopStyleColor).
++	int32 pushThemeColors()
++	{
++		int32 Count = 0;
++		const auto push = [&Count](EGUIColor InTarget, const HLinearColor& InColor)
++			{
++				HGUI::PushStyleColor(InTarget, InColor);
++				++Count;
++			};
++
++		push(EGUIColor::TextDisabled, ColorTextMuted);
++		push(EGUIColor::Border, ColorBorder);
++		push(EGUIColor::FrameBackground, ColorField);
++		push(EGUIColor::FrameBackgroundHovered, ColorFieldHover);
++		push(EGUIColor::FrameBackgroundActive, ColorFieldHover);
++		push(EGUIColor::CheckMark, ColorAccent);
++		push(EGUIColor::Header, ColorRaisedHover);
++		push(EGUIColor::HeaderHovered, ColorRaisedHover);
++		push(EGUIColor::HeaderActive, ColorSelectedRow);
++		push(EGUIColor::Button, ColorField);
++		push(EGUIColor::ButtonHovered, ColorFieldHover);
++		push(EGUIColor::ButtonActive, ColorRaisedHover);
++		push(EGUIColor::PopupBackground, ColorRaised);
++		push(EGUIColor::ScrollbarBackground, ColorSurface);
++		push(EGUIColor::ScrollbarGrab, ColorScrollGrab);
++		push(EGUIColor::ScrollbarGrabHovered, ColorScrollGrabHot);
++		push(EGUIColor::ScrollbarGrabActive, ColorAccent);
++		push(EGUIColor::Separator, ColorBorder);
++		return Count;
++	}
+ 
+-	const HLinearColor LogColorWarning = HLinearColor(1.0f, 0.82f, 0.35f, 1.0f);
+-	const HLinearColor LogColorError   = HLinearColor(1.0f, 0.42f, 0.42f, 1.0f);
+-	const HLinearColor PreviewColorDim = HLinearColor(0.62f, 0.62f, 0.62f, 1.0f);
++	// 세 자리마다 쉼표 (1,284)
++	PString formatCount(uint64 InValue)
++	{
++		const std::string Digits = std::to_string(InValue);
++		std::string Result;
++		Result.reserve(Digits.size() + Digits.size() / 3);
++		for (size_t Index = 0; Index < Digits.size(); ++Index)
++		{
++			if (Index > 0 && (Digits.size() - Index) % 3 == 0)
++			{
++				Result.push_back(',');
++			}
++			Result.push_back(Digits[Index]);
++		}
++		return PString(Result.c_str());
++	}
+ 
+ 	char toLowerAscii(char InChar)
+ 	{
+@@ -37,7 +128,7 @@ namespace
+ 		return Found != InText.end();
+ 	}
+ 
+-	// 글자 필터 "a, b, -c" → 보일 낱말 {a, b}, 숨길 낱말 {c}. 낱말의 앞뒤 공백을 떼고 소문자로 바꾸며 빈 낱말은 버린다.
++	// 검색 "a, b, -c" → 보일 낱말 {a, b}, 숨길 낱말 {c}. 낱말의 앞뒤 공백을 떼고 소문자로 바꾸며 빈 낱말은 버린다.
+ 	struct HLogFilter
+ 	{
+ 		HList<HRawString> Includes;
+@@ -122,6 +213,29 @@ namespace
+ 		return false;
+ 	}
+ 
++	// "[Category]: 본문" → Category, 본문. 이 모양이 아니면 빈 이름과 줄 전체.
++	void splitLogCategory(const HRawString& InText, HRawString& OutCategory, HRawString& OutBody)
++	{
++		OutCategory.clear();
++		if (InText.size() > 3 && InText[0] == '[')
++		{
++			const uint64 Close = InText.find("]: ");
++			if (Close != HRawString::npos && Close > 1)
++			{
++				OutCategory = InText.substr(1, Close - 1);
++				OutBody     = InText.substr(Close + 3);
++				return;
++			}
++		}
++
++		OutBody = InText;
++	}
++
++	PString categoryLabel(const PString& InName)
++	{
++		return InName.Empty() ? PString("(no category)") : InName;
++	}
++
+ 	// 입력줄의 첫 낱말(명령 이름)과 그 뒤에 공백이 있는지(인자를 치는 중인지).
+ 	void splitCommandName(const PString& InText, PString& OutName, bool& bOutTypingArgs)
+ 	{
+@@ -157,16 +271,21 @@ void JGDevConsole::OnLayout(const HWidgetLayout& InLayout)
+ void JGDevConsole::OnGenerateGUI()
+ {
+ 	refreshLogLines();
+-	generateFilterBar();
+-	generateLogView();
+ 
+-	if (HGUI::InputTextWithHistory("DevConsoleInput", CommandText, History, HistoryPos, InputKeyHandler))
+-	{
+-		submitCommand();
+-	}
++	HGUI::FillWindowBackground(ColorPage);
++	const int32 ThemeColorCount = pushThemeColors();
++	HGUI::PushStyleVar(EGUIStyleVar::FrameRounding, 4.0f);
++	HGUI::PushStyleVar(EGUIStyleVar::FrameBorderSize, 1.0f);
++	HGUI::PushStyleVar(EGUIStyleVar::PopupRounding, 6.0f);
++	HGUI::PushStyleVar(EGUIStyleVar::ScrollbarSize, 10.0f);
++	HGUI::PushStyleVar(EGUIStyleVar::ScrollbarRounding, 4.0f);
+ 
+-	// 입력줄 바로 뒤에 부른다(직전 항목 = 입력줄 기준으로 위치와 포커스를 본다).
+-	generateCommandPreview();
++	generateToolbar();
++	generateLogView();
++	generateInputBar();
++
++	HGUI::PopStyleVar(5);
++	HGUI::PopStyleColor(ThemeColorCount);
+ }
+ 
+ PString  JGDevConsole::GetTitleName() const
+@@ -209,46 +328,149 @@ void JGDevConsole::refreshLogLines()
+ 		}
+ 	}
+ 
++	rebuildLogRows();
+ 	rebuildVisibleLines();
+ }
+ 
++void JGDevConsole::rebuildLogRows()
++{
++	// 1) 줄마다 카테고리 · 본문을 나눈다.
++	HList<PString> LineCategoryNames;
++	LineCategoryNames.reserve(LogLines.size());
++	LogRows.clear();
++	LogRows.resize(LogLines.size());
++	for (uint64 LineIndex = 0; LineIndex < LogLines.size(); ++LineIndex)
++	{
++		HRawString Category;
++		HRawString Body;
++		splitLogCategory(LogLines[LineIndex].Text.GetRawString(), Category, Body);
++
++		HDevConsoleLogRow& Row = LogRows[LineIndex];
++		Row.Body         = Body.c_str();
++		Row.Level        = LogLines[LineIndex].Level;
++		Row.bCommandEcho = Category == "ConsoleCommand" && Body.starts_with("> ");
++		LineCategoryNames.push_back(PString(Category.c_str()));
++	}
++
++	// 2) 목록에 없는 카테고리는 켜진 채로 넣는다(이름순). 버퍼에서 밀려난 카테고리도 지우지 않는다(끈 상태를 지킨다).
++	HHashMap<PString, uint32> IndexByName;
++	for (uint32 CategoryIndex = 0; CategoryIndex < static_cast<uint32>(Categories.size()); ++CategoryIndex)
++	{
++		IndexByName.emplace(Categories[CategoryIndex].Name, CategoryIndex);
++	}
++
++	bool bAddedCategory = false;
++	for (const PString& Name : LineCategoryNames)
++	{
++		if (IndexByName.contains(Name))
++		{
++			continue;
++		}
++
++		HDevConsoleLogCategory NewCategory;
++		NewCategory.Name = Name;
++		IndexByName.emplace(Name, static_cast<uint32>(Categories.size()));
++		Categories.push_back(NewCategory);
++		bAddedCategory = true;
++	}
++
++	if (bAddedCategory)
++	{
++		std::sort(Categories.begin(), Categories.end(), [](const HDevConsoleLogCategory& InLeft, const HDevConsoleLogCategory& InRight)
++			{
++				return InLeft.Name.GetRawString() < InRight.Name.GetRawString();
++			});
++
++		IndexByName.clear();
++		for (uint32 CategoryIndex = 0; CategoryIndex < static_cast<uint32>(Categories.size()); ++CategoryIndex)
++		{
++			IndexByName.emplace(Categories[CategoryIndex].Name, CategoryIndex);
++		}
++	}
++
++	// 3) 줄 수를 세고 카테고리 열을 채운다. 열 폭은 지금 줄이 있는 카테고리 중 가장 긴 이름(최대 MaxCategoryColumn).
++	for (HDevConsoleLogCategory& Category : Categories)
++	{
++		Category.LineCount = 0;
++	}
++
++	for (uint64 LineIndex = 0; LineIndex < LogRows.size(); ++LineIndex)
++	{
++		const uint32 CategoryIndex = IndexByName.at(LineCategoryNames[LineIndex]);
++		LogRows[LineIndex].CategoryIndex = CategoryIndex;
++		++Categories[CategoryIndex].LineCount;
++	}
++
++	int32 ColumnWidth = 4;
++	for (const HDevConsoleLogCategory& Category : Categories)
++	{
++		if (Category.LineCount > 0)
++		{
++			ColumnWidth = HMath::Max(ColumnWidth, static_cast<int32>(categoryLabel(Category.Name).Length()));
++		}
++	}
++	ColumnWidth = HMath::Min(ColumnWidth, MaxCategoryColumn);
++
++	for (HDevConsoleLogRow& Row : LogRows)
++	{
++		Row.CategoryColumn = PString::Format("%-*.*s", ColumnWidth, ColumnWidth, categoryLabel(Categories[Row.CategoryIndex].Name));
++	}
++}
++
+ void JGDevConsole::rebuildVisibleLines()
+ {
+ 	const HLogFilter Filter = parseLogFilter(FilterText);
+ 
+ 	VisibleLines.clear();
+-	for (uint32 LineIndex = 0; LineIndex < static_cast<uint32>(LogLines.size()); ++LineIndex)
++	for (uint32 LineIndex = 0; LineIndex < static_cast<uint32>(LogRows.size()); ++LineIndex)
+ 	{
+-		const HLogLine& Line = LogLines[LineIndex];
++		const HDevConsoleLogRow& Row = LogRows[LineIndex];
+ 
+ 		bool bLevelShown = bShowInfo;
+-		if (Line.Level == ELogLevel::Error || Line.Level == ELogLevel::Critical)
++		if (Row.Level == ELogLevel::Error || Row.Level == ELogLevel::Critical)
+ 		{
+ 			bLevelShown = bShowError;
+ 		}
+-		else if (Line.Level == ELogLevel::Warning)
++		else if (Row.Level == ELogLevel::Warning)
+ 		{
+ 			bLevelShown = bShowWarning;
+ 		}
+ 
+-		if (bLevelShown && passLogFilter(Line.Text.GetRawString(), Filter))
++		if (bLevelShown == false || Categories[Row.CategoryIndex].bVisible == false)
++		{
++			continue;
++		}
++
++		if (passLogFilter(LogLines[LineIndex].Text.GetRawString(), Filter))
+ 		{
+ 			VisibleLines.push_back(LineIndex);
+ 		}
+ 	}
+ }
+ 
+-void JGDevConsole::generateFilterBar()
++void JGDevConsole::generateToolbar()
+ {
+-	// 라벨의 ### 뒤가 ID 다. 줄 수가 바뀌어도 같은 체크박스로 남는다. 네 항목을 모두 매 프레임 그려야 하므로 |= 로 모은다.
++	HGUI::BeginPanel("##DevConsoleToolbar", HVector2(0.0f, 0.0f), ColorSurface, ColorBorder);
++
++	// 모든 항목을 매 프레임 그려야 하므로 |= 로 모은다.
+ 	bool bChanged = false;
+-	bChanged |= HGUI::Checkbox(PString::Format("Info (%u)###LogInfo", InfoCount), bShowInfo);
+-	HGUI::SameLine();
+-	bChanged |= HGUI::Checkbox(PString::Format("Warning (%u)###LogWarning", WarningCount), bShowWarning);
+-	HGUI::SameLine();
+-	bChanged |= HGUI::Checkbox(PString::Format("Error (%u)###LogError", ErrorCount), bShowError);
+-	HGUI::SameLine();
+-	bChanged |= HGUI::InputTextWithHint("DevConsoleFilter", "Filter: word, -exclude (comma separated)", FilterText, -1.0f);
++	bChanged |= HGUI::ToggleChip("##LevelInfo", "Info", formatCount(InfoCount), ColorAccent, bShowInfo);
++	HGUI::SameLine(6.0f);
++	bChanged |= HGUI::ToggleChip("##LevelWarning", "Warn", formatCount(WarningCount), ColorWarning, bShowWarning);
++	HGUI::SameLine(6.0f);
++	bChanged |= HGUI::ToggleChip("##LevelError", "Error", formatCount(ErrorCount), ColorCritical, bShowError);
++	HGUI::SameLine(14.0f);
++	bChanged |= generateCategoryCombo();
++
++	// 오른쪽 끝에 보이는 줄 / 전체 줄. 검색칸은 그 앞까지 늘어난다.
++	const PString Summary      = PString::Format("%s / %s lines", formatCount(VisibleLines.size()), formatCount(LogLines.size()));
++	const float32 SummaryWidth = HGUI::CalcTextWidth(Summary);
++	HGUI::SameLine(14.0f);
++	bChanged |= HGUI::InputTextWithHint("DevConsoleSearch", "Search  (word, -exclude)", FilterText, -(SummaryWidth + 14.0f));
++	HGUI::SameLine(14.0f);
++	HGUI::TextRight(Summary, ColorTextMuted);
++
++	HGUI::EndPanel();
+ 
+ 	if (bChanged)
+ 	{
+@@ -256,33 +478,148 @@ void JGDevConsole::generateFilterBar()
+ 	}
+ }
+ 
++bool JGDevConsole::generateCategoryCombo()
++{
++	const uint32 CategoryCount = static_cast<uint32>(Categories.size());
++	uint32 VisibleCount = 0;
++	for (const HDevConsoleLogCategory& Category : Categories)
++	{
++		if (Category.bVisible)
++		{
++			++VisibleCount;
++		}
++	}
++
++	PString Preview = "All categories";
++	if (CategoryCount > 0 && VisibleCount == 0)
++	{
++		Preview = "No categories";
++	}
++	else if (VisibleCount < CategoryCount)
++	{
++		Preview = PString::Format("%u of %u categories", VisibleCount, CategoryCount);
++	}
++
++	// 닫힌 드롭다운의 글자 · 화살표는 한 단계 흐리게 한다(도구줄에서 가장 밝은 것이 되지 않게). 펼친 목록은 원래 색으로 되돌린다.
++	// 목록 안에서 넣은 색은 목록 안에서 빼야 한다(ImGui 는 창마다 Push/Pop 짝을 검사한다).
++	HGUI::PushStyleColor(EGUIColor::Text, ColorTextSecondary);
++	if (HGUI::BeginCombo("DevConsoleCategories", Preview, 200.0f) == false)
++	{
++		HGUI::PopStyleColor();
++		return false;
++	}
++	HGUI::PushStyleColor(EGUIColor::Text, ColorTextPrimary);
++
++	// All: 전부 켜져 있으면 체크, 일부만 켜져 있으면 가운데 표시. 누르면 전부 켜고(일부 · 없음일 때) 전부 켜져 있었으면 전부 끈다.
++	bool bChanged = false;
++	bool bAll = CategoryCount > 0 && VisibleCount == CategoryCount;
++	const bool bMixed = VisibleCount > 0 && VisibleCount < CategoryCount;
++	if (HGUI::Checkbox("All", bAll, bMixed))
++	{
++		for (HDevConsoleLogCategory& Category : Categories)
++		{
++			Category.bVisible = bAll;
++		}
++		bChanged = true;
++	}
++	HGUI::SameLine(16.0f);
++	HGUI::TextRight(formatCount(LogLines.size()), ColorTextMuted);
++	HGUI::Separator();
++
++	for (HDevConsoleLogCategory& Category : Categories)
++	{
++		// ## 뒤는 ID 다. 카테고리 이름이 "All" 이어도 위 항목과 겹치지 않는다.
++		if (HGUI::Checkbox(PString::Format("%s##Category", categoryLabel(Category.Name)), Category.bVisible))
++		{
++			bChanged = true;
++		}
++		HGUI::SameLine(16.0f);
++		HGUI::TextRight(formatCount(Category.LineCount), ColorTextMuted);
++	}
++
++	HGUI::PopStyleColor();
++	HGUI::EndCombo();
++	HGUI::PopStyleColor();
++	return bChanged;
++}
++
+ void JGDevConsole::generateLogView()
+ {
+-	// 아래에 입력줄 한 줄 자리를 남기고 나머지를 로그 뷰로 쓴다.
+-	HGUI::BeginChild("##DevConsoleLog", HVector2(0.0f, -HGUI::GetFrameHeightWithSpacing()));
++	// 아래에 입력줄 패널과 간격을 남기고 나머지를 로그 패널로 쓴다.
++	HGUI::PushStyleColor(EGUIColor::ChildBackground, ColorSurface);
++	HGUI::PushStyleVar(EGUIStyleVar::ChildRounding, 6.0f);
++	HGUI::PushStyleVar(EGUIStyleVar::WindowPadding, HVector2(10.0f, 8.0f));
++	HGUI::BeginChild("##DevConsoleLog", HVector2(0.0f, -(HGUI::GetFrameHeight() + InputBarPadding + PanelGap)));
++	HGUI::PopStyleVar(2);
++	HGUI::PopStyleColor();
++
++	if (VisibleLines.empty())
++	{
++		HGUI::Text(LogLines.empty() ? "No log lines yet." : "No log lines match the filters.", ColorTextMuted);
++	}
++
+ 	for (const uint32 LineIndex : VisibleLines)
+ 	{
+-		const HLogLine& Line = LogLines[LineIndex];
+-		if (Line.Level == ELogLevel::Error || Line.Level == ELogLevel::Critical)
++		const HDevConsoleLogRow& Row = LogRows[LineIndex];
++
++		HLinearColor BodyColor = ColorTextSecondary;
++		if (Row.Level == ELogLevel::Error || Row.Level == ELogLevel::Critical)
+ 		{
+-			HGUI::Text(Line.Text, LogColorError);
++			HGUI::HighlightLine(ColorErrorRow, ColorCritical);
++			BodyColor = ColorErrorText;
+ 		}
+-		else if (Line.Level == ELogLevel::Warning)
++		else if (Row.Level == ELogLevel::Warning)
+ 		{
+-			HGUI::Text(Line.Text, LogColorWarning);
++			HGUI::HighlightLine(ColorWarningRow, ColorWarning);
++			BodyColor = ColorWarning;
+ 		}
+-		else
++		else if (Row.bCommandEcho)
+ 		{
+-			HGUI::Text(Line.Text);
++			BodyColor = ColorCommand;
+ 		}
++
++		HGUI::Text(Row.CategoryColumn, ColorTextMuted);
++		HGUI::SameLine(12.0f);
++		HGUI::Text(Row.Body, BodyColor);
+ 	}
++
+ 	HGUI::EndChild(true);
+ }
+ 
++void JGDevConsole::generateInputBar()
++{
++	HGUI::BeginPanel("##DevConsoleInputBar", HVector2(0.0f, HGUI::GetFrameHeight() + InputBarPadding), ColorSurface, bInputActive ? ColorFocusBorder : ColorBorder);
++
++	HGUI::AlignTextToFramePadding();
++	HGUI::Text(">", ColorAccent);
++	HGUI::SameLine(8.0f);
++
++	// 입력칸의 바탕 · 테두리는 패널이 맡는다.
++	HGUI::PushStyleColor(EGUIColor::FrameBackground, ColorSurface);
++	HGUI::PushStyleColor(EGUIColor::FrameBackgroundHovered, ColorSurface);
++	HGUI::PushStyleColor(EGUIColor::FrameBackgroundActive, ColorSurface);
++	HGUI::PushStyleVar(EGUIStyleVar::FrameBorderSize, 0.0f);
++	const bool bEntered = HGUI::InputTextWithHistory("DevConsoleInput", CommandText, History, HistoryPos, InputKeyHandler,
++		"Type a command      Tab  complete      Up/Down  history");
++	HGUI::PopStyleVar();
++	HGUI::PopStyleColor(3);
++
++	if (bEntered)
++	{
++		submitCommand();
++	}
++
++	// 입력칸 바로 뒤에 부른다(직전 항목 = 입력칸 기준으로 위치와 포커스를 본다).
++	generateCommandPreview();
++
++	HGUI::EndPanel();
++}
++
+ void JGDevConsole::generateCommandPreview()
+ {
+ 	// 입력줄에 포커스가 없으면(다른 곳을 눌렀거나 Enter 를 친 프레임) 보이지 않는다.
+-	if (HGUI::IsItemActive() == false)
++	bInputActive = HGUI::IsItemActive();
++	if (bInputActive == false)
+ 	{
+ 		return;
+ 	}
+@@ -293,38 +630,64 @@ void JGDevConsole::generateCommandPreview()
+ 		return;
+ 	}
+ 
+-	HGUI::BeginTooltipAboveItem("##DevConsolePreview");
++	// 여백 · 테두리 색은 창을 만들 때 읽으므로 바로 되돌린다. 입력칸이 패널 안에 있으니 패널 위 테두리 바깥에 띄운다.
++	HGUI::PushStyleVar(EGUIStyleVar::WindowPadding, HVector2(10.0f, 8.0f));
++	HGUI::PushStyleColor(EGUIColor::Border, ColorBorderStrong);
++	HGUI::BeginTooltipAboveItem("##DevConsolePreview", InputBarPadding * 0.5f + 2.0f);
++	HGUI::PopStyleColor();
++	HGUI::PopStyleVar();
++
+ 	if (bPreviewUsage)
+ 	{
+ 		if (Candidates.empty())
+ 		{
+-			HGUI::Text(PString::Format("Unknown command '%s'", PreviewName), LogColorError);
++			HGUI::Text(PString::Format("Unknown command '%s'", PreviewName), ColorErrorText);
++			HGUI::Text("help lists every command", ColorTextMuted);
+ 		}
+ 		else
+ 		{
+-			HGUI::Text(PString::Format("Usage: %s", Candidates[0].Usage));
+-			HGUI::Text(PString::Format("  %s", Candidates[0].Description), PreviewColorDim);
++			HGUI::Text("Usage", ColorTextMuted);
++			HGUI::SameLine(8.0f);
++			HGUI::Text(Candidates[0].Usage, ColorTextPrimary);
++			HGUI::Text(Candidates[0].Description, ColorTextMuted);
+ 		}
+ 	}
+ 	else if (Candidates.empty())
+ 	{
+-		HGUI::Text(PString::Format("No command contains '%s'", PreviewName), PreviewColorDim);
++		HGUI::Text(PString::Format("No command contains '%s'", PreviewName), ColorTextMuted);
+ 	}
+ 	else
+ 	{
+ 		const int32 RowCount = HMath::Min(static_cast<int32>(Candidates.size()), MaxCandidateRows);
++		int32 NameWidth = 0;
++		for (int32 Row = 0; Row < RowCount; ++Row)
++		{
++			NameWidth = HMath::Max(NameWidth, static_cast<int32>(Candidates[Row].Name.Length()));
++		}
++
+ 		if (static_cast<int32>(Candidates.size()) > RowCount)
+ 		{
+-			HGUI::Text(PString::Format("... %d more", static_cast<int32>(Candidates.size()) - RowCount), PreviewColorDim);
++			HGUI::Text(PString::Format("%d more", static_cast<int32>(Candidates.size()) - RowCount), ColorTextMuted);
+ 		}
+ 
+ 		// 가장 잘 맞는 후보(0번)를 맨 아래, 입력줄 바로 위에 그린다. ↑ 를 누를수록 위로 올라간다.
+ 		for (int32 Row = RowCount - 1; Row >= 0; --Row)
+ 		{
+ 			const HConsoleCommandInfo& Candidate = Candidates[Row];
+-			HGUI::Selectable(PString::Format("%-28s %s", Candidate.Name, Candidate.Description), Row == CandidatePos);
++			const bool bSelected = Row == CandidatePos;
++			if (bSelected)
++			{
++				HGUI::HighlightLine(ColorSelectedRow, ColorAccent);
++			}
++			HGUI::Text(PString::Format("%-*s", NameWidth, Candidate.Name), bSelected ? ColorTextPrimary : ColorTextSecondary);
++			HGUI::SameLine(14.0f);
++			HGUI::Text(Candidate.Description, ColorTextMuted);
+ 		}
++
++		HGUI::Separator();
++		HGUI::Text("Tab  complete      Up/Down  select      Enter  run", ColorTextMuted);
+ 	}
++
+ 	HGUI::EndTooltip();
+ }
+ 

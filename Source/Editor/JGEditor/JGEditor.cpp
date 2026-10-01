@@ -6,6 +6,9 @@
 #include "GUIModule.h"
 #include "Menu/MenuTree.h"
 #include "Devkit.h"
+#include "Core/GameInstance.h"
+#include "Widgets/SceneViewport.h"
+#include "Widgets/GameplayDevView.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -47,6 +50,7 @@ void HJGEditorModule::StartupModule()
 
 	openDefaultWidgets();
 	connectProjectModules();
+	openSceneViewport();
 
 	JG_LOG(JGEditor, ELogLevel::Trace, "Startup JGEditor Module...");
 }
@@ -75,22 +79,49 @@ void HJGEditorModule::openDefaultWidgets()
 		JG_LOG(JGEditor, ELogLevel::Error, "JGEditor needs the GUI module");
 		return;
 	}
-
-	HMainMenuItem MenuItem;
-	MenuItem.MenuPath = "Dev/DevAI";
-	MenuItem.Action.BindLambda([]()
+	
+	// 게임 월드 창. GameFrameWorks 가 돌지 않으면(프로젝트 없이 띄운 에디터) 창은 안내 문구만 그린다.
+	HMainMenuItem SceneViewportItem;
+	SceneViewportItem.MenuPath = "Windows/Scene Viewport";
+	SceneViewportItem.Action.BindLambda([]()
 		{
 			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
 			if (GUIModule != nullptr)
 			{
-				GUIModule->OpenWidget<JGDevFeature>();
+				GUIModule->OpenWidget<JGSceneViewport>();
 			}
 		});
+	GUIModule->AddMainMenuItem(SceneViewportItem);
 
-	GUIModule->AddMainMenuItem(MenuItem);
+	HMainMenuItem DevViewItem;
+	DevViewItem.MenuPath = "Windows/Gameplay DevView";
+	DevViewItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGGameplayDevView>();
+			}
+		});
+	GUIModule->AddMainMenuItem(DevViewItem);
+}
 
-	// 시작 시 DevFeature(씬 뷰)를 바로 연다. 메뉴 Dev/DevAI 로도 열 수 있다.
-	GUIModule->OpenWidget<JGDevFeature>();
+void HJGEditorModule::openSceneViewport()
+{
+	// 게임 모듈이 GameFrameWorks 를 연결했을 때(프로젝트 모드)만 연다. 게임 모듈은 openDefaultWidgets 뒤에 연결되므로 여기서 본다.
+	if (JGGameInstance::HasInstance() == false)
+	{
+		return;
+	}
+
+	HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+	if (GUIModule == nullptr)
+	{
+		return;
+	}
+
+	// 기본 창이다. 사용자가 닫아 둔 레이아웃(imgui.ini)이면 열지 않는다. 그 밖에 열려 있던 창은 GUI 모듈이 첫 프레임에 다시 연다.
+	GUIModule->OpenWidgetByDefault<JGSceneViewport>();
 }
 
 void HJGEditorModule::connectProjectModules()

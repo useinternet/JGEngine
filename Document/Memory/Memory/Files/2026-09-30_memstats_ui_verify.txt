@@ -1,0 +1,58 @@
+메모리 통계 창(JGMemoryStatistcs) UI 재디자인 검증 — 2026-09-30
+
+[작업 방식]
+- 메인 트리에서 GFW(Phase 2) · GUI(1-2) · DevConsole 세션이 GUI.h/GUI.cpp 를 동시에 고치며 빌드 중이었다(MSBuild 2개, JGLauncher 1개 실행 중).
+  -> HEAD(4c8ac73) 격리 워크트리(scratchpad/wt)에서 구현 · 빌드 · 실행 · 캡처한 뒤 메인 트리에 "추가분만" 넣었다(파일 통째 덮어쓰기 없음).
+- 워크트리 PreBuild 2회(종료 0) -> 전체 빌드 270초, 오류 0, LNK4098 2줄(Graphics, GameFrameWorks. 기존 경고).
+
+[변경 파일] (제 변경만의 패치: 2026-09-30_memstats_ui.patch, 1,232줄)
+- Source/Editor/DevStatistics/MemoryStatistics.h/.cpp : 창 전면 재작성
+- Source/Runtime/GUI/GUI.h/.cpp : HGUI 대시보드 함수 추가(아래), 기존 함수 변경 없음
+- Source/Runtime/GUI/GUIDefines.h : EGUIColor, EGUIFont 추가
+- Source/Runtime/GUI/Backends/DX12GUIBackend.cpp : 글꼴 2개(기본 ProggyClean 13px, 큰 글꼴 26px)
+  HGUI 추가: SameLine(float) · Spacing · GetContentRegionAvail · GetTime · PushFont/PopFont · PushStyleColor/PopStyleColor ·
+             TextRight · ItemTooltip · FillWindowBackground · BeginPanel/EndPanel · SegmentedBar · Badge · LegendItem ·
+             BeginTable/TableSetupColumn/TableHeadersRow/TableNextRow/TableNextColumn/EndTable ·
+             BeginTabBar/EndTabBar/BeginTabItem/EndTabItem · PlotLines (+ 구조체 HGUIBarSegment, HPlotLinesArguments)
+
+[화면 구성]
+1. 요약 카드 4장(좁으면 2x2): Committed / In use(+비율 막대) / Live blocks / Large blocks. 카드마다 풍선 도움말(옛 요약 두 줄의 대형 캐시 수치 포함)
+2. Pool over time: 최근 60초 추이(0.25초 표본, 창이 열려 있는 동안). 커밋 = 회색 맥락선, 사용 중 = 파란 선 + 옅은 면. 마우스를 올리면 세로선 · 표식 · 값
+3. Threads: 스레드(청크)별 막대(사용 중 · 헤더 · 빈 칸), In use / Committed, 원격 반납 대기/누적, 대형 블록
+4. Size classes: 스레드별 탭 + 표(Class, Usage 막대 + %, Live/Total, Pages(빈 페이지), Grew, Released, Peak, Allocs, 상태 딱지)
+   - FULL(빨강): 사용률 90% 이상 = 다음 할당이 페이지를 추가. GREW(노랑): 시작 뒤 페이지가 늘어난 클래스
+   - 블록 하나짜리 페이지(32KB 이상 클래스)는 100% 가 정상이라 딱지 · 빨강을 붙이지 않는다
+
+[색]
+- UI 는 선형 FP16 버퍼에 그려진 뒤 sRGB 로 인코딩되어 나간다. 기존 캡처 픽셀로 확인:
+  창 배경 StyleColorsDark 0.06 -> #454545, 제목줄 (0.16,0.29,0.48) -> #7093B8 (sRGB 인코딩 값과 정확히 일치).
+  -> 이 창의 팔레트는 sRGB 값을 선형으로 바꿔 넘긴다(MemoryStatistics.cpp displayColor). 다른 창은 그대로(옅게 보임).
+- 계열 색 검증(dataviz validate_palette.js, 어두운 표면 #1a1a19):
+  #3987e5(사용 중) + #d95926(헤더): 전 항목 PASS (CVD dE 26.8, 정상 시각 dE 31.8, 대비 >= 3:1)
+  (#3987e5 + #9085e9 보라는 FAIL: protan dE 1.9 -> 채택 안 함)
+- 상태 색(#fab219, #d03b3b)은 글자 딱지(GREW, FULL)와 함께만 쓴다.
+
+[빌드] (워크트리, DevelopEngine|x64)
+- GUI.vcxproj Rebuild 종료 0, DevStatistics.vcxproj Rebuild 종료 0, 오류 0 · C4 경고 0 (반복 수정마다 동일)
+- 헤더(GUI.h) 변경 뒤에는 Rebuild (scratchpad 워크트리는 MSB8029 로 헤더 의존을 추적하지 않음)
+- 통합 컴파일 확인: 메인 트리의 GUI 모듈 변경 파일 12개 전체(다른 세션 변경 + 제 변경)를 워크트리에 복사 -> GUI · DevStatistics Rebuild 종료 0, 오류 0.
+  (이 상태로 실행하지는 않았다. 다른 세션이 Widget.h 의 가상 함수를 지워 다른 DLL 도 다시 빌드해야 한다)
+
+[실행] (워크트리 Bin, JGLauncher -> JGEditor, 창은 imgui.ini 의 오른쪽 도킹 자리)
+- 캡처 스크립트: Files/tools/memstats_capture.ps1.txt (PrintWindow, PostMessage 로 런처 창에만 입력)
+- 창 열기: 워크트리 전용 임시 코드(DevStatistics.cpp, JG_OPEN_MEMSTATS). 메인 트리에 옮기지 않음. 메뉴 Windows/Statistics/Memory 는 그대로
+- 실행 7회 모두 종료 코드 0, jg_log [error]/[critical] 0, Memory Chunk Shutdown live blocks 0 · large live 0
+- 60초 이상 실행에서 추이 그래프가 가로 범위를 채우고 오래된 표본이 버려지는 것 확인
+- 128 B 클래스가 실행 중 91.0% 에 닿은 순간 빨간 막대 + FULL 딱지 확인(2026-09-30_memstats_ui_after.png)
+- Thread 1 탭: 256 KB / 512 KB / 1 MB 클래스(100%, 블록 하나짜리 페이지) 파란 막대 · 딱지 없음(2026-09-30_memstats_ui_thread1.png).
+  PostMessage 클릭은 실제 커서 위치에 따라 먹지 않을 때가 있어(멀티 뷰포트가 실제 커서로 호버 창을 정함) 워크트리 임시 코드로 메인 청크를 목록에서 빼고 찍었다. 임시 코드는 제거
+- 풍선 도움말: 그래프 십자선(2026-09-30_memstats_ui_plot_tooltip.png), 클래스 막대(..._class_tooltip.png), 스레드 막대 확인
+
+[캡처]
+- 2026-09-30_memstats_ui_before.png  : 변경 전 (HEAD)
+- 2026-09-30_memstats_ui_after.png   : 변경 후 (Main thread 탭)
+- 2026-09-30_memstats_ui_plot_tooltip.png, _class_tooltip.png, _thread1.png
+
+[남은 것]
+- 메인 트리 빌드 · 실행 확인은 하지 않았다(다른 세션 작업 중). 커밋 전 메인 트리 전체 빌드 1회 필요
+- 창 제목 오타 "MemoryStatistcs" 는 그대로 둠(바꾸면 imgui.ini 의 도킹 자리를 한 번 잃는다)

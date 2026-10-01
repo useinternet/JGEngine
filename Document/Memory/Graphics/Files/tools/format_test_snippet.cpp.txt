@@ -1,0 +1,190 @@
+// 5-30 저장 형식(base64) 검증용 임시 코드 (2026-09-30). Source/Runtime/Devkit/DevScene.cpp 에 넣어 쓰고 검증 뒤 뺀다.
+// 결과: Document/Memory/Graphics/Files/2026-09-30_Phase5-30_저장형식.md
+//
+// 사용
+//   1. 아래 (A)~(E)를 DevScene.cpp 에 넣고 Devkit 빌드
+//   2. JG_FORMATTEST=<Content 밖의 출력 폴더 절대 경로> 로 런처 실행 (Content 아래에 두면 매 시작마다 로드된다)
+//      - 텍스처: 1024² 노이즈(5-2 의 73.7MB 사례와 같은 LCG) -> 새 형식 저장 -> 디스크에서 다시 로드 -> GPU 리드백이 원본과 같은지
+//      - 메시: 시작 로드된 Sample(X Bot) -> 새 형식 저장(이름 = 에셋 경로) -> 다시 로드 -> 정점 · 인덱스 · 경계 상자 비교,
+//              원래 파일(옛 형식이면 옛 형식)과 새 파일의 크기 · 로드 시간
+//   3. 로그에서 "FormatTest : texture readback ... -> PASS", "FormatTest : mesh ... -> PASS" 확인
+//   4. <출력 폴더>/Sample_New.jgasset 은 새 형식 Sample 이다. 재저장(D-10)할 때 Content/TempAsset/Sample.jgasset 에 덮어쓴다
+//   5. 끝나면 코드를 빼고 git diff 로 DevScene.cpp 가 원래대로인지 확인한다
+
+// (A) include 목록 끝
+#include <chrono>       // 임시: 5-30 형식 검증
+#include <filesystem>   // 임시: 5-30 형식 검증
+
+// (B) 첫 익명 namespace 뒤, JGDevScene::OnInitialize() 앞
+// [FORMATTEST-TEMP begin] 5-30 저장 형식 검증용 임시 코드
+namespace
+{
+	struct HFormatTestState
+	{
+		bool    bActive = false;
+		PString OutDirectory;
+		PSharedPtr<JGTexture> Texture;   // 리드백 콜백까지 살려 둔다. OnShutdown 에서 놓는다
+	};
+	HFormatTestState GFormatTest;
+
+	constexpr uint32 FormatTestNoiseSize = 1024;
+
+	void formatTestNoisePixels(HList<uint8>& outPixels)
+	{
+		const uint64 pixelCount = (uint64)FormatTestNoiseSize * FormatTestNoiseSize;
+		outPixels.resize(pixelCount * 4);
+
+		uint32 state = 12345u;
+		for (uint64 i = 0; i < pixelCount; ++i)
+		{
+			state = state * 1664525u + 1013904223u;
+			outPixels[i * 4 + 0] = (uint8)(state >> 24);
+			outPixels[i * 4 + 1] = (uint8)(state >> 16);
+			outPixels[i * 4 + 2] = (uint8)(state >> 8);
+			outPixels[i * 4 + 3] = (uint8)(state);
+		}
+	}
+
+	float64 formatTestElapsedMs(std::chrono::steady_clock::time_point inStart)
+	{
+		return std::chrono::duration<float64, std::milli>(std::chrono::steady_clock::now() - inStart).count();
+	}
+
+	int64 formatTestFileSize(const PString& inPath)
+	{
+		std::error_code error;
+		const uintmax_t size = std::filesystem::file_size(inPath.GetCStr(), error);
+		if (error)
+		{
+			return -1;
+		}
+		return (int64)size;
+	}
+
+	void runFormatTextureTest()
+	{
+		HTextureConstructArguments args;
+		args.TextureInfo.Name      = "FormatTest_Noise";
+		args.TextureInfo.Width     = FormatTestNoiseSize;
+		args.TextureInfo.Height    = FormatTestNoiseSize;
+		args.TextureInfo.Format    = ETextureFormat::R8G8B8A8_Unorm;
+		args.TextureInfo.MipLevel  = 1;
+		args.TextureInfo.ArraySize = 1;
+		formatTestNoisePixels(args.Pixels);
+
+		PString path;
+		HFileHelper::CombinePath(GFormatTest.OutDirectory, "Noise_New.jgasset", &path);
+
+		PSharedPtr<JGTexture> source = GetGraphicsAPI().CreateTexture(args);
+		const auto saveStart = std::chrono::steady_clock::now();
+		const bool bSaved = SaveObject(path, source.GetRawPointer());
+		const float64 saveMs = formatTestElapsedMs(saveStart);
+
+		const auto loadStart = std::chrono::steady_clock::now();
+		GFormatTest.Texture = LoadObject<JGTexture>(path);
+		const float64 loadMs = formatTestElapsedMs(loadStart);
+
+		JG_LOG(Devkit, ELogLevel::Info, "FormatTest : texture %dx%d saved %s (%.1f ms), file %lld bytes, load %.1f ms",
+			(int32)FormatTestNoiseSize, (int32)FormatTestNoiseSize, PString(bSaved ? "ok" : "fail"), saveMs, formatTestFileSize(path), loadMs);
+
+		if (GFormatTest.Texture.IsValid() == false || GFormatTest.Texture->IsValid() == false)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "FormatTest : texture reload failed -> FAIL");
+			return;
+		}
+
+		const bool bRequested = GetGraphicsAPI().RequestTextureReadback(GFormatTest.Texture->GetRawTexture(),
+			HOnTextureReadbackComplete::CreateLambda([](const HTexturePixels& InPixels)
+			{
+				HList<uint8> expected;
+				formatTestNoisePixels(expected);
+				const bool bSame = InPixels.IsValid() && InPixels.Data.size() == expected.size()
+					&& memcmp(InPixels.Data.data(), expected.data(), expected.size()) == 0;
+				JG_LOG(Devkit, bSame ? ELogLevel::Info : ELogLevel::Error, "FormatTest : texture readback %dx%d, %d bytes -> %s",
+					(int32)InPixels.Width, (int32)InPixels.Height, (int32)InPixels.Data.size(), PString(bSame ? "PASS" : "FAIL"));
+				GFormatTest.Texture = nullptr;
+			}));
+		if (bRequested == false)
+		{
+			JG_LOG(Devkit, ELogLevel::Error, "FormatTest : texture readback request failed -> FAIL");
+		}
+	}
+
+	void runFormatMeshTest(PSharedPtr<JGStaticMesh> inMesh, const char* inAssetPath)   // PSharedPtr는 const를 전파하므로 값으로 받는다(SetName)
+	{
+		// 새로 저장하는 에셋은 이름 = 에셋 경로로 둔다. 임포터와 같은 규칙이고, 짧은 이름이면 AssetPath 가 "(null)" 로 저장된다(5-20).
+		inMesh->SetName(PName(inAssetPath));
+
+		PString newPath;
+		HFileHelper::CombinePath(GFormatTest.OutDirectory, "Sample_New.jgasset", &newPath);
+		const auto saveStart = std::chrono::steady_clock::now();
+		const bool bSaved = SaveObject(newPath, inMesh.GetRawPointer());
+		const float64 saveMs = formatTestElapsedMs(saveStart);
+
+		const PString oldPath = HAssetPath(inAssetPath).GetRawAssetPath().ToString();
+		const auto oldStart = std::chrono::steady_clock::now();
+		PSharedPtr<JGStaticMesh> oldMesh = LoadObject<JGStaticMesh>(oldPath);
+		const float64 oldMs = formatTestElapsedMs(oldStart);
+
+		const auto newStart = std::chrono::steady_clock::now();
+		PSharedPtr<JGStaticMesh> newMesh = LoadObject<JGStaticMesh>(newPath);
+		const float64 newMs = formatTestElapsedMs(newStart);
+
+		bool bSame = bSaved && newMesh.IsValid() && newMesh->GetSubMeshCount() == inMesh->GetSubMeshCount();
+		for (uint32 subMeshIndex = 0; bSame && subMeshIndex < (uint32)inMesh->GetSubMeshCount(); ++subMeshIndex)
+		{
+			bSame = newMesh->GetVertexCount(subMeshIndex) == inMesh->GetVertexCount(subMeshIndex)
+				&& newMesh->GetIndexCount(subMeshIndex) == inMesh->GetIndexCount(subMeshIndex);
+			for (uint32 vertexIndex = 0; bSame && vertexIndex < (uint32)inMesh->GetVertexCount(subMeshIndex); ++vertexIndex)
+			{
+				bSame = memcmp(&newMesh->GetVertex(subMeshIndex, vertexIndex), &inMesh->GetVertex(subMeshIndex, vertexIndex), sizeof(HVertexData)) == 0;
+			}
+			for (uint32 indexIndex = 0; bSame && indexIndex < (uint32)inMesh->GetIndexCount(subMeshIndex); ++indexIndex)
+			{
+				bSame = newMesh->GetIndex(subMeshIndex, indexIndex) == inMesh->GetIndex(subMeshIndex, indexIndex);
+			}
+		}
+
+		HBBox sourceBounds;
+		HBBox loadedBounds;
+		const bool bBounds = inMesh->GetBounds(sourceBounds) && newMesh.IsValid() && newMesh->GetBounds(loadedBounds)
+			&& memcmp(&sourceBounds, &loadedBounds, sizeof(HBBox)) == 0;
+
+		const bool bPassed = bSame && bBounds && oldMesh.IsValid();
+		JG_LOG(Devkit, bPassed ? ELogLevel::Info : ELogLevel::Error,
+			"FormatTest : mesh saved %s (%.1f ms). old file %lld bytes load %.1f ms, new file %lld bytes load %.1f ms. submesh %d, vertex %d, index %d, data %s, bounds %s -> %s",
+			PString(bSaved ? "ok" : "fail"), saveMs, formatTestFileSize(oldPath), oldMs, formatTestFileSize(newPath), newMs,
+			(int32)inMesh->GetSubMeshCount(), (int32)inMesh->GetTotalVertexCount(), (int32)inMesh->GetTotalIndexCount(),
+			PString(bSame ? "same" : "DIFFERENT"), PString(bBounds ? "same" : "DIFFERENT"), PString(bPassed ? "PASS" : "FAIL"));
+	}
+
+	void runFormatTestIfRequested()
+	{
+		char value[1024] = {};
+		size_t valueLength = 0;
+		if (getenv_s(&valueLength, value, sizeof(value), "JG_FORMATTEST") != 0 || valueLength <= 1)
+		{
+			return;
+		}
+
+		GFormatTest = HFormatTestState();
+		GFormatTest.bActive      = true;
+		GFormatTest.OutDirectory = value;
+		HFileHelper::CreateDirectory(GFormatTest.OutDirectory);
+
+		runFormatTextureTest();
+	}
+}
+// [FORMATTEST-TEMP end]
+
+// (C) JGDevScene::OnInitialize() 끝 (RequestMeshLoad() 뒤)
+	runFormatTestIfRequested();   // [FORMATTEST-TEMP]
+
+// (D) JGDevScene::OnShutdown() 맨 앞 — 그래픽 종료 전에 텍스처를 놓는다
+	GFormatTest = HFormatTestState();   // [FORMATTEST-TEMP]
+
+// (E) JGDevScene::OnMeshLoaded() 끝 (FitCameraToMesh() 와 로그 뒤)
+	if (GFormatTest.bActive)   // [FORMATTEST-TEMP]
+	{
+		runFormatMeshTest(Mesh, DevSceneMeshAssetPath);
+	}

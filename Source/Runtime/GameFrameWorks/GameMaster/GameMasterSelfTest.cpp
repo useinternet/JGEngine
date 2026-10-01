@@ -927,6 +927,392 @@ namespace
 
 		check(true, "R17 const HGameplayState gives only const components (static_assert above)");
 	}
+
+	// ---- 13. 게임 흐름 (ER-009) ----------------------------------------------------------
+
+	const char* TestFlowName       = "TestPhases";
+	const char* TestCommandReady   = "TestReady";
+	const char* TestCommandKillAll = "TestKillAll";
+	const char* TestEventAutoStep  = "TestAutoStep";
+	const char* TestStepSetup      = "Setup";
+	const char* TestStepAuto       = "Auto";
+	const char* TestStepAct        = "Act";
+	const char* TestStepNextActor  = "NextActor";   // 예약 칸(NextStep)에만 쓰는 이름
+	const char* TestStepUpkeep     = "Upkeep";
+	constexpr int32 TestFlowFinishCode = 7;
+
+	void collectAliveUnits(const HGameplayState& state, HList<HGameplayEntityId>& outUnits)
+	{
+		const HGameplayZone* zone = state.FindZone(PName(TestZoneUnits));
+		if (zone == nullptr)
+		{
+			return;
+		}
+		for (const HGameplayEntityId& id : zone->Entities)
+		{
+			if (state.IsAlive(id) == true)
+			{
+				outUnits.push_back(id);
+			}
+		}
+	}
+
+	// 검증용 게임 흐름: 준비(전원 동시 입력) → 라운드마다 [자동 → 행동(흐름이 고른 역순으로 한 명씩) → 정리], FinishAfterRound 에서 끝.
+	// 기본 흐름과 다른 모양(여러 행동자 · 자동 단계 · 흐름이 고른 순서 · 탈락 처리 · 흐름이 정하는 끝)을 한 번에 본다.
+	class PTestPhasesFlow : public IGameplayFlow
+	{
+	public:
+		int32 FinishAfterRound = 2;
+		bool  bRunaway         = false;   // 대기 없이 단계를 계속 잇는 고장 난 흐름 (한도 검사용)
+
+		virtual PName GetName() const override
+		{
+			return PName(TestFlowName);
+		}
+
+		virtual void Start(HGameplayContext& ctx) override
+		{
+			HGameplayTurnState& turn = ctx.State.Turn;
+			turn.Round     = 0;
+			turn.TurnCount = 0;
+			ctx.SetStep(PName(TestStepSetup));
+
+			HList<HGameplayEntityId> units;
+			collectAliveUnits(ctx.State, units);
+			ctx.SetActors(units);
+		}
+
+		virtual bool RunPendingStep(HGameplayContext& ctx) override
+		{
+			HGameplayTurnState& turn = ctx.State.Turn;
+			if (bRunaway == true)
+			{
+				turn.NextStep = PName("Loop");
+				return true;
+			}
+
+			// 행동 단계의 행동자가 죽었으면 다음 행동자로 (탈락 처리는 흐름이 정한다)
+			if (turn.Step == PName(TestStepAct) && turn.NextStep == NAME_NONE && turn.Actors.empty() == false && ctx.State.IsAlive(turn.Actors[0]) == false)
+			{
+				turn.NextStep = PName(TestStepNextActor);
+			}
+			// 준비 단계: 모두 준비하면(입력 행동자가 비면) 자동 단계로
+			if (turn.Step == PName(TestStepSetup) && turn.Actors.empty() == true && turn.NextStep == NAME_NONE)
+			{
+				turn.NextStep = PName(TestStepAuto);
+			}
+
+			const PName next = turn.NextStep;
+			if (next == NAME_NONE)
+			{
+				return false;
+			}
+			turn.NextStep = PName();
+
+			if (next == PName(TestStepAuto))
+			{
+				++turn.Round;
+				ctx.SetStep(next);
+				ctx.SetActors(HList<HGameplayEntityId>());
+
+				HList<HGameplayEntityId> units;
+				collectAliveUnits(ctx.State, units);
+				HGameplayEvent autoStep(PName(TestEventAutoStep), units.empty() == true ? HGameplayEntityId::None() : units[0], HGameplayEntityId::None());
+				autoStep.Amount = turn.Round;
+				ctx.Emit(autoStep);
+
+				turn.NextStep = PName(TestStepAct);
+				return true;
+			}
+
+			if (next == PName(TestStepAct))
+			{
+				ctx.SetStep(next);
+
+				// 흐름이 고른 순서: 살아 있는 유닛을 역순으로
+				HList<HGameplayEntityId> units;
+				collectAliveUnits(ctx.State, units);
+				turn.Order.clear();
+				for (int32 i = (int32)units.size() - 1; i >= 0; --i)
+				{
+					turn.Order.push_back(units[i]);
+				}
+				turn.OrderIndex = INDEX_NONE;
+				turn.NextStep   = PName(TestStepNextActor);
+				return true;
+			}
+
+			if (next == PName(TestStepNextActor))
+			{
+				int32 index = turn.OrderIndex + 1;
+				while (index < (int32)turn.Order.size() && ctx.State.IsAlive(turn.Order[index]) == false)
+				{
+					++index;
+				}
+				if (index >= (int32)turn.Order.size())
+				{
+					ctx.SetActors(HList<HGameplayEntityId>());
+					turn.NextStep = PName(TestStepUpkeep);
+					return true;
+				}
+
+				turn.OrderIndex = index;
+				++turn.TurnCount;
+				HList<HGameplayEntityId> actor;
+				actor.push_back(turn.Order[index]);
+				ctx.SetActors(actor);
+				return true;
+			}
+
+			if (next == PName(TestStepUpkeep))
+			{
+				ctx.SetStep(next);
+				if (turn.Round >= FinishAfterRound)
+				{
+					ctx.FinishGame(TestFlowFinishCode);
+					return true;
+				}
+				turn.NextStep = PName(TestStepAuto);
+				return true;
+			}
+
+			return false;
+		}
+
+		virtual bool CanEndTurn(const HGameplayState& state, const HGameplayEntityId& actor, PString* outReason) const override
+		{
+			if (state.Turn.Step != PName(TestStepAct) || state.Turn.IsActor(actor) == false)
+			{
+				if (outReason != nullptr)
+				{
+					*outReason = "not acting now (test flow)";
+				}
+				return false;
+			}
+			return true;
+		}
+
+		virtual void EndTurn(HGameplayContext& ctx, const HGameplayEntityId& actor) override
+		{
+			ctx.SetActors(HList<HGameplayEntityId>());
+			ctx.State.Turn.NextStep = PName(TestStepNextActor);
+		}
+	};
+
+	// 준비 단계 명령: 입력 행동자가 내면 그 행동자가 입력 목록에서 빠진다.
+	class PTestReadyHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName(TestCommandReady);
+		}
+
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			if (state.Turn.Step != PName(TestStepSetup) || state.IsInputActor(command.Actor) == false)
+			{
+				if (outReason != nullptr)
+				{
+					*outReason = "not an input actor in setup";
+				}
+				return false;
+			}
+			return true;
+		}
+
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			HList<HGameplayEntityId> remaining;
+			for (const HGameplayEntityId& actor : ctx.State.Turn.Actors)
+			{
+				if (actor != command.Actor)
+				{
+					remaining.push_back(actor);
+				}
+			}
+			ctx.SetActors(remaining);
+		}
+	};
+
+	// 모든 유닛을 없앤다 (빈 행동자에서 흐름이 어떻게 끝나는지 보기 위한 것).
+	class PTestKillAllHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName(TestCommandKillAll);
+		}
+
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			if (state.IsInputActor(command.Actor) == false)
+			{
+				if (outReason != nullptr)
+				{
+					*outReason = "not an input actor";
+				}
+				return false;
+			}
+			return true;
+		}
+
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			HList<HGameplayEntityId> units;
+			collectAliveUnits(ctx.State, units);
+			for (const HGameplayEntityId& unit : units)
+			{
+				HGameplayEffectRequest kill(PName(TestEffectChange), command.Actor, unit);
+				kill.Params.push_back(1000);
+				ctx.Enqueue(kill);
+			}
+		}
+	};
+
+	int32 findStepIndex(const HList<HGameplayEvent>& events, const char* step)
+	{
+		PName kind(HGameplayBuiltin::EventStepChanged);
+		PName name(step);
+		int32 count = (int32)events.size();
+		for (int32 i = 0; i < count; ++i)
+		{
+			if (events[i].Kind == kind && events[i].Tag == name)
+			{
+				return i;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	HList<HGameplayEntityId> setupFlowGameMaster(PGameMaster& sim, PSharedPtr<IGameplayFlow> flow)
+	{
+		HList<HGameplayEntityId> units = setupRegressionGameMaster(sim, 3, 10);
+		sim.RegisterHandler(Allocate<PTestReadyHandler>());
+		sim.RegisterHandler(Allocate<PTestKillAllHandler>());
+		sim.RegisterEffect(Allocate<PTestChangeEffect>());
+		sim.RegisterTrigger(makeReactTrigger("TestAutoStepReact", TestEventAutoStep, TestEffectChange, 1));
+		sim.SetFlow(flow);
+		return units;
+	}
+
+	void runFlowChecks(HCheck& check, uint64 seed)
+	{
+		// 기본 흐름도 공용 칸을 채운다
+		{
+			PSharedPtr<PGameMaster> sim = Allocate<PGameMaster>();
+			setupGameMaster(*sim);
+			sim->Start(seed);
+			const HGameplayState&     state = sim->GetState();
+			const HGameplayTurnState& turn  = state.Turn;
+			check(turn.Phase == EGameplayPhase::TurnMain && turn.Step == PName("TurnMain") && turn.Actors.size() == 1 && turn.Actors[0] == turn.CurrentActor
+				&& state.FirstInputActor() == turn.CurrentActor,
+				"13 the default flow fills the common fields at TurnMain (Step TurnMain, Actors = [current actor])");
+		}
+
+		PSharedPtr<PTestPhasesFlow> flow = Allocate<PTestPhasesFlow>();
+		PSharedPtr<PGameMaster>     sim  = Allocate<PGameMaster>();
+		HList<HGameplayEntityId>    units = setupFlowGameMaster(*sim, flow);
+		const HGameplayState&       state = sim->GetState();
+
+		HList<HGameplayEvent> startEvents;
+		sim->Start(seed, &startEvents);
+		HList<HGameplayEntityId> inputActors;
+		state.CollectInputActors(inputActors);
+		check(state.Turn.Phase == EGameplayPhase::Flow && state.Turn.Step == PName(TestStepSetup) && inputActors.size() == 3,
+			"13 a game flow starts in its own setup step with all three units as input actors (Phase Flow)");
+		check(hasEvent(startEvents, HGameplayBuiltin::EventGameStarted) == true && findStepIndex(startEvents, TestStepSetup) != INDEX_NONE
+			&& hasEvent(startEvents, HGameplayBuiltin::EventRoundStarted) == false && hasEvent(startEvents, HGameplayBuiltin::EventTurnStarted) == false,
+			"13 the engine emits GameStarted and the flow its StepChanged; no built-in round or turn events");
+
+		PSharedPtr<PGameMaster> defaultFlowSim = Allocate<PGameMaster>();
+		setupFlowGameMaster(*defaultFlowSim, nullptr);
+		check(defaultFlowSim->RulesFingerprint() != sim->RulesFingerprint(), "13 the rules fingerprint includes the flow name");
+
+		// 준비 단계: EndTurn 은 흐름이 정하고(거절), 준비 명령은 아무 순서로, 이미 준비한 유닛은 다시 못 낸다
+		HList<HGameplayEvent> events;
+		PString reason;
+		EGameplaySubmitResult endTurnInSetup = sim->Submit(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), units[0]), events, &reason);
+		check(endTurnInSetup == EGameplaySubmitResult::Rejected && reason == PString("not acting now (test flow)"),
+			PString::Format("13 the flow decides EndTurn: rejected in setup with the flow's reason (%s)", reason));
+
+		EGameplaySubmitResult ready2 = sim->Submit(HGameplayCommand(PName(TestCommandReady), units[2]), events, &reason);
+		check(ready2 == EGameplaySubmitResult::Executed && state.Turn.Actors.size() == 2 && state.Turn.IsActor(units[2]) == false,
+			"13 setup takes input actors in any order (units[2] first) and drops the one who readied");
+		check(sim->Submit(HGameplayCommand(PName(TestCommandReady), units[2]), events, &reason) == EGameplaySubmitResult::Rejected,
+			"13 a unit that already readied is no longer an input actor");
+
+		sim->Submit(HGameplayCommand(PName(TestCommandReady), units[0]), events, &reason);
+		events.clear();
+		sim->Submit(HGameplayCommand(PName(TestCommandReady), units[1]), events, &reason);
+		const int32 changedAt = findEventIndex(events, TestEventChanged);
+		const int32 actAt     = findStepIndex(events, TestStepAct);
+		check(state.Turn.Step == PName(TestStepAct) && state.Turn.Round == 1 && state.Turn.Actors.size() == 1 && state.Turn.Actors[0] == units[2],
+			"13 after setup the automatic step runs without input and the flow waits on the first actor it chose (reverse order: units[2])");
+		check(changedAt != INDEX_NONE && actAt != INDEX_NONE && changedAt < actAt,
+			PString::Format("13 effects raised by the automatic step resolve before the next step starts (change %d < step %d)", changedAt, actAt));
+
+		// 행동 단계: 지금 행동자가 아니면 EndTurn 거절, 맞으면 흐름이 고른 다음 행동자. 되돌리기는 흐름 칸까지 되돌린다
+		check(sim->Submit(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), units[0]), events, &reason) == EGameplaySubmitResult::Rejected,
+			"13 EndTurn by a unit that is not acting is rejected");
+		const uint64             beforeEnd     = sim->Checksum();
+		const PName              beforeStep    = state.Turn.Step;
+		const HList<HGameplayEntityId> beforeActors = state.Turn.Actors;
+		const PName              beforeNext    = state.Turn.NextStep;
+		EGameplaySubmitResult ended = sim->Submit(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), units[2]), events, &reason);
+		check(ended == EGameplaySubmitResult::Executed && state.Turn.Actors.size() == 1 && state.Turn.Actors[0] == units[1],
+			"13 EndTurn hands the turn to the next actor the flow chose (units[1])");
+		check(sim->Undo() == true && sim->Checksum() == beforeEnd && state.Turn.Step == beforeStep && state.Turn.Actors == beforeActors && state.Turn.NextStep == beforeNext,
+			"13 Undo restores the flow's common fields (Step, Actors, NextStep)");
+
+		// AI 러너는 흐름의 입력 행동자를 본다
+		sim->SetAgent(0, Allocate<PGameplayRandomAgent>((uint64)5));
+		HGameplayCommand chosen;
+		check(PGameplayAgentRunner::Choose(*sim, chosen) == true && chosen.Actor == units[2],
+			"13 the agent runner chooses a command for the flow's input actor");
+
+		// 유닛이 모두 사라져도 엔진이 끝내지 않는다. 흐름이 자기 규칙으로 라운드를 이어 가다 끝을 정한다
+		events.clear();
+		EGameplaySubmitResult killed = sim->Submit(HGameplayCommand(PName(TestCommandKillAll), units[2]), events, &reason);
+		const int32 finishedAt = findEventIndex(events, HGameplayBuiltin::EventGameFinished);
+		check(killed == EGameplaySubmitResult::Executed && state.Turn.IsFinished() == true && state.Turn.Round == 2
+			&& finishedAt != INDEX_NONE && events[finishedAt].Amount == TestFlowFinishCode && state.Turn.Actors.empty() == true,
+			PString::Format("13 with every unit gone the flow runs on to its own end (round %d, result %d) instead of a built-in empty-order finish",
+				state.Turn.Round, finishedAt != INDEX_NONE ? events[finishedAt].Amount : -1));
+
+		// 저장 문서 · 리플레이가 흐름 상태까지 같은 체크섬을 낸다
+		PString document;
+		sim->ExportDocument(&document);
+		PSharedPtr<PGameMaster> loaded = Allocate<PGameMaster>();
+		setupFlowGameMaster(*loaded, Allocate<PTestPhasesFlow>());
+		check(loaded->ImportDocument(document) == true && loaded->Checksum() == sim->Checksum() && loaded->GetState().Turn.Step == state.Turn.Step,
+			"13 a saved document of a flow game loads to the same checksum");
+
+		PSharedPtr<PGameMaster> replayed = Allocate<PGameMaster>();
+		setupFlowGameMaster(*replayed, Allocate<PTestPhasesFlow>());
+		replayed->Start(seed);
+		HList<HGameplayEvent> replayEvents;
+		check(replayed->Replay(sim->GetCommandLog().Commands, replayEvents) == true && replayed->Checksum() == sim->Checksum(),
+			"13 replaying the command log of a flow game gives the same checksum");
+
+		// 같은 GameMaster 로 다음 판: Start 를 다시 부르면 흐름이 처음부터
+		sim->Start(seed + 1);
+		check(state.Turn.Step == PName(TestStepSetup) && state.Turn.Round == 0 && state.Turn.Actors.size() == 3 && state.Sequence == 0 && state.Turn.IsFinished() == false,
+			"13 Start again on the same GameMaster begins a new game from the flow's first step");
+
+		// 대기 없이 단계를 잇는 흐름은 한도에서 멈춘다 (의도한 [error] 로그 1줄)
+		{
+			PSharedPtr<PTestPhasesFlow> runaway = Allocate<PTestPhasesFlow>();
+			runaway->bRunaway = true;
+			PSharedPtr<PGameMaster> broken = Allocate<PGameMaster>();
+			setupFlowGameMaster(*broken, runaway);
+			HList<HGameplayEvent> brokenEvents;
+			broken->Start(seed, &brokenEvents);
+			const int32 limitAt = findEventIndex(brokenEvents, HGameplayBuiltin::EventFlowStepLimitExceeded);
+			check(limitAt != INDEX_NONE && brokenEvents[limitAt].Amount == HGameplayLimits::MaxFlowStepsPerCommand,
+				"13 a flow that never waits stops at the step limit (FlowStepLimitExceeded) instead of hanging");
+		}
+	}
 }
 
 int32 PGameMasterSelfTest::Run()
@@ -1344,6 +1730,9 @@ int32 PGameMasterSelfTest::Run()
 
 	// 12. 리뷰 재현 회귀 (R4 · R5 · R6 · R8 · R16 · R17) --------------------------------------
 	runReviewRegressions(check, seed);
+
+	// 13. 게임 흐름 (ER-009): 흐름 교체 · 공용 칸 · 대기 지점 · 단계 수 한도 ----------------------
+	runFlowChecks(check, seed);
 
 	std::cout << "== GameMaster self test: " << check.Passed << " passed, " << check.Failures << " failed ==" << std::endl;
 	JG_LOG(GameMasterSelfTest, ELogLevel::Info, "GameMaster self test: %d passed, %d failed", check.Passed, check.Failures);

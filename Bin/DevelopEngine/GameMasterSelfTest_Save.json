@@ -55,7 +55,10 @@
                 "Generation": 0
             },
             "TurnCount": 0,
-            "PendingStep": 0
+            "PendingStep": 0,
+            "Actors": [],
+            "Step": "(null)",
+            "NextStep": "(null)"
         },
         "Choice": {
             "bPending": false,
@@ -231,7 +234,15 @@
                 "Generation": 1
             },
             "TurnCount": 2,
-            "PendingStep": 0
+            "PendingStep": 0,
+            "Actors": [
+                {
+                    "Index": 1,
+                    "Generation": 1
+                }
+            ],
+            "Step": "TurnMain",
+            "NextStep": "(null)"
         },
         "Choice": {
             "bPending": false,

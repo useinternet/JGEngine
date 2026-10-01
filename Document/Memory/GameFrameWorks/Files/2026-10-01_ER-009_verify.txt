@@ -1,0 +1,127 @@
+GameFrameWorks 2-7 (ProjectAH ER-009) GameMaster 흐름 교체 검증 기록
+작성 2026-10-01 11:1x. 메인 트리 C:\Develop\JGEngine, 구성 DevelopEngine|x64. 명령 출력 원문에서 옮김.
+사용자 결정(2026-10-01, 진행현황 D-15): 검토서(Files/2026-10-01_ER-009_턴페이즈구조_검토.md)의 안 3 최소형.
+  엔진은 흐름 인터페이스와 공용 칸("지금 어디인지": 단계 이름 · 입력 행동자 · 라운드 · 턴 수)만 가진다.
+  "다음에 무엇이 오는지"는 게임이 꽂는 흐름이 정한다. 지금 페이즈 기계는 기본 흐름으로 남는다(게임이 흐름을 꽂지 않으면 예전과 같다).
+
+== 바꾼 것 ==
+새 파일(미추적 — git add 필요)
+  GameMaster/Rules/GameplayFlow.h               IGameplayFlow : GetName · Start · RunPendingStep · CanEndTurn · EndTurn (상태 없음, 진행은 HGameplayTurnState 에)
+  GameMaster/Rules/GameplayRoundTurnFlow.h/.cpp PGameplayRoundTurnFlow = 옛 PGameplayPhaseMachine (이름 "RoundTurn"). 동작 그대로 + TurnMain 에서 Step · Actors 를 채운다
+지운 파일
+  GameMaster/Rules/GameplayPhaseMachine.h/.cpp
+수정
+  GameMasterDefines.h            EGameplayPhase::Flow(게임 흐름일 때), GetGameplayPhaseName, 이벤트 StepChanged · FlowStepLimitExceeded, MaxFlowStepsPerCommand = 1024
+  State/GameplayTurnState.h/.cpp 공용 칸 Actors · Step · NextStep (+ IsActor), JSON 읽기 · 쓰기(없는 칸은 비운 채로 읽는다)
+  State/GameplayState.h/.cpp     CollectInputActors · IsInputActor · FirstInputActor — 선택 대기면 [고르는 쪽], 아니면 Turn.Actors
+  Rules/GameplayRuleEngine.h/.cpp Flow(게임 흐름, 없으면 기본 흐름). Start · Validate · Execute · EnumerateLegal · 내장 효과 EndTurn 이 흐름을 부른다.
+                                 FinishGame 공용화(공용 칸을 비우고 Phase Finished · Step "Finished"), SetStep(StepChanged) · SetActors(죽은 · 중복 거름),
+                                 runQueue 단계 한도(넘으면 FlowStepLimitExceeded + 오류 로그, 그 명령에서는 더 진행하지 않는다)
+  Rules/GameplayContext.h/.cpp   SetStep · SetActors
+  GameMaster.h/.cpp              SetFlow · GetFlow, RulesFingerprint 에 "flow:<이름>" 줄
+  Agents/GameplayAgent.cpp       러너가 Turn.Actors 중 에이전트가 있는 첫 행동자를 고른다
+  Actors/GameplayControllerActor.h/.cpp GetInputActor → State.FirstInputActor, CollectInputActors, EnumerateLegal(actor, out) 오버로드
+  Network/Session/GameplaySession.cpp   GetInputActor → State.FirstInputActor
+  Editor/JGEditor/Widgets/GameplayDevView.cpp 요약 줄 "Sequence | Round | Step | Input | Turns | Entities" (어떤 흐름이든 같은 줄)
+  GameMaster/GameMasterSelfTest.cpp     §13 흐름 검사 18 (아래)
+
+== PreBuild (10:36) ==
+Build/BatchFiles 에서 JGHeaderTool.exe → JGBuildTool.exe : 둘 다 정상 종료("Compelete Build Tool Run..", live blocks 0).
+Temp/ProjectFiles/GameFrameWorks.vcxproj : GameplayFlow.h · GameplayRoundTurnFlow.* 3건, GameplayPhaseMachine 0건.
+
+== 빌드 (메인 트리, -p:BuildProjectReferences=false) ==
+MSBuild GameFrameWorks.vcxproj : exit 0, error 0, C++ warning 0, LNK4098 1 (기준선)
+MSBuild JGEditor.vcxproj       : exit 0, error 0, warning 0
+
+== 헤드리스 회귀 (메인 Bin) ==
+JGConsole.exe gmtest : exit 0 — GameMaster self test 110 passed 0 failed (92 + §13 18), World self test 64 passed 0 failed, gmtest: OK
+  [error] 2줄은 테스트가 일부러 내는 것: R5 RequestChoice 거부 · §13 "flow TestPhases ran 1024 steps without waiting for a command; stopped"
+  [warning] 1줄 기준선: PGameMaster::Undo: disabled while a network session is bound (§11)
+  §13 검사 원문:
+  [PASS] 13 the default flow fills the common fields at TurnMain (Step TurnMain, Actors = [current actor])
+  [PASS] 13 a game flow starts in its own setup step with all three units as input actors (Phase Flow)
+  [PASS] 13 the engine emits GameStarted and the flow its StepChanged; no built-in round or turn events
+  [PASS] 13 the rules fingerprint includes the flow name
+  [PASS] 13 the flow decides EndTurn: rejected in setup with the flow's reason (not acting now (test flow))
+  [PASS] 13 setup takes input actors in any order (units[2] first) and drops the one who readied
+  [PASS] 13 a unit that already readied is no longer an input actor
+  [PASS] 13 after setup the automatic step runs without input and the flow waits on the first actor it chose (reverse order: units[2])
+  [PASS] 13 effects raised by the automatic step resolve before the next step starts (change 2 < step 3)
+  [PASS] 13 EndTurn by a unit that is not acting is rejected
+  [PASS] 13 EndTurn hands the turn to the next actor the flow chose (units[1])
+  [PASS] 13 Undo restores the flow's common fields (Step, Actors, NextStep)
+  [PASS] 13 the agent runner chooses a command for the flow's input actor
+  [PASS] 13 with every unit gone the flow runs on to its own end (round 2, result 7) instead of a built-in empty-order finish
+  [PASS] 13 a saved document of a flow game loads to the same checksum
+  [PASS] 13 replaying the command log of a flow game gives the same checksum
+  [PASS] 13 Start again on the same GameMaster begins a new game from the flow's first step
+  [PASS] 13 a flow that never waits stops at the step limit (FlowStepLimitExceeded) instead of hanging
+  기본 흐름 §1~§12 (92) 는 바뀐 것 없이 통과 — 게임이 흐름을 꽂지 않으면 예전과 같다.
+JGConsole.exe net.test all : Network self test 101 passed, 0 failed, net.test: OK
+
+== 2 프로세스 (Document/Memory/tools/net_two_process/run_two_process.sh, 출력은 스크래치패드) ==
+kernel : net.host seq=1000 checksum=18289831599570610680 (exit 0), ClientA · ClientB 같은 체크섬, desyncs 0 → two-process: OK
+world  : net.host world=NetWorld2 worlds=2 seq=500 checksum=2608759924318437380 (exit 0), ClientA · ClientB 같은 체크섬, desyncs 0 → two-process: OK
+  주의: kernel 체크섬이 09-30 의 16006860866352003711 에서 바뀐 것은 의도 — 상태 JSON 에 공용 칸(Actors · Step · NextStep)이 늘었기 때문(체크섬 = 상태 JSON 해시).
+        호스트 = 클라 일치 · desyncs 0 이 기준이다. 옛 값은 문서의 지난 기록(GFW · Server 트랙 기준선 표 등)에만 있고, 값을 비교하는 스크립트는 없다(grep).
+        Server 트랙이 기준선을 다시 잴 때 새 값이 나온다 → 진행현황 변경 이력에 적어 둔다.
+
+== 게임 프로젝트 빌드 (스크래치패드, 엔진 = 메인 트리 소스) ==
+GfwView.sln (Files/tools/gfw_phase2_testgame) · NetDuel.sln (Server/Files/tools/net_duel_testgame) DevelopEngine|x64 : 둘 다 exit 0, error 0, C++ warning 0
+  (LNK4098 2 = 기준선, MSB8029 = 출력 폴더가 임시 폴더 아래라서)
+
+== NetDuel 리슨 서버 결투 (run_net_duel.sh, 60초) ==
+host:   NetDuel: finished mode=ListenServer slot=0 seq=13 checksum=14727258992400026585 winner=0 submitted=10 desyncs=0 | Process exited with code 0 | errors 0
+client: NetDuel: finished mode=Client slot=1 seq=13 checksum=14727258992400026585 winner=0 submitted=3 desyncs=0 | Process exited with code 0 | errors 0
+net-duel: OK (seq 13, checksum 14727258992400026585, winner team 0)
+  crashwalk 는 스크래치패드에서 고친 사본으로 돌렸다(아래 "crashwalk"). 공용 도구 Document/Memory/tools/crashwalk 는 바꾸지 않았다.
+
+== 에디터 (검증 게임 GfwView, gfw_worldview_verify.ps1 -WaitSeconds 30, README 클릭 순서) ==
+화면 배율 150% (클라이언트 물리 2566x1572 = 앱 1711x1048). DevView(Pos 1320, 너비 590)가 본 창 밖으로 걸쳐 ImGui 가 따로 OS 창으로 띄운다.
+  → 검증 스크립트를 고쳤다: 클릭은 그 점의 창이 에디터 프로세스 것이면 누르고(전에는 본 창만), 캡처는 에디터 프로세스의 보이는 창을 모두 앱 좌표로 모아 한 장에 그린다.
+     건너뛴 클릭은 그 점의 창(클래스 · 제목 · 프로세스)을 함께 적는다.
+  → 에디터가 열린 위젯을 imgui.ini [JGWidget][Open] 에 저장한다. 같은 절차를 되풀이하려면 실행마다 imgui.ini 를 다시 복사한다(README 에 적음).
+run1 (스크립트 고치기 전): 클릭 5 · 6(DevView 안)이 "본 창이 아님"으로 건너뜀. 나머지 · 로그 정상
+run2 (imgui.ini 다시 복사 안 함 → DevView 가 시작부터 열림): 클릭 1~4 가 건너뜀(그때 그 점에 에디터 아닌 창 — 진단 출력 넣기 전이라 누구인지 모름), 5 · 6 · 7 정상
+run3 (imgui.ini 다시 복사, 최종): 클릭 7 · 오른쪽 끌기 모두 실행, ExitCode 0. 로그 원문(jg_log.txt, 발췌):
+  [info][GameFrameWorks]: JGGameInstance: world loaded (GfwView)
+  [info][GfwView]: GfwView script: EndTurn by E0.1 -> result 1 ()
+  [warning][GameMaster]: PGameMaster::Undo: disabled while a network session is bound          (gmtest §11, 기준선)
+  [error][GameMaster]: PGameplayRuleEngine: RequestChoice(TestAskInHandler) outside an effect Resolve is rejected. ...   (gmtest R5, 의도)
+  [error][GameMaster]: PGameplayRuleEngine: flow TestPhases ran 1024 steps without waiting for a command; stopped        (gmtest §13, 의도)
+  [warning][WorldSelfTest]: game instance section skipped: world GfwView is already loaded
+  [info][GfwView]: GfwView script: gmtest in editor -> OK, game world kept, actors 45 -> 45
+  [warning][Graphics]: D3D12 DebugLayer [1424] ID3D12CommandQueue1::Wait: Fence values can never be less than zero, ...   (Graphics 기존 항목 — Graphics/Files/Graphics_TODO.md. ImGui 가 따로 띄운 창이 있을 때 나온다, run1~3 모두)
+  [info][GameFrameWorks]: Controller click: actor Entity_E3.1 entity E3.1 at (593.75, 21.90, 582.83) distance 1771.47 / board cell (3, 3) at (600.03, 0.00, 600.10)
+  [info][GameFrameWorks]: Controller click: actor none / board cell (5, 0) at (938.00, 0.00, 33.77)
+  [info][GameFrameWorks]: JGGameInstance: world unloaded (GfwView)
+  [info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 25, committed 1.56 MB, live blocks 0, ...
+  [info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, ...
+  → 클릭 두 줄은 09-30 GFW run3 · C-3 검증과 숫자까지 같다. [error] 2 · [warning] 4 는 모두 위 설명대로.
+캡처
+  Files/2026-10-01_er009_devview_step_input.png : DevView 요약 "Sequence 1 | Round 1 | Step TurnMain | Input E1.1 | Turns 2 | Entities 4", Undo 1,
+      E3.1 선택 → Zone Units · Board (3, 3) · {"Health": 25, "Team": 1}, Last pick E3.1 · cell (3, 3)
+  Files/2026-10-01_er009_devview_undo.png       : Undo 뒤 "Sequence 0 | Round 1 | Step TurnMain | Input E0.1 | Turns 1", Undo 0, 이벤트 로그 "-- state replaced",
+      빈 칸 클릭 cell (5, 0), 오른쪽 끌기로 궤도 회전한 보드
+  → 기본 흐름에서 DevView 가 공용 칸(Step · Input)을 읽고, Undo 가 공용 칸(입력 행동자 E1.1 → E0.1)까지 되돌린다.
+
+== 프로젝트 없는 런처 (메인 Bin JGLauncher, gfw_worldview_verify.ps1, 클릭 없음) ==
+ExitCode 0, [error]/[critical] 0, live blocks 0.
+
+== crashwalk (공용 검증 도구 결함 — 이 변경과 무관) ==
+증상: crashwalk 로 감싼 런처가 제한 시간이 지나도 닫히지 않는다(이 세션 10:4x 런처 60초 실행, 다른 세션 wt2 10:26 실행도 같은 증상).
+원인: crashwalk.cpp 는 제한 시간(closeAfterSeconds · hangAfterSeconds)을 WaitForDebugEvent(200ms) 가 시간 초과로 끝날 때만 본다.
+      D3D12 디버그 레이어(D3D12SDKLayers.dll)의 스레드 풀 콜백 'Internal D3D12 Sync Thread' 가 돌 때마다 옛 방식 스레드 이름 예외(0x406D1388)를 올려
+      디버그 이벤트가 끊이지 않는다 → 시간 초과 갈래에 들어가지 못해 WM_CLOSE 를 보내지 않는다.
+      진단(스크래치패드 사본에 이벤트 수 세기 추가, NetDuel 호스트 20초): exception 2259 (0x406D1388 x 2256, 0x80000003 x 1, 0xE06D7363 x 2), create thread 56, load dll 126.
+      0x406D1388 #600 의 콜스택: KERNELBASE!RaiseException ← D3D12SDKLayers.dll (여러 프레임) ← ntdll!TpCallbackMayRunLong ← BaseThreadInitThunk. 엔진 코드에는 스레드 이름 설정이 없다(grep 0).
+      스레드 이름 원문(앞 12번 + 600번째): #1 'NVFBCAsyncThread'(대상 -1, 시작 때 한 번), #2~#12 · #600 'Internal D3D12 Sync Thread'(같은 스레드).
+      → 10-01 새벽 GameGUI 세션 기록(진행현황 6절 리스크)은 NVIDIA NVFBCAsyncThread 로 적었으나, 계속 오는 것은 D3D12 디버그 레이어다(비율 ~113/s 는 같다). 6절에 정정을 붙였다.
+고친 방법(스크래치패드 사본만): 제한 시간 검사를 for 루프 맨 앞으로 옮겨 매 바퀴 본다(직전 이벤트는 이미 ContinueDebugEvent 했으므로 시간 초과 갈래와 같은 상태).
+      → NetDuel 두 런처 모두 60초에 WM_CLOSE, 종료 코드 0. 공용 도구 수정은 사용자 확인 뒤(다른 세션이 쓰는 도구 — 6절에 "별도 세션 제안됨"으로 이미 올라가 있다).
+      공용 build.bat 은 VS 2022 Professional 경로라 이 PC(Community)에서는 고쳐야 빌드된다(사본은 Community 경로 + /utf-8).
+
+== 다른 세션 재빌드 뒤 재확인 (11:22) ==
+GUI(게임 UI) 세션이 ER-007 · ER-008 을 메인 트리에 넣고 PreBuild + 메인 솔루션 증분 빌드(11:14, GameFrameWorks.dll · JGConsole.exe · JGEditor.dll — 이 2-7 변경도 함께 컴파일됨).
+그 Bin 으로: JGConsole.exe gmtest → GameMaster 110 passed 0 failed, World 64 passed 0 failed, gmtest: OK ([error] 2 = 위와 같은 의도된 2줄)
+             JGConsole.exe net.test all → Network self test 101 passed, 0 failed

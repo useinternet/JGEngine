@@ -19,14 +19,20 @@ void GShaderLibrary::Destroy()
 
 const PString& GShaderLibrary::GetGraphicsShaderTemplateCode() const
 {
+	return GetShaderCode(GraphicsShaderTemplate);
+}
+
+const PString& GShaderLibrary::GetShaderCode(const PString& inName) const
+{
 	if (_bLoaded == false)
 	{
 		loadTemplates();
 	}
 
-	if (_shaderTemplates.contains(GraphicsShaderTemplate))
+	const PName name(inName);
+	if (_shaderTemplates.contains(name))
 	{
-		return _shaderTemplates.at(GraphicsShaderTemplate);
+		return _shaderTemplates.at(name);
 	}
 
 	static PString nullCode;

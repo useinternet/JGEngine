@@ -25,7 +25,7 @@ Source/Runtime/GameFrameWorks/              SharedLib (StaticLib 에서 전환) 
 │   State/      GameplayEntityId · EntityRegistry · ComponentTable · Zone · TurnState · BoardState · RandomStream · Choice · State
 │   Messages/   GameplayCommand · GameplayEffectRequest · GameplayEvent
 │   Rules/      GameplayContext · CommandHandler · Effect · Trigger · Modifier (JGCLASS 4종)
-│               OrderPolicy · Registry · EffectQueue · TriggerDispatcher · ValuePipeline · PhaseMachine · RuleEngine
+│               OrderPolicy · Registry · EffectQueue · TriggerDispatcher · ValuePipeline · Flow · RoundTurnFlow · RuleEngine
 │   Boards/     GameplayBoard (IGameplayBoard + None · Square · Hex · Free)
 │   Services/   SnapshotStack · CommandLog · Serializer · Observer(+Migrator)
 │   Agents/     GameplayAgent (IGameplayAgent · IGameplayEvaluator · Random · Greedy · AgentRunner)
@@ -59,10 +59,12 @@ Source/Runtime/GameFrameWorks/              SharedLib (StaticLib 에서 전환) 
 | 선택 대기 | 효과가 `RequestChoice` → 남은 큐를 `HGameplayChoice::SavedQueue` 에 보존 → `PendingChoice` 반환. 내장 `ResolveChoice` 명령이 같은 효과를 `Choice` 채워 재진입. **효과 `Resolve` 안에서만 받는다.** 핸들러에서 부르면 오류 로그 후 `false`. 트리거는 선택을 요청하는 효과를 넣는다 |
 | 트리거 | `Emit` 때는 매칭만 한다(발행 순간 상태로 `Matches`). `React` 는 이벤트를 낸 단계(핸들러 · 효과 · 페이즈 전이)가 끝난 뒤 발행 순 → 우선순위 → 등록 순으로 부른다. `React` 는 `HGameplayTriggerContext`(효과 적재만, 상태 읽기 전용)를 받는다. 반응이 넣은 효과의 깊이는 이벤트 깊이 + 1이다. 깊이 64 를 넘는 효과는 건너뛰고 `EffectDepthExceeded` 를 낸다. 한 명령에서 효과가 4096 개를 넘으면 남은 효과 · 반응을 버리고 페이즈 전이만 마친다 |
 | 수치 | `DefineValueStages(kind, stages)` 후 `ctx.Compute` 가 단계 순서로 `JGGameplayModifier` 적용 |
-| 페이즈 | RoundStart → OrderResolve → TurnStart → TurnMain → TurnEnd → … → RoundEnd. 순서는 `IGameplayOrderPolicy`(기본 2종). 전이는 `EGameplayPhaseStep` 단계로 나뉘고, 효과 큐가 빈 뒤에 진행한다. 그래서 턴 종료 효과는 다음 행동자가 정해지기 전에, 라운드 시작 효과는 순서가 정해지기 전에 해결된다. 예약 단계는 `HGameplayTurnState::PendingStep` 에 있어 선택 대기 · 저장 · 되돌리기에도 보존된다. 내장 `EndTurn` 효과는 TurnStart 에서도 받는다(턴 시작 효과로 턴 넘기기) |
+| 흐름 (2026-10-01, ER-009) | 턴 · 페이즈 구조는 **흐름(`IGameplayFlow`, `GameMaster/Rules/GameplayFlow.h`)** 이 정한다. 엔진은 언제 부를지만 정한다: `Start` 직후(엔진이 `GameStarted` 를 낸 뒤) 흐름의 `Start`, 효과 큐가 빌 때마다 `RunPendingStep`(false = 명령 대기). 흐름은 상태를 갖지 않고 진행 상태를 `HGameplayTurnState` 공용 칸에 둔다: `Actors`(지금 명령을 낼 수 있는 행동자, `ctx.SetActors`) · `Step`(단계 이름, `ctx.SetStep` 이 `StepChanged` 를 낸다) · `NextStep`(예약 칸) · `Round` · `TurnCount`. 판 끝은 `ctx.FinishGame`. 대기 없이 단계를 계속 이으면 명령당 1024 단계에서 `FlowStepLimitExceeded` 를 내고 멈춘다. 흐름 이름은 규칙 지문에 들어간다. 게임 흐름이면 시작부터 `Phase = Flow` |
+| 기본 흐름 | 게임이 `SetFlow` 를 안 하면 `PGameplayRoundTurnFlow`: RoundStart → OrderResolve → TurnStart → TurnMain → TurnEnd → … → RoundEnd. 순서는 `IGameplayOrderPolicy`(기본 2종). 전이는 `EGameplayPhaseStep` 단계로 나뉘고, 효과 큐가 빈 뒤에 진행한다. 그래서 턴 종료 효과는 다음 행동자가 정해지기 전에, 라운드 시작 효과는 순서가 정해지기 전에 해결된다. 예약 단계는 `HGameplayTurnState::PendingStep` 에 있어 선택 대기 · 저장 · 되돌리기에도 보존된다. 내장 `EndTurn` 효과는 TurnStart 에서도 받는다(턴 시작 효과로 턴 넘기기). 공용 칸: `Step` = 페이즈 이름, TurnMain 동안 `Actors = [CurrentActor]`. 새로 만든 순서가 비면 판을 끝낸다(결과 0) — 이 규칙은 기본 흐름에만 있다 |
+| 입력 행동자 | `HGameplayState::CollectInputActors` · `IsInputActor` · `FirstInputActor`: 선택 대기면 선택자, 아니면 `Turn.Actors`. 컨트롤러 · 네트워크 세션 `GetInputActor` · AI 러너가 이것을 본다. 게임 명령 핸들러의 `Validate` 도 행동자 검사를 `state.IsInputActor(command.Actor)` 로 하면 흐름과 상관없이 맞다(`Turn.IsActorTurn` · `CanAct` 는 기본 흐름 전용) |
 | 상태 쓰기 | `Add<T>` 는 `T*` 를 돌려주고, 죽은 ID 면 nullptr 이다. 보드 · 영역 쓰기는 `HGameplayState::SetBoardPosition` · `MoveToZone` 이 죽은 ID 를 거부한다. 내장 효과도 이것을 써서 이벤트 없이 건너뛴다. `Board` · `Zones` 를 직접 쓰는 함수는 생존을 보지 않는다. const 상태에서 `Find` · `Get` · `Table` 은 const 를 돌려준다 |
 | 되돌리기 | 스냅샷은 `HDeque` 에 담는다(한도 기본 256). 상태에 이동 생성 · 대입이 있어 명령당 상태 복사는 한 번이다 |
-| 내장 | 명령 `EndTurn` `ResolveChoice`. 효과 `SpawnEntity` `DestroyEntity` `MoveToZone` `SetBoardPosition` `EndTurn`. 이벤트 15종 |
+| 내장 | 명령 `EndTurn` `ResolveChoice`. 효과 `SpawnEntity` `DestroyEntity` `MoveToZone` `SetBoardPosition` `EndTurn`. 이벤트 17종(2026-10-01 `StepChanged` · `FlowStepLimitExceeded` 추가) |
 | 리플렉션 등록 | `RegisterAllFromReflection<T>()` — `JGClass::GetChildClasses` 재귀(중간 클래스 포함) → `AllocateByClass` → `Cast` |
 | 결정론 고정 | 레지스트리를 종류 이름 사전순으로 정렬(`Finalize`, Start · Load(ImportDocument) · Replay 가 부른다). 상태 안에 `HHashMap` 없음 |
 | 체크섬 | 직렬화 JSON 텍스트의 FNV-1a 64 |
@@ -98,6 +100,18 @@ sim->EnumerateLegal(actor, out);  sim->GetPendingChoice();  sim->GetState();
 // 되돌리기 · 저장 · 검증 · 에이전트
 sim->Undo();  sim->Save(path);  sim->Load(path);  sim->Replay(log, events);  sim->Checksum();
 sim->SetAgent(team, Allocate<PGameplayRandomAgent>(seed));  PGameplayAgentRunner::Run(*sim, steps);
+
+// 턴 · 페이즈 구조가 기본(라운드 → 순서 → 차례)과 다르면 흐름을 하나 쓴다 (Start 전). 예: GameMasterSelfTest.cpp 의 PTestPhasesFlow
+class PMyFlow : public IGameplayFlow
+{
+	PName GetName() const override;                                   // 규칙 지문에 들어간다
+	void  Start(HGameplayContext& ctx) override;                      // 첫 단계: ctx.SetStep(PName("Setup")); ctx.SetActors(players);
+	bool  RunPendingStep(HGameplayContext& ctx) override;             // ctx.State.Turn.NextStep 을 보고 한 단계 진행 → true, 할 일 없으면 false(명령 대기)
+	bool  CanEndTurn(const HGameplayState& state, const HGameplayEntityId& actor, PString* outReason) const override;
+	void  EndTurn(HGameplayContext& ctx, const HGameplayEntityId& actor) override;   // 보통 SetActors 비우고 NextStep 예약
+};
+sim->SetFlow(Allocate<PMyFlow>());
+bool bMayAct = sim->GetState().IsInputActor(actor);              // 핸들러 Validate · UI 에서 "지금 낼 수 있나"
 
 // 규칙 (게임) — 효과는 상태를 바꾸고 이벤트를 낸다. 트리거는 효과를 넣기만 한다.
 void JGMyEffect::Resolve(HGameplayContext& ctx, const HGameplayEffectRequest& request);   // ctx.State · Emit · Enqueue · RequestChoice · Rng · Compute

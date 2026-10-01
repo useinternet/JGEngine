@@ -5,7 +5,8 @@
 // GameMaster 공통 열거형과 상수.
 // GameMaster/ 아래 파일은 엔진 Core 헤더만 포함한다. (Graphics · GUI 금지 — 헤드리스 실행 조건)
 
-// 페이즈 기계의 상태. 전이는 PGameplayPhaseMachine 이 담당한다.
+// 게임 진행 상태. NotStarted · Finished 는 모든 흐름 공통이다.
+// RoundStart ~ RoundEnd 는 기본 흐름(PGameplayRoundTurnFlow) 전용이고, 게임 흐름(IGameplayFlow)은 그 사이를 Flow 하나로 두고 단계는 Turn.Step 으로 나타낸다.
 enum class EGameplayPhase : int32
 {
 	NotStarted = 0,
@@ -16,10 +17,28 @@ enum class EGameplayPhase : int32
 	TurnEnd,
 	RoundEnd,
 	Finished,
+	Flow,              // 게임 흐름 진행 중 (세부 단계는 Turn.Step)
 };
 
-// 페이즈 기계가 효과 큐가 빈 뒤에 이어 갈 전이 단계. 상태(HGameplayTurnState)에 들어가므로 선택 대기 · 저장 · 되돌리기에도 보존된다.
-// 한 단계가 낸 이벤트로 발동한 효과가 모두 해결된 다음에 다음 단계가 진행된다.
+inline const char* GetGameplayPhaseName(EGameplayPhase phase)
+{
+	switch (phase)
+	{
+	case EGameplayPhase::NotStarted:   return "NotStarted";
+	case EGameplayPhase::RoundStart:   return "RoundStart";
+	case EGameplayPhase::OrderResolve: return "OrderResolve";
+	case EGameplayPhase::TurnStart:    return "TurnStart";
+	case EGameplayPhase::TurnMain:     return "TurnMain";
+	case EGameplayPhase::TurnEnd:      return "TurnEnd";
+	case EGameplayPhase::RoundEnd:     return "RoundEnd";
+	case EGameplayPhase::Finished:     return "Finished";
+	case EGameplayPhase::Flow:         return "Flow";
+	default:                           return "?";
+	}
+}
+
+// 기본 흐름이 효과 큐가 빈 뒤에 이어 갈 전이 단계. 상태(HGameplayTurnState)에 들어가므로 선택 대기 · 저장 · 되돌리기에도 보존된다.
+// 한 단계가 낸 이벤트로 발동한 효과가 모두 해결된 다음에 다음 단계가 진행된다. 게임 흐름은 Turn.NextStep 을 쓴다.
 enum class EGameplayPhaseStep : int32
 {
 	None = 0,
@@ -91,6 +110,8 @@ namespace HGameplayBuiltin
 	constexpr const char* EventChoiceResolved    = "ChoiceResolved";
 	constexpr const char* EventEffectDepthExceeded = "EffectDepthExceeded";
 	constexpr const char* EventEffectUnknown     = "EffectUnknown";
+	constexpr const char* EventStepChanged       = "StepChanged";             // 게임 흐름의 단계 전환. Tag = 새 단계, Tag2 = 이전 단계, Amount = Round
+	constexpr const char* EventFlowStepLimitExceeded = "FlowStepLimitExceeded";  // 흐름이 대기 없이 단계를 계속 이어 한도에서 멈춤. Amount = 단계 수
 }
 
 namespace HGameplayLimits
@@ -100,4 +121,7 @@ namespace HGameplayLimits
 	constexpr int32 MaxEffectDepth = 64;
 	// 한 명령에서 해결하는 효과 총 개수 상한 (무한 루프 방어). 넘으면 남은 효과 · 트리거 반응을 버리고 페이즈 전이만 마친다.
 	constexpr int32 MaxEffectsPerCommand = 4096;
+	// 한 명령에서 흐름(IGameplayFlow::RunPendingStep)이 진행하는 단계 수 상한. 입력을 기다리지 않고 단계를 계속 잇는 흐름의 무한 루프 방어.
+	// 넘으면 FlowStepLimitExceeded 를 내고 그 명령에서는 단계를 더 진행하지 않는다.
+	constexpr int32 MaxFlowStepsPerCommand = 1024;
 }

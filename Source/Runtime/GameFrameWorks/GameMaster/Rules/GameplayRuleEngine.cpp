@@ -14,15 +14,48 @@ namespace
 
 EGameplaySubmitResult PGameplayRuleEngine::Start(HGameplayState& state, HList<HGameplayEvent>& outEvents)
 {
+	if (state.Turn.Phase != EGameplayPhase::NotStarted)
+	{
+		return EGameplaySubmitResult::Executed;
+	}
+
 	beginExecution(outEvents);
 
 	uint32 cause = state.Sequence;
 	HGameplayContext ctx(state, *this, cause, 0);
-	_phaseMachine.Start(ctx);
+
+	// 게임 흐름은 고정 페이즈를 쓰지 않는다. 시작부터 Flow 로 두고 단계는 흐름이 Turn.Step 으로 나타낸다.
+	// 기본 흐름은 첫 라운드 전이(RoundStart)까지 NotStarted 다 (지금까지의 이벤트 순서 그대로).
+	if (Flow != nullptr)
+	{
+		state.Turn.Phase = EGameplayPhase::Flow;
+	}
+
+	HGameplayEvent started{ PName(HGameplayBuiltin::EventGameStarted) };
+	ctx.Emit(started);
+	activeFlow().Start(ctx);
 
 	EGameplaySubmitResult result = runQueue(state, cause);
 	endExecution();
 	return result;
+}
+
+const IGameplayFlow& PGameplayRuleEngine::GetActiveFlow() const
+{
+	if (Flow != nullptr)
+	{
+		return *Flow.GetRawPointer();
+	}
+	return _defaultFlow;
+}
+
+IGameplayFlow& PGameplayRuleEngine::activeFlow()
+{
+	if (Flow != nullptr)
+	{
+		return *Flow.GetRawPointer();
+	}
+	return _defaultFlow;
 }
 
 bool PGameplayRuleEngine::Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const
@@ -64,17 +97,7 @@ bool PGameplayRuleEngine::Validate(const HGameplayState& state, const HGameplayC
 
 	if (command.Kind == endTurn)
 	{
-		if (state.Turn.CanAct() == false)
-		{
-			setReason(outReason, "cannot end turn now");
-			return false;
-		}
-		if (state.Turn.CurrentActor != command.Actor)
-		{
-			setReason(outReason, "not your turn");
-			return false;
-		}
-		return true;
+		return GetActiveFlow().CanEndTurn(state, command.Actor, outReason);
 	}
 
 	PSharedPtr<JGGameplayCommandHandler> handler = Handlers.Find(command.Kind);
@@ -123,7 +146,7 @@ EGameplaySubmitResult PGameplayRuleEngine::Execute(HGameplayState& state, const 
 	}
 	else if (command.Kind == endTurn)
 	{
-		_phaseMachine.EndTurn(ctx);
+		activeFlow().EndTurn(ctx, command.Actor);
 	}
 	else
 	{
@@ -152,7 +175,7 @@ void PGameplayRuleEngine::EnumerateLegal(const HGameplayState& state, const HGam
 
 	HList<HGameplayCommand> candidates;
 
-	if (state.Turn.CanAct() == true && state.Turn.CurrentActor == actor)
+	if (GetActiveFlow().CanEndTurn(state, actor, nullptr) == true)
 	{
 		candidates.push_back(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), actor));
 	}
@@ -266,22 +289,101 @@ bool PGameplayRuleEngine::ContextDestroyEntity(HGameplayContext& ctx, const HGam
 
 void PGameplayRuleEngine::ContextFinishGame(HGameplayContext& ctx, int32 resultCode)
 {
-	_phaseMachine.Finish(ctx, resultCode);
+	// 모든 흐름 공통. 예약된 단계도 버린다.
+	HGameplayTurnState& turn = ctx.State.Turn;
+	if (turn.Phase == EGameplayPhase::Finished)
+	{
+		return;
+	}
+
+	turn.CurrentActor = HGameplayEntityId::None();
+	turn.OrderIndex   = INDEX_NONE;
+	turn.PendingStep  = EGameplayPhaseStep::None;
+	turn.NextStep     = PName();
+	turn.Actors.clear();
+
+	EGameplayPhase before = turn.Phase;
+	turn.Phase = EGameplayPhase::Finished;
+	turn.Step  = PName(GetGameplayPhaseName(EGameplayPhase::Finished));
+
+	HGameplayEvent changed(PName(HGameplayBuiltin::EventPhaseChanged), turn.CurrentActor, HGameplayEntityId::None());
+	changed.Before = (int32)before;
+	changed.After  = (int32)EGameplayPhase::Finished;
+	changed.Amount = turn.Round;
+	ContextEmit(ctx, changed);
+
+	HGameplayEvent finished{ PName(HGameplayBuiltin::EventGameFinished) };
+	finished.Amount = resultCode;
+	ContextEmit(ctx, finished);
+}
+
+void PGameplayRuleEngine::ContextSetStep(HGameplayContext& ctx, const PName& step)
+{
+	HGameplayTurnState& turn = ctx.State.Turn;
+	if (turn.Step == step)
+	{
+		return;
+	}
+
+	PName before = turn.Step;
+	turn.Step = step;
+
+	HGameplayEvent changed{ PName(HGameplayBuiltin::EventStepChanged) };
+	changed.Tag    = step;
+	changed.Tag2   = before;
+	changed.Amount = turn.Round;
+	ContextEmit(ctx, changed);
+}
+
+void PGameplayRuleEngine::ContextSetActors(HGameplayContext& ctx, const HList<HGameplayEntityId>& actors)
+{
+	// 죽은 엔티티는 명령을 낼 수 없으므로 넣지 않는다. 같은 행동자를 두 번 넣지 않는다.
+	HGameplayTurnState& turn = ctx.State.Turn;
+	turn.Actors.clear();
+	for (const HGameplayEntityId& actor : actors)
+	{
+		if (ctx.State.IsAlive(actor) == false || turn.IsActor(actor) == true)
+		{
+			continue;
+		}
+		turn.Actors.push_back(actor);
+	}
 }
 
 EGameplaySubmitResult PGameplayRuleEngine::runQueue(HGameplayState& state, uint32 causeSequence)
 {
+	int32 flowSteps    = 0;
+	bool  bFlowHalted  = false;
+
 	while (true)
 	{
-		// 방금 끝난 단계(핸들러 · 효과 · 페이즈 전이)가 낸 이벤트에 트리거가 반응한다. 반응은 효과를 큐에 넣을 뿐이다.
+		// 방금 끝난 단계(핸들러 · 효과 · 흐름 단계)가 낸 이벤트에 트리거가 반응한다. 반응은 효과를 큐에 넣을 뿐이다.
 		_dispatcher.React(state, *this);
 
 		if (_queue.IsEmpty() == true)
 		{
-			// 효과가 다 해결된 뒤에 페이즈 기계가 예약된 다음 전이 단계로 간다.
-			HGameplayContext ctx(state, *this, causeSequence, 0);
-			if (_phaseMachine.RunPendingStep(ctx, OrderPolicy.GetRawPointer()) == true)
+			if (bFlowHalted == true)
 			{
+				break;
+			}
+
+			// 효과가 다 해결된 뒤에 흐름이 예약된 다음 단계로 간다. 할 일이 없으면 명령을 기다린다.
+			HGameplayContext ctx(state, *this, causeSequence, 0);
+			if (flowSteps >= HGameplayLimits::MaxFlowStepsPerCommand)
+			{
+				// 대기 없이 단계를 계속 잇는 흐름. 이 명령에서는 더 진행하지 않는다 (상태는 그 자리에 둔다).
+				bFlowHalted = true;
+				HGameplayEvent exceeded{ PName(HGameplayBuiltin::EventFlowStepLimitExceeded) };
+				exceeded.Tag    = GetActiveFlow().GetName();
+				exceeded.Amount = flowSteps;
+				ContextEmit(ctx, exceeded);
+				JG_LOG(GameMaster, ELogLevel::Error, "PGameplayRuleEngine: flow %s ran %d steps without waiting for a command; stopped",
+					GetActiveFlow().GetName().ToString(), flowSteps);
+				continue;
+			}
+			if (activeFlow().RunPendingStep(ctx) == true)
+			{
+				++flowSteps;
 				continue;
 			}
 			break;
@@ -391,7 +493,7 @@ bool PGameplayRuleEngine::resolveBuiltin(HGameplayContext& ctx, const HGameplayE
 
 	if (request.Kind == PName(HGameplayBuiltin::EffectEndTurn))
 	{
-		_phaseMachine.EndTurn(ctx);
+		activeFlow().EndTurn(ctx, request.Subject);
 		return true;
 	}
 

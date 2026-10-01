@@ -19,6 +19,28 @@ namespace
 	{
 		return (uint32)bytes[0] | ((uint32)bytes[1] << 8) | ((uint32)bytes[2] << 16) | ((uint32)bytes[3] << 24);
 	}
+
+	// 월드 이름. PName 을 그대로 쓰면 NAME_NONE 이 문자열 테이블의 "(null)" 로 나가고, 받는 쪽이 그 문자열을 등록해 NAME_NONE 이 아니게 된다.
+	// 없음은 빈 문자열로 주고받는다.
+	PString worldNameText(const PName& world)
+	{
+		if (world == NAME_NONE)
+		{
+			return PString();
+		}
+		return world.ToString();
+	}
+
+	PName readWorldName(const PJsonData& json)
+	{
+		PString text;
+		json.GetData("World", &text);
+		if (text.Empty() == true)
+		{
+			return PName();
+		}
+		return PName(text);
+	}
 }
 
 // ---- 메시지 ------------------------------------------------------------------
@@ -43,7 +65,7 @@ void HGameplayNetWelcome::WriteJson(PJsonData& json) const
 {
 	json.AddMember("Slot", Slot);
 	json.AddMember("Fingerprint", Fingerprint);
-	json.AddMember("World", World);
+	json.AddMember("World", worldNameText(World));
 	json.AddMember("Started", bStarted);
 	json.AddMember("Slots", Slots);
 }
@@ -54,7 +76,7 @@ void HGameplayNetWelcome::ReadJson(const PJsonData& json)
 
 	json.GetData("Slot", &Slot);
 	json.GetData("Fingerprint", &Fingerprint);
-	json.GetData("World", &World);
+	World = readWorldName(json);
 	json.GetData("Started", &bStarted);
 	json.GetData("Slots", &Slots);
 }
@@ -148,12 +170,12 @@ void HGameplayNetResyncRequest::ReadJson(const PJsonData& json)
 
 void HGameplayNetTravel::WriteJson(PJsonData& json) const
 {
-	json.AddMember("World", World);
+	json.AddMember("World", worldNameText(World));
 }
 
 void HGameplayNetTravel::ReadJson(const PJsonData& json)
 {
-	json.GetData("World", &World);
+	World = readWorldName(json);
 }
 
 // ---- 코덱 --------------------------------------------------------------------

@@ -60,6 +60,15 @@ public:
 	template<class T>
 	bool  GetData(T* outData) const;
 
+	// 큰 바이트 덩어리(픽셀 · 정점 · 인덱스)를 base64 문자열 하나로 쓴다. (5-30)
+	// HList<uint8> 같은 숫자 배열로 쓰면 PrettyWriter가 원소마다 들여쓴 한 줄을 만들어 바이트 하나가 약 17바이트가 된다. base64는 4/3배다.
+	void AddBinaryMember(const PString& key, const void* data, uint64 size);
+	// AddBinaryMember로 쓴 값(이 값 자신)을 바이트로 되돌린다. 문자열이 아니거나 base64 형식이 아니면 false.
+	bool GetBinaryData(HList<uint8>* outData) const;
+	// 옛 형식(숫자 배열)과 새 형식(base64 문자열)을 가르는 데 쓴다.
+	// FindMember는 값을 문서에서 옮겨 오므로(rapidjson 대입은 이동) 같은 키를 두 번 찾지 말고 찾아 둔 값에 묻는다.
+	bool IsString() const;
+
 	int32 GetSize() const;
 	bool  IsValid() const;
 

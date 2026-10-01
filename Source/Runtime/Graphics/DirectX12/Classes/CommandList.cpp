@@ -505,6 +505,45 @@ void PGraphicsCommandList::BindIndexBuffer(const D3D12_INDEX_BUFFER_VIEW& view)
 	_dx12CommandList->IASetIndexBuffer(&view);
 }
 
+bool PGraphicsCommandList::BindDynamicVertexBuffer(const void* inData, uint64 inVertexCount, uint64 inVertexSize)
+{
+	// 업로드 할당자는 페이지보다 큰 요청에 bad_alloc을 던진다(엔진에 catch 없음). 먼저 거른다.
+	const uint64 byteSize = inVertexCount * inVertexSize;
+	if (inData == nullptr || byteSize == 0 || byteSize > _uploadAllocator->GetPageSize())
+	{
+		return false;
+	}
+
+	PUploadAllocator::HAllocation alloc = _uploadAllocator->Allocate(byteSize, 16);
+	memcpy(alloc.CPU, inData, byteSize);
+
+	D3D12_VERTEX_BUFFER_VIEW view = {};
+	view.BufferLocation = alloc.GPU;
+	view.SizeInBytes    = (UINT)byteSize;
+	view.StrideInBytes  = (UINT)inVertexSize;
+	BindVertexBuffer(view);
+	return true;
+}
+
+bool PGraphicsCommandList::BindDynamicIndexBuffer(const uint32* inData, uint64 inIndexCount)
+{
+	const uint64 byteSize = inIndexCount * sizeof(uint32);
+	if (inData == nullptr || byteSize == 0 || byteSize > _uploadAllocator->GetPageSize())
+	{
+		return false;
+	}
+
+	PUploadAllocator::HAllocation alloc = _uploadAllocator->Allocate(byteSize, 16);
+	memcpy(alloc.CPU, inData, byteSize);
+
+	D3D12_INDEX_BUFFER_VIEW view = {};
+	view.BufferLocation = alloc.GPU;
+	view.Format         = DXGI_FORMAT_R32_UINT;
+	view.SizeInBytes    = (UINT)byteSize;
+	BindIndexBuffer(view);
+	return true;
+}
+
 void PGraphicsCommandList::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology)
 {
 	_dx12CommandList->IASetPrimitiveTopology(topology);

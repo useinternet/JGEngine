@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>게임 UI 진행 보고</title>
+<meta name="description" content="2026-10-01 기준 GameFrameWorks 게임 UI(JGGameWidget, CommonUI식): 구조, 쓰는 법, 검증 결과, 한계, 다음 후보">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 16px; }
+  .stat .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-todo { --dot: var(--neutral); }
+  .b-note { --dot: var(--serious); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  figure { margin: 16px 0 0; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--ring); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .small { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  pre { font: 13px/1.5 Consolas, "D2Coding", monospace; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 8px 0 0; }
+  pre code { background: none; border: none; padding: 0; }
+  .layers { display: grid; gap: 6px; margin-top: 8px; }
+  .layer { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 12px; }
+  .layer .ln { font-weight: 600; font-size: 13px; }
+  .layer .ld { font-size: 13px; color: var(--ink-2); }
+  .layer.active { border-color: var(--accent); }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } .layer { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>게임 UI 진행 보고</h1>
+  <div class="meta">2026-10-01 오전 · GameFrameWorks 게임 UI(<code>UI/</code>) · 요청: "GameUI를 모듈로 따로 떼는 게 아니고 GameFrameWork 모듈 안에, JGWidget처럼 JGGameWidget, 언리얼 CommonUI처럼" · 고른 것: 유지형(CommonUI식) · 이전 + CommonUI 핵심 · 전부 <strong>미커밋</strong><br>낮 추가: 게임 프로젝트 요청 ER-007(자동 줄바꿈) · ER-008(글자 입력) 반영 — <a href="#er">§8</a></div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 어젯밤 만든 별도 <code>GameGUI</code> 모듈을 없애고 게임 UI를 GameFrameWorks 안 <code>UI/</code>로 옮겼습니다. 이제 게임 화면은 <code>JGGameWidget</code>을 상속해서 만듭니다. 에디터의 <code>JGWidget</code>처럼 클래스로 만들고, 언리얼 CommonUI의 ActivatableWidget처럼 동작합니다. 관리자 <code>PGameUIManager</code>는 <code>JGGameInstance</code>가 가지며, 레이어 스택 · 입력 라우팅 · 뒤로가기 · 기본 스타일을 맡습니다.</p>
+    <p><strong>결과.</strong> 헤드리스 셀프 테스트 111/111. 검증용 게임(HUD + 일시정지 메뉴)을 에디터에서 띄워 실제 입력 10단계를 보냈습니다. Menu 버튼으로 메뉴가 열리면 HUD 버튼과 월드 클릭이 막혔고, Esc로 메뉴가 닫혔으며, 닫힌 뒤에는 HUD와 월드가 다시 입력을 받았습니다. 비활성 버튼은 눌러도 반응하지 않았습니다. 기존 회귀도 모두 통과했습니다. 본 트리에 반영해 빌드 오류 0을 확인했습니다.</p>
+    <p><strong>남은 일.</strong> 커밋(사용자)과, 본 트리 엔진을 쓰는 기존 게임 프로젝트의 배치 2 재실행입니다(GameGUI 프로젝트가 없어졌습니다). 포커스 이동 · 탭 · 게임패드는 고르신 대로 다음으로 미뤘습니다.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">111 / 111</div><div class="k"><code>gameui.selftest</code>: 스택 수명 · 라우팅 · 뒤로가기 · 비활성 · 스타일 · 레이아웃 · 글꼴</div></div>
+    <div class="stat"><div class="v">10 / 10</div><div class="k">에디터 실제 입력 단계(클릭 9 · Esc 1)</div></div>
+    <div class="stat"><div class="v">0</div><div class="k">빌드 오류(워크트리 247초 · 본 트리 증분 48초) · 실행 오류 로그 · 남은 메모리 블록</div></div>
+    <div class="stat"><div class="v">24 + 11</div><div class="k">GFW <code>UI/</code> 새 파일 + 수정 파일(GFW 4 · GUI 3 · JGEditor 3 · JGConsole 1). 옛 GameGUI 24파일 삭제</div></div>
+  </div>
+
+  <h2>1. 화면</h2>
+  <p>검증용 게임 <code>GameUIDemo</code>입니다. HUD 위젯은 Game 레이어에, 일시정지 메뉴 위젯은 Menu 레이어에 올라갑니다.</p>
+  <div class="shots">
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_before.png" alt="Scene Viewport. 위 띠에 'GameUI 데모 · 턴 1', 안내 두 줄과 Menu 버튼, 왼쪽 아래 카드 2장, 오른쪽 아래 비활성 Draw 버튼과 주황 End Turn 버튼">
+      <figcaption>시작: HUD만 있습니다. Draw 버튼은 비활성 모습입니다.</figcaption>
+    </figure>
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_menu.png" alt="같은 화면 위에 어두운 막과 가운데 '일시정지 · Paused' 패널, 'Esc 또는 Resume 으로 닫기' 안내, Resume 버튼">
+      <figcaption>Menu를 누른 뒤: 일시정지 메뉴(Menu 레이어, 입력 모드 Menu). 이 상태에서는 End Turn과 빈 곳 클릭이 막힙니다.</figcaption>
+    </figure>
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_after.png" alt="메뉴가 닫히고 위 띠 글자가 '턴 3'으로 바뀐 HUD">
+      <figcaption>Esc로 닫고, End Turn을 누르고, 다시 열었다 Resume으로 닫은 뒤의 화면입니다. 턴은 3이고 메뉴는 없습니다.</figcaption>
+    </figure>
+  </div>
+  <p class="small">색이 코드 값보다 옅게 보이는 것은 출력이 FP16 선형 값이라 sRGB로 바뀌기 때문입니다(ImGui와 같음, Graphics D-3).</p>
+
+  <h2>2. 구조</h2>
+  <p>레이어 4개가 있고 레이어마다 스택이 하나 있습니다. 그리기는 아래 레이어부터, 입력은 위 레이어부터 받습니다. 아래 예는 메뉴가 열린 상태입니다.</p>
+  <div class="layers">
+    <div class="layer"><div class="ln">Modal</div><div class="ld">(비어 있음) — 확인 대화상자 자리</div></div>
+    <div class="layer active"><div class="ln">Menu</div><div class="ld">[일시정지 메뉴] 입력 모드 Menu → 여기서 입력이 멈춥니다. 아래 레이어와 월드는 입력을 받지 못합니다. Esc를 받는 뒤로가기 처리 위젯입니다.</div></div>
+    <div class="layer"><div class="ln">GameMenu</div><div class="ld">(비어 있음) — 게임 위에 뜨는 게임 화면 자리</div></div>
+    <div class="layer"><div class="ln">Game</div><div class="ld">[HUD] 그려지고 활성 상태지만, 위에 Menu 모드 화면이 있어 입력을 받지 못합니다.</div></div>
+  </div>
+  <table style="margin-top:12px">
+    <tr><th>구성</th><th>역할</th></tr>
+    <tr><td class="name"><code>JGGameWidget</code></td><td>화면 하나(JGCLASS). 게임이 상속합니다. 훅: <code>OnInitialize</code>(트리를 한 번 만듦), <code>OnActivated</code> / <code>OnDeactivated</code>(스택 맨 위가 되거나 덮일 때), <code>OnUpdate(dt)</code>, <code>OnBackAction</code>(기본: 자기를 닫음), <code>OnShutdown</code>. 설정: <code>SetInputMode(Game/Menu)</code>, <code>SetBackHandler</code>, <code>DeactivateWidget()</code></td></tr>
+    <tr><td class="name"><code>PGameUIManager</code></td><td><code>JGGameInstance::Get().GetUI()</code>. <code>PushWidget&lt;T&gt;(레이어)</code>로 올리면 같은 스택의 이전 화면이 비활성이 됩니다. 빼면 아래 화면이 다시 활성이 됩니다. 입력 라우팅, 뒤로가기, 기본 스타일, 글꼴 · 텍스처를 맡습니다. 월드를 바꿔도 유지됩니다.</td></tr>
+    <tr><td class="name">요소 · 스타일</td><td>이미지 · 글자 · 버튼(앵커 · 피벗 배치). 버튼은 스타일(보통 · 호버 · 누름 · 비활성 색, 라벨 스타일)을 쓰고, 정하지 않으면 관리자 기본 스타일을 씁니다. 글자는 정한 필드만 덮어쓰고 나머지는 기본을 따릅니다. <code>SetEnabled(false)</code>로 끈 요소는 반응하지 않지만 아래 클릭을 막습니다.</td></tr>
+    <tr><td class="name">호스트</td><td>에디터 Scene Viewport가 월드 위에 그리고, 마우스를 먼저 넘깁니다(UI가 받으면 월드 피킹 · 카메라 조작 없음). 창에 포커스가 있을 때 Esc를 뒤로가기로 넘깁니다.</td></tr>
+    <tr><td class="name">그대로 둔 것</td><td>Graphics 2D 그리기 경로(렌더링 기반), ImGui GUI 모듈(에디터 전용)</td></tr>
+  </table>
+
+  <h2>3. 쓰는 법</h2>
+  <pre><code>// 게임 모듈의 화면 (JGCLASS 헤더 하나에 하나)
+JGCLASS()
+class JGMyPauseMenu : public JGGameWidget
+{
+    JG_GENERATED_CLASS_BODY
+protected:
+    virtual void OnInitialize() override
+    {
+        SetInputMode(EGameWidgetInputMode::Menu);   // 떠 있는 동안 아래 · 월드 입력 차단
+        SetBackHandler(true);                       // Esc 로 닫힘
+        PSharedPtr&lt;PGameUIButton&gt; resume = AddChild&lt;PGameUIButton&gt;(PName("Resume"));
+        resume-&gt;SetLabel(PString("Resume"));
+        resume-&gt;OnClicked.AddLambda([this]() { DeactivateWidget(); });
+    }
+};
+
+// 열기 (HUD 버튼 클릭 등에서)
+JGGameInstance::Get().GetUI()-&gt;PushWidget&lt;JGMyPauseMenu&gt;(EGameUILayer::Menu);
+
+// 게임 모듈 ShutdownModule: 게임이 만든 화면을 먼저 내린다
+JGGameInstance::Get().GetUI()-&gt;ClearAllWidgets();</code></pre>
+  <p class="small">전체 예: <code>Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/</code>(HUD · 일시정지 메뉴 · 모듈 · 검증 스크립트 · README). 따로 연결할 UI 모듈은 없습니다(GameFrameWorks 하나).</p>
+
+  <h2>4. 검증</h2>
+  <table>
+    <tr><th>#</th><th>방법</th><th>결과</th></tr>
+    <tr><td class="name">V1</td><td><code>JGConsole.exe gameui.selftest</code>(GPU 없이). 옛 검사 64개에 스택 수명(훅 순서) · 레이어 순서 · Menu 차단 · 클릭 처리기 안에서 닫기 · 뒤로가기(처리 · 막힘 · 아래로 넘김) · 비활성 · 스타일 상속을 더했습니다</td><td><span class="badge b-done">111/111</span> 워크트리 · 본 트리 모두</td></tr>
+    <tr><td class="name">V2</td><td>검증 게임을 에디터에서 실행하고 런처 창에만 PostMessage로 입력: End Turn → Menu → (메뉴 상태에서) End Turn · 빈 곳 → Esc → End Turn → 빈 곳 → 비활성 Draw → Menu → Resume</td><td><span class="badge b-done">통과</span> 턴 2 → 메뉴 열림 → 두 클릭 모두 막힘(턴 그대로, 피킹 없음) → Esc로 닫힘 → 턴 3 → 월드 피킹 → Draw 반응 없음 → 메뉴 열고 Resume으로 닫힘. 오류 0, 종료 0, 메모리 블록 0</td></tr>
+    <tr><td class="name">V3</td><td><code>gmtest</code> · <code>console.selftest</code> · <code>net.test all</code>, 프로젝트 없는 런처</td><td><span class="badge b-done">통과</span> 156 · 64 · 101, 런처 종료 0 · 오류 0 · 메모리 블록 0</td></tr>
+  </table>
+  <p class="small">작업 방식: 본 트리를 다른 세션들이 고치고 있어서 격리 워크트리에서 구현 · 검증한 뒤 반영했습니다. 제가 고친 11개 파일은 그사이 아무도 바꾸지 않았음을 해시로 확인했습니다. 같은 시각 레이아웃 복원 작업을 하던 JGEditor 세션과는 메시지로 파일이 겹치지 않음을 확인했습니다.</p>
+
+  <h2>5. 알아둘 것</h2>
+  <table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td class="name"><span class="badge b-note">검증 스크립트</span></td><td>첫 V2 실행에서 Menu 버튼 클릭이 빗나갔습니다. 엔진 문제가 아니라 스크립트 문제였습니다. 화면 위치를 주황 버튼 높이로 역산했는데, 높이가 1~2픽셀 덜 잡혀 작은 버튼을 놓쳤습니다. 렌더 타깃 비율(16:9)로 계산하게 고친 뒤 통과했습니다.</td></tr>
+    <tr><td class="name"><span class="badge b-note">리드백 회귀</span></td><td>JGEditor 세션이 오늘 09:07에 DevFeature 시작 열기를 지워서, 프로젝트 없는 런처는 이제 DevScene 리드백 PNG를 만들지 않습니다. 그 검사는 지금 돌지 않습니다(그 세션의 변경이고 제 작업과는 무관합니다).</td></tr>
+    <tr><td class="name">게임 위젯 수명</td><td>위젯 클래스는 게임 DLL에 있습니다. 게임 모듈 종료 때 <code>ClearAllWidgets()</code>로 먼저 내리는 것을 권합니다(엔진도 게임 인스턴스 종료 때 남은 위젯을 내립니다).</td></tr>
+    <tr><td class="name">한계</td><td>호스트는 에디터 Scene Viewport 하나뿐입니다(단독 실행은 D-5). 포커스 이동 · 탭 · 게임패드 · 드래그 · 자동 줄바꿈 · 데이터 레이아웃 · 트윈은 보류 표 GG-H1~H16에 다시 볼 조건과 함께 있습니다.</td></tr>
+  </table>
+
+  <h2>6. 할 일</h2>
+  <ul>
+    <li><span class="badge b-decide">커밋</span> 사용자가 합니다. 새 파일 <code>Source/Runtime/GameFrameWorks/UI/</code> 24개와 <code>Source/Shader/draw2d.hlsl</code>(미추적)이 빠지지 않게 해 주세요. <code>SceneViewport.h/.cpp</code>는 JGEditor 이관(E-1)으로 새로 생긴 파일이라 함께 들어가야 합니다. 목록은 <code>Memory/GameFrameWorks/TODO_GameUI.md</code> 커밋 체크리스트에 있습니다.</li>
+    <li><span class="badge b-todo">게임 프로젝트</span> 본 트리 엔진을 쓰는 기존 게임 프로젝트는 <code>GenerateProjectFiles.bat</code>을 다시 돌려야 합니다(GameGUI 프로젝트가 없어졌습니다).</li>
+  </ul>
+
+  <h2>7. 문서 위치</h2>
+  <ul>
+    <li>설계: <code>Memory/GameFrameWorks/Files/GameUI_설계_2026-10-01.md</code></li>
+    <li>TODO(완료 GG-0~7 · 보류 GG-H1~H16 · 커밋 체크리스트): <code>Memory/GameFrameWorks/TODO_GameUI.md</code></li>
+    <li>현황(코드 위치 · 함정 · 검증 방법): <code>Memory/GameFrameWorks/현황.md</code> §10</li>
+    <li>검증 기록: <code>Memory/GameFrameWorks/Files/2026-10-01_GameUI_GFW_verify.txt</code></li>
+    <li>새벽의 별도 모듈안(이력): <code>GameGUI_진행보고_2026-10-01.html</code>, <code>Memory/Etc/Files/GameGUI_설계_2026-09-30.md</code></li>
+  </ul>
+
+  <h2 id="er">8. 낮 추가: 자동 줄바꿈 · 글자 입력 (ER-007 · ER-008)</h2>
+  <div class="lead">
+    <p><strong>요약.</strong> 게임 프로젝트(ProjectAH)가 요청한 두 기능을 검토서 권고대로("진행시켜") 넣었습니다. 글자 요소는 요소 폭에서 줄을 바꾸고(단어 · 글자 방식), 높이를 읽을 수 있고, 잘라내기 · 말줄임을 합니다. 새 요소 <code>PGameUITextInput</code>은 한 줄 입력란입니다. 누르면 키보드 · IME 확정 글자를 받고, Enter로 게임 코드에 문자열을 넘깁니다.</p>
+    <p><strong>결과.</strong> 헤드리스 검사 193/193(줄바꿈 38 · 입력 44 추가). 검증 게임에서 실제 입력 20단계가 통과했습니다. 주소 칸에 <code>192.168.0.10:47771x</code>를 넣으면 'x'는 버려지고, Backspace 뒤 Enter로 게임이 <code>192.168.0.10:4777</code>을 받았습니다. 이름 칸에서는 <code>홍길동ab</code>를 받았습니다. 입력 중 Esc는 포커스만 풀었고, 다음 Esc부터 뒤로가기로 갔습니다. 본 트리에 반영해 빌드 · 회귀 · 런처를 다시 확인했습니다.</p>
+    <p><strong>남은 일.</strong> 실제 한글 IME로 한 번 입력해 봐 주세요(ㅎ → 하 → 한). 조합 창이 입력란 커서 옆에 떠야 합니다. 스크립트는 확정 글자까지만 확인할 수 있습니다. 그다음은 커밋입니다.</p>
+  </div>
+  <div class="shots">
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_er_input_zoom.png" alt="오른쪽 위 패널: 6줄로 줄바꿈된 한국어 · 영어 문단(긴 주소가 단어 안에서 바뀜), 끝이 말줄임표로 줄어든 한 줄, 그 아래 주소 입력란 192.168.0.10:4777, 포커스 색 이름 입력란 홍길동ab">
+      <figcaption>검증 게임 오른쪽 위(확대). 폭 600 문단이 6줄로 바뀌었고 높이는 <code>MeasureContent</code>로 맞췄습니다. 긴 주소는 단어 안에서 바뀝니다. 그 아래 줄은 말줄임입니다. 입력란 두 개(주소 · 이름, 이름 칸이 포커스).</figcaption>
+    </figure>
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_er_input.png" alt="에디터 Scene Viewport 전체: HUD, 오른쪽 위 줄바꿈 패널과 입력란 두 개">
+      <figcaption>같은 순간의 Scene Viewport 전체.</figcaption>
+    </figure>
+  </div>
+  <table style="margin-top:12px">
+    <tr><th>기능</th><th>쓰는 법 · 동작</th></tr>
+    <tr><td class="name">줄바꿈</td><td><code>text-&gt;SetWrap(EGameUITextWrap::Word)</code> — 공백에서 바꿉니다. 한글은 어절 단위, 한자 · 가나는 글자 사이, 줄보다 긴 단어는 그 안에서 바꿉니다. <code>Character</code>는 아무 글자 사이에서 바꿉니다. 닫는 부호(<code>, . ) 」 …</code>)는 줄 첫머리에, 여는 부호는 줄 끝에 오지 않습니다. 기본은 <code>None</code>(예전과 같음)</td></tr>
+    <tr><td class="name">높이</td><td><code>text-&gt;MeasureContent(600.0f, GetManager())</code> → 글 상자 크기(논리 단위, 높이 = 줄 수 × 줄 간격). 줄 나누기를 논리 단위로 하므로 화면 해상도가 달라도 같은 자리에서 바뀝니다</td></tr>
+    <tr><td class="name">잘라내기 · 말줄임</td><td><code>SetClip(true)</code>, <code>SetMaxLines(n)</code> + <code>SetEllipsis(true)</code>(잘린 끝에 "…"). <code>None</code> + 말줄임은 폭을 넘는 한 줄을 줄입니다</td></tr>
+    <tr><td class="name">입력란</td><td><code>AddChild&lt;PGameUITextInput&gt;(...)</code>, <code>SetPlaceholder</code> · <code>SetMaxLength</code>(글자 수) · <code>SetAllowedCharacters("0123456789.:")</code>, 이벤트 <code>OnCommitted</code>(Enter) · <code>OnTextChanged</code>. 스타일 <code>HGameUITextInputStyle</code>(관리자 기본 있음)</td></tr>
+    <tr><td class="name">키</td><td>← → Home End(Shift로 선택) · Backspace · Delete · Ctrl+A/C/X/V · Tab(같은 화면의 다음 입력란) · Enter(확정) · <strong>Esc(포커스 해제만)</strong>. 다른 곳을 누르거나, 입력란이 입력을 못 받게 되면(위에 메뉴가 뜨거나 화면이 닫힘) 포커스가 풀립니다</td></tr>
+    <tr><td class="name">한글 IME</td><td>조합 중 글자는 OS 조합 창이 입력란 커서 옆에 뜹니다(ImGui 입력란과 같은 방식). 확정된 글자가 들어갑니다</td></tr>
+    <tr><td class="name">호스트 · GUI</td><td>Scene Viewport 창에 포커스가 있을 때만 키보드가 게임 UI로 갑니다. 그때 ImGui 키보드 내비게이션이 방향키 · Tab · Enter를 쓰지 않게 키 소유권을 가져옵니다. GUI에 편집 키 · 글자 큐 · IME 위치 · 클립보드 함수를 더했습니다(추가만)</td></tr>
+  </table>
+  <table style="margin-top:12px">
+    <tr><th>#</th><th>검증</th><th>결과</th></tr>
+    <tr><td class="name">V1</td><td><code>gameui.selftest</code>: 줄바꿈(방식별 줄 · 폭 · 공백 · 긴 단어 · 부호 규칙 · 최대 줄 · 말줄임 · 측정 · 배율 0.5 / 0.667 / 1 · 잘라내기), 입력(포커스 · 해제 · 한글 · 제어 문자 · 편집 키 · 선택 · 최대 길이 · 허용 문자 · Tab · Enter · Esc · 메뉴에 가려짐 · 커서 자리 · 가로 밀기 · 깜빡임 · 자리 글)</td><td><span class="badge b-done">193/193</span> 워크트리 · 본 트리</td></tr>
+    <tr><td class="name">V2</td><td>검증 게임 실제 입력 20단계(기존 10 + 주소 입력 · Backspace · Enter · 한글 이름 · 입력 중 Esc · 다음 Esc)</td><td><span class="badge b-done">통과</span> 워크트리 엔진 · 본 트리 엔진 두 번, 오류 0 · 종료 0 · 메모리 블록 0</td></tr>
+    <tr><td class="name">V3</td><td><code>gmtest</code> · <code>console.selftest</code> · <code>net.test all</code>, 프로젝트 없는 런처(D3D12 메시지)</td><td><span class="badge b-done">통과</span> 92+64 · 64 · 101, 런처 종료 0 · D3D12 메시지 0</td></tr>
+  </table>
+  <table style="margin-top:12px">
+    <tr><th>알아둘 것</th><th>내용</th></tr>
+    <tr><td class="name"><span class="badge b-note">빌드</span></td><td>워크트리가 임시 폴더 아래에 있으면 MSBuild가 헤더 변경을 추적하지 않습니다. 첫 증분 빌드는 옛 오브젝트가 남아 셀프 테스트가 접근 위반으로 죽었습니다(디버거로 원인 확인). 전체 다시 빌드로 해결했고, 코드 문제는 아니었습니다. 본 트리에는 해당하지 않습니다.</td></tr>
+    <tr><td class="name"><span class="badge b-note">검증 스크립트</span></td><td>첫 V2에서 한글 이름이 깨졌습니다. 스크립트가 ANSI판 <code>PostMessageA</code>로 글자를 보냈기 때문입니다. 유니코드판(<code>W</code>)으로 고친 뒤 통과했습니다. 엔진 문제는 아니었습니다.</td></tr>
+    <tr><td class="name"><span class="badge b-note">공유 파일</span></td><td><code>GUI.h/.cpp/GUIDefines.h</code>는 같은 날 DevConsole 세션도 고쳤습니다. 3-way로 합쳤고 그쪽이 확인했습니다. <code>SceneViewport</code> · GFW 파일은 그사이 아무도 바꾸지 않았습니다(해시 확인).</td></tr>
+    <tr><td class="name">1차 범위 밖</td><td>여러 줄 입력 · 비밀번호 가림 · 조합 중 글자를 입력란 안에 그리기 · 끌어 선택 · 되돌리기 · 이모지 · 스크롤 영역 · 리치 텍스트. 보류 표 GG-H3 · GG-H17~H24에 다시 볼 조건과 함께 있습니다.</td></tr>
+  </table>
+  <ul>
+    <li><span class="badge b-decide">확인</span> 실제 한글 IME 입력 한 번(GG-9U). 본 트리 Bin의 에디터에서 검증 게임이나 ProjectAH를 열고 입력란에 한글 이름을 쳐 봐 주세요.</li>
+    <li><span class="badge b-decide">커밋</span> 새 파일 <code>UI/GameUITextInput.h/.cpp</code>가 늘었습니다(<code>UI/</code> 26개). 목록은 <code>Memory/GameFrameWorks/TODO_GameUI.md</code> 커밋 체크리스트입니다.</li>
+    <li>문서: 검토서 <code>Memory/GameFrameWorks/Files/ER-007_ER-008_검토_2026-10-01.md</code>, 검증 기록 <code>Memory/GameFrameWorks/Files/2026-10-01_GameUI_ER007_ER008_verify.txt</code>. ProjectAH 요청서 두 건은 상태를 "반영"으로 바꾸고 쓰는 법을 적었습니다.</li>
+  </ul>
+</main>
+</body>
+</html>

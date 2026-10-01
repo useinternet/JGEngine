@@ -1,0 +1,67 @@
+// DevConsole 로그 필터 · 명령 미리보기 창 입력 검증용 임시 코드 (2026-09-30 DevConsole 6-1 · 6-2, 2026-10-01 6-5 · 6-6 에서 다시 씀)
+// 격리 워크트리에만 넣는다. 메인 트리에 넣지 않는다. 검증이 끝나면 git checkout 으로 되돌리고 grep "TEMP devconsole" 0건을 확인한다.
+// 스크립트: devconsole_filter_preview_check.ps1.txt(09-30 고정 시나리오), devconsole_ui_runner.ps1.txt(10-01 동작 목록 러너)
+// 결과: ../2026-09-30_devconsole_filter_preview_verify.txt, ../2026-10-01_devconsole_ui_polish_verify.txt
+// 10-01 판: (B) 의 test.beta 는 Warning, test.gamma 는 Error 를 카테고리 TempCheck 로 남기게 바꿔 썼다(경고 · 오류 줄 강조와 카테고리 목록 확인용).
+//           executeTempWarning / executeTempError 를 두고 JG_LOG(TempCheck, ELogLevel::Warning|Error, "temp warning|error from %s %s", ...).
+
+// ---------------------------------------------------------------------------------------------------------------------
+// (A) Source/Editor/DevConsole/DevConsoleModule.cpp — StartupModule 끝(AddMainMenuItem 다음). 콘솔은 원래 자동으로 열리지 않는다.
+// ---------------------------------------------------------------------------------------------------------------------
+	 GUIModule->OpenWidget<JGDevConsole>(); // [TEMP devconsole preview check]
+
+// ---------------------------------------------------------------------------------------------------------------------
+// (B) Source/Runtime/Devkit/DevkitModule.cpp — JG_MODULE_IMPL 줄 다음. 프로젝트 없는 에디터에는 help 말고 명령이 없어서 후보 목록을 볼 명령을 만든다.
+//     "test" 를 치면 앞부분 일치 3개(test.alpha, test.beta, test.gamma) 뒤에 이름에만 든 demo.test 가 온다.
+// ---------------------------------------------------------------------------------------------------------------------
+// [TEMP devconsole preview check]
+#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
+namespace
+{
+	bool executeTempPreviewCheck(const HConsoleCommandArgs& InArgs)
+	{
+		JG_LOG(Devkit, ELogLevel::Info, "temp preview check: %s %s", InArgs.GetName(), InArgs.GetPositional(0));
+		return true;
+	}
+
+	HAutoConsoleCommand TempAlphaCommand("test.alpha", "test.alpha [text]", "Temp command A for the preview check", &executeTempPreviewCheck);
+	HAutoConsoleCommand TempBetaCommand("test.beta", "test.beta [text] [-n=N]", "Temp command B for the preview check", &executeTempPreviewCheck);
+	HAutoConsoleCommand TempGammaCommand("test.gamma", "test.gamma", "Temp command C for the preview check", &executeTempPreviewCheck);
+	HAutoConsoleCommand TempDemoCommand("demo.test", "demo.test", "Temp command whose name only contains 'test'", &executeTempPreviewCheck);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// (C) Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp — PostMessage 로 보낸 마우스를 실제 커서 대신 쓴다(JG_UITEST=1 일 때만).
+//     이유: 백엔드가 매 프레임 WindowFromPoint(GetCursorPos()) 로 마우스가 올라간 뷰포트를 정한다. 실제 커서가 런처 밖이면
+//     보낸 클릭이 허공 클릭이 되어 아무것도 누르지 못하고 입력줄 포커스까지 풀린다. 사용자 커서를 움직이지 않으려고 이렇게 한다.
+// ---------------------------------------------------------------------------------------------------------------------
+// (C-1) ImGui_ImplWin32_UpdateMouseData 앞에 추가
+static bool ImGui_ImplWin32_JGUiTestMode()
+{
+    static const bool bUiTest = ::GetEnvironmentVariableA("JG_UITEST", nullptr, 0) > 0;
+    return bUiTest;
+}
+
+// (C-2) ImGui_ImplWin32_UpdateMouseData 안, IM_ASSERT(bd->hWnd != 0); 바로 다음
+    if (ImGui_ImplWin32_JGUiTestMode())
+    {
+        io.AddMouseViewportEvent(ImGui::GetMainViewport()->ID);
+        return;
+    }
+
+// (C-3) WndProcHandler 의 case WM_MOUSELEAVE: case WM_NCMOUSELEAVE: 블록 맨 앞
+        if (ImGui_ImplWin32_JGUiTestMode())
+            return 0;
+
+// (선택) 클릭이 어디에 떨어졌는지 볼 때: (C-2) 블록 안 return 앞에 넣는다. imgui_internal.h 가 필요하다. 결과는 작업 폴더의 uitest_mouse.txt.
+//        if (io.MouseDown[0] || io.MouseReleased[0])
+//        {
+//            ImGuiContext& g = *GImGui;
+//            FILE* file = nullptr;
+//            if (fopen_s(&file, "uitest_mouse.txt", "a") == 0 && file != nullptr)
+//            {
+//                fprintf(file, "[frame %d] down=%d MousePos(%.0f,%.0f) hovered=%s active=%08X\n", ImGui::GetFrameCount(), (int)io.MouseDown[0],
+//                    io.MousePos.x, io.MousePos.y, g.HoveredWindow ? g.HoveredWindow->Name : "(null)", g.ActiveId);
+//                fclose(file);
+//            }
+//        }

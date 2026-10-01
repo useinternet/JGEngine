@@ -41,8 +41,8 @@ protected:
 	virtual void OnShutdown() {}
 	virtual void OnOpen()  {}
 	virtual void OnClose() {}
+	// 소유 위젯이 열려 있는 동안 매 프레임, 위젯의 OnUpdate 뒤에 불린다.
 	virtual void OnUpdate() {}
-	virtual void OnUpdateFrame() {}
 	virtual void OnLayout(const HWidgetComponentLayout& InLayout) {}
 	virtual void OnGenerateGUI() {}
 

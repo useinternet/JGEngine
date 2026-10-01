@@ -124,6 +124,39 @@ bool GConsoleCommandGlobalSystem::IsRegistered(const PString& InName) const
 	return _commands.contains(HConsoleCommandArgs::NormalizeName(InName));
 }
 
+void GConsoleCommandGlobalSystem::FindCommands(const PString& InText, HList<HConsoleCommandInfo>& OutCommands) const
+{
+	OutCommands.clear();
+
+	// 등록된 이름은 소문자다(Register). 찾는 글자도 같은 방식으로 바꾼다.
+	const HRawString text = HConsoleCommandArgs::NormalizeName(InText).GetRawString();
+	for (const HPair<const PString, HConsoleCommandDesc>& pair : _commands)
+	{
+		if (pair.first.GetRawString().find(text) == HRawString::npos)
+		{
+			continue;
+		}
+
+		HConsoleCommandInfo info;
+		info.Name        = pair.second.Name;
+		info.Usage       = pair.second.Usage;
+		info.Description = pair.second.Description;
+		OutCommands.push_back(info);
+	}
+
+	std::sort(OutCommands.begin(), OutCommands.end(), [&text](const HConsoleCommandInfo& InLeft, const HConsoleCommandInfo& InRight)
+		{
+			const bool bLeftPrefix  = InLeft.Name.GetRawString().starts_with(text);
+			const bool bRightPrefix = InRight.Name.GetRawString().starts_with(text);
+			if (bLeftPrefix != bRightPrefix)
+			{
+				return bLeftPrefix;
+			}
+
+			return InLeft.Name.GetRawString() < InRight.Name.GetRawString();
+		});
+}
+
 bool GConsoleCommandGlobalSystem::Execute(const PString& InLine)
 {
 	HList<PString> tokens;

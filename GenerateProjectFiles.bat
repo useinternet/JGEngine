@@ -1,2 +1,2 @@
-cd Build/BatchFiles/
-PreBuild.bat
+cd /d "%~dp0Build\BatchFiles"
+call .\PreBuild.bat

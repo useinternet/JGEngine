@@ -1,0 +1,75 @@
+GameModule 마무리 — R8 · GM-A1 · GM-B1 · GM-B2 · GM-B4 · P4 구현 · 검증 기록 (2026-09-30 20:10 ~ 21:05)
+체크아웃: C:\Develop\JGEngine (HEAD 4c8ac73 + R7 + 아래, 미커밋). 툴: VS2022 Community MSBuild, DevelopEngine|x64.
+사용자 지시: "나머지 작업 진행하고 완료 처리". 게임 단독 실행 호스트 · R5 · B10 은 사용자 결정으로 보류(그대로 둠).
+
+== 1. 변경
+R8    Source/Programs/JGConsole/ModuleCommands.cpp (신규)   module.test <Module> [<Module>...] — 연결 → 역순 해제, 그 사이 Error/Critical 로그가 있으면 실패.
+                                                       이름은 명령 규칙(area.action)대로 module.test (문서의 옛 이름 modtest, 같은 문서의 nethost 가 net.host 가 된 것과 같음).
+                                                       Main.cpp 는 건드리지 않음(명령마다 .cpp 하나 규칙).
+GM-A1 Source/Runtime/Asset/AssetDatabase.cpp             같은 GUID 가 두 번 올라오면 먼저 것을 지키고 나중 것은 Error + 실패(콜백은 빈 포인터).
+                                                       전에는 _assetPool[guid] 를 덮어써 먼저 올라온 에셋의 소유가 풀렸다(경로 맵은 약참조).
+GM-B1 Source/Programs/JGBuildTool/Class/ModuleInfo.h     WriteJson 복붙 수정 → Source/Programs/JGBuildTool/ModuleInfoTemplate.json(추적 파일) 재생성:
+                                                       "ModuleName": "Name", "ModulePath": "Source/[Category]/[ModuleName]" (이전: 포맷 문자열 · 의존 목록)
+GM-B2 Source/Runtime/Asset/Core.module.json 삭제          툴이 <폴더명>.module.json 만 읽어(BuildTool.cpp:653, HeaderTool.cpp:150) 무시되던 옛 사본(StaticLib "Asset", _CORE).
+                                                       Source/Dummy 는 삭제하지 않음 — 툴의 기본 UserWorkDirectory(JGBuildTool/Class/Arguments.h:61, buildtool_arguments.json:10,
+                                                       JGHeaderTool/Class/Arguments.h:22, headertool_arguments.json:9)라 죽은 폴더가 아니다.
+GM-B4 GenerateProjectFiles.bat                           cd /d "%~dp0Build\BatchFiles" + call .\PreBuild.bat (이전: cd Build/BatchFiles/ + PreBuild.bat)
+P4    Source/Programs/JGBuildTool/Class/ProjectCreator.h/.cpp, Main.cpp
+                                                       PProjectCreator::IsSupportedProjectPath — 경로에 0x80 이상 바이트가 있으면 Critical + 종료 코드 1.
+                                                       배치 1(-newproject=) 과 배치 2(-project=, BuildTool 단계) 모두. 공백은 허용.
+
+== 2. P4 조사 (검사 넣기 전 툴, 2026-09-30 20:2x ~ 20:4x)
+공백 경로 <scratchpad>\Games\Space Dir\SpaceGame : 배치 1 exit 0 → 배치 2 exit 0 (vcxproj 17) → MSBuild SpaceGame.sln exit 0, error 0, 288초, 17 프로젝트
+  → Bin\DevelopEngine\JGLauncher.exe 40초: "SpaceGame entry actor entered world", Start Load Assets in .../Space Dir/SpaceGame/Content, [error]/[critical] 0, exit 0, live blocks 0
+한글 경로 <scratchpad>\Games\한글폴더\HanGame : 배치 1 exit 0(프로젝트가 만들어짐) → 배치 2 exit 1: "[error][BuildTool]: premake failed (1): .../HanGame.lua"
+  → 한글 경로는 배치 1 에서 통과하고 배치 2 의 premake 에서야 알아보기 힘든 오류로 실패한다. 공백은 문제없다.
+검사 넣은 뒤: 배치 1 (한글폴더\HanGame2) exit 1, 프로젝트 안 만들어짐, "[critical][BuildTool]: Project path must be ASCII (non-ASCII folder names make premake fail): ..."
+             배치 2 (검사 전에 만든 한글폴더\HanGame) exit 1, 같은 메시지, premake 까지 가지 않음
+
+== 3. GM-B4 · GM-B2 (PreBuild)
+NoDefaultCurrentDirectoryInExePath=1 인 셸에서, 작업 폴더 C:\ 로 cmd //c "C:\Develop\JGEngine\GenerateProjectFiles.bat" : exit 0, [error]/[critical] 0
+  (고치기 전: 같은 셸에서 "'PreBuild.bat' is not recognized", 작업 폴더가 엔진 루트가 아니면 cd 부터 실패)
+GM-B2: 삭제 전 PreBuild 산출물 스냅숏 → Core.module.json 삭제 → PreBuild → diff: Temp/ProjectFiles · JGEngine.sln · jgengine.lua · Temp/CodeGen(md5) 모두 동일
+
+== 4. 엔진 빌드 · JGConsole (엔진 Bin\DevelopEngine)
+MSBuild JGEngine.sln : exit 0, error 0 (컴파일 5: AssetDatabase.cpp, BuildTool.cpp, JGBuildTool Main.cpp, ModuleCommands.cpp, ProjectCreator.cpp)
+새 JGBuildTool 로 PreBuild : exit 0 → ModuleInfoTemplate.json 수정 확인(1절 GM-B1)
+JGConsole help                       exit 0  명령 7개, module.test 포함
+JGConsole module.test GameFrameWorks exit 0  "already connected" (JGConsole 이 시작할 때 연결) → OK
+JGConsole module.test NoSuchModule   exit 1  "Fail Connect Module:NoSuchModule" → "connect FAILED (connected no, error logs 1)"
+JGConsole module.test Asset          exit 0  Startup Asset → connected (error logs 0) → Shutdown Asset → disconnected (error logs 0) → OK
+JGConsole console.selftest           exit 0  OK (57/57)  (error 줄은 selftest 의 음성 케이스)
+JGConsole gmtest                     exit 0  OK (0 failures)
+JGConsole net.test all               exit 0  66 passed, 0 failed (error 줄은 음성 케이스)
+모든 실행 종료 시 Memory Chunk live blocks 0
+
+== 5. 게임 프로젝트 (<scratchpad>\Games\MyGame)
+MyGame\GenerateProjectFiles.bat : exit 0 (JGConsole.vcxproj 에 ModuleCommands.cpp 포함) → MSBuild MyGame.sln exit 0, error 0
+Bin\DevelopEngine\JGConsole module.test MyGame : exit 0, [error]/[critical] 0      ← R8 완료 기준
+  [info][Core]: Project MyGame: project .../Games/MyGame/, engine C:/Develop/JGEngine/
+  [info][MyGame]: MyGame entry actor entered world
+  [info][GameFrameWorks]: JGGameInstance: world loaded (MyGame)
+  [info][MyGame]: Startup MyGame Module...
+  [info][JGConsole]: module.test: MyGame connected (error logs 0)
+  [info][MyGame]: Shutdown MyGame Module...
+  [info][JGConsole]: module.test: MyGame disconnected (error logs 0)
+  [info][JGConsole]: module.test: OK (1 module(s))          live blocks 0
+Bin\DevelopEngine\JGConsole module.test MyGameEditor : exit 1 (예상) — "[error][MyGameEditor]: MyGameEditor needs the GUI module" → connect FAILED (error logs 1). 해제는 error 0
+Bin\DevelopEngine\JGConsole gmtest : exit 0, OK (0 failures)
+
+== 6. GM-A1 (게임 런처, crashwalk 50초)
+<Project>\Content\TempAsset\DupSample.jgasset = 엔진 Sample.jgasset 그대로 복사(GUID 같음), GameSample.jgasset(GUID 다름)도 있음
+  /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+  /JGGame/TempAsset/GameSample.jgasset : Success Load Asset
+  [error][Asset]: /JGGame/TempAsset/DupSample.jgasset : Duplicate asset guid 2609130592-22670-17755-176-135-99-68-165-112-42-128 with /JGEngine/TempAsset/Sample.jgasset. Skipped. Give the copied file a new _guid
+  [error]/[critical] 는 위 1줄뿐, Process exited with code 0, live blocks 0
+  검증 뒤 DupSample.jgasset 은 지움.
+어느 쪽이 "먼저"인지는 로드 완료가 기록된 프레임 순서다. 같은 프레임에 둘 다 끝나면 해시 순서라 정해져 있지 않다(오류 메시지에 두 경로가 모두 나온다).
+
+== 7. 엔진 단독 런처 회귀 (crashwalk 40초)
+Start Load Assets in ../../Content (1번), /JGEngine/TempAsset/Sample.jgasset : Success Load Asset, [error]/[critical] 0, exit 0, live blocks 0 — R7 때와 같음
+
+== 8. 닫은 항목 (하지 않음)
+GM-B3 게임 생성 cpp 의 절대경로 #include : 생성물은 <Project>/Temp/CodeGen(git 미추적, PC 마다 배치 2 가 다시 만든다). 프로젝트를 옮기면 sln · vcxproj 때문에도
+      배치 2 를 다시 돌려야 한다. 절대경로는 이름이 같은 엔진 헤더를 잘못 집는 문제(현황 §5 리플렉션 헤더)도 피한다 → 고칠 문제가 없다.
+GM-B2 의 Source/Dummy : 1절대로 쓰이는 폴더.

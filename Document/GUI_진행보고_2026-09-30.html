@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GUI 진행 보고</title>
+<meta name="description" content="2026-09-30 기준 GUI(ImGui 모듈) 트랙: 지금 되는 것, 오늘 확인한 것, 항목별 진행, 위젯 갱신 경로 결함, 남은 일, 결정이 필요한 항목">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .callout { background: var(--callout); border-left: 4px solid var(--accent); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 16px; }
+  .stat .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  tr.total td { font-weight: 600; background: var(--page); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-todo { --dot: var(--neutral); }
+  .b-bug { --dot: var(--serious); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  figure { margin: 16px 0 0; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--ring); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  ul, ol { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>GUI 진행 보고</h1>
+  <div class="meta">2026-09-30 기준 · GUI(ImGui 모듈) 트랙 · 근거: <code>Document/Memory/Etc</code> 현황·TODO_GUI, 소스와 git 대조, 이 PC에서 19:51에 실행된 런처 로그</div>
+
+  <div class="callout">
+    <strong>업데이트 (09-30 21:4x): 1-2 구현 완료, 미커밋</strong>
+    <p>위젯 갱신 훅을 매 프레임 <code>OnUpdate</code> 하나로 합쳤습니다(사용자 결정). 30Hz 스케줄, <code>OnUpdateFrame</code>, 플래그 4개를 지웠고 1-1은 대상이 없어져 제외했습니다. 같은 작업에서 1-3(DevScene 렌더를 <code>OnUpdate</code>로), 1-4, 1-7, 1-8, 1-9도 고쳤습니다. 10파일 +23/−74입니다.</p>
+    <p>검증 결과: 빌드 오류 0, 런처 60초 종료 코드 0, 오류 로그 0, 남은 메모리 블록 0, 리드백 PNG 2장이 커밋본과 바이트 동일(렌더 결과 동일). 캡처도 전과 같습니다.</p>
+    <p>현재 32항목 중 완료 10(1-1은 제외)입니다. 남은 것은 1-5, 1-10 나머지(1-4 시각 확인), 1-11 커밋, 3-5 결정, 3-7입니다. 아래 본문은 구현 전 상태를 기준으로 썼으며, 최신 목록은 <code>Memory/Etc/TODO_GUI.md</code>, 증적은 <code>Memory/Etc/Files/2026-09-30_1-2_update_merge_verify.txt</code>에 있습니다.</p>
+  </div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> GUI 모듈은 동작합니다. 런처(JGEditor)를 띄우면 메뉴바, DevFeature 창(씬 뷰), DevConsole 창, 메모리 통계 창이 뜨고, 종료할 때 GPU 작업이 끝나기를 기다린 뒤 자원을 놓습니다. 저장소를 옮긴 이 PC에서도 오늘 저녁 오류 없이 실행되고 종료됐습니다. 하지만 GUI 트랙 전용 작업은 09-21 분석과 TODO 작성 뒤로 멈춰 있습니다. TODO 32항목 가운데 끝난 4건(1-9는 일부)은 모두 Graphics, DevConsole, GameModule 트랙이 자기 작업을 하면서 처리했습니다.</p>
+    <p><strong>핵심 결함(09-30 21:4x 해결, 위 업데이트 참고).</strong> 구현 전에는 위젯의 주기 갱신 함수(<code>OnUpdate</code> 30Hz, <code>OnUpdateFrame</code> 매 프레임)는 어떤 위젯에서도 불리지 않습니다. 그래서 DevScene은 화면을 그리는 함수(<code>OnGenerateGUI</code>) 안에서 씬 렌더를 돌립니다. GameFrameWorks 2-3 DevView를 위젯으로 만들면 바로 이 결함에 걸립니다.</p>
+    <p><strong>결정.</strong> 1-2는 09-30에 "두 갱신 훅을 매 프레임 <code>OnUpdate</code> 하나로 합친다"로 정했습니다(6절). 이 작업이 1-1을 없애고 1-3을 포함하며, 남은 작은 버그 3건은 대부분 한두 줄 수정입니다. 남은 결정은 3-5 <code>imgui.ini</code> 추적 해제 하나입니다.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">10 / 31</div><div class="k">완료(21:4x 기준, 미커밋 6건 포함). 1-1은 합치기로 소멸해 제외. 구현 전에는 4/32</div></div>
+    <div class="stat"><div class="v">5</div><div class="k">미완료: 1-5 메뉴 경로 키, 1-10 검증 나머지, 1-11 커밋, 3-5, 3-7</div></div>
+    <div class="stat"><div class="v">16</div><div class="k">보류(지금 증상 없음). 이 밖에 백로그 6</div></div>
+    <div class="stat"><div class="v">1</div><div class="k">결정 대기: 3-5 <code>imgui.ini</code> (1-2는 09-30 결정·구현)</div></div>
+  </div>
+
+  <div class="callout">
+    <strong>문서 정정</strong>
+    Etc 현황과 TODO_GUI에는 다른 트랙이 GUI에 넣은 변경이 "미커밋"으로 적혀 있었습니다. git으로 확인해 보니 <code>4c8ac73</code>(09-30 17:30)에 <code>GUI.h/.cpp</code>(<code>HGUI::Text</code> 수정, 래퍼 4종), <code>JGEditor.cpp</code>(GUI 호스트, 3-6), <code>DevConsoleModule.cpp</code>(1-6, 1-9 일부), <code>DevScene.cpp</code>가 모두 들어 있습니다. GUI·Devkit·Editor 폴더의 소스에는 작업 트리 변경이 없습니다. TODO_GUI Top 5에 선행 조건으로 적혀 있던 "DevConsole 커밋이 먼저"도 이 커밋으로 풀렸습니다. 두 문서와 진행현황을 고쳤습니다.
+  </div>
+
+  <h2>1. 지금 되는 것</h2>
+  <table>
+    <tr><th>구성</th><th>내용</th><th>상태</th></tr>
+    <tr><td class="name">라이브러리</td><td>Dear ImGui 1.91.1 WIP(도킹, 멀티 뷰포트), ImPlot 0.17. ImGui는 <code>GUI.dll</code> 밖으로 노출되지 않습니다. 다른 모듈은 <code>HGUI</code> 래퍼와 <code>JGWidget</code>만 씁니다</td><td><span class="badge b-done">동작</span></td></tr>
+    <tr><td class="name">DX12 백엔드</td><td>SRV 힙 1024칸. 0번은 폰트이고, 나머지는 프레임마다 511칸씩 나눠 씁니다. 칸이 넘치면 오류 로그를 한 번 남기고 마지막 칸을 다시 씁니다. 종료할 때는 GPU 작업이 끝난 뒤 해제합니다</td><td><span class="badge b-done">동작</span> Graphics 5-5가 고침(<code>1308fd5</code>)</td></tr>
+    <tr><td class="name">위젯</td><td><code>HGUIModule</code>이 위젯 맵을 갖고, <code>OpenWidget&lt;T&gt;</code> · <code>CloseWidget&lt;T&gt;</code> · <code>FindWidget&lt;T&gt;</code>를 제공합니다. <code>JGWidget</code> 훅 8개, 창 안의 하위 영역은 <code>JGWidgetComponent</code></td><td><span class="badge b-bug">일부</span> 열기·닫기·그리기는 동작, 주기 갱신 2개는 불리지 않음(4절)</td></tr>
+    <tr><td class="name">메인 메뉴</td><td><code>"A/B/C"</code> 경로를 메뉴바로 만듭니다. 지금 경로는 <code>Dev/DevAI</code>, <code>Windows/DevConsole</code>, <code>Windows/Statistics/Memory</code> 3개입니다</td><td><span class="badge b-done">동작</span> 경로가 늘면 이름 충돌 버그(1-5)</td></tr>
+    <tr><td class="name"><code>HGUI</code> 래퍼</td><td>13개. DevConsole 트랙이 <code>BeginChild</code> · <code>EndChild</code> · <code>GetFrameHeightWithSpacing</code> · <code>InputTextWithHistory</code>를 추가했습니다. 문자열을 printf 서식으로 넘기던 <code>Text</code> 버그도 고쳐, 메모리 통계 창의 peak 열과 <code>%</code> 표시가 돌아왔습니다</td><td><span class="badge b-done">동작</span> <code>4c8ac73</code></td></tr>
+    <tr><td class="name">호스트와 소비자</td><td>JGEditor가 엔진 모듈 6개를 연결하고 시작할 때 DevFeature를 엽니다. GUI를 쓰는 모듈은 Devkit(DevFeature = DevScene + DevSettings), DevConsole, DevStatistics(메모리 통계)입니다</td><td><span class="badge b-done">동작</span> GameModule R3가 정리(3-6)</td></tr>
+  </table>
+  <figure>
+    <img src="Memory/GameModule/Files/2026-09-29_jgeditor_engine_capture.png" alt="JGEditor 창. 상단 메뉴바에 Windows와 Dev, 그 아래 도킹된 DevFeature 창 왼쪽에 X Bot이 그려진 씬 뷰, 오른쪽에 빈 설정 패널">
+    <figcaption>09-29 JGEditor 호스트 캡처(GameModule 트랙, 옮기기 전 PC). 메뉴바 <code>Windows</code> · <code>Dev</code>, 도킹된 DevFeature 창 안에 DevScene(800×600 씬 텍스처, X Bot)과 DevSettings(아직 빈 패널)가 있습니다.</figcaption>
+  </figure>
+
+  <h2>2. 오늘 확인한 것</h2>
+  <table>
+    <tr><th>확인</th><th>결과</th></tr>
+    <tr><td class="name">커밋 상태</td><td>다른 트랙이 GUI에 넣은 변경은 모두 <code>4c8ac73</code>까지 커밋돼 있습니다. GUI 소스는 그 뒤로 바뀌지 않았습니다</td></tr>
+    <tr><td class="name">미완료 항목 코드</td><td>12항목 모두 TODO에 적힌 파일:행 그대로입니다. 예: <code>GUIModule.cpp:133</code>은 여전히 <code>Update()</code>를 부르고, <code>DevFeature.cpp:52</code>의 복붙 조건도 남아 있습니다</td></tr>
+    <tr><td class="name">이 PC 런처 실행</td><td><span class="badge b-done">정상</span> 19:47 재빌드 뒤 19:51에 실행된 로그입니다(이 세션이 실행한 것은 아님). <code>[error]</code> · <code>[critical]</code> 0, D3D12 메시지 0. DevScene이 메시를 읽고 PSO 2개를 만들었으며, 리드백 PNG 2장을 저장했고 두 파일 모두 커밋본과 바이트 단위로 같습니다. 종료 시 남은 메모리 블록 0. 경고 2건은 GUI 밖 항목입니다(Asset 경로 1건, Graphics 5-25가 다루는 프레임 안 즉시 리드백 1건)</td></tr>
+    <tr><td class="name"><code>imgui.ini</code></td><td><span class="badge b-bug">재현</span> 위 실행으로 다시 바뀌었습니다(2줄). 3-5 문제가 그대로입니다</td></tr>
+    <tr><td class="name">캡처 스크립트</td><td><span class="badge b-todo">수정 필요</span> 공용 도구 <code>Document/Memory/tools/capture_devscene.ps1</code>에 옛 경로 <code>C:\JG\JGEngine</code>이 하드코딩돼 있습니다. 1-10 캡처 전에 고쳐야 합니다. Graphics TODO 0번과 같은 작업입니다</td></tr>
+  </table>
+
+  <h2>3. 항목별 진행 (TODO 32항목)</h2>
+  <table>
+    <tr><th>묶음</th><th>완료</th><th>미완료</th><th>보류</th></tr>
+    <tr><td class="name">P1 확정 버그 (11)</td><td>1-6: DevConsole 3-1이 옛 API를 지워 대체<br>1-9 일부: DevConsole 쪽 카테고리</td><td>1-1, 1-2, 1-3, 1-4, 1-5, 1-7, 1-8, 1-9 나머지, 1-10 검증, 1-11 커밋</td><td>없음</td></tr>
+    <tr><td class="name">P2 수명·동기화 (11)</td><td>2-4: 종료 전 GPU 대기<br>2-5: SRV 프레임별 구간<br>(둘 다 Graphics 5-5)</td><td>없음</td><td>2-1, 2-2, 2-3, 2-6, 2-7, 2-8, 2-9, 2-10·2-11</td></tr>
+    <tr><td class="name">P3 정리 (10)</td><td>3-6: JGEditor 호스트 정리(GameModule R3)</td><td>3-5 <code>imgui.ini</code>, 3-7 방침 기록 한 줄</td><td>3-1, 3-2, 3-3, 3-4, 3-8, 3-9·3-10</td></tr>
+    <tr class="total"><td class="name">합계 32</td><td class="num">4</td><td class="num">12</td><td class="num">16</td></tr>
+  </table>
+  <p class="small">보류는 지금 증상이 없는 항목이고, 각각 "다시 볼 조건"을 붙여 두었습니다. 예를 들어 2-1 스케줄러 해제 API는 실행 중에 모듈을 떼었다 붙이는 코드가 생길 때 다시 봅니다. 우클릭 메뉴, 테마, 한글 폰트, 위젯 상태 저장 같은 백로그 6건은 32항목에 넣지 않았습니다.</p>
+
+  <h2>4. 핵심 결함: 위젯 갱신 경로 (09-30 21:4x 해결)</h2>
+  <table>
+    <tr><th>위치</th><th>지금 코드</th><th>결과</th></tr>
+    <tr><td class="name"><code>Widget.h:49</code></td><td><code>EWidgetFlags WidgetFlags;</code> 초기값도 설정 함수도 없습니다</td><td>모든 위젯의 플래그가 <code>None</code></td></tr>
+    <tr><td class="name"><code>GUIModule.cpp:90-112</code><br><code>UpdateWidgets</code> (30Hz)</td><td><code>AllowUpdate</code>나 <code>AllowAlwaysUpdate</code>가 없는 위젯은 건너뜁니다</td><td>매번 빈 순회라 <code>OnUpdate</code>가 불리지 않음</td></tr>
+    <tr><td class="name"><code>GUIModule.cpp:114-136</code><br><code>UpdateFrameWidgets</code> (매 프레임)</td><td>판정을 통과해도 <code>:133</code>이 <code>UpdateFrame()</code>이 아니라 <code>Update()</code>를 부릅니다</td><td>플래그를 켜도 <code>OnUpdateFrame</code>은 불리지 않음. <code>JGWidget::UpdateFrame()</code>을 부르는 곳이 없음</td></tr>
+    <tr><td class="name"><code>DevScene.cpp:162-188</code></td><td>씬 렌더(<code>Renderer-&gt;Render</code>)와 리드백 프레임 카운터가 <code>OnGenerateGUI</code> 안에 있습니다</td><td>위 결함을 피하려고 화면 그리기 함수에 렌더 로직을 넣은 상태</td></tr>
+  </table>
+  <p class="small">권고 수정(추가 분석 뒤): 두 갈래를 매 프레임 <code>OnUpdate</code> 하나로 합칩니다. 30Hz 스케줄, <code>OnUpdateFrame</code>, 플래그 4개를 지우고 열린 위젯은 항상 받게 합니다. 이러면 1-1은 할 일이 없어집니다 → 1-3 DevScene의 렌더와 리드백 카운터를 <code>OnUpdate</code>로 옮기고 <code>OnGenerateGUI</code>에는 <code>HGUI::Image</code>와 상태 텍스트만 남깁니다. Update 단계는 GUI 생성 뒤, 프레임 제출 앞에 돌기 때문에 렌더를 옮겨도 같은 프레임에 실행됩니다. 그래서 2절의 "프레임 안 즉시 리드백" 경고는 이 수정으로 사라지지 않습니다. 그 경고는 리드백을 프레임 밖 콘솔 명령으로 옮기는 Graphics 5-25의 몫입니다. 캡처의 X Bot이 전과 같고 리드백 PNG 2장이 생기면 완료입니다.</p>
+
+  <h2>5. 남은 일 (미완료 12)</h2>
+  <table>
+    <tr><th>ID</th><th>항목</th><th>지금 코드</th><th>크기 · 선행</th></tr>
+    <tr><td class="name">1-2</td><td>위젯 플래그 기본값과 설정 함수</td><td><code>Widget.h:17-25, 49</code></td><td><span class="badge b-decide">결정 필요</span></td></tr>
+    <tr><td class="name">1-1</td><td>매 프레임 갱신이 <code>UpdateFrame()</code>을 부르게</td><td><code>GUIModule.cpp:133</code></td><td>1줄 + 판정 통합. 1-2와 함께</td></tr>
+    <tr><td class="name">1-3</td><td>DevScene 렌더를 <code>OnUpdateFrame</code>으로</td><td><code>DevScene.cpp:162-188</code></td><td>1-1·1-2 뒤. Graphics 트랙 파일이라 조정 필요</td></tr>
+    <tr><td class="name">1-4</td><td>메뉴 활성 판정에 <code>CanAction</code> 사용</td><td><code>MenuTree.cpp:77-81</code>이 복붙으로 <code>Visibility</code>를 한 번 더 평가</td><td>1~3줄. <code>CanAction</code>을 쓰는 메뉴가 아직 없어 증상 없음</td></tr>
+    <tr><td class="name">1-5</td><td>메뉴 노드를 전체 경로로 찾기</td><td><code>MenuTree.cpp:21, 36, 39</code>가 경로 조각 이름으로 찾음. <code>Windows/Open</code>과 <code>File/Open</code>이 한 노드로 합쳐짐</td><td>소규모. 지금 3경로는 충돌 없음</td></tr>
+    <tr><td class="name">1-7</td><td>백엔드 종료에서 기반 <code>PGUIBackend::Shutdown()</code>(델리게이트 해제) 호출</td><td><code>DX12GUIBackend.cpp:165-185</code></td><td>1줄. 백엔드가 곧 파괴돼 지금은 무해</td></tr>
+    <tr><td class="name">1-8</td><td>DevSettings 레이아웃 조건 복붙</td><td><code>DevFeature.cpp:52</code>가 <code>DevSettings</code> 앞에서 <code>DevScene.IsValid()</code>를 검사</td><td>1줄. 증상 없음</td></tr>
+    <tr><td class="name">1-9</td><td>로그 카테고리 이름</td><td><code>GUIModule.cpp:21</code> <code>JGDev_GraphicsModule</code> → <code>GUI</code></td><td>1줄. DevConsole 쪽은 완료</td></tr>
+    <tr><td class="name">1-10</td><td>P1 검증</td><td>빌드 → 런처 캡처(메뉴바, DevFeature, X Bot) → 60초 회귀 종료 0</td><td>1-1~1-9 뒤. 캡처 스크립트 경로 수정 선행(2절)</td></tr>
+    <tr><td class="name">1-11</td><td>P1 커밋</td><td>사용자</td><td>1-10 뒤</td></tr>
+    <tr><td class="name">3-5</td><td><code>imgui.ini</code> 추적 해제, 백업 zip 2개</td><td><code>.gitignore</code>에 없고, 최근 커밋 5개(<code>033e988</code>~<code>4c8ac73</code>)에 연달아 섞였습니다. zip은 <code>GUI_백업.zip</code>(871KB), <code>JGEditor/백업.zip</code>(14KB)</td><td><span class="badge b-decide">결정 필요</span></td></tr>
+    <tr><td class="name">3-7</td><td><code>HGUI</code> 확장 방침 한 줄 기록</td><td><code>GUI.h</code> 상단에 없음. 실제 작업은 이미 방침대로 합니다(즉시 모드 함수는 <code>HGUI</code> 정적 함수, 상태가 있는 것만 컴포넌트)</td><td>주석 한 줄</td></tr>
+  </table>
+
+  <h2>6. 결정이 필요한 것</h2>
+  <table>
+    <tr><th>#</th><th>결정</th><th>권고</th><th>막고 있는 것</th></tr>
+    <tr><td class="name">D-9 (1-2)</td><td>위젯 갱신 훅</td><td><span class="badge b-done">결정됨 09-30</span> 아래 권고대로 합치기로 정했습니다. 작업 목록은 <code>Memory/Etc/TODO_GUI.md</code> Top 1에 있습니다. (추가 분석 뒤 권고) 30Hz <code>OnUpdate</code>와 매 프레임 <code>OnUpdateFrame</code>을 매 프레임 <code>OnUpdate</code> 하나로 합치고 플래그를 없앱니다. 열린 위젯은 항상 받습니다. 두 훅 모두 도입(<code>bd98a67</code>, 09-15) 뒤로 쓰는 곳이 없었고, 30Hz는 엔진에서 유일한 시간 간격 스케줄입니다. 그마저 고정 간격이 아니라 스로틀입니다. 합치면 1-1은 사라집니다. 대안은 기본값 <code>AllowUpdate | AllowUpdateFrame</code>과 setter 추가입니다</td><td>1-1 · 1-3, GameFrameWorks 2-3</td></tr>
+    <tr><td class="name">D-9 (3-5)</td><td><code>imgui.ini</code> 추적 해제, 백업 zip 처리</td><td>ini는 <code>.gitignore</code>에 넣고 <code>git rm --cached</code>로 추적만 끊습니다. zip은 옛 설계를 참고하려고 둔 것이라 git 이력에 맡기고 지웁니다</td><td>커밋마다 섞이는 <code>imgui.ini</code></td></tr>
+    <tr><td class="name">D-6 (GFW)</td><td>2-3 DevView를 GUI 위젯으로 붙일지</td><td>위젯으로 붙이기를 권합니다. 그러려면 1-1~1-3을 2-3보다 먼저 끝내야 합니다</td><td>GameFrameWorks Phase 2</td></tr>
+    <tr><td class="name">2-8</td><td>멀티 뷰포트 유지</td><td>유지(보류). 렌더 스레드를 도입하거나, 뷰포트 큐 경고가 실제 문제를 일으키면 다시 봅니다</td><td>없음</td></tr>
+  </table>
+
+  <h2>7. 권장 순서</h2>
+  <ol>
+    <li><strong>1-2 결정</strong>(6절).</li>
+    <li><strong>1-1 + 1-3</strong> 갱신 경로 복구. <code>Devkit/DevScene.cpp</code>는 Graphics 트랙 파일이라 착수 전에 <code>git status</code>로 다른 세션의 변경을 확인합니다.</li>
+    <li><strong>1-4 · 1-7 · 1-8 · 1-9</strong>(각 1~3줄)와 <strong>1-5</strong>(메뉴 경로 키).</li>
+    <li><strong>3-5</strong>를 결정대로 처리.</li>
+    <li><strong>1-10 검증 → 1-11 커밋</strong>(사용자). 캡처 전에 공용 캡처 스크립트의 경로를 고칩니다.</li>
+  </ol>
+  <p class="small">1~2단계는 GameFrameWorks 2-3 DevView를 시작하기 전에 끝내는 것이 좋습니다. 진행현황 리스크 표에도 같은 내용이 있습니다.</p>
+
+  <h2>8. 주의할 점</h2>
+  <ul>
+    <li><strong>갱신 훅을 고치기 전까지.</strong> 새 위젯에 매 프레임 로직이 필요하면 <code>OnGenerateGUI</code>에 둡니다(DevScene 방식). <code>OnUpdateFrame</code>에 두면 실행되지 않습니다.</li>
+    <li><strong>GUI 생성은 프레임 안.</strong> 위젯 GUI는 GraphicsBegin 단계에서 만들어집니다. GPU 리드백, 모듈 연결·해제, 다른 위젯 열기는 콘솔의 <code>Submit</code>처럼 프레임 밖으로 미룹니다.</li>
+    <li><strong><code>OpenWidget&lt;T&gt;</code>는 템플릿.</strong> GUI를 쓰는 DLL 안에서 만들어져 GUI 모듈의 위젯 맵을 직접 만집니다. 맵 타입을 바꾸면 GUI를 쓰는 모듈을 모두 다시 빌드해야 합니다.</li>
+    <li><strong>폰트.</strong> 기본 폰트에 한글 글리프가 없어 화면 문자열은 영어로 씁니다(백로그 BL-3).</li>
+    <li><strong>이 세션은 런처를 실행하지 않았습니다.</strong> 실행하면 추적 파일(<code>imgui.ini</code>, 리드백 PNG 2장)이 다시 쓰여 작업 트리가 바뀝니다. 동작 확인은 19:51에 이 PC에서 실행된 로그로 했습니다(2절). 그 실행의 종료 코드는 로그에 남지 않지만, 종료 순서는 메모리 청크 정리까지 끝났습니다.</li>
+  </ul>
+
+  <h2>9. 참고 문서</h2>
+  <ul>
+    <li><a href="Memory/Etc/현황.md">Etc 현황</a>(GUI는 2절) · <a href="Memory/Etc/TODO_GUI.md">GUI TODO</a> · <a href="Memory/진행현황.md">전체 진행현황</a></li>
+    <li><a href="Memory/Etc/Files/GUI_현황분석_2026-09-21.md">GUI 현황 분석(09-21)</a> · <a href="Memory/Etc/Files/GUI_TODO.md">구 GUI TODO(보관)</a></li>
+    <li><a href="JGEngine_진행보고_2026-09-30.html">JGEngine 전체 진행 보고</a> · <a href="Server_진행보고_2026-09-30.html">Server 진행 보고</a> · <a href="Graphics_진행보고_2026-09-30.html">Graphics 진행 보고</a></li>
+  </ul>
+</main>
+</body>
+</html>

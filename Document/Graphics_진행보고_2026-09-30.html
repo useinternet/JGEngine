@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graphics 진행 보고</title>
+<meta name="description" content="2026-09-30 기준 JGEngine Graphics 트랙의 진행 단계, 할 수 있는 것, 남은 일, 결정이 필요한 항목, 검증 상태">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --meter-fill: #2a78d6; --meter-track: #cde2fb;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc; --warn-bg: #fdf6e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --meter-fill: #3987e5; --meter-track: #0d366b;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a; --warn-bg: #2a2310;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --meter-fill: #3987e5; --meter-track: #0d366b; --neutral: #5598e7; --callout: #14213a; --warn-bg: #2a2310;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .lead ol { margin: 4px 0 0; padding-left: 22px; }
+  .lead li { margin: 2px 0; }
+  .callout { background: var(--warn-bg); border-left: 4px solid var(--warning); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pct { font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13px; margin-left: 6px; }
+  .meter { display: inline-block; width: 160px; height: 8px; border-radius: 4px; background: var(--meter-track); vertical-align: middle; overflow: hidden; }
+  .meter > span { display: block; height: 100%; background: var(--meter-fill); border-radius: 4px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-active { --dot: var(--neutral); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .b-none { --dot: var(--muted); }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 4px 0 16px; }
+  .flow .step { flex: 1 1 150px; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .flow .step b { display: block; font-size: 13px; margin-bottom: 2px; }
+  .flow .step span { color: var(--ink-2); font-size: 13px; }
+  .flow .arrow { align-self: center; color: var(--muted); font-size: 18px; }
+  figure { margin: 16px 0 0; }
+  .shot { max-width: 640px; aspect-ratio: 784 / 598; overflow: hidden; border-radius: 8px; border: 1px solid var(--ring); background: #5b6270; }
+  .shot img { display: block; width: 246.94%; margin: -9.95% 0 0 -2.04%; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  a { color: var(--meter-fill); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 8px 0 0; }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } .meter { width: 100px; } .flow .arrow { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Graphics 진행 보고</h1>
+  <div class="meta">기준 2026-09-30 19:50 · HEAD <code>4c8ac73</code> · 진행률 <span class="meter"><span style="width:80%"></span></span><span class="pct">80%</span> · 상세: <a href="Memory/Graphics/현황.md">현황.md</a> · <a href="Memory/Graphics/TODO.md">TODO.md</a></div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> Graphics는 렌더링 기반을 끝내고 에셋 파이프라인 마무리 단계에 있습니다. 2025년에 한 번도 컴파일되지 않았던 코드를 09-16에 빌드 가능 상태로 되돌린 뒤, 첫 드로우 → 메시 드로우(G버퍼 + 합성) → 종료 크래시 제거 → CPU↔GPU 전송 관리자 → 2프레임 파이프라이닝 → 장면 데이터(<code>PScene</code>)와 렌더러(<code>PSceneRenderer</code>) 분리까지 09-29에 마쳤습니다. Phase 0~4는 31항목 전부, Phase 5는 31항목 중 16개 완료와 2개 부분 완료입니다. 진행 중인 코드 작업은 없고, Graphics 변경은 09-30 17:30 커밋 <code>4c8ac73</code>까지 모두 커밋됐습니다.</p>
+    <p><strong>지금 필요한 것.</strong></p>
+    <ol>
+      <li><strong>이 PC에서 첫 실행 확인.</strong> 저장소가 <code>C:\Develop\JGEngine</code>(새 PC)로 옮겨졌고, 이 PC에서는 Graphics를 한 번도 실행하지 않았습니다. 마지막 검증은 09-29 옛 PC입니다. 캡처 스크립트가 옛 경로를 하드코딩해 그대로는 실패합니다. 다른 트랙이 에셋 경로 코드를 고치는 중이라 그 변경이 들어간 뒤 한 번 돌리면 둘 다 확인됩니다.</li>
+      <li><strong>에셋 저장 형식 결정(5-30).</strong> 4MB 텍스처가 73.7MB 파일이 되는 문제입니다. 머터리얼 임포트와 임포트 명령이 이 결정 뒤에 있습니다.</li>
+      <li><strong>출력 색 공간 결정(5-14).</strong> 지금은 0.5 회색이 실제보다 밝게 보입니다.</li>
+    </ol>
+  </div>
+
+  <h2>1. 단계별 진행</h2>
+  <table>
+    <thead><tr><th>단계</th><th>한 일</th><th>상태</th><th>날짜</th><th>커밋</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Phase 0 준비</td><td>현재 상태를 커밋으로 고정, 빌드 오류 10건 목록 확보</td><td><span class="badge b-done">완료</span></td><td class="num">09-15~16</td><td><code>bd98a67</code> <code>04d9247</code></td></tr>
+      <tr><td class="name">Phase 1 빌드 복구</td><td>셰이더(도메인별 바이트코드)·머터리얼 재설계, 셰이더 컴파일러 버그 3건, 소스 27개 UTF-8 변환. 16/16 프로젝트 오류 0</td><td><span class="badge b-done">완료</span></td><td class="num">09-16</td><td><code>334052b</code> <code>c300fd3</code></td></tr>
+      <tr><td class="name">Phase 2 드로우 전 수정</td><td>HLSL 템플릿·플레이스홀더 통일, 상수 버퍼 256B 정렬, 렌더 타깃·깊이, 기본 텍스처·머터리얼</td><td><span class="badge b-done">완료</span></td><td class="num">09-16</td><td><code>57189c7</code></td></tr>
+      <tr><td class="name">Phase 3 첫 드로우</td><td>화면 공간(Screen) 도메인 풀스크린 드로우</td><td><span class="badge b-done">완료</span></td><td class="num">09-16~17</td><td><code>60ccb48</code></td></tr>
+      <tr><td class="name">Phase 4 메시 드로우</td><td>에셋 메시와 렌더 메시 분리, G버퍼 4장 + 깊이 → 합성, 카메라, 메시 에셋 로드(에셋 DB 버그 5건 포함)</td><td><span class="badge b-done">완료</span></td><td class="num">09-17</td><td><code>4e12fed</code> <code>52920a4</code></td></tr>
+      <tr><td class="name">종료 크래시</td><td>API 캐시 수명 관리와 null 가드 21개, 모듈 역순 Shutdown. 종료 코드 0</td><td><span class="badge b-done">완료</span></td><td class="num">09-17</td><td><code>cd1a1d6</code></td></tr>
+      <tr><td class="name">Phase 5 기반 강화</td><td>전송 관리자, PSO 캐시 키 수정(장시간 실행 크래시 원인), FBX 임베디드 텍스처 임포트, 2프레임 파이프라이닝, <code>PScene</code> 분리, 경계 상자 저장</td><td><span class="badge b-active">진행 중</span></td><td class="num">09-18~29</td><td><code>a71b70a</code> <code>033e988</code> <code>d457b92</code> <code>1308fd5</code> <code>4c8ac73</code></td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">Phase 5 31항목: 완료 16 · 부분 2(5-26 (1)~(3), 5-19 일부) · 남음 7 · 보류 5 · 제외 2. 진행률 80% = (31 + 16.75) ÷ (31 + 29), 보류 5개는 분모에 포함했습니다. 다른 트랙처럼 보류를 분모에서 빼면 약 87%입니다.</p>
+
+  <h2>2. 지금 Graphics가 하는 것</h2>
+  <div class="flow">
+    <div class="step"><b>Surface 드로우</b><span>메시 · 머터리얼</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>G버퍼 4장 + 깊이</b><span>Albedo · Normal/Metallic · Specular/Roughness · Depth</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Screen 합성</b><span>고정 방향 램버트</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>출력 텍스처</b><span>R16G16B16A16F</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><b>GUI 씬 뷰</b><span>에디터 창에 표시</span></div>
+  </div>
+  <table>
+    <thead><tr><th>영역</th><th>구현된 것</th></tr></thead>
+    <tbody>
+      <tr><td class="name">장면</td><td><code>PScene</code>이 메시·카메라를 ID로 생성·조회·수정·삭제합니다(데이터만 들고 메인 스레드 전용). 그리기는 <code>PSceneRenderer::Render(scene, camera)</code>가 맡습니다. GameFrameWorks가 쓸 API는 준비됐습니다.</td></tr>
+      <tr><td class="name">머터리얼 · 셰이더</td><td>도메인 2종(Surface, Screen), HLSL 템플릿 치환, FXC(셰이더 모델 5.1), 상수 버퍼 레이아웃, 텍스처 슬롯과 기본 텍스처</td></tr>
+      <tr><td class="name">프레임</td><td>2프레임 겹침 실행, 프레임별 할당자·업로드 페이지·디스크립터 힙, 리소스 해제는 GPU가 그 프레임을 끝낸 뒤</td></tr>
+      <tr><td class="name">CPU↔GPU 전송</td><td><code>PResourceStagingManager</code> 한 곳에서 업로드와 리드백(비동기, 즉시)을 처리</td></tr>
+      <tr><td class="name">에셋 · 임포트</td><td>정적 메시(경계 상자 저장), 텍스처, FBX → 메시 + 임베디드 텍스처 <code>.jgasset</code>. 머터리얼 임포트와 임포터를 부르는 진입점은 아직 없습니다.</td></tr>
+      <tr><td class="name">안정성</td><td>60초 실행에 PSO 2개로 고정, D3D12 디버그 메시지 0, 종료 코드 0, 종료 시 메모리 블록 0 (09-29 옛 PC 기준)</td></tr>
+    </tbody>
+  </table>
+  <figure>
+    <div class="shot"><img src="Memory/GameModule/Files/2026-09-29_jgeditor_engine_capture.png" alt="에디터 씬 뷰에 램버트 음영으로 그려진 X Bot 메시"></div>
+    <figcaption>씬 뷰 부분 확대. 09-29 옛 PC, JGEditor 호스트(GameModule 트랙 캡처). Graphics 쪽 같은 날 캡처는 <a href="Memory/Graphics/Files/2026-09-29_5-26_capture.png">5-26 캡처</a>. 이 PC에서는 아직 캡처하지 않았습니다.</figcaption>
+  </figure>
+
+  <h2>3. 남은 일 (순서대로)</h2>
+  <table>
+    <thead><tr><th>순서</th><th>ID</th><th>할 일</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0</td><td class="name">회귀</td><td>이 PC에서 HEAD 바이너리로 60초 실행, 캡처, 리드백 PNG 비교</td><td><span class="badge b-active">착수 가능</span> 캡처는 스크립트 경로 수정이 먼저</td></tr>
+      <tr><td class="num">1</td><td class="name">5-30</td><td>에셋 저장 크기(4MB 텍스처 → 73.7MB, X Bot 36MB). 임포트 저장이 CPU → GPU → CPU로 도는 왕복 제거</td><td><span class="badge b-decide">결정 필요</span></td></tr>
+      <tr><td class="num">2</td><td class="name">5-29</td><td>FBX 머터리얼 임포트 + sRGB 텍스처 포맷 + 밉 생성. 지금은 임포트한 텍스처를 참조하는 곳이 없습니다</td><td><span class="badge b-active">착수 가능</span> sRGB 규칙은 5-14와 함께</td></tr>
+      <tr><td class="num">3</td><td class="name">5-31</td><td>임포트 진입점 <code>asset.import</code> 콘솔 명령. 지금 엔진에는 임포터를 부르는 코드가 없습니다</td><td><span class="badge b-active">착수 가능</span></td></tr>
+      <tr><td class="num">4</td><td class="name">5-14</td><td>스왑체인 색 공간. FP16 출력을 OS가 선형으로 해석해 0.5가 밝게 보임</td><td><span class="badge b-decide">결정 필요</span></td></tr>
+      <tr><td class="num">5</td><td class="name">5-25</td><td>매 실행 저장하는 리드백 PNG를 <code>devscene.readback</code> 명령으로</td><td><span class="badge b-decide">결정 필요</span> PNG 확보 방법</td></tr>
+      <tr><td class="num">-</td><td class="name">5-19</td><td>헤더 툴이 메타 없는 열거자 이름을 빠뜨림. 모든 열거자에 메타를 붙여 우회 중</td><td><span class="badge b-none">낮음</span></td></tr>
+      <tr><td class="num">-</td><td class="name">5-20</td><td>샘플 에셋 경로 "(null)" 경고. 재임포트나 재저장 때 함께 해결</td><td><span class="badge b-none">낮음</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">GameFrameWorks가 카메라·메시 컴포넌트(2-1, 2-2)를 시작하면 렌더러 소유 위치와 활성 카메라 전달 방식에 대한 요청이 올 수 있습니다. Graphics 쪽 변경은 요청이 오면 합니다.</p>
+
+  <h2>4. 결정이 필요한 항목</h2>
+  <table>
+    <thead><tr><th>#</th><th>결정할 것</th><th>선택지</th><th>권고</th><th>막고 있는 것</th></tr></thead>
+    <tbody>
+      <tr><td>D-2</td><td class="name">5-30 에셋 저장 형식</td><td>(a) 큰 배열을 base64 문자열로(파일 1개, 압축 크기의 1.33배) (b) 별도 바이너리 파일(가장 작고 빠름, 파일 2개) (c) 들여쓰기 없는 JSON(원소당 약 4B, 가독성 하락)</td><td>(a) 또는 (b). 보드 권고는 (b)를 검토한 뒤 결정</td><td>5-29, 5-31, 임포트 실사용, 시작 로드 시간</td></tr>
+      <tr><td>D-3</td><td class="name">5-14 출력 색 공간</td><td>8비트 sRGB 스왑체인 / FP16 유지 + 톤매핑·감마 패스</td><td>8비트 sRGB로 시작</td><td>5-14, 5-29 sRGB 슬롯 규칙</td></tr>
+      <tr><td>D-10</td><td class="name">샘플 에셋 재저장</td><td>재저장(36MB 파일 전체 변경) / 그대로</td><td>5-30 결정 뒤 새 형식으로 한 번에</td><td>매 실행 경고 2줄</td></tr>
+      <tr><td>-</td><td class="name">5-25 PNG 확보 방법</td><td>런처 실행 인자로 명령 실행 / 환경 변수 / 지금처럼 항상 저장</td><td>실행 인자(DevConsole 트랙과 조율)</td><td>5-25</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">5-5 프레임 파이프라이닝 유지 여부는 답을 받지 않았지만 유지 상태이며 되돌릴 이유가 없습니다. 5-26 (4) 런타임 빌드의 CPU 사본 해제는 측정된 문제가 없어 보류입니다.</p>
+
+  <h2>5. 이번 확인에서 바로잡은 것</h2>
+  <div class="callout">
+    <strong>저장소가 새 PC로 옮겨졌습니다</strong>
+    <code>C:\JG\JGEngine</code> → <code>C:\Develop\JGEngine</code>. 옛 경로는 이 PC에 없습니다. 공용 캡처 스크립트 <code>Document/Memory/tools/capture_devscene.ps1</code>이 실행 파일·작업 폴더·출력 경로를 옛 경로로 하드코딩해 이 PC에서는 실패합니다. 다른 트랙도 쓰는 도구라 이번에는 고치지 않고 진행현황 리스크에 올렸습니다.
+  </div>
+  <table>
+    <thead><tr><th>항목</th><th>문서 (09-30 오전)</th><th>실제 (09-30 19:50)</th></tr></thead>
+    <tbody>
+      <tr><td class="name">5-26 (3) 경계 상자 저장</td><td>미커밋</td><td><code>4c8ac73</code>에 커밋됨. Graphics 미커밋 변경 0</td></tr>
+      <tr><td class="name">이 PC에서 실행</td><td>-</td><td>Graphics 실행 기록 없음. 19:36 로그는 콘솔 exe의 네트워크 테스트라 Graphics가 돌지 않았습니다</td></tr>
+      <tr><td class="name">검증 명령 경로</td><td>옛 절대 경로</td><td>Graphics 현황 §6을 새 경로로 고침. 캡처 스크립트는 미수정</td></tr>
+      <tr><td class="name">리드백 PNG 2장</td><td>git 미추적</td><td>09-28(<code>fcace8f</code>)부터 추적 파일. 실행마다 다시 써서 내용이 바뀌면 diff가 생깁니다</td></tr>
+      <tr><td class="name">다른 트랙 진행 중 변경</td><td>-</td><td>GameModule R7로 보이는 Asset 경로 처리 변경(엔진 에셋 경로 해석도 리팩터링)과 Bin 재빌드가 미커밋 상태. 샘플 에셋 로드가 이 경로를 타므로 0번 회귀는 이 변경이 들어간 뒤 돌리면 둘 다 확인됩니다</td></tr>
+      <tr><td class="name">다른 트랙 알림 2건</td><td>GFW·GUI에 알릴 것</td><td>양쪽 TODO에 이미 반영돼 있음</td></tr>
+      <tr><td class="name">진행률 근거 문구</td><td>"보류는 분모에서 제외"</td><td>실제 계산은 보류 5개를 분모에 포함. 문구를 계산에 맞게 고쳤고 80%는 유지</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 검증 상태</h2>
+  <table>
+    <thead><tr><th>검사</th><th>마지막 결과</th><th>언제 · 어디서</th></tr></thead>
+    <tbody>
+      <tr><td class="name">전체 빌드</td><td>오류 0, 경고는 LNK4098 1건(서드파티 CRT 혼재, 보류 5-11)</td><td>09-29 · 옛 PC</td></tr>
+      <tr><td class="name">60초 실행</td><td>error·critical 0, D3D12 메시지 0, PSO 2개, 종료 시 메모리 블록 0, 종료 코드 0</td><td>09-29 · 옛 PC</td></tr>
+      <tr><td class="name">화면</td><td>X Bot이 램버트 음영으로 보임(JGEditor 호스트)</td><td>09-29 · 옛 PC</td></tr>
+      <tr><td class="name">리드백</td><td>알베도 덮인 픽셀 65,587개(3.2%) · 중앙 255, 출력 중앙 0.174. 구조 변경(5-7, 5-26) 전후 PNG 바이트 동일</td><td>09-29 · 옛 PC</td></tr>
+      <tr><td class="name">바이너리</td><td>Graphics 소스는 커밋 그대로. 19:48에 다른 트랙(GameModule R7, 게임 Content 마운트로 보이는 Asset·Core 수정)이 Bin 전체를 다시 빌드해 Graphics.dll도 새로 링크됨(미커밋)</td><td>09-30 · 이 PC</td></tr>
+      <tr><td class="name">이 PC 실행</td><td>없음 → 남은 일 0번</td><td>-</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. 다른 트랙과의 접점</h2>
+  <table>
+    <thead><tr><th>트랙</th><th>접점</th><th>지금 상태</th></tr></thead>
+    <tbody>
+      <tr><td class="name">GameFrameWorks</td><td>카메라·메시 컴포넌트(2-1, 2-2)가 <code>PScene</code> ID API를 씀. 렌더러 소유와 활성 카메라 선택은 GameFrameWorks가 정함</td><td>API 준비됨. GameFrameWorks 코드의 <code>PScene</code> 참조는 아직 0</td></tr>
+      <tr><td class="name">DevConsole</td><td>5-25, 5-31 명령을 콘솔 명령 시스템으로 등록</td><td>콘솔 시스템 완료, 착수 가능</td></tr>
+      <tr><td class="name">Asset</td><td>5-30은 Asset 쪽 JSON 직렬화 규칙과 함께 결정</td><td>D-2 대기</td></tr>
+      <tr><td class="name">Memory</td><td>5-17, 5-18, 5-28은 Memory 보류 항목과 같은 대상</td><td>Memory 휴면, 보류 유지</td></tr>
+      <tr><td class="name">GUI</td><td><code>DevScene.cpp</code>를 함께 고침. GUI 업데이트 경로 복구 때 조정</td><td>GUI 정체</td></tr>
+    </tbody>
+  </table>
+
+  <p class="small" style="margin-top:32px">근거: <code>Document/Memory/Graphics/현황.md</code> · <code>TODO.md</code> · <code>진행현황.md</code>, git 기록(<code>bd98a67</code> ~ <code>4c8ac73</code>), 코드 대조(<code>FBXAssetImporter.cpp:171</code> 머터리얼 읽기 주석 상태, <code>DirectX12API.cpp:86</code> 출력 포맷 R16G16B16A16_Float, <code>CommandQueue.h:25</code> FramesInFlight = 2, <code>DevScene.cpp:28-30</code> 리드백 덤프). 이번 보고에서는 코드를 바꾸거나 실행하지 않았습니다.</p>
+</main>
+</body>
+</html>

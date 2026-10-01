@@ -98,7 +98,7 @@ public:
 
 	// 이 행동자를 로컬 플레이어가 조작하는가 (AI 가 맡은 조작 주체는 아니다).
 	bool IsLocallyControlled(const HGameplayEntityId& actor) const;
-	// 지금 입력을 받는 행동자: 선택 대기 중이면 선택자, 아니면 현재 행동자.
+	// 지금 입력을 받는 첫 행동자 (HGameplayState::FirstInputActor): 선택 대기 중이면 선택자, 아니면 흐름이 정한 Turn.Actors 의 첫 행동자.
 	HGameplayEntityId GetInputActor() const;
 
 protected:

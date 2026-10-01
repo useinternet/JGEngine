@@ -39,8 +39,14 @@ struct GAMEFRAMEWORKS_API HGameplayContext
 	HGameplayEntityId SpawnEntity(const PName& zoneName = PName());
 	bool DestroyEntity(const HGameplayEntityId& id);
 
-	// 게임 종료. 페이즈를 Finished 로 두고 GameFinished 이벤트를 낸다. Amount 에 결과 코드.
+	// 게임 종료. 페이즈를 Finished 로 두고 GameFinished 이벤트를 낸다. Amount 에 결과 코드. 흐름의 예약 단계 · 입력 행동자도 비운다.
 	void FinishGame(int32 resultCode);
+
+	// 흐름 공용 칸 (게임 흐름과 그 효과가 쓴다. IGameplayFlow 참고).
+	// 단계 이름을 바꾸고 StepChanged 이벤트를 낸다(Tag = 새 단계, Tag2 = 이전 단계, Amount = Round). 같은 이름이면 아무 일도 없다.
+	void SetStep(const PName& step);
+	// 지금 명령을 낼 수 있는 행동자. 죽은 엔티티 · 중복은 넣지 않는다. 빈 목록 = 아무도 못 낸다.
+	void SetActors(const HList<HGameplayEntityId>& actors);
 
 	// 보드 질의 객체. 보드 상태는 State.Board, 규칙(거리 · 이웃 · 경로)은 이것.
 	const IGameplayBoard* Board() const;

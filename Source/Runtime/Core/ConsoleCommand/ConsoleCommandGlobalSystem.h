@@ -41,6 +41,14 @@ struct HConsoleCommandDesc
 	HConsoleCommandDelegate Handler;
 };
 
+// FindCommands 결과(목록 표시용). 핸들러는 담지 않는다: 사본이 명령을 등록한 모듈 DLL 의 코드를 가리킨 채 모듈보다 오래 남지 않게.
+struct HConsoleCommandInfo
+{
+	PString Name;
+	PString Usage;
+	PString Description;
+};
+
 // 명령 레지스트리. 메인 스레드 전용이다.
 // GCoreSystem::Create 에서 GStringTable 다음, GModuleGlobalSystem 앞에 등록한다.
 // 그래서 Update 는 스케줄러의 모든 버킷(프레임) 뒤에, Destroy 는 모듈이 모두 해제된 뒤에 온다.
@@ -63,6 +71,9 @@ public:
 	bool Register(const HConsoleCommandDesc& InDesc);
 	bool Unregister(const PString& InName);
 	bool IsRegistered(const PString& InName) const;
+	// 이름에 InText 가 들어 있는 명령(대소문자 무시). InText 로 시작하는 이름이 먼저 오고, 각 묶음 안은 이름순이다.
+	// InText 가 비면 전부 이름순. DevConsole 입력 미리보기가 쓴다.
+	void FindCommands(const PString& InText, HList<HConsoleCommandInfo>& OutCommands) const;
 
 	// 즉시 실행한다. 빈 줄은 true. 없는 명령·따옴표 오류·핸들러 실패면 false.
 	bool Execute(const PString& InLine);

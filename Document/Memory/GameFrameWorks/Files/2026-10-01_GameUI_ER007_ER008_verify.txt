@@ -1,0 +1,75 @@
+GameUI ER-007(자동 줄바꿈, GG-8) · ER-008(글자 입력, GG-9) 검증 기록 — 2026-10-01 (GUI 세션)
+사용자 지시: "진행시켜" (검토서 권고대로 수락: ER-007 말줄임 포함 먼저, ER-008 1차 범위 · OS 조합 창 위치 · 입력 중 Esc = 포커스 해제)
+작업 위치: 격리 워크트리 <scratchpad>\wt_er (메인 트리 스냅숏 = HEAD + 메인 미커밋 변경, 스테이징만) → 검증 → 메인 트리 반영
+
+== 1. 바뀐 코드 ==
+GFW UI/ (수정): GameUIDefines.h(EGameUITextWrap, EGameUIKey), GameUIFont.h/.cpp(실수 크기 수치 MeasureAdvance/Kerning/Ascent/LineHeight, LayoutText · 줄 배치 HGameUITextLine/HGameUITextLayout, 말줄임),
+  GameUIText.h/.cpp(SetWrap/SetMaxLines/SetEllipsis/SetClip/MeasureContent, 배치를 받는 AddTextDraw — 글리프 자리 = 논리 배치 × 배율),
+  GameUIUtf8.h(Encode), GameUIStyle.h(HGameUITextInputStyle), GameUIManager.h/.cpp(글자 입력 포커스 · HandleTextInput · HandleKey · WantsTextInput · GetTextInputCaretRect · GetTextInputSelection · Set/ClearTextInputFocus · 기본 입력란 스타일 · 커서 깜빡임),
+  GameUI.h(include), GameUISelfTest.cpp(testTextWrap 38 · testTextInput 44)
+GFW UI/ (새 파일): GameUITextInput.h/.cpp (PGameUITextInput)
+GUI (추가만): GUIDefines.h(EGUIKey 편집 키 18개), GUI.h/.cpp(IsKeyPressed(key, bRepeat), IsCtrlDown/IsShiftDown/IsAltDown, GetInputCharacters, ClaimTextEditKeys, SetTextInputPosition, GetClipboardText/SetClipboardText, HGUIImageInput.ScreenPosition)
+JGEditor: Widgets/SceneViewport.h/.cpp (handleBackKey → handleKeyboard + forwardTextInput: 입력란 포커스가 있으면 글자 · 편집 키 · Ctrl+A/C/X/V · IME 위치, 없으면 Esc = 뒤로가기)
+
+== 2. 빌드 ==
+워크트리 PreBuild(새 파일 2개) → 전체 빌드. 주의: 워크트리가 %TEMP% 아래라 MSBuild 가 헤더 변경을 추적하지 않는다(MSB8029).
+  첫 증분 빌드는 헤더를 쓰는 오브젝트가 옛 배치로 남아 gameui.selftest 가 PGameUIManager::Shutdown 의 _drawList 해제에서 0xC0000005(crashwalk 콜스택) → 코드 문제 아님.
+  -t:Rebuild 전체 다시 빌드 → 오류 0 · 컴파일 경고 0.
+
+== 3. 헤드리스 (워크트리 Bin) ==
+JGConsole.exe gameui.selftest → "gameui.selftest: OK (193/193), skipped groups 0", 종료 0, live blocks 0 (경고 1줄 "already in the Game stack" 은 음성 검사)
+  (전 111 → GG-8 후 149 → GG-9 후 193)
+  줄바꿈: 논리 수치 = 같은 정수 크기 글리프 수치, None 은 한 줄, 빈 글 0줄, '\n' (Word · Character), 끝 '\n' = 빈 마지막 줄, 단어 채우기(딱 맞는 폭은 안 바꿈), 줄 폭 ≤ 폭,
+    높이 = 줄 수 × 줄 간격, 바꾼 자리 공백 버림(줄 끝 · 다음 줄 앞), 긴 단어 안에서 바꿈(이어 붙이면 원문), 한글 어절 단위, 한자 옆에서 바꿈, 한글은 단어 안(넘칠 때만 끊음),
+    Character 아무 글자 사이, 닫는 부호 줄 첫머리 금지(Character · Word 긴 단어), 여는 부호 줄 끝 금지, MaxLines 자름, 말줄임(폭 안 · 마지막 줄만), 다 들어가면 말줄임 없음,
+    None + 말줄임(넘는 줄만), 글자 요소 기본값(None · 0 · 끔 · 끔), MeasureContent = 배치 상자, 배율 1 · 0.667 · 0.5 에서 같은 글리프 수 · 요소 폭 안, 클립(부모 클립 · 요소 사각형 · 배율 · 부모로 잘림), MaxLines 측정, 음수 MaxLines = 0
+  입력: UTF-8 쓰기(1 · 3 · 4바이트), 포커스 없으면 키보드 안 받음, 누르면 포커스, 글자(변경 이벤트 1번) · 한글 글자 수 · 제어 문자 버림(이벤트 없음), Backspace · ← · Delete · Home · End · 시작에서 멈춤,
+    Shift+→ 선택 · 입력이 선택을 바꿈 · 전체 선택 · 선택 지우기, SetText(커서 끝 · 이벤트 없음), Shift 없는 ← 는 선택 앞으로, Shift+End/Home, 다른 입력란 누르면 포커스 이동,
+    허용 문자 · 최대 길이(들어가는 만큼) · 가득 차도 선택은 바꿈 · SetText 에도 허용 문자, Tab(다음 입력란 + 전체 선택) · Shift+Tab, Enter(확정 · 포커스 해제), Esc(해제만 · 확정 없음 · 위젯 그대로) · 다음 Esc 는 입력란이 안 받음,
+    다른 곳 누름 해제, 꺼진 입력란 포커스 안 받음, 위 레이어 Game 위젯은 포커스 유지, Menu 위젯 아래는 키보드 없음 · Update 가 해제, 숨김, SetTextInputFocus(쓸 수 있는 것만),
+    커서 사각형(렌더 타깃 픽셀) · 누른 자리 커서 · 긴 글 가로 밀기 · Home 으로 돌아옴, 선택 · 커서 그리기, 글은 여백 안쪽으로 잘림, 커서 깜빡임, 빈 칸 자리 글
+회귀: gmtest → GameMaster 92 passed · World 64 passed, 종료 0 / console.selftest → OK (64/64) / net.test all → 101 passed, 종료 0 — 모두 live blocks 0
+
+== 4. 화면 (워크트리 엔진, 검증 게임 GameUIDemo — Files/tools/gameui_demo_testgame/) ==
+<scratchpad>\Games\ER\GameUIDemo (워크트리 CreateGameProject → 이 폴더의 소스 복사 → GenerateProjectFiles → 빌드 오류 0) → gameui_e2e.ps1 -WaitSeconds 25
+첫 실행: 1~16단계 정상, 17단계 "GameUIDemo name committed: M8冒ab" (기대 홍길동ab).
+  원인 = 검증 스크립트. Add-Type 의 PostMessage 가 CharSet 없이 선언돼 PostMessageA 로 묶임 → 유니코드 창에 ANSI WM_CHAR → 시스템이 코드 페이지(949)로 바꿔 깨짐.
+  (0xD64D → 'M'(0x4D), 0xAE38 → '8'(0x38) — 아래 바이트만 남았다). 엔진 경로(ImGui WM_CHAR → 글자 큐 → HandleTextInput)는 문제 없음.
+  수정: [DllImport("user32.dll", CharSet = CharSet.Unicode)] → PostMessageW.
+둘째 실행 (게임 jg_log.txt, 순서대로):
+  GameUIDemo paragraph measured 598.8 x 207.5 (width 600)        ← 폭 ≤ 600, 6줄 × 26px 맑은 고딕 줄 간격
+  GameUIDemo HUD initialized: 9 root elements
+  1~10 기존과 같음: End Turn (turn 2) · Menu push · 메뉴 상태 End Turn/빈 곳 game UI (not picked) · Esc → back handled by JGGameUIDemoPauseMenu · turn 3 · 빈 곳 nothing (no controller) · 비활성 Draw (클릭 로그 없음) · Menu · Resume
+  11 SceneViewport Click (0.812, 0.583): game UI (not picked)
+  14 GameUIDemo address committed: 192.168.0.10:4777               ← 'x' 버림, Backspace 로 끝 '1' 지움
+  15 SceneViewport Click (0.812, 0.656): game UI (not picked)
+  17 GameUIDemo name committed: 홍길동ab
+  18 SceneViewport Click (0.812, 0.656): game UI (not picked)
+  19 (로그 없음 — 입력 중 Esc 는 포커스 해제만: "홍길동abz" 확정 없음, Back 로그 없음)
+  20 SceneViewport Back (Esc): no game UI back handler              ← 다음 Esc 부터 뒤로가기
+  [error] · [critical] 0, 경고 1줄(Asset "NOT Support Asset Path", 기존), live blocks 0, 종료 0
+  캡처: Files/2026-10-01_gameui_er_{before,input,after}.png, input_zoom(오른쪽 위 확대: 6줄 문단 — 긴 주소가 단어 안에서 바뀜 · 말줄임 줄 끝 "…" · 주소 칸 192.168.0.10:4777 · 포커스 색 이름 칸 홍길동ab)
+사람이 볼 것(스크립트 밖): 실제 한글 IME 조합(ㅎ → 하 → 한)과 조합 · 후보 창이 입력란 커서 옆에 뜨는지 — GG-9U
+
+== 5. 메인 트리 반영 ==
+해시 비교(git -C wt rev-parse :<f> vs git -C main hash-object): GFW UI/ 11 · SceneViewport 2 = 스냅숏과 같음 → 워크트리 것을 복사(LF 유지). 새 GameUITextInput.h/.cpp 복사.
+GUI.h · GUI.cpp · GUIDefines.h = 메인이 바뀜(10:53 DevConsole 6-5 · 6-6 편집기 테마: EGUIColor 17 · EGUIStyleVar · DisplayColor · PushStyleVar · ToggleChip · BeginCombo · HighlightLine 등)
+  → git merge-file (base = 스냅숏 인덱스, LF → CRLF 로 맞춤 / mine = 워크트리 / theirs = 메인). GUIDefines.h · GUI.cpp 충돌 0, GUI.h 충돌 1(클래스 끝에 양쪽 추가) → 키보드 구역(제 것) + 편집기 테마 구역(그쪽) 둘 다 살림. CRLF · BOM 유지.
+  DevConsole 세션이 grep 으로 자기 추가분이 하나씩 그대로 있음을 확인(메시지).
+메인 PreBuild(Build/BatchFiles/PreBuild.bat) → GameFrameWorks.vcxproj 에 GameUITextInput 포함
+메인 증분 빌드: 첫 시도 36초 LNK1104(DevStatistics.dll · DevConsole.dll 을 열 수 없음 — 같은 시각 다른 세션의 메인 빌드와 겹침) → 다시 빌드 exit 0(이미 최신), 컴파일 경고 0
+메인 Bin(11:14~11:15 산출물):
+  gameui.selftest → OK (193/193), skipped groups 0, 종료 0, live 0
+  gmtest → GameMaster 92 · World 64, OK, 종료 0 / console.selftest → OK (64/64) / net.test all → 101 passed — 모두 live 0
+  프로젝트 없는 런처 30초(dbgcount): 종료 0, D3D12 ERROR/WARNING/CORRUPTION 0, jg_log [error] · [critical] 0, live blocks 0
+
+== 6. 화면 (메인 트리 엔진) ==
+<scratchpad>\Games\Main2\GameUIDemo (EngineRoot = C:/Develop/JGEngine) — 이 폴더의 데모 소스 복사 → GenerateProjectFiles(GameUITextInput 포함) → -t:Rebuild 280초 오류 0
+  (게임 Temp 도 %TEMP% 아래라 엔진 헤더 변경을 추적하지 못한다 → 전체 다시 빌드)
+gameui_e2e.ps1 (PostMessageW 판) → ExitCode 0. 게임 jg_log.txt: "Project GameUIDemo: ..., engine C:/Develop/JGEngine/"
+  paragraph measured 598.8 x 207.5 · HUD initialized: 9 root elements · End Turn (turn 2) · back handled by JGGameUIDemoPauseMenu · End Turn (turn 3) · Resume clicked
+  address committed: 192.168.0.10:4777 · name committed: 홍길동ab · Back (Esc): no game UI back handler (한 번 — 입력 중 Esc 는 뒤로가기 아님)
+  SceneViewport Click 12회(1 · 2 · 3 · 4 · 6 · 7 · 8 · 9 · 10 · 11 · 15 · 18단계), [error] · [critical] 0, 경고 1(Asset, 기존), live blocks 0
+워크트리 정리: git worktree remove --force <scratchpad>\wt_er (반영 확인 — GFW · SceneViewport · 새 파일은 메인과 바이트 동일, GUI 3파일은 메인이 DevConsole 추가분까지 합친 상위 내용)
+알림: DataTable(클립보드 · 키 도우미 이름) · DevConsole(GUI 3파일 3-way — 그쪽 grep 확인 회신) · JGEditor(SceneViewport handleKeyboard) · GameFrameWorks(UI/ 반영 · 메인 빌드 — 그쪽 11:14 Bin 으로 gmtest 110+64 · net.test 101 통과 회신) 세션
+남은 것: GG-9U 실제 한글 IME 조합(사용자), GG-C1 커밋(사용자)

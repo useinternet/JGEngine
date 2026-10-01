@@ -1,0 +1,95 @@
+DevConsole 6-1 로그 필터 · 6-2 명령 미리보기 검증 기록 (2026-09-30 21:40 ~ 22:10, DevConsole 세션 8113cd65)
+==========================================================================================================
+
+환경: 이 PC(C:\Develop\JGEngine), VS 18 MSBuild(amd64), 주 모니터 3840x2160 125%, 보조 모니터 1개.
+메인 트리에 다른 세션 2개가 동시에 작업 중이었다(GFW Phase 2: GUI.h/.cpp 에 Button 등 추가 · GFW 새 파일,
+GUI 1-2: Widget.h/.cpp · GUIModule · MenuTree · DX12GUIBackend 수정, 22:10 에는 GUI.h 에 HGUIBarSegment · HPlotLinesArguments 추가).
+그래서 Graphics 현황 §5 "동시 세션 중 빌드" 절차대로 격리 워크트리에서 빌드 · 검증하고 소스만 메인 트리에 옮겼다.
+
+1. 격리 워크트리 (HEAD 4c8ac73, <scratchpad>\wt)
+------------------------------------------------
+- PreBuild.bat: 종료 0 (Compelete Build Tool Run..)
+- 전체 빌드 1차(248s): 14개 프로젝트 성공, DevConsole 만 실패 — DevConsole.cpp 의 std::min / std::max 가
+  windows.h min/max 매크로와 충돌(C2589 12건). HMath::Min / HMath::Max 로 바꿈(엔진 관례).
+- 재빌드: 오류 0, C++ 경고 0 (MSB8029 는 %TEMP% 아래 워크트리라 정상)
+- 최종 빌드(임시 코드 3곳 되돌린 뒤): 오류 0, C++ 경고 0
+
+2. 헤드리스 (워크트리 Bin, 최종 코드)
+------------------------------------
+- JGConsole.exe console.selftest  → "console.selftest: OK (64/64)", 종료 0   (57 → 64: FindCommands 7케이스 추가)
+    find: names starting with the text first, then names containing it  (test.find → test.find.alpha, test.find.beta, xtest.find)
+    find: case-insensitive                                               (TEST.FIND.A → test.find.alpha)
+    find: usage and description are copied
+    find: names containing the text are sorted by name                   (find → 세 개 모두 이름순)
+    find: no match
+    find: empty text lists every command by name                         (정렬 + help · console.selftest · test.find.alpha 포함)
+    find: unregistered commands are gone
+- JGConsole.exe gmtest   → "gmtest: OK (0 failures)", 종료 0
+- JGConsole.exe gmtset   → 종료 1 (Unknown)
+- JGConsole.exe          → help 6 commands (HEAD 기준. 메인 트리에는 module.test 가 더 있다)
+- [error] 줄은 음성 케이스(중복 등록, 빈 이름 등) 뿐 — 기존과 같다
+
+3. 런처 창 입력 (워크트리, 임시 코드: 콘솔 자동 열기 + Devkit 임시 명령 test.alpha/test.beta/test.gamma/demo.test
+   + ImGui Win32 백엔드 JG_UITEST 수정. 스크립트 Files/tools/devconsole_filter_preview_check.ps1.txt, 스니펫
+   Files/tools/devconsole_filter_preview_temp_snippets.cpp.txt). 좌표(캡처 기준) 입력줄 (500,1093) 필터칸 (700,661) Info (26,661)
+----------------------------------------------------------------------------------------------------------------
+ 단계                               기대                                                         결과   캡처
+ 1 "test" 입력                       후보 목록, 아래부터 test.alpha / test.beta / test.gamma / demo.test   OK    2026-09-30_devconsole_preview_list.png
+ 2 ↑ ↑                              test.beta 강조, 입력줄 = "test.beta"                             OK    2026-09-30_devconsole_preview_select.png
+ 3 Tab                              입력줄 "test.beta ", Usage: test.beta [text] [-n=N] + 설명         OK    2026-09-30_devconsole_preview_usage.png
+ 4 "hello" Enter                    "> test.beta hello", "temp preview check: test.beta hello"      OK    (로그)
+ 5 "nosuch x"                       빨간 "Unknown command 'nosuch'"                                   OK    2026-09-30_devconsole_preview_unknown.png
+   Enter                            error 줄 "Unknown command 'nosuch' (type help)", Error (1)       OK    (로그)
+ 6 "zzz"                            흐린 "No command contains 'zzz'"                                 OK    (run 캡처만)
+   ↑ (후보 없음 → 히스토리)          "nosuch x" + Unknown 줄                                          OK
+   ↑                                "test.beta hello" + Usage 줄                                     OK
+   ↓ ↓                              빈 줄                                                            OK
+ 7 필터칸 클릭, "temp preview"       로그 1줄([Devkit]: temp preview check: test.beta hello)만         OK    2026-09-30_devconsole_filter_word.png
+ 8 "-[Core], -[memory]"             [Core] · [Memory] 줄 숨김(대소문자 무시, 쉼표 뒤 공백 무시)          OK    2026-09-30_devconsole_filter_exclude.png
+ 9 필터 지움 → Info 체크 해제         경고 2 · 오류 1 줄만                                                OK    2026-09-30_devconsole_filter_level.png
+- 실행 로그: [error] 는 5단계에서 일부러 친 'nosuch' 1줄뿐, [warning] 은 기존 2줄(Asset NOT Support Asset Path,
+  Graphics ReadbackTextureImmediate), "not unregistered" 0 (임시 명령 자동 해제), Memory Chunk Shutdown live blocks 0 (두 청크), 종료 코드 0
+
+도중에 고친 것 · 알아낸 것
+- 미리보기 툴팁 뒤로 로그 글자가 비쳤다: 창 배경 0.06 → 69/255, 툴팁 영역 79/255 실측 = PopupBg(0.08, 알파 0.94)를
+  선형으로 섞은 뒤 sRGB 로 출력한 값과 일치. 남은 6% 가 sRGB 곡선에서 밝게 보인다 → BeginTooltipAboveItem 에
+  SetNextWindowBgAlpha(1.0f). 이후 캡처는 불투명(run4).
+- 창 입력 검증: 이 PC 에서 PostMessage 클릭은 그대로는 먹지 않는다. ImGui Win32 백엔드가 매 프레임
+  WindowFromPoint(GetCursorPos()) 로 마우스가 올라간 뷰포트를 정하므로 실제 커서가 런처 밖이면 허공 클릭이 되고
+  입력줄 포커스까지 풀린다(run1: 아무 입력도 안 들어감). 워크트리 전용 JG_UITEST 수정으로 보낸 마우스만 쓰게 했다
+  (사용자 커서는 움직이지 않음). 09-29 스크립트(devconsole_ui_check)의 클릭도 같은 이유로 실제로는 먹지 않았을 가능성이 높다
+  (그때는 창이 열릴 때 입력줄에 포커스가 잡혀 타이핑만으로 확인됐다).
+- 스크립트 인코딩: BOM 없는 UTF-8 .ps1 을 PowerShell 5.1 이 CP949 로 읽으면서 한글로 끝나는 주석 줄 일부가 다음 줄을
+  삼켰다(run3: 필터칸 · 체크박스 클릭 줄이 실행되지 않음 — 백엔드 추적에 첫 클릭만 기록). BOM 을 붙여 해결(run4).
+
+4. 런처 60초 회귀 (워크트리, 최종 코드 = 임시 코드 없음)
+--------------------------------------------------------
+crashwalk.exe JGLauncher.exe <wt>\Bin\DevelopEngine 60 → Process exited with code 0
+- [error]/[critical] 0, "not unregistered" 0, Graphics PSO created 2, D3D12 DebugLayer 0, live blocks 0
+- [warning] 기존 2줄만
+
+5. 메인 트리 적용 (22:08 ~ 22:10)
+--------------------------------
+- git apply --exclude=Source/Runtime/GUI/GUI.h <patch>: DevConsole.h/.cpp, ConsoleCommandGlobalSystem.h/.cpp,
+  ConsoleCommandSelfTest.cpp, GUI.cpp 적용(GUI.cpp 는 GFW 추가분 때문에 오프셋만 다름)
+- GUI.h: InputTextWithHistory 선언 조각이 GFW 추가분과 문맥이 겹쳐 git apply 실패 → 같은 3곳을 직접 편집
+- 대조: 5개 파일은 워크트리 검증본과 바이트 동일, GUI.h/.cpp 는 워크트리본 + 다른 세션 추가분만 차이
+- 컴파일만 확인(링크 없음, Bin 교체 없음): MSBuild -t:ClCompile -p:SelectedFiles=... -p:BuildProjectReferences=false
+    GUI.vcxproj GUI.cpp · Core.vcxproj ConsoleCommandGlobalSystem.cpp · DevConsole.vcxproj DevConsole.cpp, DevConsoleModule.cpp
+    · JGConsole.vcxproj ConsoleCommandSelfTest.cpp → 모두 종료 0, 오류 · 경고 0 (각 프로젝트 PCH.cpp 도 다시 컴파일됨)
+- 이 세션은 메인 트리 Bin 을 링크하지 않았다: GUI 트랙이 JGWidget 레이아웃(EWidgetFlags 멤버 삭제)을 바꾸는 중이라
+  GUI.dll 만 새로 링크하면 옛 레이아웃으로 빌드된 Devkit · DevStatistics · GFW · JGEditor 와 어긋날 수 있었다.
+
+6. 메인 트리 Bin 확인 (22:15 ~ 22:18)
+------------------------------------
+- 22:09:09 ~ 22:09:27 에 다른 세션이 메인 트리 전체를 다시 빌드했다(Bin 의 DLL · exe 전부 그 시각). 이 변경이 들어갔는지 바이너리 문자열로 확인:
+  DevConsole.dll "Filter: word, -exclude" · "No command contains" · "##DevConsolePreview", GUI.dll BeginTooltipAboveItem · InputTextWithHint ·
+  EGUIInputTextKey, Core.lib FindCommands, JGConsole.exe "find: case-insensitive" — 모두 있음
+- Bin/DevelopEngine 에서 JGConsole.exe console.selftest → OK (64/64) 종료 0, gmtest → OK 종료 0, help → 7 commands(module.test 포함)
+- crashwalk 60초(JGLauncher, 메인 트리 Bin) → 종료 0, [error]/[critical] 0, "not unregistered" 0, PSO 2, live blocks 0, 경고는 기존 2줄.
+  리드백 PNG 2장은 바이트 동일(git status 변화 없음), imgui.ini · jg_log.txt 는 원래 수정 상태
+- 메인 트리에서 콘솔 창 자체(필터 · 미리보기)는 자동 확인하지 않았다(콘솔이 자동으로 열리지 않고, PostMessage 클릭에 임시 백엔드 코드가 필요) →
+  같은 소스로 3절에서 확인. 사용자가 Windows/DevConsole 로 열어 볼 수 있다
+- 22:10 Memory UI-1 세션이 GUI.h(22:10:28) · GUI.cpp(22:10:56)에 대시보드 함수를 더 넣었다(22:09 빌드 뒤라 메인 Bin 에는 없음).
+  세 세션 변경이 합쳐진 소스로 22:26 컴파일만 다시 확인(ClCompile SelectedFiles, 링크 없음): GUI.cpp · DevConsole.cpp · DevConsoleModule.cpp
+  모두 종료 0, 오류 · 경고 0. 22:25 GFW 세션의 GameFrameWorks 빌드도 합쳐진 GUI.h 를 포함해 성공(GameFrameWorks.dll 22:25:50)

@@ -1,0 +1,100 @@
+GameModule R4 — 엔진 Source/Runtime/Game (더미 모듈) 삭제 · 검증 기록 (2026-09-30 21:40 ~ 22:13, 메인 트리 적용 12절)
+사용자 지시: "JGEngine의 Game 모듈은 필요없을거같아." (2026-09-29 에 "D5 로 불필요"라 제외했던 R4 를 재개)
+검증 트리: 격리 git worktree <scratchpad>/wtg = HEAD 4c8ac73 + GameModule GM-C2 미커밋 소스(메인 트리 사본) + R4.
+          메인 트리에서 다른 세션(GameFrameWorks · GUI)이 편집 중이고, 다른 세션의 게임 프로젝트 GfwView(EngineRoot = C:/Develop/JGEngine)가
+          21:38~21:43 메인 트리 엔진 소스로 빌드 중이었기 때문.
+툴: VS2022 Community MSBuild, DevelopEngine|x64, env -u NoDefaultCurrentDirectoryInExePath.
+
+== 1. 변경
+삭제  Source/Runtime/Game/Game.module.json, Main.cpp        SharedLib "Game", 의존 Core · GameFrameWorks, _GAME. Main.cpp 는 int dummy() 뿐
+삭제  Bin/DevelopEngine/Game.dll · .exp · .lib (추적)       + 미추적 Game.pdb
+재생성 JGEngine.sln · jgengine.lua · Source/Programs/JGBuildTool/jgengine.lua (PreBuild)
+수정  Source/Programs/JGBuildTool/Class/ProjectCreator.cpp  isReservedProjectName: 이름이 Game(대소문자 무시)이면 Critical + 거부
+      이유: 폴더 검사(Source/{Runtime,Editor,Programs}/<Name>)가 지금까지 Game 을 막았는데 폴더가 없어지면 통과한다.
+            템플릿이 Source/Game/GameEntryActor.h 에 "class GAME_API JGGameEntryActor : public JGGameEntryActor" 를 만들고
+            GameFrameWorks/Actors/GameEntryActor.h 와 파일 이름도 같아져 컴파일에서야 깨진다 → 배치 1 에서 막는다.
+안 한 것: Bin/ 루트 · Bin/ConfirmGame/ 의 옛 Game.* 추적 사본(09-16 전후 옛 빌드 잔재. JGDev_Graphics 삭제 때도 DevelopEngine 만 지웠고
+          CodeGen.dll 등 다른 옛 DLL 도 남아 있음), Temp/CodeGen/Game · Temp/ProjectFiles/Game.* (미추적, premake 는 지우지 않음. sln 에서 빠져 무해),
+          Build/보관용 빌드 스크립트.lua (보관용).
+
+== 2. 참조 조사 (삭제해도 되는 근거)
+- *.module.json 의 ModuleDependencies 에 "Game" 없음. ConnectModule("Game") 없음(런처 = JGEditor, JGEditor 엔진 모듈 6개, JGConsole = GameFrameWorks).
+- _GAME · GAME_API 를 쓰는 엔진 코드 없음. 툴(JGBuildTool/JGHeaderTool)에 모듈 이름 "Game" 하드코딩 없음(DevelopGame 등은 빌드 구성 이름).
+- 런타임은 module_system_info.json 의 SharedLib 를 시작 시 LoadLibrary(ObjectGlobalSystem.cpp codeGen) — Game.dll 은 이 경로로만 로드되고 있었다.
+  목록에 있는데 DLL 이 없으면 조용히 건너뜀(continue) → 옛 module_system_info 를 가진 게임 프로젝트도 실행은 된다.
+
+== 3. PreBuild 산출물 비교 (worktree, 삭제 전 → 삭제 후, HEAD 툴 exe)
+삭제 전 PreBuild exit 0 / 삭제 후 PreBuild exit 0, [error]/[critical] 0
+jgengine.lua     : project "Game" 블록(18줄)만 빠짐. 사본 Source/Programs/JGBuildTool/jgengine.lua 와 같음
+JGEngine.sln     : Game 프로젝트 · 구성 8줄 · 중첩 1줄만 빠짐. 프로젝트 15 → 14 (+ 솔루션 폴더 4)
+module_system_info.json : "Game" 만 빠짐(나머지 9개 그대로, 순서는 해시 순서)
+
+== 4. 엔진 빌드 (worktree JGEngine.sln)
+21:46:47 → 21:50:55, exit 0, error 0, 14 프로젝트. 경고는 MSB8029 14건(worktree 가 %TEMP% 아래 — 현황 §5 알려진 것)뿐
+
+== 5. 새 툴로 PreBuild 2회 → 증분 빌드
+PreBuild 1 · 2 exit 0, error/critical 0. sln/lua/module_system_info 의 Game 0
+증분 빌드 exit 0, CL.exe 호출 0, error 0 (PreBuild 가 재컴파일을 일으키지 않음)
+
+== 6. JGConsole (worktree Bin\DevelopEngine, Game.* 없음)
+help                       exit 0
+module.test Asset          exit 0  OK (1 module(s)), error 0
+module.test GameFrameWorks exit 0  OK (already connected)
+module.test Game           exit 1  "[error][Core]: Fail Connect Module:Game" → connect FAILED   ← 모듈이 없어짐
+console.selftest           exit 0  OK (57/57)  (error 줄은 selftest 음성 케이스)
+gmtest                     exit 0  OK (0 failures) (error 1줄은 R5 회귀 테스트의 의도된 RequestChoice 거부 — GFW 현황 §로그)
+모두 Memory Chunk live blocks 0
+
+== 7. 엔진 단독 런처 (worktree Bin, crashwalk 60초)
+Process exited with code 0, [error]/[critical] 0, 예외 0
+Startup Graphics → Asset → JGEditor, Start Load Assets in ../../Content (1번), 종료 Asset → Graphics → JGEditor, live blocks 0
+
+== 8. 배치 1 이름 검사 (새 JGBuildTool.exe)
+CreateGameProject.bat <Games>\Game            exit 1  "[critical][BuildTool]: Game is reserved: the template entry actor would collide with JGGameEntryActor (GameFrameWorks/Actors/GameEntryActor.h). Choose another project name", 폴더 안 만듦
+CreateGameProject.bat <Games>\game            exit 1  같은 메시지(game)
+CreateGameProject.bat <Games>\Proto Game      exit 1  같은 메시지(이름 인자)
+CreateGameProject.bat <Games>\GUI             exit 1  "GUI is an engine module name (Source/Runtime/GUI)"          (기존 동작)
+CreateGameProject.bat <Games>\GameFrameWorks  exit 1  "GameFrameWorks is an engine module name ..."                (기존 동작)
+CreateGameProject.bat <Games>\JGTest          exit 1  "Project names starting with JG are reserved ..."            (기존 동작)
+CreateGameProject.bat <Games>\MyGame          exit 0  Created game project MyGame
+
+== 9. 게임 프로젝트 MyGame (<scratchpad>\Games\MyGame, EngineRoot = worktree)
+GenerateProjectFiles.bat 2회: exit 0 · 0, error/critical 0
+MyGame.sln: 16 프로젝트(엔진 14 + MyGame · MyGameEditor), MyGame.lua 에 Runtime/Game 0,
+            module_system_info = 엔진 SharedLib 9 + MyGame · MyGameEditor
+MSBuild MyGame.sln: 21:53:44 → 21:58:11, exit 0, error 0, 16 프로젝트, 경고는 MSB8029 뿐. 게임 Bin 에 Game.* 없음
+Bin\DevelopEngine\JGConsole module.test MyGame: exit 0, error 0 — "MyGame entry actor entered world" → connected (error logs 0) → disconnected (error logs 0) → OK, live blocks 0
+Bin\DevelopEngine\JGLauncher.exe (crashwalk 60초): Process exited with code 0, [error]/[critical] 0, 예외 0
+  Startup Graphics → Asset → MyGame entry actor entered world → Startup MyGame → Startup MyGameEditor → Startup JGEditor,
+  Start Load Assets in <engine>/Content → <project>/Content, 종료 MyGameEditor → MyGame → Asset → Graphics → JGEditor, live blocks 0
+
+== 10. 삭제 전에 만든 게임 솔루션 (옛 Game.vcxproj)
+worktree 에 남은 옛 Temp/ProjectFiles/Game.vcxproj 를 직접 빌드(-p:BuildProjectReferences=false):
+  exit 1, "error C1083: 소스 파일을 열 수 없습니다. '..\..\Source\Runtime\Game\Main.cpp'"
+→ R4 적용 전에 만든 게임 솔루션은 Game 프로젝트에서 이렇게 실패한다. 게임 GenerateProjectFiles.bat 재실행으로 해결(9절이 재실행 결과).
+  다른 세션의 GfwView(<그 세션 scratchpad>/Games/GfwView, EngineRoot = C:/Develop/JGEngine)도 R4 메인 트리 적용 뒤 배치 2 재실행 필요.
+
+== 11. 메인 트리 적용 1차 시도 — 거부 → 되돌림 (기록용. 12절에서 적용 완료)
+21:55 메인 트리에서 ProjectCreator.cpp 수정(worktree 사본과 바이트 동일, cmp 확인) → Source/Runtime/Game 삭제 → 엔진 GenerateProjectFiles.bat 실행 시도.
+  에이전트 자동 모드 권한 검사가 PreBuild 실행을 거부("Irreversible Local Destruction" — 다른 세션이 쓰는 메인 트리의 추적 생성물을 다시 씀).
+  삭제만 된 상태로 두면 메인 트리 sln 의 Game 프로젝트가 10절처럼 깨지므로 `git restore -- Source/Runtime/Game` 으로 되살림(HEAD 와 같은 내용).
+  jgengine.lua · JGEngine.sln 은 한 번도 다시 쓰지 않았다(git diff 없음).
+그때 메인 트리: ProjectCreator.cpp 의 Game 예약 검사만 들어가 있었음(미빌드). Game 폴더가 있어서 동작 변화 없음.
+
+== 12. 메인 트리 적용 (사용자 승인 "a로 ㄱㄱ", 22:05 ~ 22:13)
+사전 확인 22:05: MSBuild · cl 은 다른 세션 worktree(8113cd65…/wt) 빌드뿐, 메인 트리 Bin 에서 도는 JGLauncher · JGConsole 없음. 생성물 3개 = HEAD.
+22:06:34 Source/Runtime/Game 삭제 + 엔진 GenerateProjectFiles.bat 를 한 명령으로 → exit 0, [error]/[critical] 0 (22:06:36)
+  git diff: JGEngine.sln -11 줄(Game 프로젝트 · 구성 8 · 중첩 1), jgengine.lua -18 줄, 사본 lua 도 같음, module_system_info.json 에서 "Game" 만 빠짐
+  → 3절 worktree 결과와 같다. sln 14 프로젝트(+ 폴더 4), Game 0
+Bin/DevelopEngine/Game.dll · .exp · .lib (19:50 빌드분) + Game.pdb 삭제
+22:09:04 MSBuild JGEngine.sln (메인 트리, 다른 트랙 미커밋 변경 포함) → exit 0, error 0, 14 프로젝트, 23초(증분), 경고는 LNK4098 1건
+  컴파일된 파일에 ProjectCreator.cpp 포함 → Bin/DevelopEngine/JGBuildTool.exe 22:09:11, 새 메시지 문자열 들어 있음.
+  나머지 컴파일 파일(GUI.cpp · DevFeature.cpp · GameplayDevView.cpp · WorldView.cpp 등)은 다른 세션 진행분 — 오류 0
+CreateGameProject.bat <scratchpad>\Games\main\Game      exit 1  "Game is reserved: the template entry actor would collide with JGGameEntryActor ...", 폴더 안 만듦
+CreateGameProject.bat <scratchpad>\Games\main\MainCheck exit 0  Created game project MainCheck
+JGConsole (메인 트리 Bin): module.test Asset exit 0 OK / module.test Game exit 1 (Fail Connect Module:Game) / console.selftest exit 0 OK (64/64 — 다른 세션이 늘림)
+                            / gmtest exit 0 OK (error 1줄은 의도된 음성 케이스). 모두 live blocks 0
+JGLauncher.exe (메인 트리 Bin, crashwalk 60초): Process exited with code 0, [error]/[critical] 0, 예외 0,
+  Startup Graphics → Asset → JGEditor, Start Load Assets in ../../Content, 종료 역순, live blocks 0
+검증 worktree <scratchpad>/wtg 는 적용 뒤 git worktree remove 로 지움(로그는 스크래치패드 logs/ 에 남음).
+남은 것: 커밋(사용자, TODO GM-C2). 메인 트리 엔진을 쓰는 게임 프로젝트(다른 세션의 GfwView 등)는 배치 2 재실행 — 안 하면 10절처럼 Game 프로젝트에서 C1083.

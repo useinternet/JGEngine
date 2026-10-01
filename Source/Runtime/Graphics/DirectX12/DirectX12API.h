@@ -13,6 +13,7 @@ class PComputeCommandList;
 class PCommandList;
 class PDX12FrameBuffer;
 class HDescriptionAllocation;
+class IRawGraphicsShader;
 
 class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 {
@@ -37,7 +38,11 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 
 	HJGGraphicsArguments _arguments;
 	bool _bIsSupportedRayTracing;
-	
+
+	// 2D 그리기 내장 셰이더(Source/Shader/draw2d.hlsl). 처음 쓸 때 한 번만 컴파일한다(실패해도 다시 시도하지 않는다).
+	PSharedPtr<IRawGraphicsShader> _draw2DShader;
+	bool _bDraw2DShaderTried = false;
+
 	void createDefaultResources();
 #ifdef _DEBUG
 	// 디버거 없이 실행할 때도 디버그 레이어 메시지를 볼 수 있게 InfoQueue를 비워 로그로 옮긴다. (EndFrame마다)
@@ -113,6 +118,9 @@ public:
 	uint32 GetFramesInFlight() const;
 	// 큐에 들어간 GPU 작업이 모두 끝날 때까지 기다린다. GPU가 쓰는 리소스를 이 API 밖에서 직접 해제하기 전에 부른다(예: GUI 종료).
 	void WaitForGPUIdle();
+
+	// 2D 그리기(IJGGraphicsCommand::Draw(H2DDrawArguments))용 내장 셰이더. 처음 부를 때 컴파일한다. 실패하면 nullptr(오류는 한 번만 남긴다).
+	PSharedPtr<IRawGraphicsShader> GetDraw2DShader();
 };
 
 
@@ -154,6 +162,8 @@ public:
 	static PSharedPtr<PResourceStagingManager> GetResourceStagingManager();
 	// API가 소유한 기본 텍스처(1x1 흰색). 머터리얼의 빈 Texture 슬롯 대체값. API가 없으면 nullptr.
 	static PSharedPtr<IRawTexture> GetDefaultTexture();
+	// 2D 그리기 내장 셰이더. API가 없거나 컴파일에 실패했으면 nullptr.
+	static PSharedPtr<IRawGraphicsShader> GetDraw2DShader();
 private:
 	// 캐시 수명은 PDirectX12API 자신만 조작한다. (resetCache / invalidateCache)
 	friend class PDirectX12API;

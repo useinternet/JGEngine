@@ -56,6 +56,7 @@ public:
 
 protected:
 	virtual void onBound() override;
+	virtual void onUnbound() override;
 
 private:
 	void handleEvent(const HNetEvent& event);

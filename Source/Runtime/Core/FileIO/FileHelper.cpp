@@ -622,6 +622,17 @@ const PString& HFileHelper::EngineShaderDirectory()
 
 const PString& HFileHelper::GameContentDirectory()
 {
+	// 게임 프로젝트의 <Project>/Content. 엔진 단독 실행이면 게임이 없으므로 빈 문자열이다.
+	// (엔진 단독은 프로젝트 루트 = 엔진 루트라 같은 폴더를 두 번 올리게 된다)
 	static PString gameContentDirectory;
+	if (gameContentDirectory.Empty() && IsProjectMode())
+	{
+		CombinePath(ProjectDirectory(), "Content", &gameContentDirectory);
+		if (Exists(gameContentDirectory) == false)
+		{
+			CreateDirectory(gameContentDirectory);
+		}
+	}
+
 	return gameContentDirectory;
 }

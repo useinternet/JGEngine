@@ -1,6 +1,9 @@
 #include "PCH/PCH.h"
 #include "Core/World.h"
 #include "Actors/Actor.h"
+#include "Components/CameraComponent.h"
+#include "Components/PickShapeComponent.h"
+#include "Classes/Scene.h"
 
 PWorld::PWorld()
 	: _name(PName("World"))
@@ -155,6 +158,77 @@ PSharedPtr<JGActor> PWorld::FindActorByName(const PName& name) const
 		}
 	}
 	return nullptr;
+}
+
+PSharedPtr<PScene> PWorld::GetScene()
+{
+	if (_scene == nullptr)
+	{
+		_scene = Allocate<PScene>();
+	}
+	return _scene;
+}
+
+void PWorld::SetActiveCamera(PSharedPtr<JGCameraComponent> camera)
+{
+	if (camera == nullptr)
+	{
+		_activeCamera.Reset();
+		return;
+	}
+	_activeCamera = camera;
+}
+
+PSharedPtr<JGCameraComponent> PWorld::GetActiveCamera() const
+{
+	return _activeCamera.Pin();
+}
+
+bool PWorld::PickActor(const HRay& ray, HWorldPickHit* outHit) const
+{
+	bool    bHit        = false;
+	float32 nearest     = 0.0f;
+	HWorldPickHit best;
+
+	for (const PSharedPtr<JGActor>& actor : _actors)
+	{
+		if (actor == nullptr || actor->IsPendingDestroy() == true)
+		{
+			continue;
+		}
+
+		for (const PSharedPtr<JGActorComponent>& component : actor->GetComponents())
+		{
+			PSharedPtr<JGPickShapeComponent> shape = RawDynamicCast<JGPickShapeComponent>(component);
+			if (shape == nullptr)
+			{
+				continue;
+			}
+
+			float32  distance = 0.0f;
+			HVector3 position;
+			if (shape->IntersectRay(ray, &distance, &position) == false)
+			{
+				continue;
+			}
+
+			if (bHit == false || distance < nearest)
+			{
+				bHit          = true;
+				nearest       = distance;
+				best.Actor    = actor;
+				best.Shape    = shape;
+				best.Position = position;
+				best.Distance = distance;
+			}
+		}
+	}
+
+	if (bHit == true && outHit != nullptr)
+	{
+		*outHit = best;
+	}
+	return bHit;
 }
 
 void PWorld::registerSpawned(PSharedPtr<JGActor> actor, const PName& name)

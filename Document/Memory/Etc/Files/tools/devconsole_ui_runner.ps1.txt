@@ -1,0 +1,125 @@
+﻿param(
+    [Parameter(Mandatory = $true)][string]$Exe,
+    [Parameter(Mandatory = $true)][string]$WorkDir,
+    [Parameter(Mandatory = $true)][string]$OutPrefix,
+    # 동작 목록. ';' 로 나눈다. 좌표는 창 캡처(PrintWindow) 기준 픽셀.
+    #   click:X,Y      왼쪽 클릭          type:글자        WM_CHAR 로 글자 입력(';' 는 쓸 수 없다)
+    #   key:NAME[*N]   UP DOWN TAB RETURN BACK ESCAPE    shot:이름        <OutPrefix>_이름.png 캡처
+    #   wait:ms        기다림
+    [Parameter(Mandatory = $true)][string]$Actions,
+    [int]$WaitSeconds = 20
+)
+
+# DevConsole 창 입력 확인 러너(2026-10-01, DevConsole 6-5 · 6-6).
+# 키 · 마우스 입력은 런처 창에만 PostMessage 로 보낸다(전경 창을 바꾸지 않아 다른 창에 입력이 들어가지 않는다).
+# 클릭은 검증 빌드의 ImGui Win32 백엔드 임시 코드(JG_UITEST=1 이면 보낸 마우스만 쓴다)가 있어야 먹는다
+# — Files/tools/devconsole_filter_preview_temp_snippets.cpp.txt (C). 사용자 커서를 움직이지 않는다.
+# 이 파일은 UTF-8 BOM 으로 저장한다(BOM 이 없으면 PowerShell 5.1 이 CP949 로 읽어 한글 주석 뒤 줄을 삼킨다).
+$ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.Drawing
+
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32UiRunner {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT { public int X; public int Y; }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+}
+"@
+
+$KeyCodes = @{ "UP" = 0x26; "DOWN" = 0x28; "TAB" = 0x09; "RETURN" = 0x0D; "BACK" = 0x08; "ESCAPE" = 0x1B }
+
+function Save-Capture([IntPtr]$hwnd, [string]$path) {
+    $rect = New-Object Win32UiRunner+RECT
+    [Win32UiRunner]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $bmp = New-Object System.Drawing.Bitmap(($rect.Right - $rect.Left), ($rect.Bottom - $rect.Top))
+    $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+    $hdc = $gfx.GetHdc()
+    $ok = [Win32UiRunner]::PrintWindow($hwnd, $hdc, 2)
+    $gfx.ReleaseHdc($hdc)
+    $gfx.Dispose()
+    if (-not $ok) { Write-Output "PrintWindow failed" }
+    $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Write-Output "Saved $path"
+}
+
+function Post-Click([IntPtr]$hwnd, [int]$windowX, [int]$windowY) {
+    $rect = New-Object Win32UiRunner+RECT
+    [Win32UiRunner]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $origin = New-Object Win32UiRunner+POINT
+    [Win32UiRunner]::ClientToScreen($hwnd, [ref]$origin) | Out-Null
+    $x = $windowX - ($origin.X - $rect.Left)
+    $y = $windowY - ($origin.Y - $rect.Top)
+    $lParam = [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))
+    [Win32UiRunner]::PostMessage($hwnd, 0x0200, [IntPtr]::Zero, $lParam) | Out-Null   # WM_MOUSEMOVE
+    Start-Sleep -Milliseconds 120
+    [Win32UiRunner]::PostMessage($hwnd, 0x0201, [IntPtr]1, $lParam) | Out-Null         # WM_LBUTTONDOWN
+    Start-Sleep -Milliseconds 80
+    [Win32UiRunner]::PostMessage($hwnd, 0x0202, [IntPtr]::Zero, $lParam) | Out-Null    # WM_LBUTTONUP
+    Start-Sleep -Milliseconds 400
+    Write-Output "Clicked ($windowX, $windowY) -> client ($x, $y)"
+}
+
+function Post-Key([IntPtr]$hwnd, [int]$vk) {
+    [Win32UiRunner]::PostMessage($hwnd, 0x0100, [IntPtr]$vk, [IntPtr]1) | Out-Null          # WM_KEYDOWN
+    Start-Sleep -Milliseconds 80
+    [Win32UiRunner]::PostMessage($hwnd, 0x0101, [IntPtr]$vk, [IntPtr]0xC0000001L) | Out-Null # WM_KEYUP
+    Start-Sleep -Milliseconds 150
+}
+
+function Post-Text([IntPtr]$hwnd, [string]$text) {
+    foreach ($c in $text.ToCharArray()) {
+        [Win32UiRunner]::PostMessage($hwnd, 0x0102, [IntPtr][int]$c, [IntPtr]1) | Out-Null     # WM_CHAR
+        Start-Sleep -Milliseconds 40
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+$env:JG_UITEST = "1"
+$proc = Start-Process -FilePath $Exe -WorkingDirectory $WorkDir -PassThru
+Write-Output "Started PID $($proc.Id)"
+
+$hwnd = [IntPtr]::Zero
+for ($i = 0; $i -lt 60; $i++) {
+    Start-Sleep -Milliseconds 500
+    $proc.Refresh()
+    if ($proc.HasExited) { Write-Output "Process exited early with code $($proc.ExitCode)"; exit 2 }
+    if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
+}
+if ($hwnd -eq [IntPtr]::Zero) { Write-Output "No main window"; $proc.Kill(); exit 3 }
+Start-Sleep -Seconds $WaitSeconds
+$proc.Refresh()
+if ($proc.HasExited) { Write-Output "Process exited during wait with code $($proc.ExitCode)"; exit 4 }
+
+foreach ($action in $Actions.Split(';')) {
+    $action = $action.Trim()
+    if ($action -eq "") { continue }
+    $colon = $action.IndexOf(':')
+    $verb = $action.Substring(0, $colon).ToLower()
+    $arg = $action.Substring($colon + 1)
+    switch ($verb) {
+        "click" { $xy = $arg.Split(','); Post-Click $hwnd ([int]$xy[0]) ([int]$xy[1]) }
+        "type"  { Post-Text $hwnd $arg }
+        "key"   {
+            $count = 1
+            $name = $arg
+            if ($arg.Contains('*')) { $parts = $arg.Split('*'); $name = $parts[0]; $count = [int]$parts[1] }
+            for ($k = 0; $k -lt $count; $k++) { Post-Key $hwnd $KeyCodes[$name.ToUpper()] }
+        }
+        "shot"  { Start-Sleep -Milliseconds 700; Save-Capture $hwnd "$($OutPrefix)_$arg.png" }
+        "wait"  { Start-Sleep -Milliseconds ([int]$arg) }
+        default { Write-Output "Unknown action $action" }
+    }
+}
+
+[Win32UiRunner]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+if (-not $proc.WaitForExit(40000)) { Write-Output "Timeout waiting exit, killing"; $proc.Kill(); exit 5 }
+Write-Output "ExitCode $($proc.ExitCode)"
+exit 0

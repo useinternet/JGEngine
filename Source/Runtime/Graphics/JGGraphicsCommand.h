@@ -26,6 +26,8 @@ public:
 	virtual void Draw(const HDrawArguments& inArgs) = 0;
 	// Screen 도메인: 풀스크린 삼각형 2개.
 	virtual void Draw(const HScreenDrawArguments& inArgs) = 0;
+	// 2D: 렌더 타깃 픽셀 좌표의 삼각형 배치(게임 UI 등). SetRenderTarget의 렌더 타깃에 알파 블렌드로 그린다. 깊이 텍스처는 두지 않는다.
+	virtual void Draw(const H2DDrawArguments& inArgs) = 0;
 
 	// Util
 	virtual void ClearTexture(PSharedPtr<IRawTexture> InTexture) const = 0;

@@ -212,6 +212,17 @@ void PGameplayClientSession::onBound()
 	}
 }
 
+void PGameplayClientSession::onUnbound()
+{
+	// 떼어진 GameMaster 의 게임은 끝났다 (월드 이동 · 세션 교체). 보낸 명령의 답은 이동 알림 전에 왔으므로 기다리지 않는다.
+	_bInFlight = false;
+	_localQueue.clear();
+	if (_state == EGameplaySessionState::Playing || _state == EGameplaySessionState::Resyncing)
+	{
+		_state = EGameplaySessionState::Ready;
+	}
+}
+
 // ---- 메시지 -------------------------------------------------------------------
 
 void PGameplayClientSession::handleEvent(const HNetEvent& event)
@@ -309,6 +320,8 @@ void PGameplayClientSession::handleMessage(EGameplayNetMessage type, const HRawS
 		HGameplayNetTravel travel;
 		if (HGameplayNetCodec::DecodeMessage(text, &travel) == true)
 		{
+			// 뒤따르는 게임 메시지(새 게임의 시작 · 승인)는 새 월드의 GameMaster 몫이다. 떼어 두면 붙을 때까지 보관된다.
+			UnbindGameMaster();
 			OnTravelRequested.BroadCast(travel.World);
 		}
 		break;

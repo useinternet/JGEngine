@@ -68,15 +68,6 @@ void JGWidget::Update()
 	}
 }
 
-void JGWidget::UpdateFrame()
-{
-	OnUpdateFrame();
-	for (PSharedPtr<JGWidgetComponent> WidgetCom : WidgetComponents)
-	{
-		WidgetCom->OnUpdateFrame();
-	}
-}
-
 void JGWidget::Open()
 {
 	if (IsOpen())

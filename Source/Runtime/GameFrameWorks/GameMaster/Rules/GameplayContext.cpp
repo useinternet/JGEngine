@@ -55,6 +55,16 @@ void HGameplayContext::FinishGame(int32 resultCode)
 	Engine.ContextFinishGame(*this, resultCode);
 }
 
+void HGameplayContext::SetStep(const PName& step)
+{
+	Engine.ContextSetStep(*this, step);
+}
+
+void HGameplayContext::SetActors(const HList<HGameplayEntityId>& actors)
+{
+	Engine.ContextSetActors(*this, actors);
+}
+
 const IGameplayBoard* HGameplayContext::Board() const
 {
 	return Engine.Board.GetRawPointer();

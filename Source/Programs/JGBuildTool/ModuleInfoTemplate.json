@@ -5,11 +5,8 @@
             "Module_A",
             "Module_B"
         ],
-        "ModuleName": "SharedLib/StaticLib/ConsoleApp",
-        "ModulePath": [
-            "Module_A",
-            "Module_B"
-        ],
+        "ModuleName": "Name",
+        "ModulePath": "Source/[Category]/[ModuleName]",
         "Defines": [
             "DEFINE_A",
             "DEFINE_B"

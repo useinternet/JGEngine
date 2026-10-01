@@ -164,17 +164,17 @@ bool PGameplayAgentRunner::Choose(PGameMaster& gameMaster, HGameplayCommand& out
 		return true;
 	}
 
-	if (state.Turn.CanAct() == false)
+	// 흐름이 정한 입력 행동자 가운데 에이전트가 맡은 첫 행동자 (기본 흐름은 TurnMain 의 현재 행동자 한 명).
+	for (const HGameplayEntityId& actor : state.Turn.Actors)
 	{
-		return false;
+		PSharedPtr<IGameplayAgent> agent = gameMaster.FindAgentForActor(actor);
+		if (agent == nullptr)
+		{
+			continue;
+		}
+		return agent->ChooseCommand(gameMaster, actor, outCommand);
 	}
-
-	PSharedPtr<IGameplayAgent> agent = gameMaster.FindAgentForActor(state.Turn.CurrentActor);
-	if (agent == nullptr)
-	{
-		return false;
-	}
-	return agent->ChooseCommand(gameMaster, state.Turn.CurrentActor, outCommand);
+	return false;
 }
 
 bool PGameplayAgentRunner::Step(PGameMaster& gameMaster, HList<HGameplayEvent>& outEvents, PString* outReason)

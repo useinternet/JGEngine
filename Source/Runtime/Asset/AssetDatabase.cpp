@@ -4,6 +4,23 @@
 #include <thread>
 #include <chrono>
 
+namespace
+{
+	// 경로 맵에서 inAsset 을 가리키는 경로를 찾는다(같은 GUID 오류 메시지용). 없으면 NAME_NONE.
+	PName findLoadedAssetPath(const HHashMap<PName, PWeakPtr<JGAsset>>& inAssetsByAssetPath, const PSharedPtr<JGAsset>& inAsset)
+	{
+		for (const HPair<const PName, PWeakPtr<JGAsset>>& pair : inAssetsByAssetPath)
+		{
+			if (pair.second.Pin().GetRawPointer() == inAsset.GetRawPointer())
+			{
+				return pair.first;
+			}
+		}
+
+		return NAME_NONE;
+	}
+}
+
 GAssetDatabase::~GAssetDatabase()
 {
 	releaseAssets();
@@ -38,7 +55,18 @@ void GAssetDatabase::Update()
 	{
 		const PName& loadedAssetPath = completed.first;
 		PSharedPtr<JGAsset> asset = completed.second.LoadedAsset;
-		if (asset != nullptr)
+
+		// _assetPool 은 GUID 를 키로 에셋을 소유하고 경로 맵은 약참조다. 같은 GUID 로 덮어쓰면 먼저 올라온 에셋이 해제된다.
+		// (에셋 파일을 복사하면 GUID 도 복사된다) 먼저 것을 지키고 이 에셋은 실패로 돌린다.
+		HHashMap<HGuid, PSharedPtr<JGAsset>>::iterator poolIter = (asset != nullptr) ? _assetPool.find(asset->GetGuid()) : _assetPool.end();
+		if (poolIter != _assetPool.end())
+		{
+			const PName firstAssetPath = findLoadedAssetPath(_assetsByAssetPath, poolIter->second);
+			JG_LOG(Asset, ELogLevel::Error, "%s : Duplicate asset guid %s with %s. Skipped. Give the copied file a new _guid",
+				loadedAssetPath.ToString(), asset->GetGuid().ToString(), firstAssetPath.ToString());
+			asset = nullptr;
+		}
+		else if (asset != nullptr)
 		{
 			_assetPool[asset->GetGuid()] = asset;
 			_assetsByAssetPath[loadedAssetPath] = asset;
@@ -160,8 +188,17 @@ bool GAssetDatabase::LoadAssetAsync(const HAssetPath& inAssetPath, const POnLoad
 
 void GAssetDatabase::loadAssets()
 {
+	// 로드 스레드도 HAssetPath 를 풀며 GameContentDirectory() 를 부른다. 그 안의 캐시를 처음 채우는 쪽이
+	// 로드 스레드와 겹치지 않도록, 작업을 예약하기 전에 메인 스레드에서 먼저 정해 둔다.
+	const PString& gameContentDirectory = HFileHelper::GameContentDirectory();
+
 	loadAssetsInternal(HFileHelper::EngineContentDirectory());
-	//loadAssetsInternal(HFileHelper::GameContentDirectory());
+
+	// 게임 프로젝트면 게임 Content 도 올린다(/JGGame/). 엔진 단독 실행이면 비어 있다.
+	if (gameContentDirectory.Empty() == false)
+	{
+		loadAssetsInternal(gameContentDirectory);
+	}
 }
 
 void GAssetDatabase::loadAssetsInternal(const PString& inContentDir)

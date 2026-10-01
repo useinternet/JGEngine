@@ -16,6 +16,7 @@ class GAMEFRAMEWORKS_API PGameplayHostSession : public PGameplaySession
 	float32                   _pingTimer            = 0.0f;
 	int32                     _maxAgentStepsPerTick = 64;
 	PName                     _world;
+	bool                      _bGameAnnounced       = false;   // 붙은 GameMaster 의 시작을 참가자에게 알렸다 (StartGame 또는 이어받기)
 
 public:
 	PGameplayHostSession() = default;
@@ -39,9 +40,14 @@ public:
 	// 한 Tick 에 AI 명령을 최대 몇 개 실행할지.
 	void SetMaxAgentStepsPerTick(int32 steps);
 
+protected:
+	virtual void onBound() override;
+	virtual void onUnbound() override;
+
 private:
 	EGameplaySessionSubmit executeAuthoritative(const HGameplayCommand& command, int32 originSlot, uint32 clientSeq, PString* outReason);
 	void driveAgents();
+	void adoptStartedGameMaster();
 
 	void handleEvent(const HNetEvent& event);
 	void handleHello(HNetPeerId peer, const HRawString& text);

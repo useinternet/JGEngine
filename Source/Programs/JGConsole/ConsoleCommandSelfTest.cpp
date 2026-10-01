@@ -1,6 +1,7 @@
 #include "PCH/PCH.h"
 
 #include <iostream>
+#include <algorithm>
 #include "Core.h"
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
@@ -197,6 +198,72 @@ namespace
 		check(commands.Execute(PString("help test.selftest.nosuch")) == false, "auto: help <unknown> fails");
 	}
 
+	bool commandNamesEqual(const HList<HConsoleCommandInfo>& InCommands, std::initializer_list<const char*> InExpected)
+	{
+		if (InCommands.size() != InExpected.size())
+		{
+			return false;
+		}
+
+		uint64 index = 0;
+		for (const char* expected : InExpected)
+		{
+			if (InCommands[index].Name.GetRawString() != expected)
+			{
+				return false;
+			}
+			++index;
+		}
+
+		return true;
+	}
+
+	bool hasCommandName(const HList<HConsoleCommandInfo>& InCommands, const char* InName)
+	{
+		return std::any_of(InCommands.begin(), InCommands.end(), [InName](const HConsoleCommandInfo& InInfo)
+			{
+				return InInfo.Name.GetRawString() == InName;
+			});
+	}
+
+	// DevConsole 입력 미리보기가 쓰는 이름 검색
+	void testFindCommands()
+	{
+		GConsoleCommandGlobalSystem& commands = GConsoleCommandGlobalSystem::GetInstance();
+		registerTestCommand("test.find.beta", &executeEcho);
+		registerTestCommand("Test.Find.Alpha", &executeEcho);
+		registerTestCommand("xtest.find", &executeEcho);
+
+		HList<HConsoleCommandInfo> found;
+		commands.FindCommands(PString("test.find"), found);
+		check(commandNamesEqual(found, { "test.find.alpha", "test.find.beta", "xtest.find" }), "find: names starting with the text first, then names containing it");
+
+		commands.FindCommands(PString("TEST.FIND.A"), found);
+		check(commandNamesEqual(found, { "test.find.alpha" }), "find: case-insensitive");
+		check(found.size() == 1 && found[0].Usage.GetRawString() == "Test.Find.Alpha"
+			&& found[0].Description.GetRawString() == "console.selftest temporary command", "find: usage and description are copied");
+
+		commands.FindCommands(PString("find"), found);
+		check(commandNamesEqual(found, { "test.find.alpha", "test.find.beta", "xtest.find" }), "find: names containing the text are sorted by name");
+
+		commands.FindCommands(PString("test.find.nosuch"), found);
+		check(found.empty(), "find: no match");
+
+		commands.FindCommands(PString(""), found);
+		const bool bSorted = std::is_sorted(found.begin(), found.end(), [](const HConsoleCommandInfo& InLeft, const HConsoleCommandInfo& InRight)
+			{
+				return InLeft.Name.GetRawString() < InRight.Name.GetRawString();
+			});
+		check(bSorted && hasCommandName(found, "help") && hasCommandName(found, "console.selftest") && hasCommandName(found, "test.find.alpha"),
+			"find: empty text lists every command by name");
+
+		commands.Unregister("test.find.alpha");
+		commands.Unregister("test.find.beta");
+		commands.Unregister("xtest.find");
+		commands.FindCommands(PString("test.find"), found);
+		check(found.empty(), "find: unregistered commands are gone");
+	}
+
 	bool hasRecentLog(const HList<HLogLine>& InLines, const char* InText, ELogLevel InLevel)
 	{
 		for (const HLogLine& line : InLines)
@@ -243,6 +310,7 @@ namespace
 		testArgs();
 		testRegistry();
 		testAutoCommands();
+		testFindCommands();
 		testRecentLogs();
 
 		std::cout << "console.selftest: " << (GFailureCount == 0 ? "OK" : "FAILED")

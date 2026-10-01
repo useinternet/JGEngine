@@ -1,0 +1,58 @@
+R7 게임 Content 마운트 — 구현 · 검증 기록 (2026-09-30 19:30 ~ 20:00)
+체크아웃: C:\Develop\JGEngine (HEAD 4c8ac73 + 아래 3 파일, 미커밋). 툴: VS2022 Community MSBuild, DevelopEngine|x64.
+
+== 0. 이 체크아웃의 상태 (작업 전)
+- 09-16/09-19 이후 쓰지 않다가 09-30 19:29 에 pull(fast-forward → 4c8ac73)만 된 체크아웃이다. 09-19 ~ 09-30 개발은 다른 위치(C:\JG\JGEngine)에서 했다.
+- Temp/ (git 미추적) 가 09-16 상태였다: module_system_info.json 에 JGDev_Graphics 가 있고 GameFrameWorks 가 없음, Temp/ProjectFiles 는 2025-03 파일.
+  → 엔진 GenerateProjectFiles.bat(PreBuild) 1회 → 종료 코드 0, [error]/[critical] 0. JGEngine.sln 은 그대로(내용 동일), jgengine.bat 만 경로가 바뀜.
+- 에이전트 셸에 NoDefaultCurrentDirectoryInExePath=1 이 있어 GenerateProjectFiles.bat 안의 "PreBuild.bat"(경로 없는 이름)을 cmd 가 못 찾는다
+  ("'PreBuild.bat' is not recognized"). env -u NoDefaultCurrentDirectoryInExePath cmd //c "GenerateProjectFiles.bat" 로 실행했다.
+  (게임 배치 2개는 "..\..\Bin\..." 처럼 경로가 붙은 이름이라 영향 없음)
+
+== 1. 변경 (3 파일)
+Source/Runtime/Core/FileIO/FileHelper.cpp   GameContentDirectory(): 프로젝트 모드면 <Project>/Content(없으면 만든다), 엔진 단독이면 빈 문자열
+Source/Runtime/Asset/AssetPath.cpp          /JGGame/<상대경로> → 게임 Content 기준으로 해석(엔진 단독이면 Error 로그 + invalid, 이전: JG_CHECK + Critical)
+                                            전체 경로 → 엔진 Content 또는 게임 Content 안이면 해당 토큰 경로로 바꿈(빈 게임 Content 는 비교에서 제외)
+Source/Runtime/Asset/AssetDatabase.cpp      loadAssets(): 엔진 Content 다음 게임 Content 도 로드.
+                                            GameContentDirectory() 를 로드 작업 예약 전에 메인 스레드에서 먼저 불러 캐시를 채운다
+                                            (로드 스레드도 HAssetPath::ReadJson → setupAssetPath 에서 부르므로 첫 쓰기가 겹치지 않게)
+
+== 2. 엔진 빌드
+MSBuild JGEngine.sln : exit 0, error 0, 213초, 15 프로젝트 (Temp/Obj 가 오래돼 전체 컴파일)
+AssetDatabase.cpp 순서 변경 후 증분 : exit 0, error 0, 컴파일 1 (AssetDatabase.cpp)
+
+== 3. 엔진 단독 회귀 (crashwalk, Bin\DevelopEngine\JGLauncher.exe, 40초 후 WM_CLOSE)
+[trace][Asset]: Start Load Assets in ../../Content                         ← 한 번만 (게임 Content 없음)
+[warning][Asset]: NOT Support Asset Path                                   ← 기존부터 있던 경고(커밋된 jg_log.txt 에도 같은 줄). 에셋 파일에 저장된 AssetPath "(null)" 을 ReadJson 이 풀 때
+[trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+Startup Graphics → Asset → JGEditor / Shutdown Asset → Graphics → JGEditor
+Memory Chunk Shutdown live blocks 0 (ID 0, ID 1), [error]/[critical] 0, Process exited with code 0
+
+== 4. 게임 프로젝트 E2E (<scratchpad>\Games\MyGame, 엔진 C:/Develop/JGEngine)
+CreateGameProject.bat <dir>             : exit 0, "Created game project MyGame", EngineRoot "C:/Develop/JGEngine"
+MyGame\GenerateProjectFiles.bat (1회차) : exit 0, [error]/[critical] 0, MyGame.sln · Temp/CodeGen/MyGame · MyGameEditor · module_system_info.json
+테스트 에셋: Content/TempAsset/Sample.jgasset 사본의 _guid 첫 숫자만 바꿔(2609130592 → 1111111111, 9 바이트 차이, 크기 동일)
+            <Project>/Content/TempAsset/GameSample.jgasset 에 둠. (같은 GUID 면 _assetPool 에서 먼저 올라온 쪽이 밀려난다 — 현황 §5)
+MSBuild MyGame.sln : exit 0, error 0, 228초, 17 프로젝트. 순서 변경 후 증분 exit 0 (AssetDatabase.cpp 1개)
+MyGame\Bin\DevelopEngine\JGLauncher.exe (crashwalk, 45초 후 WM_CLOSE):
+  [info][Core]: Project MyGame: project .../Games/MyGame/, engine C:/Develop/JGEngine/
+  Startup Graphics → Asset → "MyGame entry actor entered world" → Startup MyGame → Startup MyGameEditor → Startup JGEditor
+  [trace][Asset]: Start Load Assets in C:/Develop/JGEngine/Content
+  [trace][Asset]: Start Load Assets in C:/Users/.../scratchpad/Games/MyGame/Content
+  [trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+  [trace][Asset]: /JGGame/TempAsset/GameSample.jgasset : Success Load Asset          ← R7
+  (NOT Support Asset Path 경고는 에셋마다 1줄 — 3절과 같은 기존 경고)
+  Shutdown MyGameEditor → MyGame → Asset → Graphics → JGEditor
+  Memory Chunk Shutdown live blocks 0 (ID 0, ID 1), [error]/[critical] 0, Process exited with code 0
+
+== 5. 커밋 뒤 회귀 (GM-C1) — 생성 2회차
+MyGame\GenerateProjectFiles.bat (2회차) : exit 0. 다시 쓴 파일: MyGame.lua, Temp/CodeGen/module_system_info.json. 엔진 트리: 툴 로그만
+  MyGame.lua 는 BuildTool 이 매번 쓴다(BuildTool.cpp:261, 변경 검사 없음). 빌드 입력이 아니고 vcxproj · sln 은 다시 쓰지 않음.
+  → 현황 §6 3단계 기대값을 "module_system_info.json 1개" 에서 "MyGame.lua + module_system_info.json" 으로 바로잡음(툴 코드는 커밋 그대로, 이번 변경 무관)
+엔진 GenerateProjectFiles.bat (2회차)   : exit 0, [error]/[critical] 0. 다시 쓴 파일: jgengine.bat, jgengine.lua, Source/Programs/JGBuildTool/jgengine.lua,
+  Source/Programs/JGBuildTool/ModuleInfoTemplate.json, Temp/CodeGen/module_system_info.json (+ 툴 로그). 이어서 MSBuild 컴파일 대상 0, exit 0.
+  git 기준 내용이 바뀐 것은 jgengine.bat(엔진 절대경로 C:/JG/JGEngine → C:/Develop/JGEngine) 뿐.
+
+== 6. 확인하지 못한 것
+- 엔진 단독에서 "/JGGame/..." 경로를 요청하는 호출자가 없어 Error 경로(Game content is only available in a game project)는 코드 확인만 했다.
+- 게임 Content 에셋을 화면에 그리는 확인은 없다(로드 성공 로그까지). 에셋을 쓰는 쪽(씬 · 컴포넌트)은 GFW Phase 2 소관.

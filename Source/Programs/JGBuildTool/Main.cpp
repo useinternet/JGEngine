@@ -55,6 +55,12 @@ namespace
 
 		if (HFileHelper::IsProjectMode() == true)
 		{
+			// 한글 경로 등은 premake 에서 알아보기 힘든 오류로 끝나므로 먼저 거른다(배치 1 을 거치지 않고 옮긴 프로젝트).
+			if (PProjectCreator::IsSupportedProjectPath(HFileHelper::ProjectDirectory()) == false)
+			{
+				return 1;
+			}
+
 			// 게임 프로젝트는 Source 바로 아래 폴더가 모듈이다. Source 를 카테고리로 보고 훑는다.
 			args.UserWorkDirectory = HFileHelper::ProjectDirectory();
 			args.UserWorkCategories.clear();

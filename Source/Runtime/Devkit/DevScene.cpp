@@ -159,15 +159,15 @@ void JGDevScene::OnLayout(const HWidgetComponentLayout& InLayout)
 	SceneSize = InLayout.ContentSize;
 }
 
-void JGDevScene::OnGenerateGUI()
+void JGDevScene::OnUpdate()
 {
 	if (Scene.IsValid() == false || Renderer.IsValid() == false || Renderer->GetOutputTexture() == nullptr)
 	{
 		return;
 	}
 
-	// GenerateGUI는 GraphicsBegin(펜스 대기) 뒤에 매 프레임 불리고, GUI가 이 텍스처를 실제로 그리는 시점은
-	// GraphicsEnd의 프레임버퍼 갱신이므로, 여기서 기록한 드로우 커맨드가 먼저 실행된다.
+	// 위젯이 열려 있는 동안 매 프레임 Update 단계(GraphicsBegin 뒤)에서 불린다. GUI가 이 텍스처를 실제로 그리는 시점은
+	// GraphicsEnd의 프레임버퍼 갱신이므로, 여기서 기록한 드로우 커맨드가 같은 프레임의 GUI 드로우보다 먼저 실행된다.
 	Renderer->Render(*Scene, Camera);
 
 	// 메시가 그려지기 시작한 뒤 몇 프레임 지나면 리드백을 한 번 검증한다.
@@ -179,7 +179,16 @@ void JGDevScene::OnGenerateGUI()
 			DumpReadbackOnce();
 		}
 	}
+}
 
+void JGDevScene::OnGenerateGUI()
+{
+	if (Scene.IsValid() == false || Renderer.IsValid() == false || Renderer->GetOutputTexture() == nullptr)
+	{
+		return;
+	}
+
+	// 출력 텍스처는 크기가 고정(DevSceneTextureWidth x Height)이라, 렌더가 이 함수 뒤(Update 단계)에 와도 여기서 넘긴 텍스처 ID는 그대로 유효하다.
 	HGUI::Image(Renderer->GetOutputTexture()->GetTextureID(), SceneSize);
 	if (ReadbackStatus.Empty() == false)
 	{

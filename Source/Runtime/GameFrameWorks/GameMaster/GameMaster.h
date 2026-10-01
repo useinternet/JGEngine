@@ -90,6 +90,9 @@ public:
 	}
 
 	void SetOrderPolicy(PSharedPtr<IGameplayOrderPolicy> policy);
+	// 게임 흐름(턴 · 페이즈 구조). null 이면 기본 흐름(라운드 → 순서 → 행동자마다 차례, PGameplayRoundTurnFlow). IGameplayFlow 참고.
+	void                      SetFlow(PSharedPtr<IGameplayFlow> flow);
+	PSharedPtr<IGameplayFlow> GetFlow() const;
 	void SetBoard(EGameplayBoardKind kind, int32 width = 0, int32 height = 0);
 	void SetBoard(PSharedPtr<IGameplayBoard> board, int32 width = 0, int32 height = 0);
 	void SetMigrator(PSharedPtr<IGameplayMigrator> migrator);
@@ -138,7 +141,7 @@ public:
 	bool ImportDocument(const PString& text);
 	bool Replay(const HList<HGameplayCommand>& commands, HList<HGameplayEvent>& outEvents);
 	uint64 Checksum() const;
-	// 등록된 규칙의 지문 (명령 · 효과 · 트리거 · 수정자 종류, 컴포넌트 테이블, 수치 단계, 보드, 스키마).
+	// 등록된 규칙의 지문 (명령 · 효과 · 트리거 · 수정자 종류, 컴포넌트 테이블, 수치 단계, 보드, 흐름 이름, 스키마).
 	// 기계마다 같은 규칙 세트인지 확인한다. 등록 순서와 무관하다.
 	uint64 RulesFingerprint() const;
 	const PGameplayCommandLog& GetCommandLog() const;

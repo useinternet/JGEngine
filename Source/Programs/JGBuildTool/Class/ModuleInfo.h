@@ -62,8 +62,8 @@ protected:
 	{
 		json.AddMember("ModuleFormat", ModuleFormat);
 		json.AddMember("ModuleDependencies", ModuleDependencies);
-		json.AddMember("ModuleName", ModuleFormat);
-		json.AddMember("ModulePath", ModuleDependencies);
+		json.AddMember("ModuleName", ModuleName);
+		json.AddMember("ModulePath", ModulePath);
 		json.AddMember("Defines", Defines);
 
 

@@ -6,15 +6,19 @@
 
 ---
 
-## 다음에 할 일 (순서대로)
+## 다음에 할 일
 
-| 순서 | 할 일 | 착수 조건 | 완료 기준 |
-|---|---|---|---|
-| 1 | **4-6. 4-1 커밋**(사용자). 파일: `Source/Runtime/Core/Memory/Memory.h`, `Memory.cpp`, `Files/Memory_TODO.md`, `Files/2026-09-21_Memory_현황분석.md`, `Files/2026-09-29_4-1_weakptr_results.txt`, `Files/build_2026-09-29_4-1_{repro,fix,final}.log`, 이 폴더 `현황.md` · `TODO.md`. **제외**: `Devkit/DevScene.cpp` `GetBounds` 1줄 · `StaticMesh.*`(Graphics), `CoreSystem.cpp` · `Log.cpp` · `GUI.cpp`(DevConsole) | 없음 | `git log -1 -- Source/Runtime/Core/Memory/Memory.h` 가 새 커밋, `git status -- Source/Runtime/Core/Memory` 가 비어 있음 |
-| 2 | **Phase 4 나머지 종결 확정**(사용자): 4-1 의 맵 · 뮤텍스 제거, 4-2, 4-3, 4-4 를 "하지 않음(보류)" 으로 닫을지 결정 | 없음 | 결정이 이 파일 보류 표 비고에 기록됨(재개면 해당 항목을 미완료 표로 올림) |
-| 3 | **커밋 뒤 회귀 확인 1회**: 커밋된 트리에서 crashwalk 60초 실행 → `현황.md` §6-3 합격 기준. 4-1 의 마지막 확인은 2026-09-29 25초 실행이었다 | 1 완료 | 종료 코드 0, `live blocks 0` · `large live 0`, 정상 상태 성장 로그 없음, D3D12 0 |
-| 4 | **7-1 결정**(사용자): 문자열 테이블 수명 정책. 권장 = 현행(영구 인터닝) 유지 · 코드 변경 없음 | 없음 | 결정 기록. 유지면 보류 표 그대로 |
-| 5 | **트랙 휴면**: 이후 메모리 작업은 구체적 문제(크래시 · 손상 · 측정된 비용 · 관측된 누수)가 보고될 때 보류 표의 해당 항목을 꺼내 착수한다 | 1~4 완료 | — |
+없음 — **트랙 완료 · 휴면**(사용자 완료 처리 2026-09-30). 이후 메모리 작업은 구체적 문제(크래시 · 손상 · 측정된 비용 · 관측된 누수)가 보고될 때 아래 보류 표의 해당 항목을 미완료 항목으로 올려 착수한다.
+
+2026-09-30 처리 결과(구 순서 1~5):
+
+| 구 순서 | 할 일 | 결과 |
+|---|---|---|
+| 1 | 4-6. 4-1 커밋 | 완료 — `4c8ac73` "문서 정리"(2026-09-30 17:30). 다른 트랙 변경 · 문서 재편과 한 커밋(파일 분리 안 함). 작업 트리 clean |
+| 2 | Phase 4 나머지 종결 확정 | 하지 않음(보류 확정, 사용자 2026-09-30) |
+| 3 | 커밋 뒤 회귀 확인 1회(60초) | 따로 돌리지 않음. 전 트랙 공통 회귀(`../진행현황.md` 2절 4항: 런처 60초 · 종료 코드 0 · live 0)가 `현황.md` §6-3 기준을 포함하므로 그 결과로 대신한다. 거기서 `live blocks 0` · `large live 0` · 정상 상태 성장 로그 없음이 깨지면 이 트랙을 다시 연다 |
+| 4 | 7-1 결정 | 현행(영구 인터닝) 유지, 코드 변경 없음(사용자 2026-09-30) |
+| 5 | 트랙 휴면 | 적용(2026-09-30) |
 
 ---
 
@@ -22,16 +26,15 @@
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| 4-6 | 4-1 커밋 — "GC 참조 카운터를 제어 블록으로 통합, 약참조 수명 수정(Memory_TODO 4-1)" | 높음 | 사용자 대기 | 없음 | 위 "다음에 할 일" 1 | 구 4-6 은 4-1~4-4 전체 커밋이었으나 4-1 만 남음. `Memory.h` · `Memory.cpp` 두 파일이 코드 전부 |
-| 4-D | Phase 4 나머지(4-1 잔여 · 4-2 · 4-3 · 4-4) 종결 결정 | 높음 | `결정 필요` | 없음 | 보류 확정 또는 재개 항목 지정 | 권장: 하지 않음(2026-09-29 코드 확인: 측정된 비용 · 관측된 결함 없음) |
-| 7-1 | 문자열 테이블 수명 정책 결정 | 낮음 | `결정 필요` | 없음 | 결정 기록 | 권장: 현행 유지. 상세는 보류 표 7-1 |
-| — | 커밋 뒤 회귀 확인 1회(60초) | 중간 | 4-6 뒤 | 4-6 | `현황.md` §6-3 기준 전부 통과 | 결과는 `Files/2026-09-28_memory_baseline.txt` 에 한 줄 또는 새 결과 파일로 |
+| UI-1c | UI-1(통계 창 재디자인) 커밋 — 파일: `Source/Editor/DevStatistics/MemoryStatistics.h/.cpp`, `Source/Runtime/GUI/GUI.h/.cpp` · `GUIDefines.h` · `Backends/DX12GUIBackend.cpp`(이 넷은 다른 트랙 변경과 섞여 있어 파일 단위로 나눌 수 없다), `Files/2026-09-30_memstats_ui*`, `Files/tools/memstats_capture.ps1.txt` | 중간 | 사용자 대기 | 커밋 전 메인 트리 전체 빌드 오류 0 + 런처에서 `Windows/Statistics/Memory` 창 열어 보기 | 새 커밋에 위 파일, `grep -c "HGUI::PlotLines" Source/Runtime/GUI/GUI.cpp` 가 1 이상 | 메인 트리 `GUI.cpp` 를 다른 세션이 통째로 다시 쓰면 추가분이 빠진다 → `Files/2026-09-30_memstats_ui.patch` 로 되살린다 |
 
-미완료 코드 작업은 없다. 현재 시점에 메모리 시스템에서 확인된 미해결 결함은 없다.
+미완료 코드 작업은 없다. 4-6 · 4-D · 7-1(결정)은 완료 이력으로, 커밋 뒤 회귀는 전 트랙 공통 회귀로 옮겼다(위 처리 결과). 현재 시점에 메모리 시스템에서 확인된 미해결 결함은 없다.
 
 ---
 
 ## 보류 (구체적 문제 발생 시 재검토)
+
+2026-09-30 사용자 완료 처리로 이 표 전체가 보류 확정됐다(4-D 결정). 트리거가 관측되면 해당 항목을 미완료 항목으로 올린다.
 
 | ID | 항목 | 재검토 트리거 | 비고 (2026-09-30 코드 기준) |
 |---|---|---|---|
@@ -47,7 +50,7 @@
 | 6-3 | GPU 힙 계측(업로드 페이지 · 디스크립터 페이지 · 스테이징 · PSO 캐시 수)을 위젯 GPU 절로 | GPU 메모리 예산 문제 | Graphics 영역. `HJGGraphicsModule` 노출 필요 |
 | 6-4 | 시작 · 종료 스냅샷 비교(클래스별 live) | 4-3 재개 시 | |
 | 6-5 · 6-6 | Phase 6 검증 · 커밋 | 6-x 재개 시 | |
-| 7-1 | 문자열 테이블 수명 정책: `GStringTable::removeOldStringInfos`(`StringTable.cpp:147`) 는 큐 재삽입을 안 해 사실상 무효 = 영구 인터닝. 권장안은 영구 인터닝 확정 + 정리 코드 · `FrameCount` · `weak_ptr` 카운트 제거, `PName` 은 ID 만(릴리스 16B) | `PName` 복사 비용(원자 연산 3회)이 측정되거나 문자열 테이블 성장이 문제가 될 때 | 정리 코드가 동작하지 않는 것 자체는 무해. 결정은 "다음에 할 일" 4 |
+| 7-1 | 문자열 테이블 수명 정책: `GStringTable::removeOldStringInfos`(`StringTable.cpp:147`) 는 큐 재삽입을 안 해 사실상 무효 = 영구 인터닝. 권장안은 영구 인터닝 확정 + 정리 코드 · `FrameCount` · `weak_ptr` 카운트 제거, `PName` 은 ID 만(릴리스 16B) | `PName` 복사 비용(원자 연산 3회)이 측정되거나 문자열 테이블 성장이 문제가 될 때 | 정리 코드가 동작하지 않는 것 자체는 무해. **현행 유지로 결정(사용자 2026-09-30)**, 코드 변경 없음 |
 | 7-3 | `Cast<T>` 가 리플렉션 판정 실패 시 `RawFastCast`(static_cast) 폴백 → 디버그에서 `dynamic_cast` 검증 | 잘못된 다운캐스트 사례가 나올 때 | |
 | 7-4 | `PString::_rawString` 풀 이전 재검토 | 6-4 스냅샷으로 문자열 힙 사용량을 실측한 뒤 이득이 클 때 | 비용 대비 이득이 가장 나쁨(`GetRawString()` 44곳 · `HRawString` 27곳이 `std::string` 노출). 재진입 위험은 1-1 · `JG_POOL_LOG` 가드로 해소 |
 | 7-6 | Phase 7 커밋 | 7-x 재개 시 | |
@@ -72,8 +75,12 @@
 | 2-4 | `HAllocator` 완성(`operator==` · `is_always_equal` · `alignof`) | 2026-09-28 | `Allocator.h`; `align` 4/4(1,000개 32 정렬, swap · 이동 대입). `ResourceStagingManager` swap 복원 |
 | 2-6 | Phase 2 검증 + 임시 코드 제거 + 드러난 버그 2건 수정 | 2026-09-28 | `Files/2026-09-28_memtest_phase2_results.txt` 37/37, 기준선 v3, `Files/build_2026-09-28_phase2*.log`, `PipelineState.cpp` 키 const, `GUI.cpp` `PlotBarGroups` |
 | 2-7 | Phase 2 커밋 | 2026-09-29 | **git `d457b92` "서밋"(14:57)** — `MemoryPool.h/.cpp` · `Allocator.h` · `Memory.h/.cpp` · `MemoryStatistics.cpp` · `PipelineState.cpp` · `ResourceStagingManager.cpp` · `GUI.cpp` · `DevScene.cpp`(훅 제거) · 도구 · 문서. 구 TODO 미표기 |
-| 4-1 | 제어 블록 통합 → 축소판(약참조 카운터 수명): `HMemoryControlBlock`, `ReleaseWeakReference`, `Pin` CAS, `Wrap` 약참조 채움, 강제 파괴 시 블록 유지 | 2026-09-29 | `Memory.h:40-46, 401-407, 487-510`, `Memory.cpp:13-27, 125-132`; `Files/2026-09-29_4-1_weakptr_results.txt`(해제 카운터 접근 3 → 0, `weak` 11/11, 제어 블록 45 → 0). **미커밋** |
+| 4-1 | 제어 블록 통합 → 축소판(약참조 카운터 수명): `HMemoryControlBlock`, `ReleaseWeakReference`, `Pin` CAS, `Wrap` 약참조 채움, 강제 파괴 시 블록 유지 | 2026-09-29 | `Memory.h:40-46, 401-407, 487-510`, `Memory.cpp:13-27, 125-132`; `Files/2026-09-29_4-1_weakptr_results.txt`(해제 카운터 접근 3 → 0, `weak` 11/11, 제어 블록 45 → 0). 커밋 `4c8ac73`(4-6) |
 | 4-5 | Phase 4 검증(4-1 범위) | 2026-09-29 | 같은 결과 파일 §2 · §3, `Files/build_2026-09-29_4-1_final.log`(오류 0, LNK4098 1), 25초 실행 종료 코드 0 · 풀 live 0 |
+| 4-6 | Phase 4 커밋(4-1 범위) | 2026-09-30 | **git `4c8ac73` "문서 정리"(17:30)** — `Memory.h` +44/−17 · `Memory.cpp` +28/−3(작업 트리 기록과 일치), 4-1 결과 · 빌드 로그 · 문서 포함. 다른 트랙 변경 · 문서 재편과 한 커밋 |
+| 4-D | Phase 4 나머지(4-1 잔여 · 4-2 · 4-3 · 4-4) 종결 결정 | 2026-09-30 | 사용자 완료 처리 → 하지 않음. 보류 표에 재개 트리거와 함께 유지 |
+| 7-1(결정) | 문자열 테이블 수명 정책 | 2026-09-30 | 사용자 완료 처리 → 현행(영구 인터닝) 유지, 코드 변경 없음. 항목은 보류 표에 남김 |
+| UI-1 | 통계 창 재디자인(사용자 요청): 요약 카드 · 60초 추이 그래프 · 스레드 막대 · 스레드별 탭 클래스 표 · 상태 딱지 · 풍선 도움말, `HGUI` 대시보드 함수 28개 · `EGUIColor` · `EGUIFont` · 큰 글꼴 | 2026-09-30 | `Files/2026-09-30_memstats_ui_verify.txt`(HEAD 워크트리 빌드 오류 0, 실행 7회 종료 0 · `[error]` 0 · live 0, 메인 트리 합친 상태 컴파일 0 오류), 캡처 `Files/2026-09-30_memstats_ui_{before,after,plot_tooltip,class_tooltip,thread1}.png`. **미커밋**(UI-1c) |
 | 7-5 | 문서 갱신 | 2026-09-30 | 이 폴더 `현황.md`(문제 목록 해소 상태는 §9 표) · `TODO.md`. `Graphics_TODO.md` 5-23 · 5-27 종결 확인, 5-17 · 5-18 은 4-3 · 4-4 보류에 맞춰 미종결 |
 
 ---

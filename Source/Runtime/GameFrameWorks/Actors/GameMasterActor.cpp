@@ -1,6 +1,7 @@
 #include "PCH/PCH.h"
 #include "Actors/GameMasterActor.h"
 #include "Core/World.h"
+#include "Core/GameInstance.h"
 
 // GameMaster 관찰자. JGActor 와 IGameplayObserver 를 한 클래스에 다중 상속하면 IMemoryObject 뿌리가 둘이 되므로 분리한다.
 class PGameMasterActorObserver : public IGameplayObserver
@@ -39,6 +40,8 @@ public:
 
 void JGGameMasterActor::SetGameMaster(PSharedPtr<PGameMaster> gameMaster)
 {
+	unbindSession();
+
 	if (_gameMaster != nullptr && _observer != nullptr)
 	{
 		_gameMaster->RemoveObserver(_observer);
@@ -53,6 +56,12 @@ void JGGameMasterActor::SetGameMaster(PSharedPtr<PGameMaster> gameMaster)
 			_observer = Allocate<PGameMasterActorObserver>(this);
 		}
 		_gameMaster->AddObserver(_observer);
+	}
+
+	// BeginPlay 전이면 BeginPlay 에서 붙인다 (엔트리 액터가 규칙을 다 등록한 뒤라야 클라가 받은 시작을 적용할 수 있다).
+	if (HasBegunPlay() == true)
+	{
+		bindSession();
 	}
 }
 
@@ -96,6 +105,39 @@ int32 JGGameMasterActor::RegisterCuesFromReflection()
 		++count;
 	}
 	return count;
+}
+
+bool JGGameMasterActor::StartGame(uint64 seed)
+{
+	if (_gameMaster == nullptr)
+	{
+		JG_LOG(GameFrameWorks, ELogLevel::Error, "GameMasterActor::StartGame: no gameMaster");
+		return false;
+	}
+
+	// 엔트리 액터(OnEnterWorld)에서 부르면 아직 BeginPlay 전이다. 규칙 등록이 끝났으니 여기서 붙인다.
+	bindSession();
+	PSharedPtr<PGameplaySession> session = GetSession();
+	if (session != nullptr)
+	{
+		return session->StartGame(seed);
+	}
+	if (findGameInstanceSession() != nullptr)
+	{
+		JG_LOG(GameFrameWorks, ELogLevel::Error, "GameMasterActor::StartGame: the session is bound to another gameMaster");
+		return false;
+	}
+	return _gameMaster->Start(seed);
+}
+
+PSharedPtr<PGameplaySession> JGGameMasterActor::GetSession() const
+{
+	PSharedPtr<PGameplaySession> session = findGameInstanceSession();
+	if (session == nullptr || _gameMaster == nullptr || session->GetGameMaster() != _gameMaster)
+	{
+		return nullptr;
+	}
+	return session;
 }
 
 EGameMasterActorSubmit JGGameMasterActor::Submit(const HGameplayCommand& command, PString* outReason)
@@ -246,8 +288,21 @@ void JGGameMasterActor::RebuildBindings()
 	}
 }
 
+void JGGameMasterActor::SetBoardLayout(const HGameplayBoardLayout& layout)
+{
+	_boardLayout = layout;
+}
+
+const HGameplayBoardLayout& JGGameMasterActor::GetBoardLayout() const
+{
+	return _boardLayout;
+}
+
 void JGGameMasterActor::OnBeginPlay()
 {
+	// 클라는 붙는 순간 보관돼 있던 시작 · 문서가 적용된다 (상태 교체 → 바인딩 재구성).
+	bindSession();
+
 	if (_gameMaster != nullptr && _gameMaster->IsStarted() == true && _actorsByEntity.empty() == true)
 	{
 		RebuildBindings();
@@ -285,6 +340,8 @@ void JGGameMasterActor::OnTick(float32 deltaSeconds)
 
 void JGGameMasterActor::OnEndPlay()
 {
+	unbindSession();
+
 	if (_gameMaster != nullptr && _observer != nullptr)
 	{
 		_gameMaster->RemoveObserver(_observer);
@@ -421,9 +478,39 @@ void JGGameMasterActor::flushBufferedCommands()
 
 EGameMasterActorSubmit JGGameMasterActor::executeNow(const HGameplayCommand& command, PString* outReason)
 {
+	// 이벤트는 어느 경로든 관찰자(onGameplayEvents)로 큐에 들어간다.
+	// 게임 인스턴스 월드: 세션이 권한 경로의 유일한 입구다 (싱글은 Standalone 세션).
+	if (findGameInstanceSession() != nullptr)
+	{
+		bindSession();
+		PSharedPtr<PGameplaySession> session = GetSession();
+		if (session == nullptr)
+		{
+			if (outReason != nullptr)
+			{
+				*outReason = "gameMaster is not bound to the session";
+			}
+			return EGameMasterActorSubmit::Rejected;
+		}
+
+		switch (session->SubmitLocal(command, outReason))
+		{
+		case EGameplaySessionSubmit::Executed:
+			return EGameMasterActorSubmit::Executed;
+		case EGameplaySessionSubmit::PendingChoice:
+			return EGameMasterActorSubmit::PendingChoice;
+		case EGameplaySessionSubmit::Sent:
+		case EGameplaySessionSubmit::Queued:
+			return EGameMasterActorSubmit::Sent;
+		case EGameplaySessionSubmit::Rejected:
+		default:
+			return EGameMasterActorSubmit::Rejected;
+		}
+	}
+
+	// 게임 인스턴스 밖 월드(자체 테스트가 만든 월드): 세션 없이 바로 낸다.
 	HList<HGameplayEvent> events;
 	EGameplaySubmitResult result = _gameMaster->Submit(command, events, outReason);
-	// 이벤트는 관찰자 경로(onGameplayEvents)로 이미 큐에 들어갔다.
 
 	switch (result)
 	{
@@ -434,5 +521,41 @@ EGameMasterActorSubmit JGGameMasterActor::executeNow(const HGameplayCommand& com
 	case EGameplaySubmitResult::Rejected:
 	default:
 		return EGameMasterActorSubmit::Rejected;
+	}
+}
+
+PSharedPtr<PGameplaySession> JGGameMasterActor::findGameInstanceSession() const
+{
+	if (JGGameInstance::HasInstance() == false)
+	{
+		return nullptr;
+	}
+
+	JGGameInstance&    gameInstance = JGGameInstance::Get();
+	PSharedPtr<PWorld> world        = GetWorld();
+	if (world == nullptr || gameInstance.GetWorld() != world)
+	{
+		return nullptr;
+	}
+	return gameInstance.GetSession();
+}
+
+// 세션이 비어 있을 때만 붙는다. 다른 GameMaster 가 붙어 있으면 빼앗지 않는다 (세션은 한 번에 하나만 붙는다).
+void JGGameMasterActor::bindSession()
+{
+	PSharedPtr<PGameplaySession> session = findGameInstanceSession();
+	if (session == nullptr || _gameMaster == nullptr || session->GetGameMaster() != nullptr)
+	{
+		return;
+	}
+	session->BindGameMaster(_gameMaster);
+}
+
+void JGGameMasterActor::unbindSession()
+{
+	PSharedPtr<PGameplaySession> session = GetSession();
+	if (session != nullptr)
+	{
+		session->UnbindGameMaster();
 	}
 }

@@ -47,11 +47,18 @@ namespace
 
 	// 엔진 모듈과 이름이 같으면 DLL 이 같은 Bin 에서 부딪히고 premake 가 두 프로젝트를 하나로 합친다.
 	// JG 로 시작하는 이름은 엔진 몫이다. <Name>Editor 가 JGEditor 가 되는 경우("JG")도 이것으로 막힌다.
+	// Game 이면 템플릿의 엔트리 액터(JG<Name>EntryActor, <Name>EntryActor.h)가 GameFrameWorks 의 JGGameEntryActor 와 같아진다.
 	bool isReservedProjectName(const PString& projectName)
 	{
 		if (PString::ToUpper(projectName).StartWidth("JG") == true)
 		{
 			JG_LOG(BuildTool, ELogLevel::Critical, "Project names starting with JG are reserved for engine modules: %s", projectName);
+			return true;
+		}
+
+		if (PString::ToUpper(projectName) == "GAME")
+		{
+			JG_LOG(BuildTool, ELogLevel::Critical, "%s is reserved: the template entry actor would collide with JGGameEntryActor (GameFrameWorks/Actors/GameEntryActor.h). Choose another project name", projectName);
 			return true;
 		}
 
@@ -87,10 +94,30 @@ namespace
 	}
 }
 
+bool PProjectCreator::IsSupportedProjectPath(const PString& inProjectDirectory)
+{
+	const HRawString& path = inProjectDirectory.GetRawString();
+	for (size_t i = 0; i < path.size(); ++i)
+	{
+		if ((unsigned char)path[i] >= 0x80)
+		{
+			JG_LOG(BuildTool, ELogLevel::Critical, "Project path must be ASCII (non-ASCII folder names make premake fail): %s", inProjectDirectory);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool PProjectCreator::Create(const PString& inProjectDirectory, const PString& inProjectName)
 {
 	PString projectDirectory;
 	HFileHelper::AbsoluteDirectory(inProjectDirectory, &projectDirectory);
+
+	if (IsSupportedProjectPath(projectDirectory) == false)
+	{
+		return false;
+	}
 
 	PString projectName = inProjectName;
 	if (projectName.Empty() == true)

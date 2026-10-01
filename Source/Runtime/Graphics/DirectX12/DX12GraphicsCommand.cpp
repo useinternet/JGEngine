@@ -243,6 +243,109 @@ void PDX12GraphicsCommand::Draw(const HScreenDrawArguments& inArgs)
 	cmdList->Draw(6);
 }
 
+void PDX12GraphicsCommand::Draw(const H2DDrawArguments& inArgs)
+{
+	JG_CHECK(_graphicsPSO != nullptr);
+
+	if (inArgs.Vertices == nullptr || inArgs.VertexCount == 0 || inArgs.Indices == nullptr || inArgs.IndexCount == 0 ||
+		inArgs.Commands == nullptr || inArgs.CommandCount == 0)
+	{
+		return;
+	}
+	if (inArgs.TargetSize.x <= 0.0f || inArgs.TargetSize.y <= 0.0f)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "Draw(H2DDrawArguments) : TargetSize is invalid");
+		return;
+	}
+
+	// 내장 셰이더. 컴파일 실패는 API가 처음 한 번만 로그로 남긴다.
+	PSharedPtr<IRawGraphicsShader> shader = HDirectXAPI::GetDraw2DShader();
+	if (shader.IsValid() == false || shader->IsValid() == false)
+	{
+		return;
+	}
+
+	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();
+	JG_CHECK(cmdList != nullptr);
+
+	// 정점 · 인덱스는 커맨드 리스트의 업로드 할당자(프레임마다 재사용하는 페이지)로 올린다.
+	if (cmdList->BindDynamicVertexBuffer(inArgs.Vertices, inArgs.VertexCount, sizeof(H2DVertex)) == false ||
+		cmdList->BindDynamicIndexBuffer(inArgs.Indices, inArgs.IndexCount) == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "Draw(H2DDrawArguments) : %d vertices / %d indices do not fit in one upload page", (int32)inArgs.VertexCount, (int32)inArgs.IndexCount);
+		return;
+	}
+
+	BindShader(shader);
+	_graphicsPSO->BindInputLayout(H2DVertex::GetInputLayout());
+	_graphicsPSO->SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE);
+
+	// 알파 블렌드 · 컬링 없음은 이 호출에서만 쓴다. 같은 명령 객체의 다음 Surface/Screen 드로우가 기본 상태를 쓰도록 끝에서 되돌린다.
+	const D3D12_BLEND_DESC prevBlendDesc = _graphicsPSO->GetBlendDesc();
+	D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	D3D12_RENDER_TARGET_BLEND_DESC& targetBlend = blendDesc.RenderTarget[0];
+	targetBlend.BlendEnable    = TRUE;
+	targetBlend.SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+	targetBlend.DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+	targetBlend.BlendOp        = D3D12_BLEND_OP_ADD;
+	targetBlend.SrcBlendAlpha  = D3D12_BLEND_ONE;
+	targetBlend.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+	targetBlend.BlendOpAlpha   = D3D12_BLEND_OP_ADD;
+	_graphicsPSO->SetBlendState(blendDesc);
+
+	CD3DX12_RASTERIZER_DESC rasterizerDesc(D3D12_DEFAULT);
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	_graphicsPSO->SetRasterizerState(rasterizerDesc);
+
+	if (_graphicsPSO->Finalize())
+	{
+		cmdList->BindPipelineState(_graphicsPSO);
+		cmdList->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		// 셰이더는 패스 상수의 _Resolution만 읽는다(픽셀 → NDC).
+		HRenderPassCBData passData = {};
+		passData.Resolution = inArgs.TargetSize;
+		cmdList->BindConstantBuffer(RootParam_RenderPassCB, &passData, sizeof(HRenderPassCBData));
+
+		PSharedPtr<IRawTexture> defaultTexture = HDirectXAPI::GetDefaultTexture();
+		for (uint64 i = 0; i < inArgs.CommandCount; ++i)
+		{
+			const H2DDrawCommand& command = inArgs.Commands[i];
+			if (command.IndexCount == 0 || (uint64)command.IndexOffset + command.IndexCount > inArgs.IndexCount)
+			{
+				continue;
+			}
+			if (command.ClipRight <= command.ClipLeft || command.ClipBottom <= command.ClipTop)
+			{
+				continue;
+			}
+
+			// 텍스처가 없으면 기본 텍스처(1x1 흰색) = 단색 사각형.
+			PSharedPtr<IRawTexture> texture = command.Texture;
+			if (texture.IsValid() == false || texture->IsValid() == false)
+			{
+				texture = defaultTexture;
+			}
+			if (texture.IsValid() == false || texture->IsValid() == false)
+			{
+				continue;
+			}
+
+			// 드로우마다 텍스처 표를 다시 올리므로(DrawIndexed가 디스크립터 표를 밀어 넣는다) 배치별로 텍스처를 바꿀 수 있다.
+			BindTextures(RootParam_Texture, { texture });
+			cmdList->SetScissorRect(HScissorRect(command.ClipLeft, command.ClipTop, command.ClipRight, command.ClipBottom));
+			cmdList->DrawIndexed(command.IndexCount, 1, command.IndexOffset, 0, 0);
+		}
+	}
+	else
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "Draw(H2DDrawArguments) : Fail Finalize PSO");
+	}
+
+	_graphicsPSO->SetBlendState(prevBlendDesc);
+	_graphicsPSO->SetRasterizerState(CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT));
+}
+
 void PDX12GraphicsCommand::ClearTexture(PSharedPtr<IRawTexture> inTexture) const
 {
 	PSharedPtr<PGraphicsCommandList> cmdList = HDirectXAPI::RequestGraphicsCommandList();

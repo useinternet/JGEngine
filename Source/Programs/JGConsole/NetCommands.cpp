@@ -7,10 +7,11 @@
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 #include "Network/GameplayNetSelfTest.h"
 
-// 리슨 서버 검증 명령 (Network_TODO Phase 1–4). 문법은 DevConsole_TODO 0-3 (`-이름=값`).
-//   JGConsole.exe net.test [transport|session|recovery|all]
-//   JGConsole.exe net.host -bind=127.0.0.1 -port=47771 -clients=2 -commands=1000 -seed=12345
-//   JGConsole.exe net.join -address=127.0.0.1 -port=47771 -players=3 -agent-seed=501 -name=ClientA
+// 리슨 서버 2 프로세스 검증 명령 (Server TODO Phase 4 · 5-6). 문법은 DevConsole_TODO 0-3 (`-이름=값`).
+//   JGConsole.exe net.host [-world] -bind=127.0.0.1 -port=47771 -clients=2 -commands=1000 -seed=12345
+//   JGConsole.exe net.join [-world] -address=127.0.0.1 -port=47771 -players=3 -agent-seed=501 -name=ClientA
+//   -world: 세션을 게임 인스턴스가 갖고 월드 · GameMasterActor · 컨트롤러를 거친다 (호스트가 월드 둘을 차례로 로드).
+// 호스트 · 클라 루프가 명령이 끝날 때까지 돌아 에디터 콘솔에서는 쓰지 않는다. 한 프로세스 검사 net.test 는 GameFrameWorks 모듈이 선언한다.
 // 잘못된 숫자는 예외 없이 거부한다 (핸들러가 false → 레지스트리가 사용법을 출력하고 종료 코드 1).
 
 namespace
@@ -75,23 +76,6 @@ namespace
 		return true;
 	}
 
-	bool executeNetTest(const HConsoleCommandArgs& args)
-	{
-		if (connectGameFrameWorks() == false)
-		{
-			return false;
-		}
-
-		PString which = "all";
-		if (args.GetPositionalCount() > 0)
-		{
-			which = args.GetPositional(0);
-		}
-		int32 failures = PGameplayNetSelfTest::Run(which);
-		std::cout << "net.test: " << (failures == 0 ? "OK" : "FAILED") << " (" << failures << " failures)" << std::endl;
-		return failures == 0;
-	}
-
 	bool executeNetHost(const HConsoleCommandArgs& args)
 	{
 		// -bind 기본은 127.0.0.1 (한 기계 안 검사). 다른 기계에서 접속받으려면 -bind= (빈 값 = 모든 인터페이스).
@@ -108,6 +92,10 @@ namespace
 		if (connectGameFrameWorks() == false)
 		{
 			return false;
+		}
+		if (args.Has("world") == true)
+		{
+			return PGameplayNetSelfTest::RunWorldHostProcess(bind, port, clients, commands, seed) == 0;
 		}
 		return PGameplayNetSelfTest::RunHostProcess(bind, port, clients, commands, seed) == 0;
 	}
@@ -129,24 +117,22 @@ namespace
 		{
 			return false;
 		}
+		if (args.Has("world") == true)
+		{
+			return PGameplayNetSelfTest::RunWorldJoinProcess(address, port, players, agentSeed, name) == 0;
+		}
 		return PGameplayNetSelfTest::RunJoinProcess(address, port, players, agentSeed, name) == 0;
 	}
 
-	HAutoConsoleCommand NetTestCommand(
-		"net.test",
-		"net.test [transport|session|recovery|all]",
-		"Run the listen-server self tests (loopback and same-process TCP)",
-		&executeNetTest);
-
 	HAutoConsoleCommand NetHostCommand(
 		"net.host",
-		"net.host [-bind=127.0.0.1] [-port=47771] [-clients=2] [-commands=1000] [-seed=12345]",
-		"Headless listen-server host for the two-process determinism test",
+		"net.host [-world] [-bind=127.0.0.1] [-port=47771] [-clients=2] [-commands=1000] [-seed=12345]",
+		"Headless listen-server host for the two-process determinism test (-world: through the game instance and world)",
 		&executeNetHost);
 
 	HAutoConsoleCommand NetJoinCommand(
 		"net.join",
-		"net.join [-address=127.0.0.1] [-port=47771] [-players=3] [-agent-seed=501] [-name=Client]",
-		"Headless client for the two-process determinism test",
+		"net.join [-world] [-address=127.0.0.1] [-port=47771] [-players=3] [-agent-seed=501] [-name=Client]",
+		"Headless client for the two-process determinism test (-world: through the game instance and world)",
 		&executeNetJoin);
 }

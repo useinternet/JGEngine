@@ -2,6 +2,7 @@
 #include "Actors/Actor.h"
 #include "Actors/GameplayEntityActor.h"
 #include "Actors/GameplayCue.h"
+#include "Core/GameplayBoardLayout.h"
 #include "GameMaster/GameMaster.h"
 #include "GameMasterActor.generation.h"
 
@@ -20,14 +21,19 @@ enum class EGameMasterActorSubmit : int32
 	Executed,
 	PendingChoice,
 	Buffered,
+	Sent,             // 클라: 호스트로 보냈다. 이벤트는 승인되면 오고, 거절은 세션의 OnLocalCommandRejected 로 온다
 };
 
 class PGameMasterActorObserver;
+class PGameplaySession;
 
 // 연출자. PGameMaster 를 들고 이벤트를 큐(Cue)로 재생하며, 엔티티 ↔ 액터 표를 갖는다.
-//   Submit → GameMaster 실행 → 이벤트 목록 → 큐 인스턴스 순차 재생 (프레임 틱)
+//   Submit → (입력 정책) → 세션 → GameMaster 실행 → 이벤트 목록 → 큐 인스턴스 순차 재생 (프레임 틱)
+// 게임 인스턴스 월드의 액터는 BeginPlay 에서 GameMaster 를 게임 인스턴스의 세션에 붙이고 EndPlay 에서 뗀다.
+// 명령은 세션만 GameMaster 에 낸다 (싱글도 Standalone 세션). 원격 · 승인 명령은 세션이 바로 적용하고 이 액터는 이벤트만 재생한다.
+// 게임 인스턴스 밖 월드(자체 테스트가 직접 만든 월드)에서는 세션 없이 GameMaster 에 바로 낸다.
 // 스폰된 엔티티의 액터는 그 이벤트의 큐가 시작하기 전에 만들고, 파괴된 엔티티의 액터는 그 큐가 끝난 뒤에 없앤다 (사망 연출이 액터를 쓴다).
-// 상태 교체(되돌리기 · 로드 · 리플레이) 시 바인딩을 전부 다시 만든다.
+// 상태 교체(되돌리기 · 로드 · 리플레이 · 문서 수신) 시 바인딩을 전부 다시 만든다.
 JGCLASS()
 class GAMEFRAMEWORKS_API JGGameMasterActor : public JGActor
 {
@@ -47,6 +53,7 @@ private:
 	EGameplayInputPolicy      _inputPolicy = EGameplayInputPolicy::Buffer;
 
 	HHashMap<uint64, PWeakPtr<JGActor>> _actorsByEntity;
+	HGameplayBoardLayout                _boardLayout;
 
 public:
 	JGGameMasterActor() = default;
@@ -69,7 +76,13 @@ public:
 		return prototype;
 	}
 
-	// 명령 제출. 정책에 따라 즉시 실행 · 버퍼 · 스킵 후 실행.
+	// 게임 시작. 권한 쪽(IsAuthority)에서만 부른다. 세션에 붙여 세션이 시작하고 참가자에게 초기 상태를 보낸다.
+	// 클라는 호스트가 보낸 시작을 받는다 (부르면 false).
+	bool StartGame(uint64 seed);
+	// 이 액터의 GameMaster 가 붙은 세션. 게임 인스턴스 밖 월드이거나 붙기 전이면 nullptr.
+	PSharedPtr<PGameplaySession> GetSession() const;
+
+	// 로컬 입력의 명령 제출. 정책에 따라 즉시 실행 · 버퍼 · 스킵 후 실행. 실행은 세션을 거친다.
 	EGameMasterActorSubmit Submit(const HGameplayCommand& command, PString* outReason = nullptr);
 	void SetInputPolicy(EGameplayInputPolicy policy);
 	EGameplayInputPolicy GetInputPolicy() const;
@@ -84,6 +97,10 @@ public:
 	void                          BindActor(const HGameplayEntityId& id, PSharedPtr<JGActor> actor);
 	void                          UnbindActor(const HGameplayEntityId& id);
 	void                          RebuildBindings();
+
+	// GameMaster 보드를 월드에 놓는 방법 (칸 좌표 ↔ 월드 위치, 보드 피킹). 기본은 보드 없음.
+	void                        SetBoardLayout(const HGameplayBoardLayout& layout);
+	const HGameplayBoardLayout& GetBoardLayout() const;
 
 protected:
 	virtual void OnBeginPlay() override;
@@ -104,4 +121,8 @@ private:
 	void finishActiveCue();
 	void flushBufferedCommands();
 	EGameMasterActorSubmit executeNow(const HGameplayCommand& command, PString* outReason);
+
+	PSharedPtr<PGameplaySession> findGameInstanceSession() const;   // 이 액터가 게임 인스턴스 월드에 있으면 그 세션
+	void bindSession();
+	void unbindSession();
 };

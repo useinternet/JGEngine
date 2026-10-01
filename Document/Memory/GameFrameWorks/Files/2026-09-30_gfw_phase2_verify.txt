@@ -1,0 +1,242 @@
+GameFrameWorks Phase 2 (2-2 메시 · 2-1 카메라 · 2-3 DevView · 2-5 피킹 시스템) 검증 기록
+작성 2026-09-30. 메인 트리 C:\Develop\JGEngine, 구성 DevelopEngine|x64. 명령 출력 원문에서 옮김.
+
+== 0단계. 착수 직전 기준선 (21:06~21:08, 메인 트리 Bin — 커밋 4c8ac73 뒤 다른 세션이 19:48~20:57 재빌드한 바이너리) ==
+JGConsole.exe gmtest            : exit 0 — GameMaster 92 passed 0 failed, World 19 passed 0 failed, gmtest: OK
+JGConsole.exe net.test all      : exit 0 — Network self test: 66 passed, 0 failed
+run_two_process.sh             : exit 0 — two-process: OK (seq 1000, checksum 16006860866352003711)
+crashwalk JGLauncher.exe 60s    : Process exited with code 0, [error] 0, [critical] 0, live blocks 0 (chunk 0 · 1)
+  warning 2 (기준선에도 있음): [Asset] NOT Support Asset Path / [Graphics] DevScene_Output ReadbackTextureImmediate called inside a frame
+
+== 빌드 (21:3x) ==
+PreBuild: Build/BatchFiles 에서 JGHeaderTool.exe exit 0 → JGBuildTool.exe exit 0. 새 JGCLASS 6개의 생성 파일 확인
+  (CameraActor · CameraComponent · PickShapeComponent · StaticMeshComponent · WorldView · GameplayDevView .generation.h/.cpp)
+MSBuild GUI.vcxproj            -p:BuildProjectReferences=false : exit 0, error 0, warning C 0
+MSBuild GameFrameWorks.vcxproj -p:BuildProjectReferences=false : exit 0, error 0, warning C 0
+MSBuild JGConsole.vcxproj      -p:BuildProjectReferences=false : exit 0
+  참조 빌드를 끈 이유: 같은 시각 다른 세션(Graphics 5-30)이 Core/FileIO/Json.h·.cpp 와 Graphics StaticMesh.cpp·Texture.cpp 를 고치는 중이었다.
+  Json.h 변경은 PJsonData 비가상 멤버 3개 추가뿐이라 GFW 컴파일 · 링크와 무관.
+
+== 변경 뒤 (21:4x) ==
+JGConsole.exe gmtest            : exit 0 — GameMaster 92 passed 0 failed, World 64 passed 0 failed (19 + Phase 2 45), gmtest: OK
+  [warning] 1 · [error] 1 줄은 기존 테스트가 일부러 내는 것 (11절 Undo 가드, R5 RequestChoice 거부)
+JGConsole.exe net.test all      : exit 0 — 66 passed, 0 failed
+run_two_process.sh             : exit 0 — two-process: OK (seq 1000, checksum 16006860866352003711)
+  → 체크섬이 기준선과 같다. 컴포넌트 테이블에 추가한 WriteEntity(읽기 전용)는 결정론 · 체크섬과 무관함을 확인
+crashwalk JGLauncher.exe 60s    : Process exited with code 0, [error] 0, [critical] 0, live blocks 0, warning 2 (기준선과 같은 두 줄)
+  (프로젝트 없이 띄운 에디터는 GameFrameWorks 를 연결하지 않는다 → 월드 뷰 · DevView 는 여기서 뜨지 않는다. 화면 검증은 아래 게임 프로젝트)
+
+== gmtest 결과 원문 (World self test 의 Phase 2 45줄 포함) ==
+  [PASS] initial state has 3 units
+  [PASS] start emits GameStarted
+  [PASS] start emits TurnStarted
+  [PASS] phase is TurnMain after start
+  [PASS] first actor is first unit in zone
+  [PASS] EnumerateLegal for first actor = 4 (EndTurn + 2 TestAct + TestPickAct), got 4
+  [PASS] TestAct executed ()
+  [PASS] target value 10 - (3 + 2 bonus) = 5, got 5
+  [PASS] TestValueChanged emitted
+  [PASS] event cause sequence is 0 for first command
+  [PASS] acting out of turn is rejected ()
+  [PASS] EndTurn executed
+  [PASS] current actor advanced to second unit
+  [PASS] EndTurn emits TurnEnded and TurnStarted
+  [PASS] lethal TestAct executed
+  [PASS] target destroyed at 0
+  [PASS] EntityDestroyed emitted
+  [PASS] trigger healed attacker 5 -> 6, got 6
+  [PASS] trigger reaction event has depth >= 1
+  [PASS] command log has 3 commands
+  [PASS] state changed after extra EndTurn
+  [PASS] Undo succeeds
+  [PASS] checksum restored after Undo
+  [PASS] command log restored after Undo
+  [PASS] Save succeeds
+  [PASS] Load succeeds
+  [PASS] loaded checksum equals saved checksum
+  [PASS] loaded command log has 3 commands
+  [PASS] loaded gameMaster accepts commands
+  [PASS] Replay succeeds
+  [PASS] replayed checksum equals original
+  [PASS] 3 runs produce identical checksums (3610002655716184455)
+  [PASS] TestPickAct returns PendingChoice
+  [PASS] ChoiceRequested emitted
+  [PASS] pending choice has 2 candidates
+  [PASS] other commands rejected while choice pending
+  [PASS] non-candidate selection rejected (choice pending)
+  [PASS] Save while pending succeeds
+  [PASS] loaded gameMaster keeps pending choice
+  [PASS] ResolveChoice executed ()
+  [PASS] ChoiceResolved emitted
+  [PASS] picked target 10 - (1 + 2 bonus) = 7, got 7
+  [PASS] no pending choice after resolve
+  [PASS] loaded gameMaster resolves the same choice
+  [PASS] random agent played 18 steps
+  [PASS] sequence equals steps played
+  [PASS] greedy agent played 12 steps
+  [PASS] random agent runs are reproducible
+  [PASS] hex distance (0,0)-(2,-1) = 2
+  [PASS] hex distance (0,0)-(3,0) = 3
+  [PASS] square path around a blocked cell has 4 steps, got 4
+  [PASS] path ends at the goal
+  [PASS] board SetPosition succeeds
+  [PASS] OccupantAt returns the unit
+  [PASS] cannot move onto a blocked cell
+  [PASS] square range 1 around center = 5 cells, got 5
+  [PASS] same seed gives same random sequence
+  [PASS] random stream counts calls
+  [PASS] shuffle keeps all entities
+  [PASS] shuffle is a permutation
+  [PASS] stale-target command executed ()
+  [PASS] new entity reuses the dead entity's index (the case being guarded)
+  [PASS] R1: SetBoardPosition on a dead id keeps the new entity's position
+  [PASS] R1: no phantom occupant left by the dead id
+  [PASS] R2: Add<T> on a dead id keeps the new entity's value 50, got 50
+  [PASS] R2: no components on dead ids
+  [PASS] R3: MoveToZone does not put the dead id into a zone
+  [PASS] R1/R3: no ZoneChanged / BoardMoved events for the dead id
+  [PASS] state Add<T> returns nullptr for a dead id
+  [PASS] ExportDocument produces text
+  [PASS] ImportDocument succeeds without Start
+  [PASS] document round trip keeps the checksum
+  [PASS] imported gameMaster is started
+  [PASS] sorted trigger order gives (10 - 5 + 1) * 2 = 12, got 12
+  [PASS] R7: same trigger order after ImportDocument (12 vs 12)
+  [PASS] rules fingerprint does not depend on registration order
+  [PASS] rules fingerprint changes when a handler is added
+  [PASS] agent runner Choose returns a command
+  [PASS] Choose does not change the state
+  [PASS] Undo is refused while disabled
+  [PASS] Undo works again when enabled
+  [PASS] R4 a choice asked by a trigger's effect re-enters that effect only (value 7 -> 7 after resolve)
+  [PASS] R5 RequestChoice outside an effect is rejected (returns false, nothing pending)
+  [PASS] R6a TurnEnded effect resolves in the ending turn (probe event 2, next TurnStarted 4)
+  [PASS] R6b RoundStarted effect changes this round's order (first actor E1.1, expected E1.1)
+  [PASS] EndTurn effect from a TurnStarted trigger skips that actor's turn
+  [PASS] a choice from a TurnEnded effect waits inside the ending turn
+  [PASS] after that choice the next actor's turn begins
+  [PASS] a document saved during the transition resumes to the same state
+  [PASS] R8 a trigger chain stops at MaxEffectDepth with EffectDepthExceeded (65 spawns)
+  [PASS] R16 300 commands past the snapshot limit keep 256 snapshots and undo still works
+  [PASS] R17 const HGameplayState gives only const components (static_assert above)
+== GameMaster self test: 92 passed, 0 failed ==
+  [PASS] game instance exists after module startup
+  [PASS] LoadWorld creates the active world
+  [PASS] loaded world has begun play
+  [PASS] gameMasterActor spawned into the world
+  [PASS] gameMasterActor drained the start events
+  [PASS] 3 entity actors bound after start, got 3
+  [PASS] entity id resolves to an actor
+  [PASS] bound actor carries its entity id
+  [PASS] gameMasterActor executed the command ()
+  [PASS] entity actor removed after EntityDestroyed, got 2
+  [PASS] destroyed entity no longer resolves
+  [PASS] command submitted while busy is buffered
+  [PASS] buffered command executed after the presentation drained
+  [PASS] bindings rebuilt after undo (1 -> 2)
+  [PASS] UnloadWorld ends play and clears the active world
+  [PASS] R11 an actor spawned and destroyed in one tick never enters the world
+  [PASS] R12 child world position (6.0, 2.0, 3.0) == (6, 2, 3)
+  [PASS] R13 the death cue finds its actor (asked 1, found 1) and the actor goes after the cue
+  [PASS] R15 spawn + destroy in one frame leaves no zombie (entity actors 1, alive entities 1)
+  [PASS] 2-2 the world owns one scene
+  [PASS] 2-2 no scene mesh before BeginPlay
+  [PASS] 2-2 BeginPlay places the mesh in the scene
+  [PASS] 2-2 a mesh component without a mesh has no scene mesh
+  [PASS] 2-2 SetMesh after BeginPlay places the mesh at once
+  [PASS] 2-2 the scene holds 2 meshes, got 2
+  [PASS] 2-2 tick copies the world matrix (13.0, 4.0, 5.0) == (13, 4, 5)
+  [PASS] 2-2 replacing the mesh replaces the scene mesh
+  [PASS] 2-2 destroying the actor (through its parent) removes its scene mesh
+  [PASS] 2-2 removing the component removes its scene mesh
+  [PASS] 2-2 EndPlay leaves no scene mesh, got 0
+  [PASS] 2-1 a camera actor registers a scene camera
+  [PASS] 2-1 the first camera becomes the active camera
+  [PASS] 2-1 a later camera does not take over by itself
+  [PASS] 2-1 Activate switches the active camera
+  [PASS] 2-1 fixed mode follows the actor transform
+  [PASS] 2-1 orbit places the camera at (0.000, 7.071, -7.071) == (0, 7.071, -7.071)
+  [PASS] 2-1 the viewport center ray starts at the camera and points at the orbit target
+  [PASS] 2-1 the viewport edge ray opens by half the horizontal fov (cos 0.8052 == 0.8052)
+  [PASS] 2-1 orbit input is clamped
+  [PASS] 2-1 destroying the active camera clears it and removes the scene camera
+  [PASS] 2-5 the nearest box is picked (distance 9.000 == 9)
+  [PASS] 2-5 a ray that misses every shape picks nothing
+  [PASS] 2-5 shapes behind the ray origin are not picked
+  [PASS] 2-5 a disabled shape is skipped
+  [PASS] 2-5 a zero-thickness rectangle is picked from above
+  [PASS] 2-5 a ray outside the rectangle misses it
+  [PASS] 2-5 the shape follows the actor rotation and scale (distance 9.672 == 9.672)
+  [PASS] 2-5 square cell (3, 4) center is (16, 1, 28)
+  [PASS] 2-5 a point inside a square cell maps to it
+  [PASS] 2-5 past the square cell edge maps to the neighbor
+  [PASS] 2-5 negative square coordinates round down
+  [PASS] 2-5 hex cell centers map back to their cells (q, r in -4..4)
+  [PASS] 2-5 all six hex neighbors are one CellSize away
+  [PASS] 2-5 hex cell boundaries are halfway between neighbor centers
+  [PASS] 2-5 a downward ray picks the square cell under it on the board plane
+  [PASS] 2-5 a ray parallel to the board picks no cell
+  [PASS] 2-5 a board behind the ray picks no cell
+  [PASS] 2-5 without a board layout no cell is picked
+  [PASS] 2-5 the unit has an entity actor
+  [PASS] 2-5 picking the unit returns its entity and cell (actor Entity_E0.1 entity E0.1 at (2.00, 1.00, 1.00) distance 9.00 / board cell (2, 1) at (2.00, 0.00, 1.00))
+  [PASS] 2-5 an empty cell returns only the cell
+  [PASS] 2-5 outside the 4x4 board returns no cell
+  [PASS] 2-5 a shape on a child actor resolves to the parent's entity
+  [PASS] 2-5 a click through the camera center reaches OnClick with cell (0, 3) (actor none / board cell (0, 3) at (0.00, 0.00, 3.00))
+== World self test: 64 passed, 0 failed ==
+
+== 추가 수정 (21:5x) ==
+- gmtest 월드 테스트의 게임 인스턴스 절: 이미 월드가 있으면(프로젝트 모드 에디터에서 게임이 도는 중) 건너뛴다. 전에는 게임 월드를 내리고 게임 엔트리 액터를 시험 월드에 스폰했다
+  (모듈 주석은 '에디터 안에서 돌려도 게임 인스턴스를 건드리지 않는다'고 적혀 있었으나 코드와 달랐다)
+- DevView Undo 버튼을 요약 둘째 줄 맨 앞으로 옮김 (체크섬 자릿수에 따라 위치가 흔들리지 않게)
+메인 트리 재빌드: GameFrameWorks · JGConsole exit 0, warning C 0. JGConsole.exe gmtest → GameMaster 92/0, World 64/0 (헤드리스에는 월드가 없어 건너뛰는 절 없음)
+
+== 화면 검증: 게임 프로젝트 GfwView (스크래치패드, 엔진 = 메인 트리) ==
+코드: Files/tools/gfw_phase2_testgame/ (재현 절차 README.md). CreateGameProject.bat exit 0 → GenerateProjectFiles.bat exit 0 (프로젝트 17개)
+MSBuild GfwView.sln DevelopEngine|x64 : exit 0, error 0 (첫 빌드 21:38:48 → 21:43:34, 증분 빌드 exit 0)
+실행 도구: Files/tools/gfw_worldview_verify.ps1 (런처 실행 → 30초 → 캡처 → 클릭 → 캡처 → WM_CLOSE)
+
+run1 (21:44): 화면 OK (월드 뷰에 타일 36 · X Bot 4, DevView). 클릭 미반영 — 전역 입력이 에디터 창에 닿지 않음(에디터가 맨 앞이 아니었음).
+  → 도구 수정: 클릭하는 동안만 에디터 창 topmost, 스레드를 DPI 비인식으로 두고 앱 논리 좌표로 커서 이동, 점 아래 창이 에디터인지 확인 후 누름, 끝나면 커서 · 창 순서 복원
+  에디터는 DPI 비인식(awareness 0): 125% 화면에서 물리 클라이언트 2400x1350 = 앱 좌표 1920x1080. 캡처(PrintWindow)는 논리 크기 내용을 왼쪽 위에 담고 나머지는 흰색
+run2 (21:5x): 클릭 2회 반영
+run3 (22:0x): 컴포넌트 · 시간차 명령 · 에디터 안 gmtest 추가 후 클릭 4회. 로그 원문:
+  [info][GameFrameWorks]: JGGameInstance: world loaded (GfwView)
+  [info][GfwView]: GfwView script: EndTurn by E0.1 -> result 1 ()
+  [info][GameMasterSelfTest]: GameMaster self test: 92 passed, 0 failed
+  [warning][WorldSelfTest]: game instance section skipped: world GfwView is already loaded
+  [info][GameFrameWorks]: PickController click: actor none / board cell (0, 3) at (0.00, 0.00, 3.00)
+  [info][WorldSelfTest]: World self test: 50 passed, 0 failed
+  [info][GameFrameWorks]: gmtest: OK (0 failures)
+  [info][GfwView]: GfwView script: gmtest in editor -> OK, game world kept, actors 45 -> 45
+  [info][GameFrameWorks]: Controller click: actor Entity_E3.1 entity E3.1 at (593.75, 21.90, 582.83) distance 1771.47 / board cell (3, 3) at (600.03, 0.00, 600.10)
+  [info][GameFrameWorks]: Controller click: actor none / board cell (5, 0) at (938.00, 0.00, 33.77)
+  [info][GameFrameWorks]: JGGameInstance: world unloaded (GfwView)
+  [info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 27, committed 1.69 MB, live blocks 0, remote pending 0 (total 0), large live 0
+  [info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+  종료: WM_CLOSE → ExitCode 0. [error] 1 = gmtest 의 R5 회귀 로그(의도). [warning] 4 = 기준선 2 + gmtest 11절 Undo 가드 + 게임 인스턴스 절 건너뜀 안내
+
+캡처 (Files/):
+  2026-09-30_gfw_phase2_worldview_devview.png : 월드 뷰(보드 · X Bot, 아래 줄 'Click (0.500, 0.500): actor Entity_E3.1 entity E3.1 ... / board cell (3, 3)'),
+                                               DevView(Sequence 1 · Actor E1.1 · Undo 1 · Checksum, 엔티티 4 + 테이블 이름, E3.1 선택 → Zone Units · Board (3, 3) · GfwViewUnit {Health 25, Team 1},
+                                               이벤트 로그 EndTurn 이벤트 5줄, Last pick)
+  2026-09-30_gfw_phase2_after_undo.png        : Undo 버튼 뒤 Sequence 0 · Actor E0.1 · Undo 0, 이벤트 로그 '-- state replaced', 바인딩 재구성 뒤에도 X Bot 4
+
+== 완료 기준 대조 ==
+2-2 JGStaticMeshComponent + PWorld::GetScene : 헤드리스 11 검사 + 런처에서 메시 액터(X Bot · 타일) 그려짐
+2-1 JGCameraComponent · JGCameraActor       : 헤드리스 10 검사(수명 · 활성 · 고정 · 궤도 · 뷰포트 광선 · 입력 제한) + 런처에서 궤도 카메라로 그림, 활성 카메라 → PSceneRenderer::Render 경로 = JGWorldView
+2-3 DevView (위젯 JGGameplayDevView)        : 요약 · 체크섬 · 엔티티/컴포넌트 JSON · 이벤트 로그 · Undo 버튼 · 마지막 피킹을 캡처로 확인
+2-5 피킹 시스템                              : 헤드리스 24 검사(판정 모양 · 보드 배치 사각/육각 · 컨트롤러 · 카메라 광선 → OnClick) + 런처에서 실제 클릭 → 엔티티 E3.1 · 칸 (3, 3), 빈 칸 (5, 0)
+
+== 22:0x 이후: GUI 세션 변경 반영 (C-2) ==
+같은 작업 트리에서 GUI 세션이 GUI 1-2 를 구현(미커밋, 21:40 GUI.dll): 위젯 플래그 · OnUpdateFrame 삭제, 열린 위젯은 OnUpdate 를 매 프레임 받는다(Update 단계 = GUI 생성 뒤 · GUI 드로우 앞).
+→ JGWorldView 렌더를 OnGenerateGUI 에서 OnUpdate 로 옮김(OnGenerateGUI 는 표시 · 입력만). GameFrameWorks 재빌드 exit 0 · warning C 0, 게임 솔루션 증분 빌드 exit 0
+run4: 같은 클릭 4회 + 월드 뷰 오른쪽 끌기 (500,400)→(600,400). 로그:
+  [info][GfwView]: GfwView script: EndTurn by E0.1 -> result 1 ()
+  [info][GameFrameWorks]: PickController click: actor none / board cell (0, 3) at (0.00, 0.00, 3.00)
+  [info][GfwView]: GfwView script: gmtest in editor -> OK, game world kept, actors 45 -> 45
+  [info][GameFrameWorks]: Controller click: actor Entity_E3.1 entity E3.1 at (593.75, 21.90, 582.83) distance 1771.47 / board cell (3, 3) at (600.03, 0.00, 600.10)
+  [info][GameFrameWorks]: Controller click: actor none / board cell (5, 0) at (938.00, 0.00, 33.77)
+  종료 0, live blocks 0. 캡처 Files/2026-09-30_gfw_phase2_orbit_drag.png: 궤도 yaw 약 +1 rad 로 보드를 옆에서 본다 (오른쪽 끌기 → JGCameraActor::AddOrbitInput 경로)
+주의: GFW 월드 뷰는 이제 GUI 1-2(OnUpdate 매 프레임)에 기댄다 → GUI 변경과 같은 커밋이거나 GUI 가 먼저 들어가야 한다

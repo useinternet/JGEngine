@@ -6,6 +6,11 @@
 #include "Network/Session/GameplayClientSession.h"
 #include "GameMaster/GameMaster.h"
 #include "GameMaster/Agents/GameplayAgent.h"
+#include "Core/GameInstance.h"
+#include "Core/World.h"
+#include "Actors/GameMasterActor.h"
+#include "Actors/GameplayControllerActor.h"
+#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -1306,6 +1311,427 @@ namespace
 		}
 		return seconds;
 	}
+
+	// ---- 월드 경유 (게임 인스턴스 · GameMasterActor · 컨트롤러) --------------------------------
+
+	// 게임 인스턴스 월드의 참가자. 엔트리 액터가 하는 일을 OnWorldLoaded 에서 한다 (테스트 규칙은 리플렉션 클래스가 아니다).
+	struct HNetWorldParticipant
+	{
+		PWeakPtr<JGGameMasterActor>         GameMasterActor;
+		PWeakPtr<JGGameplayControllerActor> Controller;
+		PSharedPtr<PGameMaster>             GameMaster;
+		PSharedPtr<PGameplayRandomAgent>    Agent;
+		int32                               PlayerCount  = 0;
+		uint64                              Seed         = 0;
+		int32                               WorldsLoaded = 0;
+		int32                               Submitted    = 0;
+		int32                               Executed     = 0;
+		int32                               Sent         = 0;
+	};
+
+	// 엔트리 액터 규약: 규칙 등록은 모든 기계, 초기 상태 구성과 시작은 권한 쪽만.
+	void enterNetWorld(PSharedPtr<PWorld> world, HNetWorldParticipant& participant)
+	{
+		PSharedPtr<JGGameMasterActor>         gameMasterActor = world->SpawnActor<JGGameMasterActor>(PName("GameMaster"));
+		PSharedPtr<JGGameplayControllerActor> controller      = world->SpawnActor<JGGameplayControllerActor>(PName("Controller"));
+		controller->SetGameMasterActor(gameMasterActor);
+
+		PSharedPtr<PGameMaster> gameMaster = Allocate<PGameMaster>();
+		setupNetRules(*gameMaster, participant.PlayerCount);
+		gameMasterActor->SetGameMaster(gameMaster);
+
+		participant.GameMasterActor = gameMasterActor;
+		participant.Controller      = controller;
+		participant.GameMaster      = gameMaster;
+		++participant.WorldsLoaded;
+
+		if (JGGameInstance::Get().IsAuthority() == true)
+		{
+			buildNetInitialState(*gameMaster, participant.PlayerCount);
+			gameMasterActor->StartGame(participant.Seed + (uint64)participant.WorldsLoaded);
+		}
+	}
+
+	// 로컬 플레이어 입력 한 번을 게임과 같은 경로로 넣는다: 컨트롤러 → GameMasterActor(입력 정책) → 세션.
+	bool driveController(HNetWorldParticipant& participant)
+	{
+		PSharedPtr<JGGameMasterActor>         gameMasterActor = participant.GameMasterActor.Pin();
+		PSharedPtr<JGGameplayControllerActor> controller      = participant.Controller.Pin();
+		if (gameMasterActor == nullptr || controller == nullptr || participant.GameMaster == nullptr || participant.GameMaster->IsStarted() == false)
+		{
+			return false;
+		}
+
+		PSharedPtr<PGameplaySession> session = gameMasterActor->GetSession();
+		if (session == nullptr || session->GetState() != EGameplaySessionState::Playing)
+		{
+			return false;
+		}
+		PSharedPtr<PGameplayClientSession> client = RawDynamicCast<PGameplayClientSession>(session);
+		if (client != nullptr && client->HasPendingLocalCommand() == true)
+		{
+			return false;
+		}
+		// 연출 중이면 기다린다 (Buffer 정책이 쌓아 두면 같은 입력을 두 번 넣게 된다).
+		if (gameMasterActor->IsBusy() == true)
+		{
+			return false;
+		}
+
+		const HGameplayState& state = participant.GameMaster->GetState();
+		if (state.Turn.IsFinished() == true)
+		{
+			return false;
+		}
+		HGameplayEntityId actor = controller->GetInputActor();
+		if (actor.IsValid() == false || controller->IsLocallyControlled(actor) == false)
+		{
+			return false;
+		}
+
+		EGameMasterActorSubmit result = EGameMasterActorSubmit::Rejected;
+		PString reason;
+		if (state.Choice.bPending == true)
+		{
+			HList<HGameplayEntityId> selection;
+			if (participant.Agent->ChooseOption(*participant.GameMaster, state.Choice, selection) == false)
+			{
+				return false;
+			}
+			result = controller->ResolveChoice(selection, &reason);
+		}
+		else
+		{
+			HGameplayCommand command;
+			if (participant.Agent->ChooseCommand(*participant.GameMaster, actor, command) == false)
+			{
+				return false;
+			}
+			if (controller->BeginCommand(command.Kind, command.Actor) == false)
+			{
+				return false;
+			}
+			for (const HGameplayEntityId& target : command.Targets)
+			{
+				controller->AddTarget(target);
+			}
+			for (int32 value : command.Params)
+			{
+				controller->AddParam(value);
+			}
+			for (const HGameplayCoord& coord : command.Path)
+			{
+				controller->AddPathCoord(coord);
+			}
+			result = controller->Commit(&reason);
+		}
+
+		if (result == EGameMasterActorSubmit::Rejected)
+		{
+			return false;
+		}
+		++participant.Submitted;
+		if (result == EGameMasterActorSubmit::Sent)
+		{
+			++participant.Sent;
+		}
+		else
+		{
+			++participant.Executed;
+		}
+		return true;
+	}
+
+	bool sameGame(const PGameMaster& lhs, const PGameMaster& rhs)
+	{
+		return lhs.GetState().Sequence == rhs.GetState().Sequence && lhs.Checksum() == rhs.Checksum();
+	}
+
+	// 살아 있는 엔티티마다 액터가 묶여 있는가 (연출 큐가 빈 뒤).
+	bool allEntitiesBound(const HNetWorldParticipant& participant)
+	{
+		PSharedPtr<JGGameMasterActor> gameMasterActor = participant.GameMasterActor.Pin();
+		if (gameMasterActor == nullptr || participant.GameMaster == nullptr)
+		{
+			return false;
+		}
+		HList<HGameplayEntityId> alive;
+		participant.GameMaster->GetState().Entities.CollectAlive(alive);
+		for (const HGameplayEntityId& id : alive)
+		{
+			if (gameMasterActor->FindActor(id) == nullptr)
+			{
+				return false;
+			}
+		}
+		return alive.empty() == false;
+	}
+
+	void tickWorld(JGGameInstance& gameInstance, HList<HNetParticipant>& peers, int32 ticks)
+	{
+		for (int32 i = 0; i < ticks; ++i)
+		{
+			gameInstance.Tick(NetTestDeltaSeconds);
+			for (HNetParticipant& peer : peers)
+			{
+				peer.Tick(NetTestDeltaSeconds);
+			}
+		}
+	}
+
+	// 기준 GameMaster 의 순번이 target 에 이를 때까지 월드 참가자(컨트롤러)와 커널 참가자들이 입력한다.
+	void playWorldUntil(JGGameInstance& gameInstance, HNetWorldParticipant& local, HList<HNetParticipant>& peers, PSharedPtr<PGameMaster> reference, uint32 targetSeq, int32 maxTicks)
+	{
+		for (int32 tick = 0; tick < maxTicks; ++tick)
+		{
+			if (reference == nullptr || reference->GetState().Sequence >= targetSeq)
+			{
+				return;
+			}
+			gameInstance.Tick(NetTestDeltaSeconds);
+			driveController(local);
+			for (HNetParticipant& peer : peers)
+			{
+				peer.Tick(NetTestDeltaSeconds);
+				driveInput(peer);
+			}
+		}
+	}
+
+	// 게임 인스턴스가 리슨 서버: 로비 입장 → 월드 로드(이동 알림 · 시작) → 컨트롤러 입력 → 월드 이동 → 떠나기.
+	void runWorldHostTests(HCheck& check, JGGameInstance& gameInstance)
+	{
+		constexpr int32  players = 3;
+		constexpr uint16 port    = 7401;
+		PSharedPtr<PNetLoopbackHub> hub = Allocate<PNetLoopbackHub>();
+
+		HGameplaySessionConfig config;
+		config.PlayerName          = "WorldHost";
+		config.MaxPlayers          = players;
+		config.DesyncDumpDirectory = "";
+		PSharedPtr<PGameplayHostSession> host = gameInstance.HostSession(port, config, Allocate<PNetLoopbackTransport>(hub));
+		check(host != nullptr && gameInstance.GetSession() == host && gameInstance.IsAuthority() == true, "game instance hosts a listen server");
+		if (host == nullptr)
+		{
+			return;
+		}
+
+		HList<HNetParticipant> clients;
+		clients.push_back(makeLoopbackClient(hub, port, players, "WorldA", 611, ""));
+		clients.push_back(makeLoopbackClient(hub, port, players, "WorldB", 612, ""));
+		int32 travels[2] = { 0, 0 };
+		for (int32 i = 0; i < 2; ++i)
+		{
+			HNetParticipant* client = &clients[i];
+			int32*           count  = &travels[i];
+			client->Client->OnTravelRequested.AddLambda([client, count](const PName&)
+			{
+				// 커널 클라가 이동을 따라간다: 새 GameMaster(규칙만)를 붙이면 뒤따르는 시작이 적용된다.
+				client->GameMaster = Allocate<PGameMaster>();
+				setupNetRules(*client->GameMaster, players);
+				client->Client->BindGameMaster(client->GameMaster);
+				++(*count);
+			});
+		}
+
+		tickWorld(gameInstance, clients, 30);
+		check(allClientsIn(clients, EGameplaySessionState::Ready) == true && host->GetConnectedPeerCount() == 2, "two clients joined the lobby before any world was loaded");
+
+		HNetWorldParticipant local;
+		local.PlayerCount = players;
+		local.Seed        = 4240;
+		local.Agent       = Allocate<PGameplayRandomAgent>(613);
+		HDelegateHandle loaded = gameInstance.OnWorldLoaded.AddLambda([&local](PSharedPtr<PWorld> world)
+		{
+			enterNetWorld(world, local);
+		});
+
+		gameInstance.LoadWorld(PName("NetWorldA"));
+		PSharedPtr<JGGameMasterActor>         gameMasterActor = local.GameMasterActor.Pin();
+		PSharedPtr<JGGameplayControllerActor> controller      = local.Controller.Pin();
+		check(local.GameMaster != nullptr && local.GameMaster->IsStarted() == true && host->GetState() == EGameplaySessionState::Playing, "entry StartGame started the game through the session");
+		check(gameMasterActor != nullptr && gameMasterActor->GetSession() == host, "GameMasterActor bound its GameMaster to the game instance session");
+		check(local.GameMaster != nullptr && local.GameMaster->IsUndoEnabled() == false, "local undo is off while bound to a listen server");
+
+		const HGameplayState& state = local.GameMaster->GetState();
+		check(controller != nullptr && controller->IsLocallyControlled(unitOfController(state, 0)) == true, "controller owns the local slot's actor");
+		check(controller != nullptr && controller->BeginCommand(PName("NetStrike"), unitOfController(state, 1)) == false, "controller refuses a remote player's actor");
+		check(controller != nullptr && controller->BeginCommand(PName("NetStrike"), unitOfController(state, players)) == false && controller->IsDrafting() == false, "controller refuses the AI's actor");
+
+		tickWorld(gameInstance, clients, 10);
+		check(travels[0] == 1 && travels[1] == 1 && allClientsIn(clients, EGameplaySessionState::Playing) == true,
+			PString::Format("clients followed the Travel and received StartGame (travels %d / %d, states %d / %d)", travels[0], travels[1], (int32)clients[0].Client->GetState(), (int32)clients[1].Client->GetState()));
+
+		playWorldUntil(gameInstance, local, clients, local.GameMaster, 300, 20000);
+		tickWorld(gameInstance, clients, 10);
+		bool bSame = true;
+		for (HNetParticipant& client : clients)
+		{
+			bSame = bSame && sameGame(*client.GameMaster, *local.GameMaster) == true && client.Client->GetDesyncCount() == 0;
+		}
+		check(local.GameMaster->GetState().Sequence >= 300 && bSame == true, PString::Format("world host and clients agree at seq %u, desync 0", local.GameMaster->GetState().Sequence));
+		check(local.Executed > 0 && local.Sent == 0 && clients[0].Submitted > 0 && clients[1].Submitted > 0,
+			PString::Format("inputs: host controller %d executed, clients %d / %d", local.Executed, clients[0].Submitted, clients[1].Submitted));
+		check(countCommandsBy(*local.GameMaster, unitOfController(local.GameMaster->GetState(), players)) > 0, "host session drove the AI in the world");
+		check(allEntitiesBound(local) == true, "every alive entity has an actor in the host world");
+
+		// 월드 이동: 호스트가 다른 월드를 로드하면 새 게임이 시작되고 클라가 따라온다.
+		PSharedPtr<PGameMaster> firstGame = local.GameMaster;
+		gameInstance.LoadWorld(PName("NetWorldB"));
+		check(local.WorldsLoaded == 2 && local.GameMaster != firstGame && local.GameMaster->IsStarted() == true, "second world started a new game");
+		tickWorld(gameInstance, clients, 10);
+		check(travels[0] == 2 && travels[1] == 2 && allClientsIn(clients, EGameplaySessionState::Playing) == true,
+			PString::Format("clients followed the second Travel (travels %d / %d)", travels[0], travels[1]));
+
+		playWorldUntil(gameInstance, local, clients, local.GameMaster, 150, 20000);
+		tickWorld(gameInstance, clients, 10);
+		bSame = true;
+		for (HNetParticipant& client : clients)
+		{
+			bSame = bSame && sameGame(*client.GameMaster, *local.GameMaster) == true && client.Client->GetDesyncCount() == 0;
+		}
+		check(local.GameMaster->GetState().Sequence >= 150 && bSame == true, PString::Format("after travel all agree at seq %u, desync 0", local.GameMaster->GetState().Sequence));
+
+		gameInstance.OnWorldLoaded.Remove(loaded);
+		gameInstance.UnloadWorld();
+		check(host->GetGameMaster() == nullptr, "unloading the world unbinds the GameMaster");
+		gameInstance.LeaveSession();
+		tickWorld(gameInstance, clients, 10);
+		check(gameInstance.GetSession() != nullptr && gameInstance.GetSession()->GetMode() == EGameplayNetMode::Standalone && allClientsIn(clients, EGameplaySessionState::Closed) == true,
+			"LeaveSession returns to standalone and closes the clients");
+	}
+
+	// 게임 인스턴스가 클라: 진행 중 입장(Welcome 의 월드 로드 · 문서) → 컨트롤러 입력(Sent) → 호스트 이동 → 호스트 종료 → 싱글로 이어받기.
+	void runWorldClientTests(HCheck& check, JGGameInstance& gameInstance)
+	{
+		constexpr int32  players = 2;
+		constexpr uint16 port    = 7402;
+		PSharedPtr<PNetLoopbackHub> hub = Allocate<PNetLoopbackHub>();
+
+		HNetParticipant host;
+		host.GameMaster = Allocate<PGameMaster>();
+		setupNetRules(*host.GameMaster, players);
+		buildNetInitialState(*host.GameMaster, players);
+		host.Agent = Allocate<PGameplayRandomAgent>(621);
+		HGameplaySessionConfig hostConfig;
+		hostConfig.PlayerName          = "KernelHost";
+		hostConfig.MaxPlayers          = players;
+		hostConfig.DesyncDumpDirectory = "";
+		host.Loopback = Allocate<PNetLoopbackTransport>(hub);
+		host.Host     = PGameplayHostSession::CreateListenServer(host.Loopback, port, hostConfig);
+		host.Host->BindGameMaster(host.GameMaster);
+		host.Host->NotifyTravel(PName("NetWorldC"));
+		host.Host->StartGame(99);
+
+		HList<HNetParticipant> peers;
+		peers.push_back(host);
+		HNetParticipant& hostRef = peers[0];
+		for (int32 tick = 0; tick < 50; ++tick)
+		{
+			hostRef.Tick(NetTestDeltaSeconds);
+			driveInput(hostRef);
+		}
+		uint32 seqBeforeJoin = hostRef.GameMaster->GetState().Sequence;
+
+		HNetWorldParticipant local;
+		local.PlayerCount = players;
+		local.Agent       = Allocate<PGameplayRandomAgent>(622);
+		HDelegateHandle loaded = gameInstance.OnWorldLoaded.AddLambda([&local](PSharedPtr<PWorld> world)
+		{
+			enterNetWorld(world, local);
+		});
+
+		HGameplaySessionConfig config;
+		config.PlayerName          = "WorldClient";
+		config.DesyncDumpDirectory = "";
+		PSharedPtr<PGameplayClientSession> client = gameInstance.JoinSession("loopback", port, config, Allocate<PNetLoopbackTransport>(hub));
+		check(client != nullptr && gameInstance.IsAuthority() == false, "joined game instance is not the authority");
+		if (client == nullptr)
+		{
+			gameInstance.OnWorldLoaded.Remove(loaded);
+			return;
+		}
+
+		tickWorld(gameInstance, peers, 30);
+		check(gameInstance.GetWorld() != nullptr && gameInstance.GetWorld()->GetName() == PName("NetWorldC"), "client loaded the host's world named in Welcome");
+		check(client->GetState() == EGameplaySessionState::Playing && local.GameMaster != nullptr && sameGame(*local.GameMaster, *hostRef.GameMaster) == true,
+			PString::Format("mid-game join: document applied to the world's GameMaster at seq %u (host was at %u before the join)", local.GameMaster != nullptr ? local.GameMaster->GetState().Sequence : 0, seqBeforeJoin));
+
+		PSharedPtr<JGGameMasterActor>         gameMasterActor = local.GameMasterActor.Pin();
+		PSharedPtr<JGGameplayControllerActor> controller      = local.Controller.Pin();
+		check(gameMasterActor != nullptr && gameMasterActor->GetSession() == client, "client GameMasterActor bound at BeginPlay");
+		check(allEntitiesBound(local) == true, "client world rebuilt entity actors from the document");
+		check(controller != nullptr && controller->BeginCommand(PName("NetStrike"), unitOfController(local.GameMaster->GetState(), 0)) == false, "client controller refuses the host's actor");
+		check(controller != nullptr && controller->IsLocallyControlled(unitOfController(local.GameMaster->GetState(), 1)) == true, "client controller owns its slot's actor");
+		check(gameMasterActor != nullptr && gameMasterActor->StartGame(5) == false, "StartGame is refused on a client");
+
+		playWorldUntil(gameInstance, local, peers, hostRef.GameMaster, seqBeforeJoin + 200, 20000);
+		tickWorld(gameInstance, peers, 10);
+		check(sameGame(*local.GameMaster, *hostRef.GameMaster) == true && client->GetDesyncCount() == 0 && local.Sent > 0 && local.Executed == 0,
+			PString::Format("client controller commands were sent (%d) and replicated, seq %u, desync 0", local.Sent, local.GameMaster->GetState().Sequence));
+
+		// 호스트 이동: 이동 알림 → 새 게임 시작. 클라 게임 인스턴스가 월드를 바꾸고 새 GameMaster 가 보관된 시작을 받는다.
+		PSharedPtr<PGameMaster> firstGame = local.GameMaster;
+		hostRef.Host->UnbindGameMaster();
+		hostRef.Host->NotifyTravel(PName("NetWorldD"));
+		hostRef.GameMaster = Allocate<PGameMaster>();
+		setupNetRules(*hostRef.GameMaster, players);
+		buildNetInitialState(*hostRef.GameMaster, players);
+		hostRef.Host->BindGameMaster(hostRef.GameMaster);
+		hostRef.Host->StartGame(123);
+		tickWorld(gameInstance, peers, 10);
+		check(gameInstance.GetWorld() != nullptr && gameInstance.GetWorld()->GetName() == PName("NetWorldD") && local.WorldsLoaded == 2 && local.GameMaster != firstGame,
+			"client followed the host's Travel into a new world");
+		check(client->GetState() == EGameplaySessionState::Playing && sameGame(*local.GameMaster, *hostRef.GameMaster) == true, "held StartGame applied to the new world's GameMaster");
+
+		playWorldUntil(gameInstance, local, peers, hostRef.GameMaster, 100, 20000);
+		tickWorld(gameInstance, peers, 10);
+		check(sameGame(*local.GameMaster, *hostRef.GameMaster) == true && client->GetDesyncCount() == 0, PString::Format("after travel client agrees at seq %u", local.GameMaster->GetState().Sequence));
+
+		// 호스트가 닫으면 클라 세션은 Closed. 월드는 그대로 남는다. 싱글로 돌아가면 그 게임을 이어받는다.
+		hostRef.Host->Close("host left");
+		tickWorld(gameInstance, peers, 10);
+		check(client->GetState() == EGameplaySessionState::Closed && gameInstance.HasWorld() == true, "host closed: client session closed, world kept");
+
+		uint32 seqBeforeLeave = local.GameMaster->GetState().Sequence;
+		gameInstance.LeaveSession();
+		PSharedPtr<PGameplaySession> standalone = gameInstance.GetSession();
+		gameMasterActor = local.GameMasterActor.Pin();   // 이동 뒤 새 월드의 액터
+		check(standalone != nullptr && standalone->GetMode() == EGameplayNetMode::Standalone && gameMasterActor != nullptr && gameMasterActor->GetSession() == standalone,
+			"LeaveSession rebinds the world's GameMaster to a standalone session");
+		HList<HNetParticipant> none;
+		playWorldUntil(gameInstance, local, none, local.GameMaster, seqBeforeLeave + 20, 5000);
+		check(standalone != nullptr && standalone->GetState() == EGameplaySessionState::Playing && local.GameMaster->GetState().Sequence >= seqBeforeLeave + 20 && local.Executed > 0,
+			PString::Format("standalone adopted the started game and plays on (seq %u -> %u)", seqBeforeLeave, local.GameMaster->GetState().Sequence));
+		check(local.GameMaster->IsUndoEnabled() == true, "local undo is back in standalone");
+
+		gameInstance.OnWorldLoaded.Remove(loaded);
+		gameInstance.UnloadWorld();
+	}
+
+	void runWorldTests(HCheck& check)
+	{
+		if (JGGameInstance::HasInstance() == false)
+		{
+			check(false, "world tests need the game instance (connect GameFrameWorks)");
+			return;
+		}
+
+		// 게임이 월드를 띄운 프로세스(프로젝트 모드 에디터)에서는 건드리지 않는다.
+		JGGameInstance& gameInstance = JGGameInstance::Get();
+		PSharedPtr<PGameplaySession> session = gameInstance.GetSession();
+		if (gameInstance.HasWorld() == true || session == nullptr || session->GetMode() != EGameplayNetMode::Standalone)
+		{
+			info("world section skipped: the game instance already has a world or a network session");
+			return;
+		}
+
+		runWorldHostTests(check, gameInstance);
+		runWorldClientTests(check, gameInstance);
+
+		PSharedPtr<PGameplaySession> after = gameInstance.GetSession();
+		check(gameInstance.HasWorld() == false && after != nullptr && after->GetMode() == EGameplayNetMode::Standalone, "game instance left standalone with no world");
+	}
 }
 
 int32 PGameplayNetSelfTest::Run(const PString& which)
@@ -1326,6 +1752,10 @@ int32 PGameplayNetSelfTest::Run(const PString& which)
 	if (bAll == true || which == PString("recovery"))
 	{
 		runRecoveryTests(check);
+	}
+	if (bAll == true || which == PString("world"))
+	{
+		runWorldTests(check);
 	}
 
 	std::cout << "== Network self test: " << check.Passed << " passed, " << check.Failures << " failed ==" << std::endl;
@@ -1459,4 +1889,193 @@ int32 PGameplayNetSelfTest::RunJoinProcess(const PString& address, uint16 port, 
 
 	bool bStarted = client.GameMaster->IsStarted();
 	return (bStarted == true && client.Client->GetDesyncCount() == 0) ? 0 : 1;
+}
+
+int32 PGameplayNetSelfTest::RunWorldHostProcess(const PString& bindAddress, uint16 port, int32 clientCount, int32 commandCount, uint64 seed)
+{
+	if (JGGameInstance::HasInstance() == false)
+	{
+		std::cout << "net.host: no game instance" << std::endl;
+		return 2;
+	}
+	JGGameInstance& gameInstance = JGGameInstance::Get();
+	int32 players = clientCount + 1;
+
+	HGameplaySessionConfig config;
+	config.PlayerName          = "Host";
+	config.MaxPlayers          = players;
+	config.DesyncDumpDirectory = "";
+	PSharedPtr<PNetTcpTransport> transport = Allocate<PNetTcpTransport>();
+	transport->SetListenAddress(bindAddress);
+	PSharedPtr<PGameplayHostSession> host = gameInstance.HostSession(port, config, transport);
+	if (host == nullptr)
+	{
+		std::cout << "net.host: cannot listen on " << bindAddress.GetRawString() << ":" << port << std::endl;
+		return 2;
+	}
+
+	HNetWorldParticipant local;
+	local.PlayerCount = players;
+	local.Seed        = seed;
+	local.Agent       = Allocate<PGameplayRandomAgent>(seed + 1);
+	HDelegateHandle loaded = gameInstance.OnWorldLoaded.AddLambda([&local](PSharedPtr<PWorld> world)
+	{
+		enterNetWorld(world, local);
+	});
+	std::cout << "net.host: world mode, listening on port " << port << ", waiting for " << clientCount << " clients" << std::endl;
+
+	std::chrono::steady_clock::time_point last  = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point begin = last;
+	int32 exitCode = 0;
+	while (host->GetConnectedPeerCount() < clientCount)
+	{
+		gameInstance.Tick(elapsedSince(last));
+		if (std::chrono::steady_clock::now() - begin > std::chrono::seconds(60))
+		{
+			std::cout << "net.host: timed out waiting for clients (" << host->GetConnectedPeerCount() << ")" << std::endl;
+			exitCode = 3;
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+
+	// 로비 → 월드 1 → 절반 진행 → 월드 2 로 이동(새 게임) → 나머지 진행. 클라는 이동 알림을 따라온다.
+	uint32 firstHalf  = (uint32)(commandCount / 2 > 0 ? commandCount / 2 : 1);
+	uint32 secondHalf = (uint32)(commandCount - (int32)firstHalf > 0 ? commandCount - (int32)firstHalf : 1);
+	const char* worlds[2]  = { "NetWorld1", "NetWorld2" };
+	uint32      targets[2] = { firstHalf, secondHalf };
+	begin = std::chrono::steady_clock::now();
+	for (int32 index = 0; index < 2 && exitCode == 0; ++index)
+	{
+		gameInstance.LoadWorld(PName(worlds[index]));
+		while (exitCode == 0 && local.GameMaster != nullptr && local.GameMaster->GetState().Sequence < targets[index])
+		{
+			gameInstance.Tick(elapsedSince(last));
+			driveController(local);
+			if (host->GetConnectedPeerCount() < clientCount)
+			{
+				std::cout << "net.host: a client left early" << std::endl;
+				exitCode = 4;
+			}
+			if (std::chrono::steady_clock::now() - begin > std::chrono::seconds(300))
+			{
+				std::cout << "net.host: timed out at seq " << local.GameMaster->GetState().Sequence << std::endl;
+				exitCode = 5;
+			}
+			std::this_thread::sleep_for(std::chrono::microseconds(200));
+		}
+	}
+
+	if (exitCode == 0 && local.GameMaster != nullptr)
+	{
+		float64 seconds = std::chrono::duration<float64>(std::chrono::steady_clock::now() - begin).count();
+		std::cout << PString::Format("net.host: world=%s worlds=%d seq=%u checksum=%llu seconds=%.2f executed=%d",
+			gameInstance.GetWorld()->GetName().ToString(), local.WorldsLoaded, local.GameMaster->GetState().Sequence, local.GameMaster->Checksum(), seconds, local.Executed).GetRawString() << std::endl;
+	}
+
+	gameInstance.OnWorldLoaded.Remove(loaded);
+	gameInstance.UnloadWorld();
+	gameInstance.LeaveSession();
+	return exitCode;
+}
+
+int32 PGameplayNetSelfTest::RunWorldJoinProcess(const PString& address, uint16 port, int32 playerCount, uint64 agentSeed, const PString& name)
+{
+	if (JGGameInstance::HasInstance() == false)
+	{
+		std::cout << "net.join: no game instance" << std::endl;
+		return 2;
+	}
+	JGGameInstance& gameInstance = JGGameInstance::Get();
+
+	HNetWorldParticipant local;
+	local.PlayerCount = playerCount;
+	local.Agent       = Allocate<PGameplayRandomAgent>(agentSeed);
+	HDelegateHandle loaded = gameInstance.OnWorldLoaded.AddLambda([&local](PSharedPtr<PWorld> world)
+	{
+		enterNetWorld(world, local);
+	});
+
+	HGameplaySessionConfig config;
+	config.PlayerName          = name;
+	config.DesyncDumpDirectory = "NetDesync";
+
+	std::chrono::steady_clock::time_point last  = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point begin = last;
+	int32 exitCode = 0;
+
+	// 호스트가 아직 안 떴으면 거부된다. 잠시 뒤 다시 시도한다.
+	PSharedPtr<PGameplayClientSession> client;
+	while (true)
+	{
+		client = gameInstance.JoinSession(address, port, config);
+		while (client->GetState() == EGameplaySessionState::Connecting)
+		{
+			gameInstance.Tick(elapsedSince(last));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		if (client->GetState() != EGameplaySessionState::Closed)
+		{
+			break;
+		}
+		if (std::chrono::steady_clock::now() - begin > std::chrono::seconds(30))
+		{
+			std::cout << "net.join: cannot join " << address.GetRawString() << ":" << port << " (" << client->GetCloseReason().GetRawString() << ")" << std::endl;
+			exitCode = 2;
+			break;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+	}
+
+	begin = std::chrono::steady_clock::now();
+	while (exitCode == 0 && client->GetState() != EGameplaySessionState::Closed)
+	{
+		gameInstance.Tick(elapsedSince(last));
+		driveController(local);
+		if (std::chrono::steady_clock::now() - begin > std::chrono::seconds(300))
+		{
+			std::cout << "net.join: timed out" << std::endl;
+			exitCode = 3;
+		}
+		std::this_thread::sleep_for(std::chrono::microseconds(200));
+	}
+
+	if (exitCode == 0)
+	{
+		PSharedPtr<PWorld> world = gameInstance.GetWorld();
+		std::cout << PString::Format("net.join: name=%s slot=%d world=%s worlds=%d seq=%u checksum=%llu desyncs=%d sent=%d reason=%s",
+			name, client->GetLocalSlot(), world != nullptr ? world->GetName().ToString() : PString("none"), local.WorldsLoaded,
+			local.GameMaster != nullptr ? local.GameMaster->GetState().Sequence : 0, local.GameMaster != nullptr ? local.GameMaster->Checksum() : 0,
+			client->GetDesyncCount(), local.Sent, client->GetCloseReason()).GetRawString() << std::endl;
+
+		bool bStarted = local.GameMaster != nullptr && local.GameMaster->IsStarted() == true;
+		exitCode = (bStarted == true && client->GetDesyncCount() == 0 && local.WorldsLoaded == 2) ? 0 : 1;
+	}
+
+	gameInstance.OnWorldLoaded.Remove(loaded);
+	gameInstance.UnloadWorld();
+	gameInstance.LeaveSession();
+	return exitCode;
+}
+
+namespace
+{
+	// net.test 는 GameFrameWorks 모듈에 둔다 (모듈의 검사 명령은 그 모듈에 선언한다). net.host · net.join 은 JGConsole(NetCommands.cpp).
+	bool executeNetTest(const HConsoleCommandArgs& args)
+	{
+		PString which = "all";
+		if (args.GetPositionalCount() > 0)
+		{
+			which = args.GetPositional(0);
+		}
+		int32 failures = PGameplayNetSelfTest::Run(which);
+		std::cout << "net.test: " << (failures == 0 ? "OK" : "FAILED") << " (" << failures << " failures)" << std::endl;
+		return failures == 0;
+	}
+
+	HAutoConsoleCommand NetTestCommand(
+		"net.test",
+		"net.test [transport|session|recovery|world|all]",
+		"Run the listen-server self tests (loopback, same-process TCP, game instance world)",
+		&executeNetTest);
 }

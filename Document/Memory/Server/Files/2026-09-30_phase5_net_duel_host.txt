@@ -1,0 +1,244 @@
+[:44056:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 386926133498122585. pages are created on first request
+[:44056:][info][Core]: Active Thread: [331907093]
+[:44056:][info][Core]: Active Thread: [2227453211]
+[:44056:][info][Core]: Active Thread: [1890160426]
+[:44056:][info][Core]: Active Thread: [3353283515]
+[:44056:][info][Core]: Active Thread: [2407741976]
+[:44056:][info][Core]: Active Thread: [3177770834]
+[:44056:][info][Core]: Active Thread: [845182125]
+[:44056:][info][Core]: Active Thread: [2778241218]
+[:44056:][info][Core]: Active Thread: [4221288263]
+[:44056:][info][Core]: Active Thread: [4080392900]
+[:44056:][info][Core]: Active Thread: [607876092]
+[:44056:][info][Core]: Active Thread: [1898019102]
+[:44056:][info][Core]: Active Thread: [831293026]
+[:44056:][info][Core]: Active Thread: [1354722390]
+[:44056:][info][Core]: Active Thread: [337076645]
+[:44056:][info][Core]: Active Thread: [122040127]
+[:44056:][info][Core]: Active Thread: [2544513430]
+[:44056:][info][Core]: Active Thread: [3742265331]
+[:44056:][info][Core]: Active Thread: [4158712301]
+[:44056:][info][Core]: Active Thread: [3842304257]
+[:44056:][info][Core]: Active Thread: [3088488404]
+[:44056:][info][Core]: Active Thread: [1351720222]
+[:44056:][info][Core]: Active Thread: [774851835]
+[:44056:][info][Core]: Active Thread: [2766049937]
+[:44056:][info][Core]: Active Thread: [20329470]
+[:44056:][info][Core]: Active Thread: [595867420]
+[:44056:][info][Core]: Active Thread: [334387521]
+[:44056:][info][Core]: Active Thread: [3756310952]
+[:44056:][info][Core]: Active Thread: [861471228]
+[:44056:][info][Core]: Active Thread: [3415050780]
+[:44056:][info][Core]: Active Thread: [3723939279]
+[:44056:][info][Core]: Active Thread: [2130416453]
+[:44056:][info][Core]: Active Thread Totoal Count: 32 
+[:44056:][info][Core]: Project NetDuel: project C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/games/NetDuel/, engine C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt/
+[:44056:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.62 MB)
+[:44056:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.69 MB)
+[:44056:][trace][Graphics]: DirectX12 Init Start
+[:44056:][trace][Graphics]: Success Create D3D12Device
+[:44056:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:44056:][info][Graphics]: VideoMemory : 16050  MB
+[:44056:][trace][Graphics]: Create DescriptorAllocator...
+[:44056:][trace][Graphics]: Create CommandQueue...
+[:44056:][trace][Graphics]: Create ResourceStagingManager...
+[:44056:][trace][Graphics]: Create FrameBuffer...
+[:44056:][trace][Graphics]: Create Default Resources...
+[:44056:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:44056:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:44056:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:44056:][info][Graphics]: Start Collect Shader in (C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt/Source/Shader)
+[:44056:][trace][Graphics]: Collect compute_shader_template
+[:44056:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.81 MB)
+[:44056:][trace][Graphics]: Collect graphics_shader_template
+[:44056:][trace][Graphics]: Collect scene_shader
+[:44056:][info][Graphics]: Complete Collect Shader
+[:44056:][trace][Graphics]: DirectX12 Init End
+[:44056:][trace][Graphics]: Startup Graphics Module...
+[:44056:][trace][Asset]: Startup Asset Module...
+[:44056:][trace][Graphics]: Register DevScene_Output in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_Output   Ref : 1
+[:44056:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo   Ref : 1
+[:44056:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 1
+[:44056:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:44056:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 1
+[:44056:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Depth   Ref : 1
+[:44056:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_DepthStencil   Ref : 1
+[:44056:][trace][Graphics]: Register DevScene_CompositeMaterial in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_CompositeMaterial   Ref : 1
+[:44056:][info][GameFrameWorks]: GameFrameWorks module startup
+[:44056:][info][Network]: PNetTcpTransport: listening on port 47791
+[:44056:][info][Network]: PGameplayHostSession: listen server on port 47791, 4 slots
+[:44056:][info][GameFrameWorks]: JGGameInstance: hosting on port 47791 as Host
+[:44056:][trace][Graphics]: Register WorldView_Output in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_Output   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_GBuffer_Albedo in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_GBuffer_Albedo   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_GBuffer_NormalMetallic in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_GBuffer_NormalMetallic   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_GBuffer_SpecularRoughness in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_GBuffer_SpecularRoughness   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_GBuffer_Depth in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_GBuffer_Depth   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_DepthStencil in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_DepthStencil   Ref : 1
+[:44056:][trace][Graphics]: Register WorldView_CompositeMaterial in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : WorldView_CompositeMaterial   Ref : 1
+[:44056:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:44056:][info][NetDuel]: NetDuel entry actor entered world: mode=ListenServer authority=1
+[:44056:][info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[:44056:][info][NetDuel]: Startup NetDuel Module...
+[:44056:][info][NetDuelEditor]: Startup NetDuelEditor Module...
+[:44056:][trace][JGEditor]: Startup JGEditor Module...
+[:44056:][info][Core]: Recognized Class List...
+[:44056:][debug][Core]: - JGNetDuelEntryActor
+[:44056:][debug][Core]: - JGStaticMeshComponent
+[:44056:][debug][Core]: - JGGameplayEntityComponent
+[:44056:][debug][Core]: - JGAssetImporter
+[:44056:][debug][Core]: - JGMemoryStatistcs
+[:44056:][debug][Core]: - JGGameplayEntityActor
+[:44056:][debug][Core]: - JGDevConsole
+[:44056:][debug][Core]: - JGAsset
+[:44056:][debug][Core]: - JGDevFeature
+[:44056:][debug][Core]: - JGDevScene
+[:44056:][debug][Core]: - JGDevSettings
+[:44056:][debug][Core]: - JGStaticMesh
+[:44056:][debug][Core]: - JGTexture
+[:44056:][debug][Core]: - JGFBXAssetImporter
+[:44056:][debug][Core]: - JGActor
+[:44056:][debug][Core]: - JGCameraComponent
+[:44056:][debug][Core]: - JGCameraActor
+[:44056:][debug][Core]: - JGGameEntryActor
+[:44056:][debug][Core]: - JGPickShapeComponent
+[:44056:][debug][Core]: - JGGameMasterActor
+[:44056:][debug][Core]: - JGGameplayControllerActor
+[:44056:][debug][Core]: - JGGameplayCue
+[:44056:][debug][Core]: - JGActorComponent
+[:44056:][debug][Core]: - JGGameInstance
+[:44056:][debug][Core]: - JGGameplayCommandHandler
+[:44056:][debug][Core]: - JGGameplayDevView
+[:44056:][debug][Core]: - JGGameplayEffect
+[:44056:][debug][Core]: - JGGameplayModifier
+[:44056:][debug][Core]: - JGGameplayTrigger
+[:44056:][debug][Core]: - JGWorldView
+[:44056:][debug][Core]: - JGWidget
+[:44056:][debug][Core]: - JGWidgetComponent
+[:44056:][trace][Asset]: Start Load Assets in C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt/Content
+[:44056:][trace][Asset]: Start Load Assets in C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/games/NetDuel/Content
+[:44056:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:44056:][trace][Graphics]: Graphics PSO created. cache size 1
+[:44056:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:44056:][info][Network]: PGameplayHostSession: slot 1 joined (Guest)
+[:44056:][info][Network]: PGameplayHostSession: sent document to slot 1 at seq 5
+[:50156:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 9610816662463003160. pages are created on first request
+[:50156:][warning][Asset]: NOT Support Asset Path
+[:44056:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.12 MB)
+[:50156:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:50156:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:50156:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:50156:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:50156:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:50156:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:50156:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:50156:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:50156:][trace][Core]: Success Load at C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt/Content/TempAsset/Sample.jgasset
+[:50156:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:44056:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:44056:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:44056:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:44056:][trace][Graphics]: Graphics PSO created. cache size 2
+[:44056:][info][NetDuel]: NetDuel: finished mode=ListenServer slot=0 seq=13 checksum=9198514108868742568 winner=0 submitted=10 desyncs=0
+[:44056:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 1
+[:44056:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:44056:][trace][Graphics]: Register DevScene_Output_ReadbackStaging in ResourceRefMap
+[:44056:][trace][Graphics]: Add Counting Resource : DevScene_Output_ReadbackStaging   Ref : 1
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_Output_ReadbackStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_Output_ReadbackStaging in ResourceRefMap
+[:44056:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:44056:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
+[:44056:][info][NetDuelEditor]: Shutdown NetDuelEditor Module...
+[:44056:][info][NetDuel]: Shutdown NetDuel Module...
+[:44056:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetDuel)
+[:44056:][info][Network]: PGameplaySession: closed (shutdown)
+[:44056:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:44056:][trace][Asset]: Shutdown Asset Module...
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_Output   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_Output in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_DepthStencil   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_DepthStencil in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_Output   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_Output in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_GBuffer_SpecularRoughness   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_GBuffer_SpecularRoughness in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_DepthStencil   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_DepthStencil in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Depth   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_GBuffer_Depth in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : DevScene_CompositeMaterial   Ref : 0
+[:44056:][trace][Graphics]: UnRegister DevScene_CompositeMaterial in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_GBuffer_Albedo   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_GBuffer_Albedo in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_GBuffer_NormalMetallic   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_GBuffer_NormalMetallic in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_GBuffer_Depth   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_GBuffer_Depth in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : WorldView_CompositeMaterial   Ref : 0
+[:44056:][trace][Graphics]: UnRegister WorldView_CompositeMaterial in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:44056:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:44056:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:44056:][trace][Graphics]: Shutdown Graphics Module...
+[:44056:][trace][JGEditor]: Shutdown JGEditor Module...
+[:44056:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 17, committed 1.06 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:44056:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 43 (total 54), large live 0
+DLL unloaded at 00007FFB27DD0000
+DLL unloaded at 00007FF9F7700000
+DLL unloaded at 00007FFA068B0000
+WM_CLOSE posted to 0000000000881486
+Process exited with code 0 (0x00000000)

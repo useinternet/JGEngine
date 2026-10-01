@@ -1,0 +1,76 @@
+Server Phase 5 (월드 연결) 검증 결과 — 2026-09-30 22:17 ~ 23:13
+작업 방식: 메인 트리 스냅숏(22:20, 다른 트랙 미커밋 변경 포함, 진행 중이던 C-3 JGEditor 위젯 사본 4개는 제외)을 스크래치 워크트리로 만들어 구현 · 검증
+  → 메인 트리에 파일별 반영(바뀐 두 파일 GameFrameWorksModule.cpp · GameplayControllerActor.h 는 3-way 병합) → 메인 트리에서 다시 빌드 · 검증
+
+---- 기준선 (스냅숏, 변경 전) ----
+전체 빌드 오류 0 (260 s, LNK4098 2 = 기준선)
+gmtest: 156 PASS, 0 FAIL, exit 0
+net.test all: 66 passed, 0 failed, exit 0
+two-process (kernel): OK (seq 1000, checksum 16006860866352003711)
+
+---- 워크트리: net.test world (새 절, 35 검사) ----
+  [PASS] game instance hosts a listen server
+  [PASS] two clients joined the lobby before any world was loaded
+  [PASS] entry StartGame started the game through the session
+  [PASS] GameMasterActor bound its GameMaster to the game instance session
+  [PASS] local undo is off while bound to a listen server
+  [PASS] controller owns the local slot's actor
+  [PASS] controller refuses a remote player's actor
+  [PASS] controller refuses the AI's actor
+  [PASS] clients followed the Travel and received StartGame (travels 1 / 1, states 2 / 2)
+  [PASS] world host and clients agree at seq 300, desync 0
+  [PASS] inputs: host controller 52 executed, clients 74 / 75
+  [PASS] host session drove the AI in the world
+  [PASS] every alive entity has an actor in the host world
+  [PASS] second world started a new game
+  [PASS] clients followed the second Travel (travels 2 / 2)
+  [PASS] after travel all agree at seq 150, desync 0
+  [PASS] unloading the world unbinds the GameMaster
+  [PASS] LeaveSession returns to standalone and closes the clients
+  [PASS] joined game instance is not the authority
+  [PASS] client loaded the host's world named in Welcome
+  [PASS] mid-game join: document applied to the world's GameMaster at seq 3 (host was at 3 before the join)
+  [PASS] client GameMasterActor bound at BeginPlay
+  [PASS] client world rebuilt entity actors from the document
+  [PASS] client controller refuses the host's actor
+  [PASS] client controller owns its slot's actor
+  [PASS] StartGame is refused on a client
+  [PASS] client controller commands were sent (44) and replicated, seq 203, desync 0
+  [PASS] client followed the host's Travel into a new world
+  [PASS] held StartGame applied to the new world's GameMaster
+  [PASS] after travel client agrees at seq 100
+  [PASS] host closed: client session closed, world kept
+  [PASS] LeaveSession rebinds the world's GameMaster to a standalone session
+  [PASS] standalone adopted the started game and plays on (seq 100 -> 120)
+  [PASS] local undo is back in standalone
+  [PASS] game instance left standalone with no world
+
+---- 워크트리 최종 (-bind 추가 · 줄바꿈 정리 뒤 GameFrameWorks Rebuild 오류 0 · 경고 0) ----
+gmtest: 156 PASS, exit 0
+== Network self test: 101 passed, 0 failed ==
+two-process kernel: OK (seq 1000, checksum 16006860866352003711)
+two-process world:  OK (seq 500, checksum 3733085909814467447)  — 세 프로세스 모두 worlds=2
+net.host -port=abc: exit 1 (사용법 출력, abort 없음) · help 에 net.test(GameFrameWorks 모듈) · net.host · net.join
+
+---- 런처 2개 결투 (NetDuel, Document/Memory/Server/Files/tools/net_duel_testgame) ----
+게임 솔루션 빌드(엔진 포함, 워크트리 엔진) 오류 0, 252 s
+host:   NetDuel: finished mode=ListenServer slot=0 seq=13 checksum=9198514108868742568 winner=0 submitted=10 desyncs=0 | Process exited with code 0 | errors 0
+client: NetDuel: finished mode=Client slot=1 seq=13 checksum=9198514108868742568 winner=0 submitted=3 desyncs=0 | Process exited with code 0 | errors 0
+net-duel: OK (seq 13, checksum 9198514108868742568, winner team 0)
+흐름: 호스트 hosting on port 47791 → 엔트리(ListenServer, authority=1) → 클라 joining 127.0.0.1:47791 as Guest → 엔트리(Client, authority=0)
+      → joined as slot 1 (game in progress) → document applied at seq 5 → 둘 다 seq 13 에서 끝. 경고는 기준선 2줄뿐, live blocks 0
+      원문: 2026-09-30_phase5_net_duel_host.txt · 2026-09-30_phase5_net_duel_client.txt (crashwalk 표준 출력)
+싱글(인자 없음) 비교: finished mode=Standalone seq=10 winner=0, exit 0, 같은 기준선 경고 · 메모리 줄
+
+---- 메인 트리 반영 뒤 (23:0x ~ 23:13) ----
+빌드 (-p:BuildProjectReferences=false): GameFrameWorks 오류 0 경고 0 · JGConsole 오류 0 · JGEditor 오류 0 (C-3 위젯 GameplayDevView.cpp · SceneViewport.cpp 가 새 헤더로 다시 컴파일됨)
+gmtest: 156 PASS, 0 FAIL, exit 0
+== Network self test: 101 passed, 0 failed ==
+two-process kernel: OK (seq 1000, checksum 16006860866352003711)
+two-process world:  OK (seq 500, checksum 3733085909814467447)
+net.host: world=NetWorld2 worlds=2 seq=500 checksum=3733085909814467447 seconds=19.78 executed=314
+net.join: name=ClientA slot=1 world=NetWorld2 worlds=2 seq=500 checksum=3733085909814467447 desyncs=0 sent=283 reason=host closed the connection
+net.join: name=ClientB slot=2 world=NetWorld2 worlds=2 seq=500 checksum=3733085909814467447 desyncs=0 sent=209 reason=host closed the connection
+엔진 런처 30 초 (crashwalk): exit 0, [error]/[critical] 0, 경고 기준선 2줄, live blocks 0
+
+참고: kernel 모드 체크섬 값은 접속 순서(어느 클라가 슬롯 1 을 받나)에 따라 달라질 수 있다 (22:4x 한 번 12241153406661687388 — ClientB 가 먼저 붙음). 세 프로세스 일치만 본다.

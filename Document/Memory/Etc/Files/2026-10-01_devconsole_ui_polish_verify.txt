@@ -1,0 +1,64 @@
+DevConsole 6-5 UI 보강 · 6-6 카테고리 드롭다운 검증 기록 (2026-10-01 10:00 ~ 11:xx, DevConsole 세션 8113cd65)
+=============================================================================================================
+
+요청(사용자 10-01): "요거 UI 좀 멋있게 보강해주고, 필터 관련해서 iNFO, Warn, Error는 좋은데 카테고리 필터링은 드롭박스 형태로 가고,
+드롭 박스내 아이템에서 체크박스 형태로 하고 싶어. all 옵션도 있어서 이거 체크하면 전체 카테고리 체크하도록되고"
+
+환경: 메인 트리에 다른 세션들(GFW GameMaster · JGEditor · 게임 UI)이 작업 중. 쓰려는 HGUI 대시보드 함수(BeginPanel · TextRight 등, Memory UI-1)가
+미커밋이라 HEAD 워크트리로는 빌드가 안 된다 → HEAD 워크트리에 메인 트리 Source/ · Build/ · 루트 빌드 파일 · JGBuildTool/JGHeaderTool 을
+robocopy /MIR 로 복사한 "스냅샷 워크트리"(<scratchpad>\wt2, 10:05, diff -rq 로 Source 동일 확인)에서 작업했다. 스냅샷 시점 메인 트리 Bin 은
+09:47 빌드로 최신이었고 그 뒤 소스 변경 없음. 바꿀 5개 파일의 스냅샷 원본은 따로 보관해 차이만 패치로 뽑았다(커밋을 만들지 않으려고).
+
+1. 빌드 (스냅샷 워크트리)
+-------------------------
+- PreBuild 종료 0 → 전체 빌드 247초, 오류 0, C++ 경고 0(첫 시도)
+- 이후 증분 빌드 4회(칩 알파 · 툴팁 간격 · 드롭다운 폭 · 드롭다운 글자색) 모두 오류 0
+- 최종(임시 코드 3곳 되돌린 뒤) 빌드 오류 0, C++ 경고 0
+
+2. 헤드리스
+-----------
+- JGConsole.exe console.selftest → OK (64/64), 종료 0 (Core 는 바꾸지 않았다)
+- JGConsole.exe gmtest → OK (0 failures), 종료 0
+
+3. 창 입력 (임시 코드: 콘솔 자동 열기, Devkit 임시 명령 — test.alpha=Info[Devkit] · test.beta=Warning[TempCheck] · test.gamma=Error[TempCheck] · demo.test,
+   ImGui Win32 백엔드 JG_UITEST. 러너 Files/tools/devconsole_ui_runner.ps1.txt, 좌표는 캡처 1727x1087 기준)
+-----------------------------------------------------------------------------------------------------------------------------
+ 확인                                                                         결과   캡처(Files/)
+ 도구줄: 레벨 칩 3개(색 점 · 개수), 카테고리 드롭다운, 검색칸, "보이는 / 전체 lines"  OK    2026-10-01_devconsole_ui_overview.png
+ 로그 줄: 카테고리 열 정렬, 경고 줄 주황 띠 + 왼쪽 막대, 오류 줄 빨강 띠, 명령 에코 파랑  OK    같은 캡처
+ 입력줄: ">" 프롬프트 + 안내 문구, 포커스 때 파란 테두리                                 OK    같은 캡처
+ 미리보기: "test" → 후보 4개, ↑↑ → test.beta 파란 선택 띠, 하단 키 안내                OK    2026-10-01_devconsole_ui_preview.png
+ Tab → "test.beta " + Usage / 설명 (툴팁이 입력줄 패널 위 테두리 바깥에 뜸)              OK    2026-10-01_devconsole_ui_usage.png
+ 드롭다운 열기: All(전체 줄 수) + 구분선 + 카테고리 7개 체크박스 · 줄 수                  OK    (run a_5)
+ Core · Memory 끄기 → 미리보기 "5 of 7 categories", All 은 일부 선택 표시, 11 / 55 lines   OK    (run b_2)
+ All 누름(일부 선택 상태) → 전부 켜짐, "All categories", 55 / 55                           OK    (run b_3)
+ All 다시 누름 → 전부 꺼짐, "No categories", 로그 "No log lines match the filters.", 0 / 55 OK    2026-10-01_devconsole_ui_categories_none.png
+ Memory 만 끔 + 드롭다운 열림 → "6 of 7 categories", All 일부 표시                         OK    2026-10-01_devconsole_ui_categories.png
+ Info 칩 끔 → 회색 칩, 경고 · 오류 3줄만(카테고리 필터와 함께 적용)                          OK    2026-10-01_devconsole_ui_levels.png
+ Warn 칩 끔/켬, 검색 "temp" → 3줄                                                          OK    (run b_6, b_8)
+- 실행 로그(각 실행): [error] 는 임시 명령이 일부러 낸 TempCheck 1줄뿐, [warning] 은 기존 Asset 1줄 + 임시 1줄, "not unregistered" 0,
+  Memory Chunk Shutdown live blocks 0(두 청크), 종료 코드 0
+
+도중에 고친 것
+- 칩 켜짐 바탕: 알파 0.18 이 선형 공간에서 섞인 뒤 sRGB 로 나가 진하게 보여 0.10(마우스 올림 0.16), 테두리 0.65 로 낮춤
+- 미리보기 툴팁이 입력줄 패널 위 테두리를 덮음 → BeginTooltipAboveItem 에 InExtraGap 인자(입력줄 패널 여백만큼 더 띄움)
+- 드롭다운 폭 180 → 200(줄 수가 오른쪽 끝에 붙던 것)
+- 닫힌 드롭다운 글자 · 화살표가 도구줄에서 가장 밝아 한 단계 흐리게(펼친 목록은 원래 색 — 목록 안 Push/Pop 짝을 목록 안에서 맞춤)
+
+4. 런처 회귀 (최종 코드, 임시 코드 없음)
+---------------------------------------
+- crashwalk.exe 60 으로 띄웠으나 WM_CLOSE 를 보내지 않음: 이 PC 에서 NVIDIA 드라이버(NvFBC) 스레드가 디버거 아래 SetThreadName 예외를
+  초당 ~113개 던져 crashwalk 의 200ms 무이벤트 조건이 오지 않는다(10-01 GameGUI 세션이 먼저 측정, Etc/Files/2026-10-01_GameGUI_verify.txt §4).
+  엔진 무관. 같은 처리로 약 25분 뒤 WM_CLOSE 를 직접 보냄 → Process exited with code 0, [error]/[critical] 0, "not unregistered" 0, live blocks 0
+
+5. 메인 트리 적용 · 확인 (10:53 ~ 11:05)
+---------------------------------------
+- 적용 전: 대상 5파일이 스냅샷 원본과 같은지 대조(같음 — 스냅샷 뒤 아무도 고치지 않음). 다른 세션의 게임 솔루션 빌드(GfwView · NetDuel, 10:47~)가
+  끝나고 cl · link 가 20초 이상 없을 때 워크트리 최종본을 복사(10:53:03, 5파일 바이트 동일 확인). 그 직전 15분 동안 다른 Source 변경 없음
+- 메인 트리 JGEngine.sln 전체 빌드: 159초, 오류 0, C++ 경고 0, 14 프로젝트 링크
+- Bin/DevelopEngine: console.selftest OK (64/64) · gmtest OK, 종료 0
+- 런처(러너, 디버거 없음): imgui.ini 를 백업하고 [JGWidget][Open] 에 JGDevConsole=1 을 넣어 콘솔이 복원되게 한 뒤 실행 → "[GUI]: Layout: reopened JGDevConsole",
+  새 화면(도구줄 · 카테고리 열 · GUI 카테고리 포함), "he" → help 후보, Tab → "Usage help [command]", "nosuch x" → 빨간 Unknown 미리보기 · 실행 뒤 에코 파랑 + 오류 띠.
+  [error] 는 일부러 친 nosuch 1줄, "not unregistered" 0, live blocks 0, 종료 코드 0. 실행 뒤 imgui.ini 를 백업으로 되돌림(해시 같음).
+  캡처 Files/2026-10-01_devconsole_ui_maintree.png
+- 스냅샷 워크트리는 제거했다
