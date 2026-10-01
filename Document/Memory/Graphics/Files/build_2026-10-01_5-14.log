@@ -1,0 +1,40 @@
+﻿
+  Core.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Core.lib
+  JGBuildTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGBuildTool.exe
+  JGLauncher.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGLauncher.exe
+  JGHeaderTool.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGHeaderTool.exe
+  Asset.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Asset.dll
+  SceneRenderer.cpp
+  DirectX12API.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Graphics.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Graphics.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\Graphics.vcxproj]
+  Graphics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Graphics.dll
+  DX12GUIBackend.cpp
+  AI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\AI.dll
+     ..\..\Bin\DevelopEngine\GameFrameWorks.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GameFrameWorks.exp 개체를 생성하고 있습니다.
+LINK : warning LNK4098: 'MSVCRT' defaultlib가 다른 라이브러리와 충돌합니다. /NODEFAULTLIB:library를 사용하십시오. [C:\Develop\JGEngine\Temp\ProjectFiles\GameFrameWorks.vcxproj]
+  GameFrameWorks.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GameFrameWorks.dll
+  GUI.cpp
+  JGConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGConsole.exe
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\GUI.lib 라이브러리 및 ..\..\Bin\DevelopEngine\GUI.exp 개체를 생성하고 있습니다.
+  GUI.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\GUI.dll
+  DevConsole.cpp
+  MemoryStatistics.cpp
+  DevFeature.cpp
+  DevScene.cpp
+  DevConsoleModule.cpp
+  DevStatistics.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevStatistics.dll
+  DevConsole.generation.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\Devkit.lib 라이브러리 및 ..\..\Bin\DevelopEngine\Devkit.exp 개체를 생성하고 있습니다.
+  Devkit.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\Devkit.dll
+  DataTableEditor.cpp
+  코드를 생성하고 있습니다...
+  DevConsole.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\DevConsole.dll
+  GameplayDevView.cpp
+  SceneViewport.cpp
+  코드를 생성하고 있습니다...
+     ..\..\Bin\DevelopEngine\JGEditor.lib 라이브러리 및 ..\..\Bin\DevelopEngine\JGEditor.exp 개체를 생성하고 있습니다.
+  JGEditor.vcxproj -> C:\Develop\JGEngine\Bin\DevelopEngine\JGEditor.dll

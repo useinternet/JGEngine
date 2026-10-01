@@ -183,13 +183,14 @@ void JGDevScene::OnUpdate()
 
 void JGDevScene::OnGenerateGUI()
 {
-	if (Scene.IsValid() == false || Renderer.IsValid() == false || Renderer->GetOutputTexture() == nullptr)
+	if (Scene.IsValid() == false || Renderer.IsValid() == false || Renderer->GetDisplayTexture() == nullptr)
 	{
 		return;
 	}
 
-	// 출력 텍스처는 크기가 고정(DevSceneTextureWidth x Height)이라, 렌더가 이 함수 뒤(Update 단계)에 와도 여기서 넘긴 텍스처 ID는 그대로 유효하다.
-	HGUI::Image(Renderer->GetOutputTexture()->GetTextureID(), SceneSize);
+	// 텍스처는 크기가 고정(DevSceneTextureWidth x Height)이라, 렌더가 이 함수 뒤(Update 단계)에 와도 여기서 넘긴 텍스처 ID는 그대로 유효하다.
+	// 화면에는 sRGB로 인코딩된 디스플레이 텍스처를 보여 준다. (출력 텍스처는 선형이라 그대로 보이면 어둡다, 5-14)
+	HGUI::Image(Renderer->GetDisplayTexture()->GetTextureID(), SceneSize);
 	if (ReadbackStatus.Empty() == false)
 	{
 		HGUI::Text(ReadbackStatus);

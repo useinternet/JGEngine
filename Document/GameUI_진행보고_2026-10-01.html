@@ -73,7 +73,7 @@
 <body>
 <main>
   <h1>게임 UI 진행 보고</h1>
-  <div class="meta">2026-10-01 오전 · GameFrameWorks 게임 UI(<code>UI/</code>) · 요청: "GameUI를 모듈로 따로 떼는 게 아니고 GameFrameWork 모듈 안에, JGWidget처럼 JGGameWidget, 언리얼 CommonUI처럼" · 고른 것: 유지형(CommonUI식) · 이전 + CommonUI 핵심 · 전부 <strong>미커밋</strong><br>낮 추가: 게임 프로젝트 요청 ER-007(자동 줄바꿈) · ER-008(글자 입력) 반영 — <a href="#er">§8</a></div>
+  <div class="meta">2026-10-01 오전 · GameFrameWorks 게임 UI(<code>UI/</code>) · 요청: "GameUI를 모듈로 따로 떼는 게 아니고 GameFrameWork 모듈 안에, JGWidget처럼 JGGameWidget, 언리얼 CommonUI처럼" · 고른 것: 유지형(CommonUI식) · 이전 + CommonUI 핵심<br>낮 추가: 게임 프로젝트 요청 ER-007(자동 줄바꿈) · ER-008(글자 입력) 반영 — <a href="#er">§8</a> · 전부 <strong>사용자 커밋 <code>736ddbe</code></strong>(10-01 12:16)에 들어감</div>
 
   <div class="lead">
     <p><strong>요약.</strong> 어젯밤 만든 별도 <code>GameGUI</code> 모듈을 없애고 게임 UI를 GameFrameWorks 안 <code>UI/</code>로 옮겼습니다. 이제 게임 화면은 <code>JGGameWidget</code>을 상속해서 만듭니다. 에디터의 <code>JGWidget</code>처럼 클래스로 만들고, 언리얼 CommonUI의 ActivatableWidget처럼 동작합니다. 관리자 <code>PGameUIManager</code>는 <code>JGGameInstance</code>가 가지며, 레이어 스택 · 입력 라우팅 · 뒤로가기 · 기본 스타일을 맡습니다.</p>
@@ -167,7 +167,7 @@ JGGameInstance::Get().GetUI()-&gt;ClearAllWidgets();</code></pre>
 
   <h2>6. 할 일</h2>
   <ul>
-    <li><span class="badge b-decide">커밋</span> 사용자가 합니다. 새 파일 <code>Source/Runtime/GameFrameWorks/UI/</code> 24개와 <code>Source/Shader/draw2d.hlsl</code>(미추적)이 빠지지 않게 해 주세요. <code>SceneViewport.h/.cpp</code>는 JGEditor 이관(E-1)으로 새로 생긴 파일이라 함께 들어가야 합니다. 목록은 <code>Memory/GameFrameWorks/TODO_GameUI.md</code> 커밋 체크리스트에 있습니다.</li>
+    <li><span class="badge b-done">커밋</span> 완료 — 사용자 커밋 <code>736ddbe</code>(10-01 12:16)에 <code>UI/</code> · <code>draw2d.hlsl</code> · <code>SceneViewport.h/.cpp</code> 등이 모두 들어갔습니다(낮 §8 분 포함).</li>
     <li><span class="badge b-todo">게임 프로젝트</span> 본 트리 엔진을 쓰는 기존 게임 프로젝트는 <code>GenerateProjectFiles.bat</code>을 다시 돌려야 합니다(GameGUI 프로젝트가 없어졌습니다).</li>
   </ul>
 
@@ -187,6 +187,10 @@ JGGameInstance::Get().GetUI()-&gt;ClearAllWidgets();</code></pre>
     <p><strong>남은 일.</strong> 실제 한글 IME로 한 번 입력해 봐 주세요(ㅎ → 하 → 한). 조합 창이 입력란 커서 옆에 떠야 합니다. 스크립트는 확정 글자까지만 확인할 수 있습니다. 그다음은 커밋입니다.</p>
   </div>
   <div class="shots">
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_er_srgb514.png" alt="Graphics 5-14 뒤의 Scene Viewport: 진한 주황 End Turn 버튼, 어두운 패널과 입력란, 줄바꿈 문단 · 말줄임 줄 · 주소 192.168.0.10:4777 · 이름 홍길동ab">
+      <figcaption>오후 Graphics 5-14(8비트 sRGB 출력) 뒤: UI 색이 코드 값 그대로입니다(End Turn은 진한 주황, 패널 · 입력란은 더 어둡습니다).</figcaption>
+    </figure>
     <figure>
       <img src="Memory/GameFrameWorks/Files/2026-10-01_gameui_er_input_zoom.png" alt="오른쪽 위 패널: 6줄로 줄바꿈된 한국어 · 영어 문단(긴 주소가 단어 안에서 바뀜), 끝이 말줄임표로 줄어든 한 줄, 그 아래 주소 입력란 192.168.0.10:4777, 포커스 색 이름 입력란 홍길동ab">
       <figcaption>검증 게임 오른쪽 위(확대). 폭 600 문단이 6줄로 바뀌었고 높이는 <code>MeasureContent</code>로 맞췄습니다. 긴 주소는 단어 안에서 바뀝니다. 그 아래 줄은 말줄임입니다. 입력란 두 개(주소 · 이름, 이름 칸이 포커스).</figcaption>
@@ -221,7 +225,8 @@ JGGameInstance::Get().GetUI()-&gt;ClearAllWidgets();</code></pre>
   </table>
   <ul>
     <li><span class="badge b-decide">확인</span> 실제 한글 IME 입력 한 번(GG-9U). 본 트리 Bin의 에디터에서 검증 게임이나 ProjectAH를 열고 입력란에 한글 이름을 쳐 봐 주세요.</li>
-    <li><span class="badge b-decide">커밋</span> 새 파일 <code>UI/GameUITextInput.h/.cpp</code>가 늘었습니다(<code>UI/</code> 26개). 목록은 <code>Memory/GameFrameWorks/TODO_GameUI.md</code> 커밋 체크리스트입니다.</li>
+    <li><span class="badge b-done">커밋</span> 완료 — 새 파일 <code>UI/GameUITextInput.h/.cpp</code>(<code>UI/</code> 26개)까지 사용자 커밋 <code>736ddbe</code>에 들어갔습니다.</li>
+    <li><span class="badge b-done">색 공간</span> 오후에 Graphics 세션의 5-14(출력 8비트 sRGB, 13:33 메인 반영 · 미커밋)가 들어왔습니다. 씬 뷰포트가 게임 UI를 sRGB 디스플레이 텍스처에 그려, UI 색이 이제 코드 값 그대로 보입니다(옅게 뜨지 않음). 화면 검증 스크립트는 버튼을 화면 색으로 찾으므로 옛 색 · 새 색을 모두 찾게 고쳤고, 메인 엔진으로 새 색 경로 20단계를 통과했습니다. 디버거 아래에서 실행 중 D3D12 메시지는 0건이었습니다(GG-H11 닫음). 게임 UI 코드는 바꾸지 않았습니다.</li>
     <li>문서: 검토서 <code>Memory/GameFrameWorks/Files/ER-007_ER-008_검토_2026-10-01.md</code>, 검증 기록 <code>Memory/GameFrameWorks/Files/2026-10-01_GameUI_ER007_ER008_verify.txt</code>. ProjectAH 요청서 두 건은 상태를 "반영"으로 바꾸고 쓰는 법을 적었습니다.</li>
   </ul>
 </main>

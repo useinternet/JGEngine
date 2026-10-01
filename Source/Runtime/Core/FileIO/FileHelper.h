@@ -9,6 +9,8 @@ class HFileHelper
 
 public:
 	static bool WriteAllText(const PString& path, const PString& str);
+	// 같은 폴더의 임시 파일(<path>.tmp)에 다 쓴 뒤 path 로 바꿔 넣는다. 쓰는 도중 죽어도 원래 파일이 남는다.
+	static bool WriteAllTextAtomic(const PString& path, const PString& str);
 	static bool ReadAllText(const PString& path, PString* out_str);
 	static bool CreateDirectory(const PString& path);
 

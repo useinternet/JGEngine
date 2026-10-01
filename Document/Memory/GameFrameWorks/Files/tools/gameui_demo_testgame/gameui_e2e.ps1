@@ -39,10 +39,12 @@ function Capture([IntPtr]$hwnd, [string]$path) {
     return $bmp
 }
 
-# End Turn 보통 색(선형 0.95, 0.45, 0.10)이 화면에 보이는 색 = sRGB (249, 179, 89).
-# 출력 텍스처(FP16)가 선형으로 표시돼 sRGB 로 바뀐다(ImGui 색도 같다, 색 공간은 Graphics D-3). ±6 안의 픽셀을 모으고,
-# 카드 그림 같은 곳의 드문 비슷한 픽셀을 버리려고 중앙값 둘레(±200 px)만 경계 상자에 넣는다. 창 좌표(창 왼쪽 위 기준).
-function Find-Orange([System.Drawing.Bitmap]$bmp) {
+# End Turn 보통 색(코드 값 0.95, 0.45, 0.10)이 화면에 보이는 색은 출력 색 공간에 따라 다르다(Graphics D-3 · 5-14):
+#   5-14 뒤 — 게임 UI 를 8비트 디스플레이 텍스처(sRGB 인코딩 값)에 그려 코드 값 그대로 = (242, 115, 26)
+#   5-14 전 — 선형 FP16 출력 텍스처에 그려 화면에서 sRGB 로 한 번 더 바뀜 = (249, 179, 89)
+# 두 색을 차례로 찾는다. ±6 안의 픽셀을 모으고, 카드 그림 같은 곳의 드문 비슷한 픽셀을 버리려고
+# 중앙값 둘레(±200 px)만 경계 상자에 넣는다. 창 좌표(창 왼쪽 위 기준).
+function Find-Color([System.Drawing.Bitmap]$bmp, [int]$targetR, [int]$targetG, [int]$targetB) {
     $rectAll = New-Object System.Drawing.Rectangle(0, 0, $bmp.Width, $bmp.Height)
     $data = $bmp.LockBits($rectAll, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $bytes = New-Object byte[] ($data.Stride * $bmp.Height)
@@ -55,7 +57,7 @@ function Find-Orange([System.Drawing.Bitmap]$bmp) {
         for ($x = 0; $x -lt $bmp.Width; $x++) {
             $i = $row + $x * 4
             $b = $bytes[$i]; $g = $bytes[$i + 1]; $r = $bytes[$i + 2]
-            if ([Math]::Abs($r - 249) -le 6 -and [Math]::Abs($g - 179) -le 6 -and [Math]::Abs($b - 89) -le 6) {
+            if ([Math]::Abs($r - $targetR) -le 6 -and [Math]::Abs($g - $targetG) -le 6 -and [Math]::Abs($b - $targetB) -le 6) {
                 $xs.Add($x); $ys.Add($y)
             }
         }
@@ -133,9 +135,14 @@ $origin = New-Object GUIE2E+POINT
 $offX = $origin.X - $winRect.Left; $offY = $origin.Y - $winRect.Top   # 창 좌표 → 클라이언트 좌표
 
 $before = Capture $hwnd (Join-Path $OutDir "gameui_e2e_before.png")
-$found = Find-Orange $before
+$found = Find-Color $before 242 115 26
+$orangeLabel = "sRGB display (242,115,26)"
+if ($found.Count -lt 300) {
+    $found = Find-Color $before 249 179 89
+    $orangeLabel = "linear output (249,179,89)"
+}
 $before.Dispose()
-Write-Output ("Orange pixels {0}, box ({1},{2})-({3},{4})" -f $found.Count, $found.MinX, $found.MinY, $found.MaxX, $found.MaxY)
+Write-Output ("Orange pixels {0} as {1}, box ({2},{3})-({4},{5})" -f $found.Count, $orangeLabel, $found.MinX, $found.MinY, $found.MaxX, $found.MaxY)
 if ($found.Count -lt 300) { Write-Output "End Turn button not found in the capture"; [GUIE2E]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null; $proc.WaitForExit(30000) | Out-Null; exit 4 }
 
 # 버튼 폭으로 뷰포트 이미지 사각형을 거꾸로 구한다(End Turn 340x110, 오른쪽 · 아래 여백 40, 기준 1920x1080).

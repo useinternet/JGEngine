@@ -3,6 +3,7 @@
 #include "Object/ObjectGlobals.h"
 #include "Object/ObjectGlobalSystem.h"
 #include "rapidjson/prettywriter.h"
+#include "rapidjson/error/en.h"
 
 namespace
 {
@@ -275,6 +276,74 @@ bool PJsonData::IsString() const
 	return _value.IsString();
 }
 
+EJsonValueType PJsonData::GetValueType() const
+{
+	if (IsValid() == false)
+	{
+		return EJsonValueType::Null;
+	}
+
+	// 뿌리(PJson 자신)의 값은 _value 가 아니라 문서에 있다
+	const rapidjson::Value* valuePtr = &_value;
+	if (_bIsRoot == true)
+	{
+		valuePtr = &_pOwnerJson->GetDocument();
+	}
+	const rapidjson::Value& value = *valuePtr;
+	if (value.IsBool())
+	{
+		return EJsonValueType::Bool;
+	}
+	if (value.IsInt64() || value.IsUint64())
+	{
+		return EJsonValueType::Int;
+	}
+	if (value.IsNumber())
+	{
+		return EJsonValueType::Float;
+	}
+	if (value.IsString())
+	{
+		return EJsonValueType::String;
+	}
+	if (value.IsArray())
+	{
+		return EJsonValueType::Array;
+	}
+	if (value.IsObject())
+	{
+		return EJsonValueType::Object;
+	}
+	return EJsonValueType::Null;
+}
+
+bool PJsonData::GetMemberKeys(HList<PString>* outKeys) const
+{
+	if (IsValid() == false || outKeys == nullptr)
+	{
+		return false;
+	}
+
+	const rapidjson::Value* valuePtr = &_value;
+	if (_bIsRoot == true)
+	{
+		valuePtr = &_pOwnerJson->GetDocument();
+	}
+	const rapidjson::Value& value = *valuePtr;
+	if (value.IsObject() == false)
+	{
+		return false;
+	}
+
+	outKeys->clear();
+	for (rapidjson::Value::ConstMemberIterator iter = value.MemberBegin(); iter != value.MemberEnd(); ++iter)
+	{
+		HRawString key(iter->name.GetString(), iter->name.GetStringLength());
+		outKeys->push_back(PString(key.c_str()));
+	}
+	return true;
+}
+
 PJsonData PJsonData::CreateJsonData() const
 {
 	return PJsonData(_pOwnerJson, false);
@@ -327,6 +396,56 @@ bool PJson::ToObject(const PString& jsonText, PJson* outJson)
 	outJson->GetDocument().Parse(jsonText.GetCStr());
 
 	return true;
+}
+
+bool PJson::ToObjectWithError(const PString& jsonText, PJson* outJson, PString* outError)
+{
+	if (outJson == nullptr || outJson->IsValid() == false)
+	{
+		return false;
+	}
+
+	const char* text   = jsonText.GetCStr();
+	uint64      length = jsonText.Length();
+
+	// 메모장 등이 붙이는 UTF-8 BOM. rapidjson 은 BOM 을 글자로 보고 실패한다.
+	if (length >= 3 && (uint8)text[0] == 0xEF && (uint8)text[1] == 0xBB && (uint8)text[2] == 0xBF)
+	{
+		text   += 3;
+		length -= 3;
+	}
+
+	rapidjson::Document& doc = outJson->GetDocument();
+	doc.Parse(text, (size_t)length);
+	if (doc.HasParseError() == false)
+	{
+		return true;
+	}
+
+	if (outError != nullptr)
+	{
+		const uint64 offset = (uint64)doc.GetErrorOffset();
+		int32 line   = 1;
+		int32 column = 1;
+		for (uint64 i = 0; i < offset && i < length; ++i)
+		{
+			if (text[i] == '\n')
+			{
+				++line;
+				column = 1;
+			}
+			else
+			{
+				++column;
+			}
+		}
+
+		*outError = PString::Format("line %d, column %d: %s", line, column, PString(rapidjson::GetParseError_En(doc.GetParseError())));
+	}
+
+	// 실패한 문서는 null 이다. 빈 객체로 돌려 둬야 이 PJson 을 계속 써도 안전하다.
+	doc.SetObject();
+	return false;
 }
 //namespace JG
 //{

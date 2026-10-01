@@ -1,6 +1,6 @@
 # JGEditor TODO (에디터 호스트 · 게임 창)
 
-갱신 2026-10-01 09:4x (E-2 레이아웃 복원). 현황 · 구조 · 함정 · 검증 방법은 `현황.md` §5.
+갱신 2026-10-01 오후 (E-3 데이터 테이블 편집 창 — DataTable 트랙이 추가). 현황 · 구조 · 함정 · 검증 방법은 `현황.md` §5(데이터 테이블 창은 §7).
 범위: JGEditor 모듈(`Source/Editor/JGEditor/`) — 런처의 에디터 호스트(창 · 엔진 모듈 연결 · 게임 프로젝트 모듈 연결)와 게임 월드를 보는 에디터 창(씬 뷰포트 · Gameplay DevView).
 사용자 결정(2026-09-30 밤): **위젯 작업은 JGEditor 가 하고 GameFrameWorks 는 순수 로직을 제공한다.** 창이 부르는 월드 · 카메라 · 피킹 · GameMaster API 는 GFW 에 둔다.
 기준: 엔진 기반 구축 · 과설계 금지. 지금 겪는 문제만 미완료 표에, 나머지는 보류 표에 "다시 볼 조건"과 함께 둔다.
@@ -39,7 +39,11 @@
 | E-1 | GFW TODO **C-3 위젯 이관**: `JGWorldView` → `JGSceneViewport`(창 "Scene Viewport"), `JGGameplayDevView` 는 이름 그대로 `Source/Editor/JGEditor/Widgets/` 로. 메뉴 `Windows/Scene Viewport` · `Windows/Gameplay DevView` 는 에디터가 등록, 씬 뷰포트는 프로젝트 모드(게임 모듈이 GFW 연결)에서만 자동으로 연다. GFW 는 GUI 의존 · 창 등록 삭제 | 2026-09-30 22:4x (미커밋) | `Files/2026-09-30_jgeditor_C-3_verify.txt` — GFW · JGEditor 빌드 exit 0, `gmtest` 156/156, 프로젝트 없는 에디터 종료 0(메뉴 캡처 `Files/2026-09-30_jgeditor_windows_menu.png`), 검증 게임 에디터에서 클릭 → E3.1 · 칸 (3, 3) / (5, 0) 이관 전과 같은 값, DevView 선택 · Undo, 궤도 끌기(`Files/2026-09-30_jgeditor_sceneviewport_devview.png`, `Files/2026-09-30_jgeditor_undo_orbit.png`) |
 | E-2 | **에디터 레이아웃 복원**(사용자 보고 "레이아웃 저장이 안 되는 것 같다") = GUI TODO BL-4. 원인: 창 위치 · 도킹은 `imgui.ini` 에 저장되고 있었지만 열린 창 목록은 저장되지 않아, 재시작하면 기본 창만 열리고 도킹 칸이 접혔다. GUI 모듈이 열린 위젯을 `[JGWidget][Open]` 에 저장하고 첫 프레임에 다시 연다. 씬 뷰포트는 `OpenWidgetByDefault`(닫아 두면 안 엶) | 2026-10-01 09:4x (미커밋) | `Files/2026-10-01_layout_restore_verify.txt` — 빌드 5모듈 exit 0, 메인 트리 에디터 저장 → 재시작 복원, 사용자 ProjectAH ini 배치 그대로 복원(`Files/2026-10-01_layout_restored.png`), 닫은 기본 창 유지(`Files/2026-10-01_layout_closed_default_stays_closed.png`) |
 
+| E-3 | (DataTable 트랙) **데이터 테이블 편집 창**: 창 "Data Table Editor"(`JGDataTableEditor`, `Widgets/DataTableEditor.h/.cpp`), 메뉴 `Windows/Data Table Editor`(`JGEditor.cpp` `openDefaultWidgets` — DevView 항목 뒤에 include + 메뉴 한 묶음). 탭 · 도구 막대 · 그리드(GUI `PGUIGrid`) · 열 속성 패널 · 문제 목록 · 상태 줄 · 새 테이블 / 닫기 확인 / 저장 확인 대화상자. 편집 로직은 GFW `Data/PDataTableDocument` | 2026-10-01 오후 (미커밋, DataTable DT-C1) | `Files/2026-10-01_datatable_verify.txt` §3(워크트리 V2) · §4(메인 트리 메뉴로 열림 · 종료 0), 캡처 `Files/2026-10-01_datatable_v2_*.png`, 설계 `Files/DataTable_설계_2026-10-01.md` §14 |
+
 ## 커밋 체크리스트 (E-C1)
+
+- E-3(10-01 오후)는 DataTable 커밋 체크리스트(`TODO_DataTable.md` DT-C1)에 있다 — `JGEditor.cpp` 의 include · 메뉴 한 묶음과 `Widgets/DataTableEditor.h/.cpp`
 
 - 새 파일(미추적 — `git add` 필요): `Source/Editor/JGEditor/Widgets/{SceneViewport, GameplayDevView}.{h,cpp}`
 - 수정: `Source/Editor/JGEditor/JGEditor.{h,cpp}`

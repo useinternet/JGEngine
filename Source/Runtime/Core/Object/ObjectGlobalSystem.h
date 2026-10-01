@@ -190,32 +190,37 @@ inline PSharedPtr<JGObject> LoadObject(const PString& path)
 	{
 		PJson Json;
 
-		if (PJson::ToObject(jsonString, &Json) == true)
+		// 손으로 고친 에셋의 문법 오류는 줄 · 칸과 함께 실패한다(ToObject 는 오류를 무시해 "Unknown ObjectType" 으로 보였다)
+		PString parseError;
+		if (PJson::ToObjectWithError(jsonString, &Json, &parseError) == false)
 		{
-			JGType ObjectType;
-			PJsonData ObjectTypeData = Json.CreateJsonData();
-			PJsonData ObjectData     = Json.CreateJsonData();
-			
-			Json.FindMember("JGObjectType", &ObjectTypeData);
-			if (ObjectTypeData.IsValid() == false || ObjectTypeData.GetData(&ObjectType) == false)
-			{
-				JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Unknown ObjectType", path);
-				return nullptr;
-			}
+			JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, JSON %s", path, parseError);
+			return nullptr;
+		}
 
-			Json.FindMember("JGObject", &ObjectData);
-			if (ObjectData.IsValid() == false)
-			{
-				JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Missing Object", path);
-				return nullptr;
-			}
+		JGType ObjectType;
+		PJsonData ObjectTypeData = Json.CreateJsonData();
+		PJsonData ObjectData     = Json.CreateJsonData();
 
-			PSharedPtr<JGObject> result = AllocateByClass(StaticClass(ObjectType));
-			if (ObjectData.GetData(result.GetRawPointer()) == true)
-			{
-				JG_LOG(Core, ELogLevel::Trace, "Success Load at %s", path);
-				return result;
-			}
+		Json.FindMember("JGObjectType", &ObjectTypeData);
+		if (ObjectTypeData.IsValid() == false || ObjectTypeData.GetData(&ObjectType) == false)
+		{
+			JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Unknown ObjectType", path);
+			return nullptr;
+		}
+
+		Json.FindMember("JGObject", &ObjectData);
+		if (ObjectData.IsValid() == false)
+		{
+			JG_LOG(Core, ELogLevel::Error, "Fail Load at %s, Missing Object", path);
+			return nullptr;
+		}
+
+		PSharedPtr<JGObject> result = AllocateByClass(StaticClass(ObjectType));
+		if (ObjectData.GetData(result.GetRawPointer()) == true)
+		{
+			JG_LOG(Core, ELogLevel::Trace, "Success Load at %s", path);
+			return result;
 		}
 	}
 

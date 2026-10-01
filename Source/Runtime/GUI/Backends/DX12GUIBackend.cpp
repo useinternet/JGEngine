@@ -20,6 +20,40 @@
 
 namespace
 {
+	// 에디터 기본 글꼴(ProggyClean)에 한글을 합친다(GUI BL-3). 데이터 테이블 칸 · 설명 같은 에디터 글에 한글이 나온다.
+	// 엔진 Content/Fonts/EditorKorean.ttf 가 있으면 그것, 없으면 시스템 맑은 고딕. 둘 다 없으면 영문만(경고 한 줄).
+	// 한글 음절 11,172자가 아틀라스에 들어간다 — 큰 글꼴(숫자용)에는 합치지 않는다.
+	void AddKoreanGlyphsToDefaultFont()
+	{
+		ImGuiIO& io = ImGui::GetIO();
+
+		PString contentFont;
+		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "Fonts/EditorKorean.ttf", &contentFont);
+		const PString systemFont = "C:/Windows/Fonts/malgun.ttf";
+
+		PString fontPath;
+		if (HFileHelper::Exists(contentFont))
+		{
+			fontPath = contentFont;
+		}
+		else if (HFileHelper::Exists(systemFont))
+		{
+			fontPath = systemFont;
+		}
+		if (fontPath.Empty())
+		{
+			JG_LOG(GUI, ELogLevel::Warning, "Korean font not found (Content/Fonts/EditorKorean.ttf, %s). Editor text shows Latin only", systemFont);
+			return;
+		}
+
+		ImFontConfig config;
+		config.MergeMode   = true;
+		config.PixelSnapH  = true;
+		config.OversampleH = 1;
+		config.OversampleV = 1;
+		io.Fonts->AddFontFromFileTTF(fontPath.GetCStr(), 14.0f, &config, io.Fonts->GetGlyphRangesKorean());
+	}
+
 	PSharedPtr<PDirectX12API> findDX12API()
 	{
 		PSharedPtr<PJGGraphicsAPI> graphicsAPI;
@@ -51,6 +85,7 @@ void PDX12GUIBackend::Initialize()
 //	io.Fonts->AddFontFromFileTTF("../../Source/Font/Consolas.ttf", 16.0f);
 	// 글꼴 순서 = EGUIFont (HGUI::PushFont). 0 = 기본(ProggyClean 13px), 1 = 큰 글꼴(같은 글꼴 26px — 픽셀 글꼴이라 정수 배만 선명하다)
 	io.Fonts->AddFontDefault();
+	AddKoreanGlyphsToDefaultFont();
 	ImFontConfig LargeFontConfig;
 	LargeFontConfig.SizePixels = 26.0f;
 	io.Fonts->AddFontDefault(&LargeFontConfig);
@@ -89,8 +124,11 @@ void PDX12GUIBackend::Initialize()
 	CommandList = HDirectX12Helper::CreateD3DCommandList(DX12API->GetDevice(), CommandAlloc, D3D12_COMMAND_LIST_TYPE_DIRECT);
 	CommandList->Close();
 
+	// ImGui PSO의 렌더 타깃 포맷 = 프레임버퍼 포맷(8비트 sRGB 출력, Graphics 5-14). 멀티 뷰포트 창의 스왑체인도 이 포맷으로 만든다.
+	// ImGui 색(sRGB로 정한 값)은 변환 없이 그대로 쓰이고, 반투명도 디자인 도구처럼 sRGB 공간에서 섞인다.
+	const DXGI_FORMAT FrameBufferFormat = HDirectX12Helper::ConvertDXGIFormat(DX12API->GetFrameBuffer()->GetInfo().Format);
 	ImGui_ImplDX12_Init(
-		DX12API->GetDevice(), DX12API->GetArguments().BufferCount, DXGI_FORMAT_R16G16B16A16_FLOAT,
+		DX12API->GetDevice(), DX12API->GetArguments().BufferCount, FrameBufferFormat,
 		SrvDescriptorHeap.Get(),
 		SrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 		SrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());

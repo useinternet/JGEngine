@@ -1,6 +1,6 @@
 # DataTable 설계 — JSON 데이터 테이블 에셋과 에디터 스프레드시트 편집 — 2026-10-01
 
-상태: **설계 · 사용자 결정 대기. 코드 변경 없음.**
+상태: **구현 완료 · 메인 트리 반영 · 커밋 대기 (2026-10-01).** 결정(DT-D1~D6)은 §3 표 아래, 실제 파일 · 설계와 달라진 점 · 함정 · 검증 결과는 §14, 게임 코드에서 쓰는 법은 §15. §0~§13 은 설계 당시 기록이다(코드 위치 "Asset" 은 DT-D3 결정으로 GameFrameWorks `Data/`).
 요청(2026-10-01 사용자): "데이터 관련 기반 작업을 진행할까 해. .json 기반으로 할 거고, 에디터에서 해당 에셋을 엑셀처럼 편집할 수 있도록 할 거야. 관련해서 어떻게 설계할 건지 보고해줘."
 사용자 보고서 `Document/DataTable_설계보고_2026-10-01.html` · 할 일과 결정 `../TODO_DataTable.md` · 현황 `../현황.md` §7.
 
@@ -61,9 +61,13 @@
 | DT-D5 | 에디터 한글 글꼴(GUI BL-3)을 이 작업에 포함할까 | **포함** | 영문 데이터만 | 지금 에디터 글꼴로는 한글 셀 · 설명이 보이지 않는다. 게임 UI 와 같은 정책(Content 글꼴이 있으면 그것, 없으면 `C:/Windows/Fonts/malgun.ttf`)으로 기본 글꼴에 한글을 합친다 |
 | DT-D6 | 착수 범위 | **DT-0 ~ DT-4 전부**(선행 → 런타임 → 편집 모델 → 에디터 → 실제 입력 검증) | 런타임(DT-0 · DT-1)만 먼저 | 엑셀식 편집이 요청의 핵심이고, 편집 모델과 그리드는 런타임 위에서만 검증된다 |
 
+**사용자 결정(2026-10-01):** D1 · D2 · D4 · D5 · D6 권고대로. **D3 은 권고와 다름 — GameFrameWorks 모듈**(`Source/Runtime/GameFrameWorks/Data/`). D4 는 7개 타입으로 시작하되 "나중에 리플렉션 이용해서 struct 도 지원하고 싶다"(→ TODO 보류 DT-H1 에 사용자 희망으로).
+
 ---
 
 ## 4. 구조
+
+> DT-D3 결정으로 아래 그림 · 표의 "Asset" 은 **GameFrameWorks `Data/`** 로 읽는다. 실제 파일 목록은 §14-1.
 
 ```
 JGEditor   JGDataTableEditor — 창 "Data Table Editor", 메뉴 Windows/Data Table Editor
@@ -386,3 +390,147 @@ public:
 | 큰 테이블 | 보이는 행만 그리고, 셀 글자도 보이는 칸만 만든다. 1만 행에서 측정 |
 | 에디터 종료 때 저장 안 된 변경 | 탭 닫기 확인 + 탭 `*` 표시. 종료 훅 · 복구 파일은 DT-H9 |
 | JSON 병합 충돌 | 값 한 줄 · 순서 고정이라 다른 셀 수정끼리는 깨끗이 병합된다. 같은 자리 행 추가는 충돌 — 일반 텍스트 병합으로 푼다 |
+
+---
+
+## 14. 구현 결과 (2026-10-01)
+
+격리 워크트리(`4c8ac73` + 그때 메인 트리 미커밋분 스냅샷)에서 구현 · 빌드 · V1~V3 검증 → 메인 트리(`736ddbe`)에 3-way 로 반영 → 메인 PreBuild · 전체 빌드 · 헤드리스 회귀. 증적 `2026-10-01_datatable_verify.txt`(같은 폴더), 캡처 `2026-10-01_datatable_v2_*.png` 10장.
+
+### 14-1. 파일
+
+| 모듈 | 파일 | 내용 |
+|---|---|---|
+| Core | `FileIO/Json.h/.cpp` (추가만) | `EJsonValueType`, `PJsonData::GetValueType()` · `GetMemberKeys()`(값을 옮기지 않음), `PJson::ToObjectWithError`(BOM 건너뜀, 오류 `"line L, column C: 이유"`, 실패하면 빈 객체). 기존 `ToObject` 와 호출 11곳은 그대로 |
+| Core | `FileIO/FileHelper.h/.cpp` (추가만) | `WriteAllTextAtomic`(`<path>.tmp` 에 쓰고 `fs::rename`, 실패하면 임시 파일 지움) |
+| Core | `Object/ObjectGlobalSystem.h` | `LoadObject` 만 `ToObjectWithError` 로 — 깨진 에셋은 `Fail Load at <path>, JSON line L, column C: …` |
+| GFW | `Data/DataTableTypes.h/.cpp` | `EDataTableColumnType`(7개 + Count), `HDataTableValue`(Bool · Int(int64) · Float(float64) · Text), 이름 ↔ 타입, ASCII 소문자 · 포함 검색, `DataTableSameText` |
+| GFW | `Data/DataTableSchema.h/.cpp` | `HDataTableColumn`(텍스트 ↔ 값 `ParseText/FormatText`, 형식 바꾸기 `ConvertFrom`, JSON 값 읽기 · 쓰기, 타입에 맞는 옵션만 저장), `HDataTableSchema`, 열 이름 · 키 규칙 |
+| GFW | `Data/DataTableContent.h/.cpp` | 형식 v1 읽기 · 쓰기(문제를 모아 보고: 모르는 키 "저장하면 사라짐", 빠진 값 · 다른 타입 → 기본값), `HDataTableIssue`, `ComputeDataTableContentHash`(FNV-1a 64) |
+| GFW | `Data/DataTableValidation.h/.cpp` | `IDataTableReferenceResolver`, `ValidateDataTableContent` — 오류: 빈 · 중복 · 잘못된 키, 열 이름 / 경고: 범위 · Enum · RowRef · AssetRef · 없는 테이블(열마다 50건까지) |
+| GFW | `Data/DataTable.h/.cpp` | `JGDataTable : JGAsset`(JGCLASS) — 조회 · 키 색인 · `GetRevision` · `OnChanged` · `ComputeContentHash` · `InitializeNew` · `ApplyContent` · `FromJsonText/LoadFromFile/ToJsonText/SaveToFile` |
+| GFW | `Data/DataTableView.h` | `HDataTableRowBinder<T>` · `HDataTableView<T>`(헤더만). 받는 멤버: `bool` · `int32`(범위 검사) · `int64` · `float32/64` · `PString` · `PName` · `HAssetPath` · 리플렉션 열거형 |
+| GFW | `Data/DataTableDocument.h/.cpp` | `PDataTableDocument`(작업 사본 · 편집 10종 · 되돌리기 500 · 저장 · 다시 읽기 · 바뀐 파일 감지), `ApplyDataTableEdit`(편집마다 역편집을 돌려준다) |
+| GFW | `Data/DataTableClipboard.h/.cpp` | TSV 인코딩 · 디코딩(엑셀 · 구글 시트 규칙), 복사 · 지우기 · 붙여넣기 계획 |
+| GFW | `Data/DataTableAssets.h/.cpp` | 올라온 테이블 · 에셋 경로 목록(에셋 DB 를 읽기만), 새 테이블 토큰 경로(ASCII), 에셋 DB 참조 해석기 |
+| GFW | `Data/DataTableSelfTest.cpp` | 콘솔 명령 `datatable.selftest`(127 검사) · `datatable.validate [-path=<토큰 또는 파일 경로>]` |
+| GUI | `Grid/GUIGrid.h/.cpp` | `PGUIGrid`, `IGUIGridSource`, `HGUIGridCell` · `HGUIGridSelection` · `HGUIGridEvent`(17종). 데이터를 모르는 그리드 |
+| GUI | `GUI.h/.cpp` (추가만, 끝에 한 묶음) | `BeginDocumentTabItem` · `OpenPopup` · `BeginPopup` · `BeginPopupModal` · `EndPopup` · `CloseCurrentPopup` · `MenuItem` · `SetNextItemWidth` · `BeginDisabled/EndDisabled` · `TextWrapped` · `SetKeyboardFocusHere` · `SameLineAt`. 클립보드 · 콤보는 게임 UI(ER-008)가 먼저 만든 것을 썼다 |
+| GUI | `Backends/DX12GUIBackend.cpp` | 기본 글꼴에 한글 합침(GUI BL-3): `Content/Fonts/EditorKorean.ttf` → 없으면 `C:/Windows/Fonts/malgun.ttf` → 없으면 경고 한 줄. 14px, 큰 글꼴(26px)에는 합치지 않음 |
+| JGEditor | `Widgets/DataTableEditor.h/.cpp`, `JGEditor.cpp` | `JGDataTableEditor`(창 "Data Table Editor"), 메뉴 `Windows/Data Table Editor` |
+
+### 14-2. 설계와 달라진 점
+
+| 설계 | 실제 | 이유 |
+|---|---|---|
+| Asset 모듈 `DataTable/` | GameFrameWorks `Data/` | 사용자 결정 DT-D3. 그래서 JGConsole 의존 추가 · `DataTableCommands.cpp` 가 필요 없다(JGConsole 이 GFW 를 연결하고, 명령은 GFW 의 `HAutoConsoleCommand`) |
+| `GAssetDatabase` 에 타입별 목록 · 여러 에셋 기다리기 추가 | Asset 은 고치지 않음 | 목록은 GFW `GetLoadedDataTables` · `GetLoadedAssetPaths` 가 공개 멤버 `_assetsByAssetPath` 를 읽는다. 새 테이블은 파일을 만든 뒤 `LoadAssetAsync` 로 등록. 기다리기 도우미는 쓰는 곳이 없어 만들지 않았다 |
+| 그리드 고정 = 키 열 1개 | 행 번호 열 + 키 열(`ScrollFreeze(2, 1)`) | 행 번호(파일 순서)가 정렬 · 필터 중에도 보여야 한다 |
+| 탭 이름 뒤 `*` = 저장 안 됨 | ImGui 문서 탭 점(`•`) | `ImGuiTabItemFlags_UnsavedDocument` 표준 표시 |
+| 형식 바꾸기 | 확인 없이 적용, 바뀌지 않는 값은 기본값 + 빨간 상태 줄 "N value(s) could not convert … (Ctrl+Z to undo)" | 되돌리기 한 번으로 원래대로(설계 §8 과 같음) |
+| 객체 이름 | 테이블의 `JGObject.Name` 은 형식 이름(`"JGDataTable"`) | `JGObject::ReadJson` 이 이름을 되살리지 않아, 에셋 이름을 쓰면 다시 저장한 바이트가 달라진다 |
+| 행 이동 | 보기 정렬 · 필터 중에는 막음("Rows move only in file order") | 보기 순서와 파일 순서가 다를 때 "위로"의 뜻이 모호하다 |
+| UI 글 | 영어 | DevConsole 규칙. 한글 글꼴 범위 밖 글자(`—` 등)는 `?` 로 나온다 |
+
+### 14-3. 함정 (다음 작업자용)
+
+| 함정 | 대응 |
+|---|---|
+| `PString ==` 는 문자열 표 ID 비교 — 기본 생성한 빈 `PString` ≠ `PString("")` | 값 · 열 · 행 비교는 `DataTableSameText`(원문 비교) |
+| `PString::ToLower` 는 바이트마다 `::tolower` — 디버그 CRT 가 UTF-8 바이트(음수 char)에서 assert | `DataTableToLowerAscii`(ASCII 만 바꿈) |
+| `JGEnum::GetIndexByEnumName` 은 없을 때 -1 이 아니라 원소 수, `GetValueByEnumName` 은 0..N 연속 열거형에서만 맞다 | 바인더는 `GetEnumNameByIndex(index) != name` 으로 없음을 판정하고 `GetEnumNameByValue` 로 왕복 확인 |
+| `JGENUM` 항목은 `JGENUMMETA()` 가 있어야 목록에 나온다 | 셀프 테스트는 메타가 있는 `ETextureFilterMode` 를 쓴다 |
+| JGHeaderTool 은 코드 **문자열 안**의 `JGENUM` 같은 토큰도 선언으로 읽어 generation 파일을 깨뜨린다 | 문자열 · 주석에 리플렉션 토큰을 쓰지 않는다. 깨진 generation 파일은 지우고 PreBuild |
+| `PJsonData::FindMember/GetData` 는 값을 옮긴다 | 키마다 한 번만 읽고, 종류는 `GetValueType` 으로 먼저. float64 읽기는 `IsDouble` 이 필요해 정수 표기는 Int 경로로 |
+| ImGui 팝업은 연 곳과 같은 ID 범위에서 `Begin` 해야 한다 | 탭 내용 안에서 요청만 표시하고, 다음 그리기에서 창 수준에서 `OpenPopup`(저장 확인 창) |
+| dllexport 클래스는 복사 연산을 모두 만들어 `HSTLUniquePtr` 목록에서 C2280 | 위젯의 복사 생성 · 대입을 `delete` |
+| `HGUI::SameLine(x)` 의 x 는 간격 | 창 왼쪽 기준 위치는 `SameLineAt` |
+| ImGui Win32 백엔드는 Ctrl · Shift 를 `GetKeyState` 로 읽고, 멀티 뷰포트에서 마우스가 올라간 뷰포트를 실제 커서로 정한다 | PostMessage 자동 입력은 `AttachThreadInput` + `SetKeyboardState`(뒤에 keyup), 워크트리 전용 `JG_UITEST` 훅(`imgui_impl_win32.cpp`, **메인에 넣지 않음**). 실제 마우스 · 키보드에는 영향 없음 |
+| `%TEMP%` 아래 워크트리 빌드는 MSB8029 로 헤더 변경을 못 본다 | 헤더를 고치면 `-t:Rebuild` |
+
+### 14-4. 검증
+
+| 단계 | 결과 |
+|---|---|
+| V1 `datatable.selftest` | **OK (127/127)** — 워크트리 · 메인 트리 모두. 1만 행 · 3,338 KB JSON: 쓰기 845 ms · 읽기 763 ms · 검증 52 ms · 바인드 77 ms(DevelopEngine 구성, 워크트리 마지막 실행) |
+| V2 에디터 실제 입력(워크트리, 메시지 주입) | 새 테이블 대화상자 → 파일 생성(`AssetPath` 토큰 경로) · 열 추가 · 저장 · 바깥 수정 자동 다시 읽기 · 재시작 뒤 레이아웃으로 창 복원 · 열기 목록 · 행 추가 · 엑셀 형식 TSV 붙여넣기 3×7(한글 · `""` 따옴표 · `TRUE/FALSE`) · 바로 입력 · 한글 글자(WM_CHAR) · Space 체크 · Enum/RowRef 콤보(두 번 클릭 · F2) · Esc 취소 · 중복 키 오류 → 저장 막힘 · 깨진 RowRef 경고 · 실행 취소 / 다시(툴바 · Ctrl+Z, 상태 줄에 무엇을 되돌렸는지) · 열 머리 메뉴 · 내림차순 보기 정렬(파일 순서 그대로) · 한글 필터 "1 of 3 rows" · 범위 끌기 + Ctrl+C → TSV(탭 · CRLF · 따옴표) · 저장 파일 확인 · 종료 0 → 재시작 → 값 유지 · 열 속성 패널 String→Int(3값 기본값) → 되돌리기 · 탭 닫기(깨끗하면 바로, 저장 안 됐으면 Save and close / Discard / Cancel) · 저장 안 된 상태의 바깥 수정 알림 줄(Keep mine → 저장이 덮어씀 / Reload → 디스크 값) · 칸 메뉴 · 행 복제 · Ctrl+- 행 삭제. 로그 `[error]` 0 · live blocks 0 |
+| V2 에서 고친 것 | 실행 취소로 오류가 풀린 뒤에도 빨간 실패 문구가 남던 것(성공한 편집이 지움, 실행 취소 · 다시는 `Undo: <동작>`), 탭이 없을 때 상태 문구가 도구 막대 줄에 붙던 것, 탭을 닫으면 `Closed <경로>`, 행 복제 상태 문구 |
+| V3 회귀(워크트리) | `gameui.selftest` OK (111/111) · `console.selftest` OK (64/64) · `gmtest` OK(World 64 passed) · `net.test all` OK(101 passed) · 에디터 실행 종료 0 |
+| 메인 트리 | PreBuild exit 0 → 솔루션 전체 빌드 exit 0(14 프로젝트, 327 s, 경고는 기존 LNK4098 2건뿐) → `datatable.selftest` OK (127/127) · `gameui.selftest` OK (193/193) · `console.selftest` OK (64/64) · `gmtest` OK · `net.test all` OK(101 passed), 모두 종료 0 · live blocks 0 → 에디터 실행 · 메뉴 `Windows/Data Table Editor` 열림 · 종료 0 · `[error]` 0 · 한글 글꼴 경고 없음(사용자 `imgui.ini` 는 실행 전 상태로 되돌림) |
+
+검증하지 못한 것: 실제 손 입력(이번 V2 는 PostMessage 주입 + 워크트리 전용 훅), 한글 IME **조합** 입력(확정 글자 WM_CHAR 만 확인 — DT-H12), 게임 프로젝트 에디터에서의 테이블(`/JGGame/`).
+
+### 14-5. 측정 (DevelopEngine 구성, 워크트리 임시 측정 코드 — 측정 뒤 지움)
+
+| 항목 | 값 |
+|---|---|
+| 에디터 글꼴 아틀라스 | 한글 없음 512×256(RGBA32 0.5 MB) · 3~4 ms → 한글 합침 1024×2048(**8 MB**) · 123~125 ms(시작 때 한 번). 문제가 되면 KS X 1001 2,350자 범위로 줄인다(보류 DT-H14) |
+| 1만 행 테이블(2.9 MB, 6열) 열기 | 보기 · 검증 첫 계산 58 ms |
+| 편집 하나(칸 · 실행 취소) 뒤 보기 · 검증 다시 계산 | 47~66 ms |
+| 필터 글자 입력 한 번 | 131 ms(`행`, 첫 열에서 맞음) ~ 258 ms(`행 99`, 111행 — 모든 칸 글을 만든다). 끊김이 문제면 칸 글 캐시 · 입력 뒤 잠깐 기다렸다 거르기(보류 DT-H15) |
+| 보기 정렬(Int 열) | 90 ms |
+| 프레임 | 1만 행 탭을 연 채 가만히 110 fps(탭 없음 129 fps) — 보이는 행만 그린다 |
+| 1만 행 헤드리스(V1) | 쓰기 869 ms · 읽기 795 ms · 검증 56 ms · 바인드 82 ms(메인 트리) |
+
+---
+
+## 15. 사용 안내 — 게임 모듈에서 테이블을 만들고 묶는 법
+
+1. 에디터 메뉴 `Windows/Data Table Editor` → `New...` → Content(`/JGGame/` · `/JGEngine/`) · 경로(`Data/Items` — ASCII) · 키 열 이름(기본 `Id`) → `Create`. 파일 `Content/Data/Items.jgasset` 이 생기고 탭으로 열린다.
+2. `+ Column`(또는 열 머리 오른쪽 클릭 → Insert column) 으로 열을 만들고, 열 머리를 누르면 오른쪽 패널에서 타입 · 기본값 · 범위 · Enum 목록 · RowRef 테이블 · AssetRef 클래스를 바꾼다. 행은 `+ Row` · 칸 메뉴 · 엑셀에서 복사한 블록 붙여넣기(키 열부터 붙이면 행이 늘어난다).
+3. `Ctrl+S` 저장. 오류(빈 · 중복 키)가 있으면 저장이 막히고, 경고(범위 · 깨진 참조)는 저장된다. 텍스트 편집기 · git 으로 고친 파일은 열린 탭이 1초 안에 다시 읽는다.
+4. 게임 코드 — 필요한 열만 멤버 포인터로 묶는다(예시 이름은 중립). 게임 모듈 `module.json` 의존에 **`Asset` 을 더한다**(`Data/DataTable.h` 가 `Asset.h` 를 include — 게임 템플릿 기본 의존은 Core · GameFrameWorks 뿐이고 include 경로가 전이되지 않는다, GFW C-1 · GFW 시험 게임들과 같음).
+
+```cpp
+#include "Data/DataTableView.h"
+
+struct HItemRow
+{
+	int32      Count = 0;
+	PString    Label;
+	EItemKind  Kind = EItemKind::A;   // JGENUM + JGENUMMETA 항목
+	HAssetPath Mesh;
+	PName      Next;
+
+	static void BindColumns(HDataTableRowBinder<HItemRow>& binder)
+	{
+		binder.Bind("Count", &HItemRow::Count);
+		binder.Bind("Label", &HItemRow::Label);
+		binder.Bind("Kind",  &HItemRow::Kind);
+		binder.Bind("Mesh",  &HItemRow::Mesh);
+		binder.Bind("Next",  &HItemRow::Next);
+	}
+};
+
+HDataTableView<HItemRow> _items;
+
+void loadItems()
+{
+	POnLoadCompelete onLoaded;
+	onLoaded.BindLambda([this](PWeakPtr<JGAsset> inAsset)
+		{
+			PSharedPtr<JGDataTable> table = Cast<JGDataTable>(inAsset.Pin());
+			HList<HDataTableIssue> issues;
+			if (table == nullptr || _items.Bind(table, &issues) == false)
+			{
+				return;   // 열 없음 · 타입 불일치는 issues 와 로그(HDataTableView<…>::Bind)에
+			}
+			// 에디터에서 저장하면 OnChanged → 다시 묶는다
+			table->OnChanged.AddLambda([this](const JGDataTable&)
+				{
+					// _items.Bind(...) 를 다시 부른다
+				});
+		});
+	GAssetDatabase::GetInstance().LoadAssetAsync(HAssetPath("/JGGame/Data/Items.jgasset"), onLoaded);
+}
+
+// 조회: 키는 해시 색인, 순회는 늘 파일의 행 순서
+const HItemRow* row = _items.Find(PName("Row_A"));
+for (int32 i = 0; i < _items.GetCount(); ++i)
+{
+	const HItemRow& item = _items.Get(i);
+}
+```
+
+5. 바인딩 규칙: 없는 열 · 다른 타입은 실패(로그에 열 이름과 기대 타입), 테이블에만 있는 열은 무시. `int32` 는 범위 밖 값이면 실패, `float32/64` 는 Int 열도 받는다, `PString/PName` 은 String · Enum · RowRef · AssetRef 를 받는다. `IsUpToDate()` 가 false 면 테이블이 바뀐 것.
+6. 헤드리스 확인: `JGConsole.exe datatable.validate`(경로 없이 = 엔진 · 게임 Content 의 모든 테이블) 또는 `-path=/JGGame/Data/Items.jgasset`(파일 경로도 된다) — 형식 · 키 · 범위 · 참조 문제를 출력하고, 오류가 있거나 읽지 못한 파일이 있으면 실패(종료 코드 1). 10-01 메인 트리: 테이블 0개 → OK, 워크트리 `Sample.jgasset` 파일 경로 → `OK (3 rows)`.

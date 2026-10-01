@@ -1,0 +1,174 @@
+﻿[:28964:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 5752075649335917462. pages are created on first request
+[:28964:][info][Core]: Active Thread: [2096503484]
+[:28964:][info][Core]: Active Thread: [1733732483]
+[:28964:][info][Core]: Active Thread: [3968684433]
+[:28964:][info][Core]: Active Thread: [369970058]
+[:28964:][info][Core]: Active Thread: [2580878577]
+[:28964:][info][Core]: Active Thread: [1848756162]
+[:28964:][info][Core]: Active Thread: [2105353466]
+[:28964:][info][Core]: Active Thread: [723082380]
+[:28964:][info][Core]: Active Thread: [2568061208]
+[:28964:][info][Core]: Active Thread: [639778199]
+[:28964:][info][Core]: Active Thread: [3630243820]
+[:28964:][info][Core]: Active Thread: [3816067355]
+[:28964:][info][Core]: Active Thread: [2059329640]
+[:28964:][info][Core]: Active Thread: [2992442952]
+[:28964:][info][Core]: Active Thread: [3625074268]
+[:28964:][info][Core]: Active Thread: [2925323526]
+[:28964:][info][Core]: Active Thread: [2698747902]
+[:28964:][info][Core]: Active Thread: [755297531]
+[:28964:][info][Core]: Active Thread: [1696478215]
+[:28964:][info][Core]: Active Thread: [826253909]
+[:28964:][info][Core]: Active Thread: [4146703629]
+[:28964:][info][Core]: Active Thread: [4236481712]
+[:28964:][info][Core]: Active Thread: [1346185452]
+[:28964:][info][Core]: Active Thread: [1760934604]
+[:28964:][info][Core]: Active Thread: [257609416]
+[:28964:][info][Core]: Active Thread: [1543704615]
+[:28964:][info][Core]: Active Thread: [581169624]
+[:28964:][info][Core]: Active Thread: [97133662]
+[:28964:][info][Core]: Active Thread: [2579756836]
+[:28964:][info][Core]: Active Thread: [581665277]
+[:28964:][info][Core]: Active Thread: [1075072961]
+[:28964:][info][Core]: Active Thread: [3829956454]
+[:28964:][info][Core]: Active Thread Totoal Count: 32 
+[:28964:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.62 MB)
+[:28964:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.69 MB)
+[:28964:][trace][Graphics]: DirectX12 Init Start
+[:28964:][trace][Graphics]: Success Create D3D12Device
+[:28964:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:28964:][info][Graphics]: VideoMemory : 16050  MB
+[:28964:][trace][Graphics]: Create DescriptorAllocator...
+[:28964:][trace][Graphics]: Create CommandQueue...
+[:28964:][trace][Graphics]: Create ResourceStagingManager...
+[:28964:][trace][Graphics]: Create FrameBuffer...
+[:28964:][trace][Graphics]: Create Default Resources...
+[:28964:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:28964:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:28964:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.81 MB)
+[:28964:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:28964:][info][Graphics]: Start Collect Shader in (../../Source/Shader)
+[:28964:][trace][Graphics]: Collect compute_shader_template
+[:28964:][trace][Graphics]: Collect draw2d
+[:28964:][trace][Graphics]: Collect graphics_shader_template
+[:28964:][trace][Graphics]: Collect scene_shader
+[:28964:][info][Graphics]: Complete Collect Shader
+[:28964:][trace][Graphics]: DirectX12 Init End
+[:28964:][trace][Graphics]: Startup Graphics Module...
+[:28964:][trace][Asset]: Startup Asset Module...
+[:28964:][trace][JGEditor]: Startup JGEditor Module...
+[:28964:][info][Core]: Recognized Class List...
+[:28964:][debug][Core]: - JGStaticMeshComponent
+[:28964:][debug][Core]: - JGGameplayEntityComponent
+[:28964:][debug][Core]: - JGAssetImporter
+[:28964:][debug][Core]: - JGGameplayEffect
+[:28964:][debug][Core]: - JGGameplayDevView
+[:28964:][debug][Core]: - JGMemoryStatistcs
+[:28964:][debug][Core]: - JGGameplayEntityActor
+[:28964:][debug][Core]: - JGDevConsole
+[:28964:][debug][Core]: - JGSceneViewport
+[:28964:][debug][Core]: - JGDataTableEditor
+[:28964:][debug][Core]: - JGAsset
+[:28964:][debug][Core]: - JGDevFeature
+[:28964:][debug][Core]: - JGDevScene
+[:28964:][debug][Core]: - JGDevSettings
+[:28964:][debug][Core]: - JGStaticMesh
+[:28964:][debug][Core]: - JGTexture
+[:28964:][debug][Core]: - JGFBXAssetImporter
+[:28964:][debug][Core]: - JGActor
+[:28964:][debug][Core]: - JGCameraComponent
+[:28964:][debug][Core]: - JGCameraActor
+[:28964:][debug][Core]: - JGGameEntryActor
+[:28964:][debug][Core]: - JGPickShapeComponent
+[:28964:][debug][Core]: - JGGameMasterActor
+[:28964:][debug][Core]: - JGGameplayControllerActor
+[:28964:][debug][Core]: - JGGameplayCue
+[:28964:][debug][Core]: - JGActorComponent
+[:28964:][debug][Core]: - JGGameInstance
+[:28964:][debug][Core]: - JGWidget
+[:28964:][debug][Core]: - JGDataTable
+[:28964:][debug][Core]: - JGGameplayCommandHandler
+[:28964:][debug][Core]: - JGGameplayModifier
+[:28964:][debug][Core]: - JGGameplayTrigger
+[:28964:][debug][Core]: - JGGameWidget
+[:28964:][debug][Core]: - JGWidgetComponent
+[:28964:][trace][Asset]: Start Load Assets in ../../Content
+[:28964:][trace][Graphics]: Register DevScene_Output in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_Output   Ref : 1
+[:28964:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:28964:][trace][Graphics]: Register DevScene_Display in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_Display   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Depth   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_DepthStencil   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_CompositeMaterial in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_CompositeMaterial   Ref : 1
+[:28964:][trace][Graphics]: Register DevScene_DisplayMaterial in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_DisplayMaterial   Ref : 1
+[:28964:][info][GUI]: Layout: reopened JGDevFeature 
+[:28964:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:28964:][trace][Graphics]: Graphics PSO created. cache size 1
+[:28964:][trace][Graphics]: Graphics PSO created. cache size 2
+[:28964:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:28964:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:16516:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 17649477792579261681. pages are created on first request
+[:16516:][warning][Asset]: NOT Support Asset Path
+[:16516:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:16516:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:16516:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:28964:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:16516:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:16516:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:16516:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:16516:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:16516:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:16516:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:16516:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:28964:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:28964:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:28964:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:28964:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:28964:][trace][Graphics]: Graphics PSO created. cache size 3
+[:28964:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 1
+[:28964:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:28964:][trace][Graphics]: Register DevScene_Output_ReadbackStaging in ResourceRefMap
+[:28964:][trace][Graphics]: Add Counting Resource : DevScene_Output_ReadbackStaging   Ref : 1
+[:28964:][trace][Graphics]: Remove Counting Resource : DevScene_Output_ReadbackStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister DevScene_Output_ReadbackStaging in ResourceRefMap
+[:28964:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:28964:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 0
+[:28964:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:28964:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png

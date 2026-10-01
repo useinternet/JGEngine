@@ -4,24 +4,11 @@
 
 namespace
 {
-	// 화면에 보일 색(sRGB 0xRRGGBB)을 GUI 에 넘길 선형 색으로 바꾼다.
-	// GUI 는 선형(FP16) 버퍼에 그려진 뒤 sRGB 로 인코딩되어 나간다(ImGui 기본 창 배경 0.06 이 #454545 로 보인다).
-	// sRGB 값을 그대로 넘기면 옅고 밝게 뜬다. 출력 색 공간이 바뀌면(Graphics 5-14) 이 변환만 고친다.
-	float32 srgbToLinear(float32 InValue)
-	{
-		if (InValue <= 0.04045f)
-		{
-			return InValue / 12.92f;
-		}
-		return powf((InValue + 0.055f) / 1.055f, 2.4f);
-	}
-
+	// 화면에 보일 색(sRGB 0xRRGGBB)을 GUI 색으로 바꾼다. 출력이 8비트 sRGB(Graphics 5-14)라 HGUI::DisplayColor 가 값을 그대로 옮긴다.
+	// (FP16 선형 출력이던 때는 sRGB → 선형으로 바꿔야 옅게 뜨지 않았다)
 	HLinearColor displayColor(uint32 InRGB)
 	{
-		const float32 R = static_cast<float32>((InRGB >> 16) & 0xFF) / 255.0f;
-		const float32 G = static_cast<float32>((InRGB >> 8) & 0xFF) / 255.0f;
-		const float32 B = static_cast<float32>(InRGB & 0xFF) / 255.0f;
-		return HLinearColor(srgbToLinear(R), srgbToLinear(G), srgbToLinear(B), 1.0f);
+		return HGUI::DisplayColor(InRGB);
 	}
 
 	// 두 sRGB 색을 섞는다. 막대의 빈 칸은 채움 색을 표면 쪽으로 섞은 같은 계열의 어두운 색이다.
@@ -266,10 +253,11 @@ namespace
 			Args.XValues.push_back(Time - InNow);
 		}
 
-		// 커밋은 맥락(회색 선), 사용 중이 주인공(파란 선 + 옅은 면). 면 불투명도는 선형 버퍼에서 섞이므로 sRGB 10% 쯤으로 보이는 값이다.
+		// 커밋은 맥락(회색 선), 사용 중이 주인공(파란 선 + 옅은 면). 면은 sRGB 10%. (출력이 sRGB라 섞임도 sRGB 공간이다, Graphics 5-14.
+		// 선형 FP16 출력이던 때는 같은 모양을 내려고 0.035였다)
 		Args.SeriesLabels     = { "Committed", "In use" };
 		Args.SeriesColors     = { ColorCommitted, ColorInUse };
-		Args.SeriesFillAlphas = { 0.0f, 0.035f };
+		Args.SeriesFillAlphas = { 0.0f, 0.10f };
 		Args.Datas.insert(Args.Datas.end(), InCommittedMB.begin(), InCommittedMB.end());
 		Args.Datas.insert(Args.Datas.end(), InAllocatedMB.begin(), InAllocatedMB.end());
 

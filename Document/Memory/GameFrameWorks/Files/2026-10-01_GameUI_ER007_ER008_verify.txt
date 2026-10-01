@@ -73,3 +73,24 @@ gameui_e2e.ps1 (PostMessageW 판) → ExitCode 0. 게임 jg_log.txt: "Project Ga
 워크트리 정리: git worktree remove --force <scratchpad>\wt_er (반영 확인 — GFW · SceneViewport · 새 파일은 메인과 바이트 동일, GUI 3파일은 메인이 DevConsole 추가분까지 합친 상위 내용)
 알림: DataTable(클립보드 · 키 도우미 이름) · DevConsole(GUI 3파일 3-way — 그쪽 grep 확인 회신) · JGEditor(SceneViewport handleKeyboard) · GameFrameWorks(UI/ 반영 · 메인 빌드 — 그쪽 11:14 Bin 으로 gmtest 110+64 · net.test 101 통과 회신) 세션
 남은 것: GG-9U 실제 한글 IME 조합(사용자), GG-C1 커밋(사용자)
+
+== 7. 커밋 · 그 뒤 (10-01 오후) ==
+사용자 커밋 736ddbe "엔진 구현"(10-01 12:16): git show --name-status 736ddbe 로 확인 — GFW UI/ 26 · draw2d.hlsl · Graphics 2D 경로 10 · GUI 3 · SceneViewport · GameplayDevView · GFW Core 4 · 이 기록 · 캡처 · 검증 게임 · 문서 모두 포함.
+  커밋 뒤 게임 UI 파일의 변경은 다른 트랙 것: SceneViewport.cpp — Graphics 5-14(미커밋) 가 게임 UI 를 GetDisplayTexture()(R8G8B8A8, sRGB 인코딩) 위에 그림,
+  GUI.h/.cpp · DX12GUIBackend.cpp · GUI/Grid/ — DataTable(미커밋, ER-008 클립보드 함수를 그대로 씀. 선언 · 정의 하나씩 남아 있음을 grep 으로 확인).
+5-14 영향: 2D 경로는 SetRenderTarget 이 대상 형식을 PSO RTV 로 넣어 형식은 맞춰진다(코드 읽기). 화면 색은 코드 값 그대로가 되어 End Turn 이 (249,179,89) → (242,115,26).
+  gameui_e2e.ps1 을 (242,115,26) → 없으면 (249,179,89) 순서로 찾게 고침(Find-Color). 지금 메인 엔진 데모(5-14 전 빌드)로 다시 돌림:
+  "Orange pixels 3358 as linear output (249,179,89)" → 20단계 통과(address 192.168.0.10:4777 · name 홍길동ab · Back 한 번), [error] 0, live 0, 종료 0.
+  새 색 경로는 5-14 가 메인에 들어온 뒤 확인(GG-H11, Graphics 세션에 알림).
+
+== 8. Graphics 5-14 (a) 8비트 sRGB 출력 뒤 (10-01 오후, Graphics 세션 요청) ==
+Graphics 세션: 프레임 버퍼 R8G8B8A8_Unorm, PSceneRenderer 디스플레이 패스(출력 FP16 → sRGB 인코딩 → GetDisplayTexture() R8G8B8A8, Allow_RenderTarget),
+  SceneViewport 가 게임 UI 를 디스플레이 텍스처에 그리고 그것을 보여 줌. 메인 반영 · 빌드 13:33(미커밋). 게임 UI 코드는 바꾸지 않음.
+<scratchpad>\Games\Main2\GameUIDemo — GenerateProjectFiles(DataTable 새 파일 GFW Data/ · GUI Grid/ · DataTableEditor 포함) → -t:Rebuild 272초 오류 0
+gameui_e2e.ps1 → "Orange pixels 3376 as sRGB display (242,115,26), box (590,429)-(701,463)" → 20단계 통과:
+  paragraph measured 598.8 x 207.5 · End Turn (turn 2 · turn 3) · back handled by JGGameUIDemoPauseMenu · Resume · address committed: 192.168.0.10:4777 · name committed: 홍길동ab · Back (Esc): no game UI back handler 한 번
+  SceneViewport Click 12, [error] · [critical] 0, 경고 1(Asset, 기존), live blocks 0, 종료 0
+dbgcount 25초(HUD 를 매 프레임 그림 — 2D 경로가 R8G8B8A8 대상 PSO 를 씀): 실행 중 D3D12 메시지 0. 종료 때만 Live Producer 1 · Live Object 12
+  (기준 11 + 1 — Graphics 세션 확인: 5-14 로 늘어난 객체 하나, 디스플레이 텍스처일 가능성이 큼. 장치 Live Producer 가 끝까지 안 놓여 디버그 레이어가 아래 객체를 다 세는 종료 보고이고 새 누수 경로 아님 — 장치 동기 파괴는 Graphics 보류 P3), 종료 0
+캡처 Files/2026-10-01_gameui_er_srgb514.png(Scene Viewport): UI 색이 코드 값 그대로(End Turn 진한 주황, 패널 · 입력란 더 어두움), 줄바꿈 문단 · 말줄임 · 주소 · 한글 이름 정상
+→ TODO GG-H11 닫음

@@ -26,6 +26,27 @@ bool HFileHelper::WriteAllText(const PString& path, const PString& str)
 	}
 }
 
+bool HFileHelper::WriteAllTextAtomic(const PString& path, const PString& str)
+{
+	const PString tempPath = path + ".tmp";
+	if (WriteAllText(tempPath, str) == false)
+	{
+		return false;
+	}
+
+	// std::filesystem::rename 은 Windows 에서 MoveFileEx(MOVEFILE_REPLACE_EXISTING) 라 있는 파일을 바꿔 넣는다
+	std::error_code errCode;
+	fs::rename(tempPath.GetRawString(), path.GetRawString(), errCode);
+	if (errCode)
+	{
+		std::error_code removeErrCode;
+		fs::remove(tempPath.GetRawString(), removeErrCode);
+		return false;
+	}
+
+	return true;
+}
+
 bool HFileHelper::ReadAllText(const PString& path, PString* out_str)
 {
 	if (out_str == nullptr)

@@ -59,10 +59,11 @@ void JGSceneViewport::OnUpdate()
 	_renderer->Render(*world->GetScene(), camera->GetSceneCameraID());
 
 	// 게임 UI(게임 인스턴스의 JGGameWidget 레이어 스택)를 월드 위에 그린다. 올라간 위젯이 없으면 아무것도 하지 않는다.
+	// UI 색은 sRGB로 정한 값이라 sRGB로 인코딩된 디스플레이 텍스처 위에 그린다. (선형 출력 텍스처에 그리면 옅게 뜬다, Graphics 5-14)
 	PSharedPtr<PGameUIManager> ui = JGGameInstance::Get().GetUI();
 	if (ui != nullptr)
 	{
-		ui->Render(_renderer->GetOutputTexture());
+		ui->Render(_renderer->GetDisplayTexture());
 	}
 }
 
@@ -102,7 +103,7 @@ bool JGSceneViewport::findView(PSharedPtr<PWorld>& outWorld, PSharedPtr<JGCamera
 		return false;
 	}
 
-	if (_renderer == nullptr || _renderer->GetOutputTexture() == nullptr)
+	if (_renderer == nullptr || _renderer->GetDisplayTexture() == nullptr)
 	{
 		if (outProblem != nullptr)
 		{
@@ -143,7 +144,7 @@ void JGSceneViewport::OnGenerateGUI()
 		imageSize = HVector2(SceneViewportMinImageWidth, SceneViewportMinImageWidth / aspect);
 	}
 
-	const HGUIImageInput input = HGUI::InteractiveImage(PString("##SceneViewportImage"), _renderer->GetOutputTexture()->GetTextureID(), imageSize);
+	const HGUIImageInput input = HGUI::InteractiveImage(PString("##SceneViewportImage"), _renderer->GetDisplayTexture()->GetTextureID(), imageSize);
 	handleInput(world, camera, input, imageSize);
 	handleKeyboard(input, imageSize);
 

@@ -52,7 +52,7 @@
 | 3-9 · 3-10 | P3 검증 · 커밋 | P3 항목이 승격될 때 | 3-3·3-4는 프로젝트 재생성 |
 | BL-1 | 컨텍스트(우클릭) 메뉴 — `GUIModule.h:30` 주석 | 필요한 위젯이 생길 때 | 옛 `HContextMenuBuilder` 참고(`GUI_백업.zip`) |
 | BL-2 | 스타일/테마 | 요청 시 | 지금 `StyleColorsDark` 고정(`DX12GUIBackend.cpp`) |
-| BL-3 | 폰트(TTF 로드 경로, 한글 글리프, `Source/Font` 폴더) | 한글 표시가 필요할 때 | 그때까지 표시 문자열은 영어(DevConsole 규칙) |
+| BL-3 | ~~폰트(TTF 로드 경로, 한글 글리프)~~ → **10-01 완료(DataTable DT-0-3)**, 완료 이력 참고. 남은 것: 에디터 전용 글꼴 파일(`Content/Fonts/EditorKorean.ttf`)을 저장소에 둘지, 범위 줄이기(DataTable 보류 DT-H14) | 배포용 글꼴이 필요할 때 | 시스템 `malgun.ttf` 는 배포 금지(GameUI 설계와 같은 정책) |
 | BL-5 | `OpenWidget<T>` 비템플릿 경로(`OpenWidget(JGClass)`) | `Widgets` 맵 타입을 바꿀 때 | 지금은 소비자 DLL이 맵을 직접 조작 → 전부 재빌드 |
 | BL-6 | 위젯 GUI 생성 시점(`GraphicsBegin`)을 `End`/`GraphicsEnd` 앞으로 | 위젯 상태 변경이 한 프레임 늦게 보이는 것이 문제 될 때 | DevScene 드로우 기록 순서와 함께 |
 
@@ -78,6 +78,8 @@
 | 1-7 | `PDX12GUIBackend::Shutdown` 끝에 `PGUIBackend::Shutdown()`(델리게이트 해제) | 2026-09-30 | 종료 코드 0, 종료 순서 로그 정상. **미커밋** |
 | 1-8 | `JGDevFeature::OnLayout`의 DevSettings 조건을 `DevSettings.IsValid()`로 — `Devkit/DevFeature.cpp:52` | 2026-09-30 | 코드 확인, 캡처에 DevSettings 패널 250폭 그대로. **미커밋** |
 | 1-9 | 로그 카테고리 `JGDev_GraphicsModule` → `GUI` — `GUIModule.cpp:21`(`DevConsoleModule.cpp` 부분은 09-29 완료) | 2026-09-30 | 코드 확인(Graphics 연결 실패 경로에서만 찍힘). **미커밋** |
+| BL-3 | (DataTable 트랙 DT-0-3) **에디터 기본 글꼴에 한글 합침** — `Backends/DX12GUIBackend.cpp` `AddKoreanGlyphsToDefaultFont`: `Content/Fonts/EditorKorean.ttf` → 없으면 `C:/Windows/Fonts/malgun.ttf` → 없으면 경고 한 줄, 14px `MergeMode`, `GetGlyphRangesKorean`. 큰 글꼴(26px)에는 합치지 않음 | 2026-10-01 | `Document/Memory/Etc/Files/2026-10-01_datatable_verify.txt` §5: 아틀라스 512×256 → 1024×2048(8 MB) · 시작 때 123 ms, 한글 셀 · 필터 캡처, 메인 트리 에디터 실행 경고 없음 · 종료 0. **미커밋**(DataTable DT-C1) |
+| — | (DataTable 트랙) **새 컨트롤 `Grid/GUIGrid.h/.cpp` `PGUIGrid`**(데이터를 모르는 스프레드시트 그리드: 고정 행 번호 · 키 열, 가상화, 사각 선택, 키보드, 텍스트 · 체크 · 콤보 편집기, 이벤트 17종) + **`HGUI` 래퍼 13개**(`GUI.h/.cpp` 끝 한 묶음: `BeginDocumentTabItem` · `OpenPopup` · `BeginPopup` · `BeginPopupModal` · `EndPopup` · `CloseCurrentPopup` · `MenuItem` · `SetNextItemWidth` · `BeginDisabled/EndDisabled` · `TextWrapped` · `SetKeyboardFocusHere` · `SameLineAt`). 3-7 방침(즉시 모드 함수 = `HGUI` 정적)대로. BL-1(모듈 수준 컨텍스트 메뉴 등록)은 아님 — 위젯이 `OpenPopup/BeginPopup` 으로 직접 그린다 | 2026-10-01 | DataTable V2(그리드 · 메뉴 · 모달 · 탭), 메인 빌드 exit 0. 설계 `Files/DataTable_설계_2026-10-01.md` §14-1. **미커밋**(DataTable DT-C1) |
 | BL-4 | **위젯 열림 상태 저장 · 복원**(사용자 보고 "에디터 레이아웃 저장이 안 됨", JGEditor 세션). 창 위치 · 도킹은 원래 저장되고 있었고 열린 창 목록만 없었다. `GUIModule.h/.cpp`: `Widgets` 키 `HGuid` → `JGType`(클래스 이름으로 리플렉션 재생성), `imgui.ini` `[JGWidget][Open]` 절(`AddSettingsHandler`, 이름순), 시작 때 ini 미리 읽기, 첫 프레임에 저장된 열린 위젯 다시 열기(로그 `Layout: reopened ...`), 매 프레임 상태 기록, `OpenWidgetByDefault<T>()`(사용자가 닫아 둔 기본 창은 안 엶). `JGEditor.cpp` 씬 뷰포트를 그것으로. `WidgetComponents` 직렬화는 하지 않음(쓸 곳 없음) | 2026-10-01 | `Files/2026-10-01_layout_restore_verify.txt`: GUI · DevConsole · DevStatistics · GameGUI · JGEditor 빌드 exit 0, 메인 트리 에디터 저장 → 재시작 복원, 사용자 ProjectAH ini 로 배치 그대로 복원(`Files/2026-10-01_layout_restored.png`), 닫은 기본 창 유지(`Files/2026-10-01_layout_closed_default_stays_closed.png`), 종료 0 · live blocks 0. **미커밋** |
 
 ---

@@ -176,8 +176,8 @@ public:
 
 public:
 	// ---- 편집기 창 테마 · 콘솔 ----
-	// 화면에 보일 색(sRGB 0xRRGGBB)을 GUI 에 넘길 선형 색으로 바꾼다. GUI 는 선형 버퍼에 그린 뒤 sRGB 로 인코딩해 내보내므로
-	// sRGB 값을 그대로 넘기면 옅게 뜬다(ImGui 창 배경 0.06 이 #454545 로 보인다). 출력 색 공간이 바뀌면(Graphics 5-14) 이 함수를 고친다.
+	// 화면에 보일 색(sRGB 0xRRGGBB)을 GUI 색으로 바꾼다. 출력이 8비트 sRGB(Graphics 5-14, 2026-10-01)라 값을 그대로 옮긴다.
+	// 디자인 도구의 16진 색을 그대로 쓰고, 반투명도 디자인 도구처럼 sRGB 공간에서 섞인다. 출력 색 공간이 다시 바뀌면 이 함수만 고친다.
 	static HLinearColor DisplayColor(uint32 InRGB, float32 InAlpha = 1.0f);
 	// 모서리 · 테두리 · 여백 같은 모양 값을 잠시 바꾼다. 값의 형은 EGUIStyleVar 주석을 따른다. Push 한 만큼 Pop 한다.
 	static void PushStyleVar(EGUIStyleVar InTarget, float32 InValue);
@@ -200,4 +200,28 @@ public:
 	// 다음에 그릴 한 줄 뒤를 보이는 창 폭만큼 InBackground 로 칠하고 왼쪽 끝에 InAccentWidth 픽셀 막대를 InAccent 로 칠한다(로그 줄 · 목록 선택 강조).
 	// 커서는 움직이지 않는다. 이어진 줄을 칠하면 줄 간격까지 덮어 한 띠로 보인다.
 	static void HighlightLine(const HLinearColor& InBackground, const HLinearColor& InAccent, float32 InAccentWidth = 2.0f);
+
+public:
+	// ---- 데이터 테이블 편집 창(JGEditor JGDataTableEditor)이 쓰는 것. 2026-10-01 DataTable 트랙 ----
+	// (클립보드 Get/SetClipboardText · BeginCombo/EndCombo 는 위에 있는 것을 쓴다)
+	// 문서 탭. 닫기 단추를 누르면 bOpen 이 false 가 된다. bUnsaved = 저장 안 됨 표시, bSelect = 이번 프레임에 이 탭을 고른다.
+	// true 일 때만 EndTabItem 을 부른다.
+	static bool BeginDocumentTabItem(const PString& InLabel, bool& bOpen, bool bUnsaved, bool bSelect);
+	// 팝업 · 모달(화면 가운데, 내용 크기). Begin* 이 true 일 때만 내용을 그리고 EndPopup 을 부른다.
+	static void OpenPopup(const PString& InName);
+	static bool BeginPopup(const PString& InName);
+	static bool BeginPopupModal(const PString& InName);
+	static void EndPopup();
+	static void CloseCurrentPopup();
+	static bool MenuItem(const PString& InLabel, const PString& InShortcut = PString(), bool bEnabled = true);
+	// 다음 항목 폭(픽셀). 음수면 오른쪽 끝에서 그만큼 뺀 폭
+	static void SetNextItemWidth(float32 InWidth);
+	// 사이의 항목을 흐리게 · 누를 수 없게
+	static void BeginDisabled(bool bDisabled = true);
+	static void EndDisabled();
+	static void TextWrapped(const PString& InText);
+	// 다음 항목(입력란)에 키보드 초점
+	static void SetKeyboardFocusHere();
+	// 같은 줄의 창 왼쪽에서 InOffsetX 픽셀 자리로(라벨 뒤 입력란 줄 맞춤). SameLine(InSpacing) 은 간격이다
+	static void SameLineAt(float32 InOffsetX);
 };

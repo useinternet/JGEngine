@@ -85,7 +85,10 @@ void PDirectX12API::Initialize(const HJGGraphicsArguments& args)
 	frameBufferInfo.FrameBufferCount = args.BufferCount;
 	frameBufferInfo.Width  = args.Width;
 	frameBufferInfo.Height = args.Height;
-	frameBufferInfo.Format = ETextureFormat::R16G16B16A16_Float;
+	// 8비트 sRGB 출력(5-14). 버퍼 값은 sRGB로 인코딩된 값으로 화면에 나간다(UNORM이라 하드웨어 변환 없음).
+	// 3D는 장면 렌더러가 선형(FP16)으로 그린 뒤 디스플레이 패스에서 sRGB로 바꿔 넘기고, UI(ImGui · 게임 UI)는 sRGB 색을 그대로 그린다.
+	// FP16이던 때는 OS가 버퍼를 선형(scRGB)으로 보고 한 번 더 인코딩해 sRGB로 정한 UI 색이 옅게 보였다(창 배경 0.06 → #454545).
+	frameBufferInfo.Format = ETextureFormat::R8G8B8A8_Unorm;
 	_frameBuffer = Allocate<PDX12FrameBuffer>();
 	_frameBuffer->Initialize(frameBufferInfo);
 

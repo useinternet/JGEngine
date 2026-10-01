@@ -1,0 +1,87 @@
+DataTable (JSON data table asset + spreadsheet editor) - verification, 2026-10-01
+Design / results: DataTable_설계_2026-10-01.md (§14 results, §15 usage). TODO: ../TODO_DataTable.md.
+Captures: 2026-10-01_datatable_v2_*.png (10 files, same folder).
+
+== 1. Where it was built ==
+Worktree: scratchpad git worktree (detached 4c8ac73) + snapshot of the main tree's uncommitted files at that time.
+  All implementation, worktree builds and V1~V3 ran there. %TEMP% worktree -> MSB8029, header edits rebuilt with -t:Rebuild.
+Main tree: HEAD 736ddbe (user commit "엔진 구현", clean before apply).
+  Applied with a 3-way script (base = worktree index snapshot, mine = worktree file, theirs = main file):
+    Json.h/.cpp, FileHelper.h/.cpp, ObjectGlobalSystem.h, DX12GUIBackend.cpp, JGEditor.cpp : main unchanged since snapshot -> worktree version
+    GUI.h (+24 lines) / GUI.cpp (+77 lines)                                                 : main + insertions only -> worktree version
+    22 new files (GFW Data/ 18, GUI Grid/ 2, JGEditor Widgets/ 2 - see TODO commit list)       : new, LF
+  NOT applied (worktree only): Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp "[TEMP datatable uitest]" JG_UITEST hook,
+    Content/DataTableTest/*.jgasset test tables, temporary measurement code (font atlas / view refresh / frame counter).
+  grep in main Source for "TEMP datatable" / "JG_UITEST": 0.
+
+== 2. V1 headless (JGConsole datatable.selftest) ==
+worktree : datatable.selftest: OK (127/127)
+           scale: 10000 rows, 3338 KB JSON, write 845 ms, read 763 ms, validate 52 ms, bind 77 ms
+main     : datatable.selftest: OK (127/127), exit 0, live blocks 0
+           scale: 10000 rows, 3338 KB JSON, write 869 ms, read 795 ms, validate 56 ms, bind 82 ms
+           [error] lines = 5, all intended negative cases (int32 overflow 5000000000, enum 'Cubic' not in ETextureFilterMode,
+           String column bound to bool, missing column 'NoSuchColumn', row without key)
+datatable.validate (main): no path -> "0 table(s), 0 with errors, 0 unreadable" exit 0
+                           -path=<worktree>/Content/DataTableTest/Sample.jgasset -> "OK (3 rows)" exit 0
+
+== 3. V2 editor, real window input (worktree editor, JG_UITEST=1) ==
+Input path: PostMessage WM_MOUSEMOVE/BUTTON/KEY/CHAR to the launcher window (scratchpad dt_ui.ps1);
+  Ctrl/Shift via AttachThreadInput + SetKeyboardState (+ keyup after); worktree-only hook so ImGui uses the main viewport
+  for hover (otherwise the real cursor position decides and posted clicks are dropped). Real mouse/keyboard unaffected.
+Table: /JGEngine/DataTableTest/Sample.jgasset - Count Int, Label String, Rate Float (default 1.0, Min 0),
+  Enabled Bool (default true), Kind Enum [A,B,C], Next RowRef (same table).
+Checked (capture names in scratchpad v2/, selected ones copied here):
+  - New... dialog (Content /JGEngine/, path, key column) -> file created, AssetPath = token path, Name "JGDataTable"
+  - + Column dialog (Count Int, Label String) -> Save
+  - external edit while clean -> "Reloaded /JGEngine/DataTableTest/Sample.jgasset (changed on disk)"
+  - restart -> layout reopened the window, "Open table..." lists the asset, opens it
+  - + Row; Ctrl+V of Excel-style TSV 3x7 (Korean, quoted cell with "" , TRUE/FALSE/true, empty cell) -> "Pasted 3 x 7 cell(s)"   [v2_paste_tsv]
+  - type-to-edit (42), Korean committed characters via WM_CHAR ("한글 입력"), Space toggles Bool
+  - Enum combo below the cell (double click, F2) -> pick; RowRef combo lists (none), Row_A, Row_B, Row_C                 [v2_rowref_combo]
+  - double click text cell -> edit keeps text; Esc cancels
+  - duplicate key -> red border + "[Error] row 3, Id: key 'Row_A' is a duplicate of row 1" + RowRef warning,
+    Save -> "not saved: key 'Row_A' is a duplicate of row 1 (row 3)"                                                 [v2_validation_blocks_save]
+  - Undo / Redo (toolbar + Ctrl+Z) -> status "Undo: Rename key" / "Redo: Rename key"
+  - header right-click menu (sort asc/desc, clear, apply sort, insert/move/delete column, properties)                    [v2_header_menu]
+  - Sort descending: view 42/12/3, row numbers keep file order, status "view sorted or filtered (file order unchanged)"
+  - Filter "한글" -> "1 of 3 rows"; clear; Clear sort -> file order                                                        [v2_filter_korean]
+  - drag-select 3x3 + Ctrl+C -> clipboard (Get-Clipboard -Raw):
+      3<TAB>첫 행<TAB>1.5<CRLF>
+      42<TAB>"둘째 ""따옴표"""<TAB>0.25<CRLF>
+      12<TAB>한글 입력<TAB>2.0<CRLF>
+    (cell with quotes is wrapped and inner quotes doubled, same as Excel / Google Sheets)
+  - Save -> file: rows one value per line, Korean UTF-8, Rate 1.5 / 0.25 / 2.0, Default 1.0, Min 0.0, key order Id..Next
+  - close (WM_CLOSE) -> exit 0, [error] 0, live blocks 0 -> restart -> reopen -> same values
+  - column panel (header click): Label String -> Int, Apply -> "3 value(s) could not convert to Int and were reset to
+    the default (Ctrl+Z to undo)" -> Undo restores String + values                                                       [v2_column_panel, v2_type_change_reset]
+  - tab close: clean -> closes at once ("Closed <path>"); unsaved -> "Close Table" Save and close / Discard / Cancel;
+    Cancel keeps the tab; Discard closes, file unchanged                                                                 [v2_close_unsaved]
+  - external edit while unsaved -> bar "The file changed on disk while you have unsaved changes." with
+    "Reload (discard mine)" / "Keep mine"; Keep mine + Save -> file has my values (3, 77, 12);
+    Reload -> disk values, history cleared                                                                               [v2_external_change_bar]
+  - cell right-click menu (insert above/below, duplicate, delete rows, move rows, copy/cut/paste, reset to default)      [v2_cell_menu]
+  - Duplicate row -> "Row_B_copy" below + status "Duplicated row 'Row_B' as 'Row_B_copy'"; Ctrl+- -> "Deleted 1 row(s)"
+  Editor log after the runs: [error] 0, [critical] 0, live blocks 0. Warnings: "NOT Support Asset Path" and
+  "JGStaticMesh : no saved bounds" (both pre-existing, old Sample mesh asset).
+Fixed during V2 (included in main):
+  - a red failure message stayed after the problem was undone -> a successful edit clears an error status;
+    Undo/Redo say what they undid ("Undo: <label>")
+  - with no tab open the status text was appended to the toolbar line (unconditional SameLine) -> own line
+  - closing a tab shows "Closed <path>"; Duplicate row shows a status like other row actions
+Not checked: real hand input, Korean IME composition (only committed WM_CHAR), a /JGGame/ table in a game-project editor.
+
+== 4. V3 regressions ==
+worktree : gameui.selftest OK (111/111), console.selftest OK (64/64), gmtest OK (World 64 passed), net.test all OK (101 passed), all exit 0
+main     : PreBuild exit 0 (DataTable / DataTableEditor generation files created; GFW project 18 data entries, GUI 2, JGEditor 2)
+           MSBuild JGEngine.sln DevelopEngine|x64 exit 0, 14 projects, 327 s, warnings: LNK4098 x2 (pre-existing) only
+           datatable.selftest OK (127/127) | gameui.selftest OK (193/193) | console.selftest OK (64/64)
+           gmtest OK (0 failures, World 64 passed) | net.test all OK (101 passed) -- all exit 0, live blocks 0
+           editor: start -> menu Windows shows "Data Table Editor" -> opens ("No table is open ...") -> WM_CLOSE exit 0,
+           [error] 0, no "Korean font not found" warning, live blocks 0.
+           Bin/DevelopEngine/imgui.ini copied back from the pre-run backup (git shows it unchanged).
+
+== 5. Measurements (DevelopEngine, worktree, temporary code removed afterwards) ==
+font atlas   : Korean off 512x256 (RGBA32 512 KB), add+build 3-4 ms  |  Korean on 1024x2048 (8192 KB), 123-125 ms (once at start)
+10k-row table in the editor (2.9 MB file, 6 columns):
+  first view + validation 58 ms | after an edit 47-66 ms | filter keystroke 131 ms ("행") - 258 ms ("행 99", 111 rows shown)
+  view sort by Int column 90 ms | idle 110 fps with the 10k tab (129 fps with no tab) | Ctrl+S saved (10000 rows, 6 columns)

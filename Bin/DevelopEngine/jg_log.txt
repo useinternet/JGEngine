@@ -1,248 +1,205 @@
-[:30972:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 1058984025971400513. pages are created on first request
-[:30972:][info][Core]: Active Thread: [3902584563]
-[:30972:][info][Core]: Active Thread: [1272070384]
-[:30972:][info][Core]: Active Thread: [2234422766]
-[:30972:][info][Core]: Active Thread: [4164377506]
-[:30972:][info][Core]: Active Thread: [3079951466]
-[:30972:][info][Core]: Active Thread: [3175107797]
-[:30972:][info][Core]: Active Thread: [290815873]
-[:30972:][info][Core]: Active Thread: [84290206]
-[:30972:][info][Core]: Active Thread: [1266718223]
-[:30972:][info][Core]: Active Thread: [869199469]
-[:30972:][info][Core]: Active Thread: [3274285852]
-[:30972:][info][Core]: Active Thread: [2039592727]
-[:30972:][info][Core]: Active Thread: [911725474]
-[:30972:][info][Core]: Active Thread: [3803902161]
-[:30972:][info][Core]: Active Thread: [3518874484]
-[:30972:][info][Core]: Active Thread: [537441454]
-[:30972:][info][Core]: Active Thread: [878519017]
-[:30972:][info][Core]: Active Thread: [3095797090]
-[:30972:][info][Core]: Active Thread: [2436459306]
-[:30972:][info][Core]: Active Thread: [817560449]
-[:30972:][info][Core]: Active Thread: [4273422936]
-[:30972:][info][Core]: Active Thread: [3212831631]
-[:30972:][info][Core]: Active Thread: [1004586149]
-[:30972:][info][Core]: Active Thread: [1947777695]
-[:30972:][info][Core]: Active Thread: [2153990318]
-[:30972:][info][Core]: Active Thread: [244215970]
-[:30972:][info][Core]: Active Thread: [3883030259]
-[:30972:][info][Core]: Active Thread: [977723159]
-[:30972:][info][Core]: Active Thread: [3694048034]
-[:30972:][info][Core]: Active Thread: [2362526847]
-[:30972:][info][Core]: Active Thread: [2838860655]
-[:30972:][info][Core]: Active Thread: [1865464820]
-[:30972:][info][Core]: Active Thread Totoal Count: 32 
-[:30972:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.62 MB)
-[:30972:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.69 MB)
-[:30972:][info][Core]: Recognized Class List...
-[:30972:][debug][Core]: - JGStaticMeshComponent
-[:30972:][debug][Core]: - JGGameplayEntityComponent
-[:30972:][debug][Core]: - JGAssetImporter
-[:30972:][debug][Core]: - JGGameplayEffect
-[:30972:][debug][Core]: - JGGameplayDevView
-[:30972:][debug][Core]: - JGMemoryStatistcs
-[:30972:][debug][Core]: - JGGameplayEntityActor
-[:30972:][debug][Core]: - JGDevConsole
-[:30972:][debug][Core]: - JGSceneViewport
-[:30972:][debug][Core]: - JGAsset
-[:30972:][debug][Core]: - JGDevFeature
-[:30972:][debug][Core]: - JGDevScene
-[:30972:][debug][Core]: - JGDevSettings
-[:30972:][debug][Core]: - JGStaticMesh
-[:30972:][debug][Core]: - JGTexture
-[:30972:][debug][Core]: - JGFBXAssetImporter
-[:30972:][debug][Core]: - JGActor
-[:30972:][debug][Core]: - JGCameraComponent
-[:30972:][debug][Core]: - JGCameraActor
-[:30972:][debug][Core]: - JGGameEntryActor
-[:30972:][debug][Core]: - JGPickShapeComponent
-[:30972:][debug][Core]: - JGGameMasterActor
-[:30972:][debug][Core]: - JGGameplayControllerActor
-[:30972:][debug][Core]: - JGGameplayCue
-[:30972:][debug][Core]: - JGActorComponent
-[:30972:][debug][Core]: - JGGameInstance
-[:30972:][debug][Core]: - JGGameplayCommandHandler
-[:30972:][debug][Core]: - JGGameplayModifier
-[:30972:][debug][Core]: - JGGameplayTrigger
-[:30972:][debug][Core]: - JGGameWidget
-[:30972:][debug][Core]: - JGWidget
-[:30972:][debug][Core]: - JGWidgetComponent
-[:30972:][info][GameFrameWorks]: GameFrameWorks module startup
-[:30972:][info][ConsoleCommand]: > net.test all
-[:30972:][info][Memory]: [ID: 0] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.75 MB)
-[:30972:][info][Memory]: [ID: 0] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 3.75 MB)
-[:30972:][info][Memory]: [ID: 0] class 1048576 B grew to 4 pages (4 blocks, growth #3, chunk committed 4.75 MB)
-[:30972:][info][Network]: PNetTcpTransport: listening on port 47790
-[:30972:][info][Memory]: [ID: 0] class 131072 B grew to 2 pages (2 blocks, growth #1, chunk committed 5.16 MB)
-[:30972:][info][Memory]: [ID: 0] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 5.66 MB)
-[:30972:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 6.28 MB)
-[:30972:][info][Network]: PGameplayHostSession: listen server on port 7102, 2 slots
-[:30972:][warning][Network]: PGameplayHostSession: refused peer 1: protocol 101 != 1
-[:30972:][info][Network]: PGameplayHostSession: slot 1 joined (Mismatch)
-[:30972:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 6.34 MB)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started)
-[:30972:][warning][Network]: PGameplayHostSession: refused peer 3: session full
-[:30972:][error][Network]: PGameplayClientSession: refused: session full
-[:30972:][info][Network]: PGameplaySession: closed (refused: session full)
-[:30972:][error][Network]: PGameplayClientSession: rules fingerprint mismatch (host 4170579408105395565, local 9956721507365775360)
-[:30972:][info][Network]: PGameplaySession: closed (rules fingerprint mismatch (host 4170579408105395565, local 9956721507365775360))
-[:30972:][warning][Network]: PGameplayHostSession: slot 1 disconnected
-[:30972:][info][Network]: PGameplayHostSession: listen server on port 7101, 5 slots
-[:30972:][info][Network]: PGameplayHostSession: slot 1 joined (Client1)
-[:30972:][info][Network]: PGameplayHostSession: slot 2 joined (Client2)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 6.41 MB)
-[:30972:][info][Network]: PGameplayHostSession: slot 3 joined (Client3)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 2 (game not started)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 3 (game not started)
-[:30972:][info][Network]: PGameplayHostSession: slot 4 joined (Forger)
-[:30972:][info][Memory]: [ID: 0] class 8192 B grew to 2 pages (14 blocks, growth #1, chunk committed 6.47 MB)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4242)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4242)
-[:30972:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 6.53 MB)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4242)
-[:30972:][warning][Network]: PGameplayHostSession: slot 4 disconnected
-[:30972:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 6.59 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 3 pages (93 blocks, growth #2, chunk committed 6.66 MB)
-[:30972:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 6.72 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 6.78 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 4 pages (124 blocks, growth #3, chunk committed 6.84 MB)
-[:30972:][info][Memory]: [ID: 0] class 16384 B grew to 2 pages (6 blocks, growth #1, chunk committed 6.91 MB)
-[:30972:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 6.94 MB)
-[:30972:][info][Memory]: [ID: 0] class 32768 B grew to 3 pages (3 blocks, growth #2, chunk committed 6.97 MB)
-[:30972:][info][Memory]: [ID: 0] class 32768 B grew to 4 pages (4 blocks, growth #3, chunk committed 7.00 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 3 pages (6138 blocks, growth #2, chunk committed 7.06 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 7.13 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 3 pages (3 blocks, growth #2, chunk committed 7.19 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 4 pages (4 blocks, growth #3, chunk committed 7.25 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 5 pages (5 blocks, growth #4, chunk committed 7.31 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 4 pages (8184 blocks, growth #3, chunk committed 7.38 MB)
-[:30972:][info][Memory]: [ID: 0] class 131072 B grew to 3 pages (3 blocks, growth #2, chunk committed 7.50 MB)
-[:30972:][info][Memory]: [ID: 0] class 131072 B grew to 4 pages (4 blocks, growth #3, chunk committed 7.63 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 5 pages (10230 blocks, growth #4, chunk committed 7.69 MB)
-[:30972:][info][Memory]: [ID: 0] class 131072 B grew to 5 pages (5 blocks, growth #4, chunk committed 7.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 6 pages (12276 blocks, growth #5, chunk committed 7.88 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 7 pages (14322 blocks, growth #6, chunk committed 7.94 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 8 pages (16368 blocks, growth #7, chunk committed 8.00 MB)
-[:30972:][info][Memory]: [ID: 0] class 262144 B grew to 3 pages (3 blocks, growth #2, chunk committed 8.25 MB)
-[:30972:][info][Memory]: [ID: 0] class 262144 B grew to 4 pages (4 blocks, growth #3, chunk committed 8.50 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 9 pages (18414 blocks, growth #8, chunk committed 8.56 MB)
-[:30972:][info][Memory]: [ID: 0] class 1024 B grew to 3 pages (186 blocks, growth #2, chunk committed 8.63 MB)
-[:30972:][info][Memory]: [ID: 0] class 512 B grew to 2 pages (248 blocks, growth #1, chunk committed 8.69 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 10 pages (20460 blocks, growth #9, chunk committed 8.75 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 11 pages (22506 blocks, growth #10, chunk committed 8.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 9.31 MB)
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 3 pages (3 blocks, growth #2, chunk committed 9.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 4 pages (4 blocks, growth #3, chunk committed 10.31 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 12 pages (24552 blocks, growth #11, chunk committed 10.38 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 13 pages (26598 blocks, growth #12, chunk committed 10.44 MB)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplayHostSession: listen server on port 7103, 4 slots
-[:30972:][info][Network]: PGameplayHostSession: slot 1 joined (Client1)
-[:30972:][info][Network]: PGameplayHostSession: slot 2 joined (Client2)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 2 (game not started)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 9090)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 9090)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 5 pages (155 blocks, growth #4, chunk committed 10.50 MB)
-[:30972:][info][Memory]: [ID: 0] class 4096 B grew to 4 pages (60 blocks, growth #3, chunk committed 10.56 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 6 pages (186 blocks, growth #5, chunk committed 10.63 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 14 pages (28644 blocks, growth #13, chunk committed 10.69 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 15 pages (30690 blocks, growth #14, chunk committed 10.75 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 16 pages (32736 blocks, growth #15, chunk committed 10.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 17 pages (34782 blocks, growth #16, chunk committed 10.88 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 18 pages (36828 blocks, growth #17, chunk committed 10.94 MB)
-[:30972:][info][Network]: PGameplayHostSession: slot 3 joined (Client3)
-[:30972:][info][Network]: PGameplayHostSession: sent document to slot 3 at seq 500
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 3 (game in progress)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 19 pages (38874 blocks, growth #18, chunk committed 11.00 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 20 pages (40920 blocks, growth #19, chunk committed 11.06 MB)
-[:30972:][info][Network]: PGameplayClientSession: document applied at seq 500
-[:30972:][error][Network]: PGameplayClientSession: desync at seq 616 (local seq 616, checksum 9618880996173541702 vs host 2056501579215886429)
-[:30972:][warning][Network]: PGameplayClientSession: requesting document after desync at seq 616 (count 1)
-[:30972:][warning][Network]: PGameplayClientSession: desync dump NetSelfTestDesync/desync_slot1_seq616_local.json
-[:30972:][warning][Network]: PGameplayHostSession: slot 1 requested resync
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 5 pages (5 blocks, growth #4, chunk committed 11.56 MB)
-[:30972:][info][Memory]: [ID: 0] class 262144 B grew to 5 pages (5 blocks, growth #4, chunk committed 11.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 21 pages (42966 blocks, growth #20, chunk committed 11.88 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 22 pages (45012 blocks, growth #21, chunk committed 11.94 MB)
-[:30972:][warning][Network]: PGameplayClientSession: desync dump NetSelfTestDesync/desync_slot1_seq616_host.json
-[:30972:][info][Network]: PGameplayClientSession: document applied at seq 616
-[:30972:][warning][Network]: PGameplayHostSession: slot 2 disconnected
-[:30972:][info][Network]: PGameplaySession: closed (connection lost)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 23 pages (47058 blocks, growth #22, chunk committed 12.00 MB)
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 6 pages (6 blocks, growth #5, chunk committed 12.50 MB)
-[:30972:][info][Network]: PGameplayClientSession: reconnecting to loopback:7103
-[:30972:][info][Network]: PGameplayHostSession: slot 2 joined (Client2)
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 7 pages (7 blocks, growth #6, chunk committed 13.00 MB)
-[:30972:][info][Network]: PGameplayHostSession: sent document to slot 2 at seq 742
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 2 (game in progress)
-[:30972:][info][Network]: PGameplayClientSession: document applied at seq 742
-[:30972:][info][Memory]: [ID: 0] class 524288 B grew to 8 pages (8 blocks, growth #7, chunk committed 13.50 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 24 pages (49104 blocks, growth #23, chunk committed 13.56 MB)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplaySession: closed (test done)
-[:30972:][info][Network]: PGameplayHostSession: listen server on port 7401, 3 slots
-[:30972:][info][Network]: PGameplaySession: closed (session replaced)
-[:30972:][info][Network]: PGameplayHostSession: slot 1 joined (WorldA)
-[:30972:][info][Network]: PGameplayHostSession: slot 2 joined (WorldB)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started)
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 2 (game not started)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world loaded (NetWorldA)
-[:30972:][warning][GameFrameWorks]: Controller: E1.1 is not controlled by the local player
-[:30972:][warning][GameFrameWorks]: Controller: E3.1 is not controlled by the local player
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4241)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4241)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 25 pages (51150 blocks, growth #24, chunk committed 13.63 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 7 pages (217 blocks, growth #6, chunk committed 13.69 MB)
-[:30972:][info][Memory]: [ID: 0] class 256 B grew to 4 pages (960 blocks, growth #3, chunk committed 13.75 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 8 pages (248 blocks, growth #7, chunk committed 13.81 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 26 pages (53196 blocks, growth #25, chunk committed 13.88 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 27 pages (55242 blocks, growth #26, chunk committed 13.94 MB)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetWorldA)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world loaded (NetWorldB)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4242)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 4242)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 28 pages (57288 blocks, growth #27, chunk committed 14.00 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 9 pages (279 blocks, growth #8, chunk committed 14.06 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 29 pages (59334 blocks, growth #28, chunk committed 14.13 MB)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetWorldB)
-[:30972:][info][Network]: PGameplaySession: closed (session replaced)
-[:30972:][info][Network]: PGameplaySession: closed (host closed the connection)
-[:30972:][info][Network]: PGameplaySession: closed (host closed the connection)
-[:30972:][info][Network]: PGameplayHostSession: listen server on port 7402, 2 slots
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 10 pages (310 blocks, growth #9, chunk committed 14.19 MB)
-[:30972:][info][Network]: PGameplaySession: closed (session replaced)
-[:30972:][info][Network]: PGameplayHostSession: slot 1 joined (WorldClient)
-[:30972:][info][Network]: PGameplayHostSession: sent document to slot 1 at seq 3
-[:30972:][info][Network]: PGameplayClientSession: joined as slot 1 (game in progress)
-[:30972:][info][GameFrameWorks]: JGGameInstance: following the host to world NetWorldC
-[:30972:][info][Network]: PGameplayClientSession: document applied at seq 3
-[:30972:][info][GameFrameWorks]: JGGameInstance: world loaded (NetWorldC)
-[:30972:][warning][GameFrameWorks]: Controller: E0.1 is not controlled by the local player
-[:30972:][warning][Network]: PGameplayClientSession::StartGame: only the host starts the game
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 11 pages (341 blocks, growth #10, chunk committed 14.25 MB)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 30 pages (61380 blocks, growth #29, chunk committed 14.31 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 6 pages (6 blocks, growth #5, chunk committed 14.38 MB)
-[:30972:][info][Memory]: [ID: 0] class 256 B grew to 5 pages (1200 blocks, growth #4, chunk committed 14.44 MB)
-[:30972:][info][GameFrameWorks]: JGGameInstance: following the host to world NetWorldD
-[:30972:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetWorldC)
-[:30972:][info][Memory]: [ID: 0] class 64 B grew to 2 pages (1636 blocks, growth #1, chunk committed 14.50 MB)
-[:30972:][info][Network]: PGameplayClientSession: game started (seed 123)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world loaded (NetWorldD)
-[:30972:][info][Memory]: [ID: 0] class 16 B grew to 31 pages (63426 blocks, growth #30, chunk committed 14.56 MB)
-[:30972:][info][Memory]: [ID: 0] class 2048 B grew to 12 pages (372 blocks, growth #11, chunk committed 14.63 MB)
-[:30972:][info][Memory]: [ID: 0] class 65536 B grew to 7 pages (7 blocks, growth #6, chunk committed 14.69 MB)
-[:30972:][info][Network]: PGameplaySession: closed (host left)
-[:30972:][info][Network]: PGameplaySession: closed (host closed the connection)
-[:30972:][info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 100)
-[:30972:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetWorldD)
-[:30972:][info][NetSelfTest]: Network self test: 101 passed, 0 failed
-[:30972:][info][Network]: PGameplaySession: closed (shutdown)
-[:30972:][info][GameFrameWorks]: GameFrameWorks module shutdown
-[:30972:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 101, committed 14.69 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:25744:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 7425995095572720377. pages are created on first request
+[:25744:][info][Core]: Active Thread: [3655645938]
+[:25744:][info][Core]: Active Thread: [1759786776]
+[:25744:][info][Core]: Active Thread: [2293370472]
+[:25744:][info][Core]: Active Thread: [3342240062]
+[:25744:][info][Core]: Active Thread: [1223303097]
+[:25744:][info][Core]: Active Thread: [3429409445]
+[:25744:][info][Core]: Active Thread: [3878017229]
+[:25744:][info][Core]: Active Thread: [3806904329]
+[:25744:][info][Core]: Active Thread: [2377042034]
+[:25744:][info][Core]: Active Thread: [4195416579]
+[:25744:][info][Core]: Active Thread: [805890908]
+[:25744:][info][Core]: Active Thread: [1444893941]
+[:25744:][info][Core]: Active Thread: [1894860412]
+[:25744:][info][Core]: Active Thread: [3683004581]
+[:25744:][info][Core]: Active Thread: [476300277]
+[:25744:][info][Core]: Active Thread: [3953490984]
+[:25744:][info][Core]: Active Thread: [2892612722]
+[:25744:][info][Core]: Active Thread: [1413330965]
+[:25744:][info][Core]: Active Thread: [4240686045]
+[:25744:][info][Core]: Active Thread: [749449717]
+[:25744:][info][Core]: Active Thread: [3023536362]
+[:25744:][info][Core]: Active Thread: [2463817949]
+[:25744:][info][Core]: Active Thread: [281809369]
+[:25744:][info][Core]: Active Thread: [361928773]
+[:25744:][info][Core]: Active Thread: [4188264415]
+[:25744:][info][Core]: Active Thread: [3030688526]
+[:25744:][info][Core]: Active Thread: [1457085222]
+[:25744:][info][Core]: Active Thread: [1722036855]
+[:25744:][info][Core]: Active Thread: [455128579]
+[:25744:][info][Core]: Active Thread: [1237661762]
+[:25744:][info][Core]: Active Thread: [3119162259]
+[:25744:][info][Core]: Active Thread: [2378033340]
+[:25744:][info][Core]: Active Thread Totoal Count: 32 
+[:25744:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.62 MB)
+[:25744:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.69 MB)
+[:25744:][trace][Graphics]: DirectX12 Init Start
+[:25744:][trace][Graphics]: Success Create D3D12Device
+[:25744:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:25744:][info][Graphics]: VideoMemory : 16050  MB
+[:25744:][trace][Graphics]: Create DescriptorAllocator...
+[:25744:][trace][Graphics]: Create CommandQueue...
+[:25744:][trace][Graphics]: Create ResourceStagingManager...
+[:25744:][trace][Graphics]: Create FrameBuffer...
+[:25744:][trace][Graphics]: Create Default Resources...
+[:25744:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:25744:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:25744:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.81 MB)
+[:25744:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:25744:][info][Graphics]: Start Collect Shader in (../../Source/Shader)
+[:25744:][trace][Graphics]: Collect compute_shader_template
+[:25744:][trace][Graphics]: Collect draw2d
+[:25744:][trace][Graphics]: Collect graphics_shader_template
+[:25744:][trace][Graphics]: Collect scene_shader
+[:25744:][info][Graphics]: Complete Collect Shader
+[:25744:][trace][Graphics]: DirectX12 Init End
+[:25744:][trace][Graphics]: Startup Graphics Module...
+[:25744:][trace][Asset]: Startup Asset Module...
+[:25744:][trace][JGEditor]: Startup JGEditor Module...
+[:25744:][info][Core]: Recognized Class List...
+[:25744:][debug][Core]: - JGStaticMeshComponent
+[:25744:][debug][Core]: - JGGameplayEntityComponent
+[:25744:][debug][Core]: - JGAssetImporter
+[:25744:][debug][Core]: - JGGameplayEffect
+[:25744:][debug][Core]: - JGGameplayDevView
+[:25744:][debug][Core]: - JGMemoryStatistcs
+[:25744:][debug][Core]: - JGGameplayEntityActor
+[:25744:][debug][Core]: - JGDevConsole
+[:25744:][debug][Core]: - JGSceneViewport
+[:25744:][debug][Core]: - JGDataTableEditor
+[:25744:][debug][Core]: - JGAsset
+[:25744:][debug][Core]: - JGDevFeature
+[:25744:][debug][Core]: - JGDevScene
+[:25744:][debug][Core]: - JGDevSettings
+[:25744:][debug][Core]: - JGStaticMesh
+[:25744:][debug][Core]: - JGTexture
+[:25744:][debug][Core]: - JGFBXAssetImporter
+[:25744:][debug][Core]: - JGActor
+[:25744:][debug][Core]: - JGCameraComponent
+[:25744:][debug][Core]: - JGCameraActor
+[:25744:][debug][Core]: - JGGameEntryActor
+[:25744:][debug][Core]: - JGPickShapeComponent
+[:25744:][debug][Core]: - JGGameMasterActor
+[:25744:][debug][Core]: - JGGameplayControllerActor
+[:25744:][debug][Core]: - JGGameplayCue
+[:25744:][debug][Core]: - JGActorComponent
+[:25744:][debug][Core]: - JGGameInstance
+[:25744:][debug][Core]: - JGWidget
+[:25744:][debug][Core]: - JGDataTable
+[:25744:][debug][Core]: - JGGameplayCommandHandler
+[:25744:][debug][Core]: - JGGameplayModifier
+[:25744:][debug][Core]: - JGGameplayTrigger
+[:25744:][debug][Core]: - JGGameWidget
+[:25744:][debug][Core]: - JGWidgetComponent
+[:25744:][trace][Asset]: Start Load Assets in ../../Content
+[:25744:][trace][Graphics]: Register DevScene_Output in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_Output   Ref : 1
+[:25744:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:25744:][trace][Graphics]: Register DevScene_Display in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_Display   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Depth   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_DepthStencil   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_CompositeMaterial in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_CompositeMaterial   Ref : 1
+[:25744:][trace][Graphics]: Register DevScene_DisplayMaterial in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_DisplayMaterial   Ref : 1
+[:25744:][info][GUI]: Layout: reopened JGDevFeature 
+[:25744:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:25744:][trace][Graphics]: Graphics PSO created. cache size 1
+[:25744:][trace][Graphics]: Graphics PSO created. cache size 2
+[:25744:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:25744:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:40136:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 10109623490042273721. pages are created on first request
+[:40136:][warning][Asset]: NOT Support Asset Path
+[:40136:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:40136:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:40136:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:40136:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:40136:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:40136:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:40136:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:40136:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:40136:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:40136:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:25744:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:25744:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:25744:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:25744:][trace][Graphics]: Graphics PSO created. cache size 3
+[:25744:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 1
+[:25744:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:25744:][trace][Graphics]: Register DevScene_Output_ReadbackStaging in ResourceRefMap
+[:25744:][trace][Graphics]: Add Counting Resource : DevScene_Output_ReadbackStaging   Ref : 1
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_Output_ReadbackStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_Output_ReadbackStaging in ResourceRefMap
+[:25744:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:25744:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
+[:25744:][trace][Asset]: Shutdown Asset Module...
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_Display   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_Display in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_DepthStencil   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_DepthStencil in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_Output   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_Output in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Depth   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_GBuffer_Depth in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_CompositeMaterial   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_CompositeMaterial in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : DevScene_DisplayMaterial   Ref : 0
+[:25744:][trace][Graphics]: UnRegister DevScene_DisplayMaterial in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:25744:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:25744:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:25744:][trace][Graphics]: Shutdown Graphics Module...
+[:25744:][trace][JGEditor]: Shutdown JGEditor Module...
+[:25744:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 16, committed 1.00 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:25744:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0

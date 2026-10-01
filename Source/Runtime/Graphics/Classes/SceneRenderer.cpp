@@ -24,6 +24,15 @@ namespace
 		"    float  ndl      = saturate(dot(normalize(normalW), lightDir));\n"
 		"    _output.final   = float4(albedo.rgb * (0.15f + 0.85f * ndl), 1.0f);\n"
 		"}\n";
+
+	// 디스플레이 셰이더. 선형 출력 텍스처를 sRGB 전달 함수(IEC 61966-2-1)로 인코딩해 8비트 디스플레이 텍스처에 쓴다. (5-14)
+	// 지금 장면은 1.0을 넘는 밝기가 없어 0~1로 자르기만 한다. 밝은 빛 · 발광이 생기면 인코딩 앞에 노출 · 톤매핑 곡선을 넣는다.
+	// pow에 abs를 쓰는 건 FXC 경고(X3571, 음수 밑) 때문이다. saturate 뒤라 값은 그대로다.
+	constexpr const char* DisplayShaderCode =
+		"float3 linearColor = saturate(SceneColor.rgb);\n"
+		"float3 low         = linearColor * 12.92f;\n"
+		"float3 high        = 1.055f * pow(abs(linearColor), 1.0f / 2.4f) - 0.055f;\n"
+		"_output.final      = float4(lerp(high, low, step(linearColor, 0.0031308f)), 1.0f);\n";
 }
 
 bool PSceneRenderer::Initialize(const PString& inName, uint32 inWidth, uint32 inHeight)
@@ -44,9 +53,12 @@ bool PSceneRenderer::Initialize(const PString& inName, uint32 inWidth, uint32 in
 
 	createTextures(inName);
 	_graphicsCommand->ClearTexture(_outputTexture);
+	_graphicsCommand->ClearTexture(_displayTexture);
 
-	// 합성 머터리얼은 G버퍼 텍스처를 컴파일 전에 받아야 해서(샘플러 이름이 코드에 박힌다) 텍스처를 만들 때마다 새로 만든다.
-	return createCompositeMaterial(inName);
+	// 합성 · 디스플레이 머터리얼은 읽을 텍스처를 컴파일 전에 받아야 해서(샘플러 이름이 코드에 박힌다) 텍스처를 만들 때마다 새로 만든다.
+	const bool bComposite = createCompositeMaterial(inName);
+	const bool bDisplay   = createDisplayMaterial(inName);
+	return bComposite && bDisplay;
 }
 
 void PSceneRenderer::Render(const PScene& inScene, HSceneCameraID inCamera)
@@ -60,6 +72,7 @@ void PSceneRenderer::Render(const PScene& inScene, HSceneCameraID inCamera)
 	if (camera == nullptr)
 	{
 		_graphicsCommand->ClearTexture(_outputTexture);
+		_graphicsCommand->ClearTexture(_displayTexture);
 		return;
 	}
 
@@ -68,11 +81,17 @@ void PSceneRenderer::Render(const PScene& inScene, HSceneCameraID inCamera)
 
 	renderGeometryPass(inScene, passData);
 	renderCompositePass(passData);
+	renderDisplayPass(passData);
 }
 
 PSharedPtr<IRawTexture> PSceneRenderer::GetOutputTexture() const
 {
 	return _outputTexture;
+}
+
+PSharedPtr<IRawTexture> PSceneRenderer::GetDisplayTexture() const
+{
+	return _displayTexture;
 }
 
 PSharedPtr<IRawTexture> PSceneRenderer::GetGBufferTexture(ESceneGBuffer inGBuffer) const
@@ -96,7 +115,8 @@ uint32 PSceneRenderer::GetHeight() const
 
 void PSceneRenderer::createTextures(const PString& inName)
 {
-	// 최종 출력. 클리어 컬러(빨강)는 "아무것도 그려지지 않았다"는 신호로 남겨 둔다.
+	// 합성 결과(선형 HDR). 클리어 컬러(빨강)는 "아무것도 그려지지 않았다"는 신호로 남겨 둔다.
+	// 디스플레이 패스가 Point/Clamp로 1:1 읽는다. (샘플러 이름이 머터리얼 코드에 박힌다)
 	{
 		HTextureInfo texInfo;
 		texInfo.Name   = PString::Format("%s_Output", inName);
@@ -107,8 +127,25 @@ void PSceneRenderer::createTextures(const PString& inName)
 		texInfo.MipLevel  = 1;
 		texInfo.ArraySize = 1;
 		texInfo.ClearColor = HLinearColor(1.0F, 0.0F, 0.0F, 1.0F);
+		texInfo.FilterMode = ETextureFilterMode::Point;
+		texInfo.WrapMode   = ETextureWrapMode::Clamp;
 
 		_outputTexture = GetGraphicsAPI().CreateRawTexture(texInfo);
+	}
+
+	// 화면용 결과(sRGB 인코딩된 8비트). GUI 이미지 · 게임 UI가 쓴다. 클리어 컬러는 출력과 같은 빨강.
+	{
+		HTextureInfo texInfo;
+		texInfo.Name   = PString::Format("%s_Display", inName);
+		texInfo.Width  = _width;
+		texInfo.Height = _height;
+		texInfo.Format = ETextureFormat::R8G8B8A8_Unorm;
+		texInfo.Flags  = ETextureFlags::Allow_RenderTarget;
+		texInfo.MipLevel  = 1;
+		texInfo.ArraySize = 1;
+		texInfo.ClearColor = HLinearColor(1.0F, 0.0F, 0.0F, 1.0F);
+
+		_displayTexture = GetGraphicsAPI().CreateRawTexture(texInfo);
 	}
 
 	// G버퍼. 합성 패스가 Point/Clamp 샘플러로 1:1 읽으므로 필터/랩 모드를 그렇게 둔다. (샘플러 이름이 머터리얼 코드에 박힌다)
@@ -197,6 +234,36 @@ bool PSceneRenderer::createCompositeMaterial(const PString& inName)
 	return true;
 }
 
+bool PSceneRenderer::createDisplayMaterial(const PString& inName)
+{
+	// Screen 도메인 풀스크린 머터리얼. 출력 텍스처(선형)를 읽어 sRGB로 인코딩한다.
+	HRawMaterialConstructArguments materialArgs;
+	materialArgs.Name   = PName(PString::Format("%s_DisplayMaterial", inName));
+	materialArgs.Domain = EMaterialDomain::Screen;
+	materialArgs.PropertyDefinitionist.DefineTexture(PName("SceneColor"));
+
+	_displayMaterial = GetGraphicsAPI().CreateRawMaterial(materialArgs);
+	if (_displayMaterial.IsValid() == false || _displayMaterial->IsValid() == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Create Display Material", inName);
+		_displayMaterial = nullptr;
+		return false;
+	}
+
+	// 텍스처는 컴파일 전에 넣는다. (5-21)
+	_displayMaterial->SetTexture(PName("SceneColor"), _outputTexture);
+
+	HMaterialCompileArguments compileArgs;
+	compileArgs.ShaderCode = DisplayShaderCode;
+	if (_displayMaterial->Compile(compileArgs) == false)
+	{
+		JG_LOG(Graphics, ELogLevel::Error, "%s : Fail Compile Display Material", inName);
+		_displayMaterial = nullptr;
+		return false;
+	}
+	return true;
+}
+
 void PSceneRenderer::fillRenderPassData(const HSceneCamera& inCamera, HRenderPassCBData& outData) const
 {
 	const float32 aspectRatio = (float32)_width / (float32)_height;
@@ -279,6 +346,32 @@ void PSceneRenderer::renderCompositePass(const HRenderPassCBData& inPassData)
 
 	HScreenDrawArguments drawArgs;
 	drawArgs.Material = _compositeMaterial;
+	_graphicsCommand->Draw(drawArgs);
+
+	_graphicsCommand->EndDraw();
+}
+
+void PSceneRenderer::renderDisplayPass(const HRenderPassCBData& inPassData)
+{
+	_graphicsCommand->ClearTexture(_displayTexture);
+
+	// 디스플레이 머터리얼이 없으면 디스플레이 텍스처는 클리어 컬러(빨강)로 남는다.
+	if (_displayMaterial.IsValid() == false)
+	{
+		return;
+	}
+
+	_graphicsCommand->BeginDraw();
+
+	HRenderTarget renderTarget;
+	renderTarget.RenderTextures[0] = _displayTexture;
+	renderTarget.Viewports.push_back(HViewport((float32)_width, (float32)_height));
+	renderTarget.ScissorRects.push_back(HScissorRect(0, 0, (int32)_width, (int32)_height));
+	_graphicsCommand->SetRenderTarget(renderTarget);
+	_graphicsCommand->SetRenderPassData(inPassData);
+
+	HScreenDrawArguments drawArgs;
+	drawArgs.Material = _displayMaterial;
 	_graphicsCommand->Draw(drawArgs);
 
 	_graphicsCommand->EndDraw();

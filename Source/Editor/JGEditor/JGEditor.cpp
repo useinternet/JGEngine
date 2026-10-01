@@ -9,6 +9,7 @@
 #include "Core/GameInstance.h"
 #include "Widgets/SceneViewport.h"
 #include "Widgets/GameplayDevView.h"
+#include "Widgets/DataTableEditor.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -104,6 +105,19 @@ void HJGEditorModule::openDefaultWidgets()
 			}
 		});
 	GUIModule->AddMainMenuItem(DevViewItem);
+
+	// 데이터 테이블(.jgasset JSON) 편집 창. 프로젝트 없이도 엔진 Content 테이블을 연다.
+	HMainMenuItem DataTableEditorItem;
+	DataTableEditorItem.MenuPath = "Windows/Data Table Editor";
+	DataTableEditorItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGDataTableEditor>();
+			}
+		});
+	GUIModule->AddMainMenuItem(DataTableEditorItem);
 }
 
 void HJGEditorModule::openSceneViewport()

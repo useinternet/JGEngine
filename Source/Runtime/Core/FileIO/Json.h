@@ -29,6 +29,18 @@ class PJsonData;
 class JGClass;
 class JGObject;
 
+// PJsonData::GetValueType 이 돌려주는 값의 종류.
+enum class EJsonValueType : uint8
+{
+	Null,
+	Bool,
+	Int,     // 정수(소수점 · 지수 없이 쓴 수)
+	Float,   // 소수점 · 지수가 있는 수
+	String,
+	Array,
+	Object,
+};
+
 class PJsonData : public IMemoryObject, public IJsonable
 {
 	friend class PJson;
@@ -68,6 +80,11 @@ public:
 	// 옛 형식(숫자 배열)과 새 형식(base64 문자열)을 가르는 데 쓴다.
 	// FindMember는 값을 문서에서 옮겨 오므로(rapidjson 대입은 이동) 같은 키를 두 번 찾지 말고 찾아 둔 값에 묻는다.
 	bool IsString() const;
+
+	// 값의 종류. FindMember · GetData 와 달리 값을 옮기지 않는다 — 종류를 먼저 묻고 그에 맞는 GetData 를 한 번 부른다.
+	EJsonValueType GetValueType() const;
+	// 객체의 키를 문서 순서대로 돌려준다. 객체가 아니면 false. 값을 옮기지 않는다.
+	bool GetMemberKeys(HList<PString>* outKeys) const;
 
 	int32 GetSize() const;
 	bool  IsValid() const;
@@ -332,6 +349,9 @@ public:
 public:
 	static bool ToString(PJson& json, PString* outStr);
 	static bool ToObject(const PString& jsonText, PJson* outJson);
+	// ToObject 와 같지만 파싱 오류면 false 와 "line L, column C: 이유"(줄 · 칸은 1부터, 칸은 바이트)를 돌려준다.
+	// 글 앞의 UTF-8 BOM 은 건너뛴다. (ToObject 는 오류를 무시하고 true 다 — 호출하는 곳이 많아 그대로 둔다)
+	static bool ToObjectWithError(const PString& jsonText, PJson* outJson, PString* outError);
 };
 
 template<class T>

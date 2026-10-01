@@ -250,7 +250,8 @@ void HGUI::BeginTooltipAboveItem(const PString& InName, float32 InExtraGap)
 	// 창의 왼쪽 아래를 직전 항목의 왼쪽 위(줄 간격 + InExtraGap 만큼 위)에 맞춘다. 그래서 내용이 늘면 위로 자란다.
 	const ImVec2 ItemMin = ImGui::GetItemRectMin();
 	ImGui::SetNextWindowPos(ImVec2(ItemMin.x, ItemMin.y - ImGui::GetStyle().ItemSpacing.y - InExtraGap), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
-	// 배경을 불투명하게 한다. 기본 PopupBg 알파 0.94 는 GUI 가 sRGB 로 출력되면서 뒤 글자가 밝게 비친다(로그 뷰 위에 겹쳐 읽기 어렵다).
+	// 배경을 불투명하게 한다. 기본 PopupBg 알파 0.94 면 뒤 글자가 비쳐 로그 뷰 위에 겹쳐 읽기 어렵다.
+	// (FP16 선형 출력이던 때는 비침이 더 심했다. 2026-10-01 출력이 8비트 sRGB로 바뀐 뒤에도 불투명이 낫다, Graphics 5-14)
 	ImGui::SetNextWindowBgAlpha(1.0f);
 
 	// BeginTooltip 과 같은 창 설정이지만 이름을 따로 둔다(마우스 툴팁 "##Tooltip_00" 과 내용이 섞이지 않게).
@@ -990,22 +991,12 @@ void HGUI::SetClipboardText(const PString& InText)
 	ImGui::SetClipboardText(InText.GetCStr());
 }
 
-namespace
-{
-	float32 srgbChannelToLinear(uint32 InChannel)
-	{
-		const float32 Value = static_cast<float32>(InChannel) / 255.0f;
-		if (Value <= 0.04045f)
-		{
-			return Value / 12.92f;
-		}
-		return powf((Value + 0.055f) / 1.055f, 2.4f);
-	}
-}
-
 HLinearColor HGUI::DisplayColor(uint32 InRGB, float32 InAlpha)
 {
-	return HLinearColor(srgbChannelToLinear((InRGB >> 16) & 0xFF), srgbChannelToLinear((InRGB >> 8) & 0xFF), srgbChannelToLinear(InRGB & 0xFF), InAlpha);
+	// 출력이 8비트 sRGB라(Graphics 5-14) GUI 가 받은 색이 그대로 화면 색이다. 변환 없이 0~1로만 옮긴다.
+	// (FP16 선형 출력이던 때는 여기서 sRGB → 선형으로 바꿔야 옅게 뜨지 않았다)
+	return HLinearColor(static_cast<float32>((InRGB >> 16) & 0xFF) / 255.0f, static_cast<float32>((InRGB >> 8) & 0xFF) / 255.0f,
+		static_cast<float32>(InRGB & 0xFF) / 255.0f, InAlpha);
 }
 
 void HGUI::PushStyleVar(EGUIStyleVar InTarget, float32 InValue)
@@ -1093,7 +1084,8 @@ bool HGUI::ToggleChip(const PString& InId, const PString& InLabel, const PString
 	ImU32        BorderColor = ImGui::GetColorU32(ImGuiCol_Border);
 	if (InOutOn)
 	{
-		// 알파는 선형 공간에서 섞이고 sRGB 로 나가 눈에는 더 진하게 보인다 → 낮게 둔다.
+		// 0.10 / 0.16 은 FP16 선형 출력(섞임이 선형 공간이라 같은 알파가 더 진했다) 때 눈으로 맞춘 값이다.
+		// 2026-10-01 출력이 8비트 sRGB가 되어(Graphics 5-14) 섞임은 sRGB 공간이고 그때보다 옅게 보인다. 다시 맞출 때는 DevConsole TODO B-10.
 		Background  = ImGui::GetColorU32(ImVec4(Accent.x, Accent.y, Accent.z, bHovered ? 0.16f : 0.10f));
 		BorderColor = ImGui::GetColorU32(ImVec4(Accent.x, Accent.y, Accent.z, 0.65f));
 	}
@@ -1166,4 +1158,81 @@ void HGUI::HighlightLine(const HLinearColor& InBackground, const HLinearColor& I
 	}
 }
 
+// ---- 데이터 테이블 편집 창(JGEditor JGDataTableEditor)이 쓰는 것. 2026-10-01 DataTable 트랙 ----
 
+bool HGUI::BeginDocumentTabItem(const PString& InLabel, bool& bOpen, bool bUnsaved, bool bSelect)
+{
+	ImGuiTabItemFlags Flags = ImGuiTabItemFlags_None;
+	if (bUnsaved)
+	{
+		Flags |= ImGuiTabItemFlags_UnsavedDocument;
+	}
+	if (bSelect)
+	{
+		Flags |= ImGuiTabItemFlags_SetSelected;
+	}
+	return ImGui::BeginTabItem(InLabel.GetCStr(), &bOpen, Flags);
+}
+
+void HGUI::OpenPopup(const PString& InName)
+{
+	ImGui::OpenPopup(InName.GetCStr());
+}
+
+bool HGUI::BeginPopup(const PString& InName)
+{
+	return ImGui::BeginPopup(InName.GetCStr());
+}
+
+bool HGUI::BeginPopupModal(const PString& InName)
+{
+	ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	return ImGui::BeginPopupModal(InName.GetCStr(), nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+}
+
+void HGUI::EndPopup()
+{
+	ImGui::EndPopup();
+}
+
+void HGUI::CloseCurrentPopup()
+{
+	ImGui::CloseCurrentPopup();
+}
+
+bool HGUI::MenuItem(const PString& InLabel, const PString& InShortcut, bool bEnabled)
+{
+	return ImGui::MenuItem(InLabel.GetCStr(), InShortcut.Empty() ? nullptr : InShortcut.GetCStr(), false, bEnabled);
+}
+
+void HGUI::SetNextItemWidth(float32 InWidth)
+{
+	ImGui::SetNextItemWidth(InWidth);
+}
+
+void HGUI::BeginDisabled(bool bDisabled)
+{
+	ImGui::BeginDisabled(bDisabled);
+}
+
+void HGUI::EndDisabled()
+{
+	ImGui::EndDisabled();
+}
+
+void HGUI::TextWrapped(const PString& InText)
+{
+	ImGui::PushTextWrapPos(0.0f);
+	ImGui::TextUnformatted(InText.GetCStr());
+	ImGui::PopTextWrapPos();
+}
+
+void HGUI::SetKeyboardFocusHere()
+{
+	ImGui::SetKeyboardFocusHere();
+}
+
+void HGUI::SameLineAt(float32 InOffsetX)
+{
+	ImGui::SameLine(InOffsetX);
+}

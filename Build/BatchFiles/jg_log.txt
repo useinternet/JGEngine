@@ -1,132 +1,133 @@
-[:22232:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 8423608750731261499. pages are created on first request
-[:22232:][info][Core]: Active Thread: [389524362]
-[:22232:][info][Core]: Active Thread: [379472215]
-[:22232:][info][Core]: Active Thread: [788034422]
-[:22232:][info][Core]: Active Thread: [2578528584]
-[:22232:][info][Core]: Active Thread: [781351824]
-[:22232:][info][Core]: Active Thread: [1046173022]
-[:22232:][info][Core]: Active Thread: [2431446276]
-[:22232:][info][Core]: Active Thread: [527913210]
-[:22232:][info][Core]: Active Thread: [1363389763]
-[:22232:][info][Core]: Active Thread: [2125246901]
-[:22232:][info][Core]: Active Thread: [4215623058]
-[:22232:][info][Core]: Active Thread: [2294911768]
-[:22232:][info][Core]: Active Thread: [2098540433]
-[:22232:][info][Core]: Active Thread: [2312924776]
-[:22232:][info][Core]: Active Thread: [10670791]
-[:22232:][info][Core]: Active Thread: [2499061355]
-[:22232:][info][Core]: Active Thread: [2086192630]
-[:22232:][info][Core]: Active Thread: [2785447719]
-[:22232:][info][Core]: Active Thread: [3653791598]
-[:22232:][info][Core]: Active Thread: [1157203227]
-[:22232:][info][Core]: Active Thread: [4259846881]
-[:22232:][info][Core]: Active Thread: [3827606461]
-[:22232:][info][Core]: Active Thread: [1898175624]
-[:22232:][info][Core]: Active Thread: [1077422954]
-[:22232:][info][Core]: Active Thread: [1910366905]
-[:22232:][info][Core]: Active Thread: [614219559]
-[:22232:][info][Core]: Active Thread: [2192705458]
-[:22232:][info][Core]: Active Thread: [2980929933]
-[:22232:][info][Core]: Active Thread: [4167249239]
-[:22232:][info][Core]: Active Thread: [1887471302]
-[:22232:][info][Core]: Active Thread: [3882065040]
-[:22232:][info][Core]: Active Thread: [3094962306]
-[:22232:][info][Core]: Active Thread Totoal Count: 32 
-[:22232:][info][Core]: Project ProjectAH: project C:/Develop/ProjectAH/, engine C:/Develop/JGEngine/
-[:22232:][info][Core]: Recognized Class List...
-[:22232:][info][BuildTool]: Step 1. Engine Collection Module Infos..
-[:22232:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 0.75 MB)
-[:22232:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 0.88 MB)
-[:22232:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 0.94 MB)
-[:22232:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.00 MB)
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Programs Category Module List
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: JGBuildTool
-[:22232:][trace][BuildTool]: JGConsole
-[:22232:][trace][BuildTool]: JGHeaderTool
-[:22232:][trace][BuildTool]: JGLauncher
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Editor Category Module List
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: DevConsole
-[:22232:][trace][BuildTool]: DevStatistics
-[:22232:][trace][BuildTool]: JGEditor
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Runtime Category Module List
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: AI
-[:22232:][trace][BuildTool]: Asset
-[:22232:][trace][BuildTool]: Core
-[:22232:][trace][BuildTool]: Devkit
-[:22232:][trace][BuildTool]: GameFrameWorks
-[:22232:][trace][BuildTool]: Graphics
-[:22232:][trace][BuildTool]: GUI
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Editor: 3
-[:22232:][trace][BuildTool]: Programs: 4
-[:22232:][trace][BuildTool]: Runtime: 7
-[:22232:][trace][BuildTool]: Total: 14
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][info][BuildTool]: Step 2. User Collection Module Infos..
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Source Category Module List
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: ProjectAH
-[:22232:][trace][BuildTool]: ProjectAHEditor
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][trace][BuildTool]: Source: 2
-[:22232:][trace][BuildTool]: Total: 2
-[:22232:][trace][BuildTool]: ----------------------------------------------------
-[:22232:][info][BuildTool]: Step 3. Generate Build Script..
-[:22232:][trace][BuildTool]: Module: JGBuildTool: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGBuildTool: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGConsole: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGConsole: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGHeaderTool: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGHeaderTool: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGLauncher: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGLauncher: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: DevConsole: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: DevConsole: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: DevStatistics: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: DevStatistics: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGEditor: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: JGEditor: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: AI: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: AI: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: Asset: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: Asset: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: Core: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: Core: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: Devkit: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: Devkit: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: GameFrameWorks: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: GameFrameWorks: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: Graphics: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: Graphics: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: GUI: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: GUI: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: ProjectAH: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: ProjectAH: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Module: ProjectAHEditor: Start Generate Build Script
-[:22232:][trace][BuildTool]: Module: ProjectAHEditor: Compelete Generate Build Script
-[:22232:][trace][BuildTool]: Generate Build Script: C:/Develop/ProjectAH/ProjectAH.lua
-[:22232:][info][BuildTool]: Step 4. Insert Include PCH..
-[:22232:][info][BuildTool]: Step 5. Make Project Files..
-[:22232:][trace][BuildTool]: Run: ""C:/Develop/JGEngine/Build/premake5.exe" vs2022 --file="C:/Develop/ProjectAH/ProjectAH.lua""
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : DevConsole
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : ProjectAH
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : AI
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : DevStatistics
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : JGEditor
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : Asset
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : Graphics
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : Devkit
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : GameFrameWorks
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : GUI
-[:22232:][info][BuildTool]: Recognize CodeGenable Module : ProjectAHEditor
-[:22232:][info][BuildTool]: Compelete Build Tool Run..
-[:22232:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 17, committed 1.00 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:7620:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 11379582091306767642. pages are created on first request
+[:7620:][info][Core]: Active Thread: [3901069354]
+[:7620:][info][Core]: Active Thread: [2933677855]
+[:7620:][info][Core]: Active Thread: [1296739903]
+[:7620:][info][Core]: Active Thread: [1620013154]
+[:7620:][info][Core]: Active Thread: [905877660]
+[:7620:][info][Core]: Active Thread: [1857762666]
+[:7620:][info][Core]: Active Thread: [1987484141]
+[:7620:][info][Core]: Active Thread: [155898759]
+[:7620:][info][Core]: Active Thread: [401376512]
+[:7620:][info][Core]: Active Thread: [481000263]
+[:7620:][info][Core]: Active Thread: [3566126562]
+[:7620:][info][Core]: Active Thread: [1473061281]
+[:7620:][info][Core]: Active Thread: [446095988]
+[:7620:][info][Core]: Active Thread: [1662619583]
+[:7620:][info][Core]: Active Thread: [295515859]
+[:7620:][info][Core]: Active Thread: [2713445698]
+[:7620:][info][Core]: Active Thread: [184303045]
+[:7620:][info][Core]: Active Thread: [925301529]
+[:7620:][info][Core]: Active Thread: [3971034426]
+[:7620:][info][Core]: Active Thread: [3691854563]
+[:7620:][info][Core]: Active Thread: [1948925523]
+[:7620:][info][Core]: Active Thread: [1211268338]
+[:7620:][info][Core]: Active Thread: [2256327063]
+[:7620:][info][Core]: Active Thread: [2419437604]
+[:7620:][info][Core]: Active Thread: [2801606387]
+[:7620:][info][Core]: Active Thread: [685332459]
+[:7620:][info][Core]: Active Thread: [13359915]
+[:7620:][info][Core]: Active Thread: [1412835312]
+[:7620:][info][Core]: Active Thread: [3941143181]
+[:7620:][info][Core]: Active Thread: [1733575961]
+[:7620:][info][Core]: Active Thread: [799234397]
+[:7620:][info][Core]: Active Thread: [2518772181]
+[:7620:][info][Core]: Active Thread Totoal Count: 32 
+[:7620:][info][Core]: Project ProjectAH: project C:/Develop/ProjectAH/, engine C:/Develop/JGEngine/
+[:7620:][info][Core]: Recognized Class List...
+[:7620:][info][BuildTool]: Step 1. Engine Collection Module Infos..
+[:7620:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 0.75 MB)
+[:7620:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 0.81 MB)
+[:7620:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 0.94 MB)
+[:7620:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.00 MB)
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Programs Category Module List
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: JGBuildTool
+[:7620:][trace][BuildTool]: JGConsole
+[:7620:][trace][BuildTool]: JGHeaderTool
+[:7620:][trace][BuildTool]: JGLauncher
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Editor Category Module List
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: DevConsole
+[:7620:][trace][BuildTool]: DevStatistics
+[:7620:][trace][BuildTool]: JGEditor
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Runtime Category Module List
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: AI
+[:7620:][trace][BuildTool]: Asset
+[:7620:][trace][BuildTool]: Core
+[:7620:][trace][BuildTool]: Devkit
+[:7620:][trace][BuildTool]: GameFrameWorks
+[:7620:][trace][BuildTool]: Graphics
+[:7620:][trace][BuildTool]: GUI
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Editor: 3
+[:7620:][trace][BuildTool]: Programs: 4
+[:7620:][trace][BuildTool]: Runtime: 7
+[:7620:][trace][BuildTool]: Total: 14
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][info][BuildTool]: Step 2. User Collection Module Infos..
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Source Category Module List
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: ProjectAH
+[:7620:][trace][BuildTool]: ProjectAHEditor
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][trace][BuildTool]: Source: 2
+[:7620:][trace][BuildTool]: Total: 2
+[:7620:][trace][BuildTool]: ----------------------------------------------------
+[:7620:][info][BuildTool]: Step 3. Generate Build Script..
+[:7620:][trace][BuildTool]: Module: JGBuildTool: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGBuildTool: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGConsole: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGConsole: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGHeaderTool: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGHeaderTool: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGLauncher: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGLauncher: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: DevConsole: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: DevConsole: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: DevStatistics: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: DevStatistics: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGEditor: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: JGEditor: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: AI: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: AI: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: Asset: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: Asset: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: Core: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: Core: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: Devkit: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: Devkit: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: GameFrameWorks: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: GameFrameWorks: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: Graphics: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: Graphics: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: GUI: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: GUI: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: ProjectAH: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: ProjectAH: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Module: ProjectAHEditor: Start Generate Build Script
+[:7620:][trace][BuildTool]: Module: ProjectAHEditor: Compelete Generate Build Script
+[:7620:][trace][BuildTool]: Generate Build Script: C:/Develop/ProjectAH/ProjectAH.lua
+[:7620:][info][BuildTool]: Step 4. Insert Include PCH..
+[:7620:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.06 MB)
+[:7620:][info][BuildTool]: Step 5. Make Project Files..
+[:7620:][trace][BuildTool]: Run: ""C:/Develop/JGEngine/Build/premake5.exe" vs2022 --file="C:/Develop/ProjectAH/ProjectAH.lua""
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : DevConsole
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : ProjectAH
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : AI
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : DevStatistics
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : JGEditor
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : Asset
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : Graphics
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : Devkit
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : GameFrameWorks
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : GUI
+[:7620:][info][BuildTool]: Recognize CodeGenable Module : ProjectAHEditor
+[:7620:][info][BuildTool]: Compelete Build Tool Run..
+[:7620:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 18, committed 1.06 MB, live blocks 0, remote pending 0 (total 0), large live 0
