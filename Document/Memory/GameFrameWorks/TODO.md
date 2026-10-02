@@ -1,23 +1,24 @@
 # GameFrameWorks TODO
 
-갱신 2026-10-01 13:3x — **사용자 커밋 `736ddbe` "엔진 구현"(10-01 12:16)에 Phase 2(2-1 · 2-2 · 2-3 · 2-5) · C-3 · 2-7(ER-009 흐름 교체)이 모두 들어갔다**(1-9 완료). 이전: 10-01 11:1x 2-7 완료, 09-30 밤 Phase 2 · C-3 완료. 구 TODO(`Files/GameFrameWorks_TODO.md`, 2026-09-28 작성 · 09-29 Phase 1 재구성)를 통합 · 최신화했다. **항목 번호는 구 TODO 그대로**(다른 트랙 문서가 참조). 현황은 `현황.md`.
+갱신 2026-10-02 11:0x — **D-19(사용자 "권고대로", 총괄 세션 전달): C26 자체 테스트 저장 파일 → 엔진 Temp · 검사 뒤 삭제, 공용 crashwalk 제한 시간 수정 완료(미커밋)**. C-1 도 DevOps 세션이 템플릿에 `Asset` · `Graphics` 를 넣어 완료(미커밋, 완료 이력). 이전: 10-01 13:3x **사용자 커밋 `736ddbe` "엔진 구현"(10-01 12:16)에 Phase 2(2-1 · 2-2 · 2-3 · 2-5) · C-3 · 2-7(ER-009 흐름 교체)이 모두 들어갔다**(1-9 완료), 10-01 11:1x 2-7 완료, 09-30 밤 Phase 2 · C-3 완료. 구 TODO(`Files/GameFrameWorks_TODO.md`, 2026-09-28 작성 · 09-29 Phase 1 재구성)를 통합 · 최신화했다. **항목 번호는 구 TODO 그대로**(다른 트랙 문서가 참조). 현황은 `현황.md`.
 기준: 엔진 기반 구축. "보드게임 · 카드게임 어느 것을 올려도 필요한 것"만 엔진 항목이고, 특정 게임 규칙에 맞춘 항목은 넣지 않는다. `결정 필요` 는 착수 전 사용자 확인. 한 항목이 끝나면 완료 이력 표로 옮기고 근거를 적는다.
 **게임 UI(`UI/`, `JGGameWidget` · CommonUI식, 2026-10-01)는 따로 `TODO_GameUI.md`(GG-*)에서 관리한다** — 현황 `현황.md` §10.
 
 ---
 
-## 다음에 할 일 Top 4 (권장 순서 — 착수 대상은 사용자가 정한다)
+## 다음에 할 일 Top 3 (권장 순서 — 착수 대상은 사용자가 정한다)
 
 | 순서 | 항목 | 착수 조건 | 완료 기준 |
 |---|---|---|---|
-| 1 | **C-1. 게임 템플릿 의존성** (GameModule 트랙과 조정) | 없음. `Build/Templates/GameProject` 는 GameModule 트랙 파일 | 새 게임 프로젝트에서 `Actors/CameraActor.h` · `Components/StaticMeshComponent.h` · `Data/DataTable.h` 를 include 해도 컴파일된다: 템플릿 `module.json` 에 `Asset` · `Graphics` 추가(간단) 또는 JGBuildTool 이 의존 모듈의 include 경로를 전이(근본, `BuildTool.cpp:325-344`) |
+| 1 | **B-4. 시야 기본 구현** | 없음 (지금 착수 가능한 엔진 항목) | 아래 표 |
 | 2 | **2-4. 시퀀서 확장** | 연출 요구(게임 프로젝트 첫 연출)가 이벤트 정보량을 정한 뒤 | 아래 표 |
 | 3 | **2-6. 프리팹** | Core 트랙의 `PJsonData::getJGObject` 미등록 타입 처리 | 아래 표 |
-| 4 | **B-4. 시야 기본 구현** | 없음 (지금 착수 가능한 엔진 항목) | 아래 표 |
+
+GFW 가 새 모듈에 의존하게 되면(그 모듈 헤더를 GFW 공개 헤더가 include) 게임 템플릿 `module.json` 에도 같이 넣어야 한다 — JGBuildTool 은 include 경로를 전이하지 않는다. 그때 DevOps 세션에 알린다(DevOps TODO 보류 C1-H1 "include 전이"의 착수 조건).
 
 ### 커밋 — 완료 (`736ddbe`, 2026-10-01 12:16, 사용자)
 
-09-30 밤 · 10-01 오전의 미커밋 GFW 변경(1-9 Phase 2, C-3 위젯 이관, 2-7 흐름 교체)과 같은 파일을 고친 Server Phase 5 · 게임 UI(GG-*) · GUI 변경이 한 커밋에 들어갔다(새 `GameplayFlow.h` · `GameplayRoundTurnFlow.*` 추적, `GameplayPhaseMachine.*` 삭제 반영 확인). 커밋 체크리스트 두 개(Phase 2 · 2-7)는 할 일을 마쳐 지웠다 — 내용은 이 파일의 git 이력. 커밋 뒤 메인 트리 GFW 미커밋은 DataTable 트랙의 `Data/`(미추적 18파일)와 이 문서 갱신뿐(13:2x `git status`).
+09-30 밤 · 10-01 오전의 미커밋 GFW 변경(1-9 Phase 2, C-3 위젯 이관, 2-7 흐름 교체)과 같은 파일을 고친 Server Phase 5 · 게임 UI(GG-*) · GUI 변경이 한 커밋에 들어갔다(새 `GameplayFlow.h` · `GameplayRoundTurnFlow.*` 추적, `GameplayPhaseMachine.*` 삭제 반영 확인). 커밋 체크리스트 두 개(Phase 2 · 2-7)는 할 일을 마쳐 지웠다 — 내용은 이 파일의 git 이력. 커밋 뒤 메인 트리 GFW 미커밋은 DataTable 트랙의 `Data/`(미추적 18파일)와 이 문서 갱신뿐(13:2x `git status`) — `Data/` 는 사용자 커밋 `efba16a` "게임 구현"(10-01 16:58)에 들어갔다.
 
 ### C-3 이관 목록 (GFW → JGEditor) — **완료 2026-09-30 22:4x (JGEditor 세션), 커밋 `736ddbe`**
 
@@ -39,11 +40,10 @@ GFW 에 남는 것 (두 창이 부르는 순수 로직, 이관 뒤에도 그대�
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| C-1 | 게임 템플릿 `module.json` 의존성 또는 JGBuildTool include 경로 전이 (GameModule 트랙 조정) | 중간 | 대기 · `결정 필요` | 없음 | 위 Top 1 | 검증 게임은 `Files/tools/gfw_phase2_testgame/GfwView.module.json` 처럼 직접 추가했다. 10-01: GFW 안 `Data/DataTable.h`(DataTable 트랙)도 게임 모듈에 `Asset` 의존을 요구한다 — 같은 문제가 하나 더 |
 | 2-4 | GameMasterActor 시퀀서 확장 — 인과 기반 병렬 묶음 · 페이싱 · 스킵 키 | 중간 | 미착수 | 연출 요구(게임 프로젝트 첫 연출)가 이벤트 정보량을 정한 뒤. 옛 1-4 "이벤트 묶음 번호"(`CauseSequence` · `Depth` 활용)를 여기서 함께 | 같은 원인의 이벤트가 한 묶음으로 병렬 재생, 묶음 사이 페이싱, 스킵 시 바인딩 결과가 순차 재생과 동일(월드 자체 테스트로 비교) | 백로그 R9(C17, `Start` 와 첫 명령의 `CauseSequence` 동일)를 이때 같이 고친다 |
 | 2-6 | 프리팹(액터 서브트리 에셋 + 델타) | 낮음 | 미착수 | **Core 트랙**: `PJsonData::getJGObject` 미등록 타입이 실패 대신 `Allocate<JGObject>()` 반환(`Source/Runtime/Core/FileIO/Json.cpp:43-52`) → 클래스 개명 시 널 역참조(조사 §5-4-9). 메모리 A-2(빈 `PSharedPtr` 대입)는 완료 | `JGActor` 서브트리(컴포넌트 · 자식) JSON 왕복 + 인스턴스 델타 + 미등록 타입 로드가 오류로 끝남(크래시 아님) 테스트 | 다형 직렬화(`PSharedPtr<T>` `[JGType, 데이터]`)는 이미 동작 |
 | B-1 | 백로그 R14 (C12) — 비 리플렉션 `JGGameplayCue` 파생이 기본 큐로 재생 | 낮음 | 미착수 | 게임이 `RegisterCue<T>()` 로 JGCLASS 아닌 큐를 등록할 때 | `CreateInstance` 를 팩토리 저장 또는 가상 `Clone` 으로, 재현 코드 R14 `[NOT REPRODUCED]` + `gmtest` 회귀 | `Actors/GameplayCue.cpp:26-28` |
-| B-2 | 백로그 리뷰 잔여 C13–C27 · D6 · D9 · D10 · D12 | 낮음 | 미착수 | 쓸 곳이 생길 때 | 항목별 리뷰 "수정 방향" | 대표: C13 `Zone(name)` 자동 생성 · 참조 무효화, C14 관찰자 순회 중 변경, C15 상태 교체 시 `_bufferedCommands`, D9 `RegisterAllFromReflection` 범위 · NAME_NONE 거부 · 큐 프로토타입 정렬, D10 저장 헤더에 GameSchema · 규칙 지문(`RulesFingerprint` API 는 있음, 헤더에는 `SchemaVersion` 만), D12 육각 보드 마름모(오프셋 좌표/셀 마스크) |
+| B-2 | 백로그 리뷰 잔여 C13–C25 · C27 · D6 · D9 · D10 · D12 (C26 은 2026-10-02 완료 — 완료 이력) | 낮음 | 미착수 | 쓸 곳이 생길 때 | 항목별 리뷰 "수정 방향" | 대표: C13 `Zone(name)` 자동 생성 · 참조 무효화, C14 관찰자 순회 중 변경, C15 상태 교체 시 `_bufferedCommands`, D9 `RegisterAllFromReflection` 범위 · NAME_NONE 거부 · 큐 프로토타입 정렬, D10 저장 헤더에 GameSchema · 규칙 지문(`RulesFingerprint` API 는 있음, 헤더에는 `SchemaVersion` 만), D12 육각 보드 마름모(오프셋 좌표/셀 마스크) |
 | B-3 | 헤드리스 러너(옛 1-2) — 명령 스크립트 파일 실행, `-repeat=N` | 낮음 | 보류 | 게임 규칙을 올리기 시작할 때. JGConsole 명령은 `.cpp` 하나에 `HAutoConsoleCommand`(`Document/Memory/Etc/Files/DevConsole_TODO.md` "명령 등록 방법") | 스크립트 실행 → 체크섬 출력, 반복마다 `GMemoryGlobalSystem::Flush()`(JGConsole 은 GC 가 돌지 않음) | 명령 이름은 DevConsole 문서가 `simrun` 으로 가정 — 시스템 이름에 맞춰 정할 것 |
 | B-4 | `IGameplayBoard` 시야 규칙 기본 구현(격자 브레젠험) | 낮음 | 미착수 | 없음 | Square · Hex 의 `HasLineOfSight` 기본 구현 + 자체 테스트 | 보드 추상화의 기본 제공물 |
 | B-5 | 저장 버전 테스트(옛 1-5) | 낮음 | 보류 | 저장 파일이 생길 때 | 옛 스키마 파일을 `IGameplayMigrator` 로 읽는 테스트 | |
@@ -85,7 +85,7 @@ GFW 에 남는 것 (두 창이 부르는 순수 로직, 이관 뒤에도 그대�
 | 1-5 | 트리거와 선택 요청 (C2 · C9 · C10 · D2, R4 · R5 · R8) — `Match`/`React(HGameplayTriggerContext&)`, `RequestChoice` bool, 한도 64 · 4096 | 2026-09-30 00:15 | 같은 파일, 12 절. 코드 `Rules/GameplayTrigger.h:20`, `Rules/GameplayContext.h:36, 55-72`, `GameMasterDefines.h:100-102` |
 | 1-6 | 불러오기 후 트리거 순서 (C7, R7) — `ImportDocument` · `Replay` 가 `Finalize` | 2026-09-30 00:15 | 같은 파일, 10 절. 코드 `GameMaster/GameMaster.cpp:159, 324, 338`. 리슨 서버 트랙 0-1 과 동일 수정 병합 |
 | 1-7 | 읽기 전용 경계 (C11 · D4, R17) — const 오버로드 | 2026-09-30 00:15 | 같은 파일, static_assert. 코드 `State/GameplayState.h:65, 93, 113` |
-| 3-1 (엔진 측) | 게임 모듈 템플릿 — `Build/Templates/GameProject`: `ConnectModule("GameFrameWorks")` → `SetEntryClass<JG{PROJECT_NAME}EntryActor>()` → `LoadWorld`, 엔트리 액터 JGCLASS 리플렉션 등록 통과 (게임 프로젝트 트랙 구현, 커밋 `4c8ac73`) | 2026-09-30 | `Document/Memory/GameModule/Files/2026-09-29_게임프로젝트_구현검증.txt` §4 ("GameFrameWorks module startup → MyGame entry actor entered world", 종료 0 · 오류 0), `Document/Memory/GameModule/Files/게임프로젝트_생성가이드.md` |
+| 3-1 (엔진 측) | 게임 모듈 템플릿 — `Build/Templates/GameProject`: `ConnectModule("GameFrameWorks")` → `SetEntryClass<JG{PROJECT_NAME}EntryActor>()` → `LoadWorld`, 엔트리 액터 JGCLASS 리플렉션 등록 통과 (게임 프로젝트 트랙 구현, 커밋 `4c8ac73`) | 2026-09-30 | `Document/Memory/DevOps/Files/2026-09-29_게임프로젝트_구현검증.txt` §4 ("GameFrameWorks module startup → MyGame entry actor entered world", 종료 0 · 오류 0), `Document/Memory/DevOps/Files/게임프로젝트_생성가이드.md` |
 | 1-8 | Phase 1 · 리슨 서버 병합 · `gmtest` 모듈 선언 커밋 + 커밋 뒤 회귀 | 2026-09-30 17:30 (커밋) · 21:08 (회귀) | 커밋 `4c8ac73`. 회귀는 그 뒤 다른 세션이 다시 빌드한 메인 트리 Bin 으로: `gmtest` 111/111 · `net.test all` 66/66 · 2 프로세스 OK · 런처 60초 종료 0 (`Files/2026-09-30_gfw_phase2_verify.txt` 0단계) |
 | 2-2 | `JGStaticMeshComponent` + `PWorld::GetScene()` — 에셋 비동기 로드 · 렌더 메시 직접 지정 · 머터리얼 덮어쓰기, BeginPlay/틱/EndPlay · 컴포넌트 제거 수명 | 2026-09-30 21:4x (커밋 `736ddbe`) | 헤드리스 11 검사, 게임 프로젝트 에디터에서 X Bot 4 · 타일 36 그려짐 (`Files/2026-09-30_gfw_phase2_worldview_devview.png`) |
 | 2-1 | `JGCameraComponent` · `JGCameraActor`(Fixed · Orbit) — 활성 카메라(`PWorld::SetActiveCamera`, 첫 카메라 자동), `ViewportPointToRay`, 궤도 입력 · 제한. 활성 카메라 → `PSceneRenderer::Render` 경로 = `JGWorldView` | 2026-09-30 21:4x (커밋 `736ddbe`) | 헤드리스 10 검사, 에디터에서 궤도 카메라로 그림 · 오른쪽 끌기 · 휠 입력 경로 |
@@ -96,6 +96,10 @@ GFW 에 남는 것 (두 창이 부르는 순수 로직, 이관 뒤에도 그대�
 | C-3 | 위젯 두 개를 JGEditor 로 이관(사용자 결정: 위젯은 JGEditor, GFW 는 순수 로직) — `JGWorldView` → JGEditor `JGSceneViewport`, `JGGameplayDevView` 이동, GFW 창 등록 · GUI 의존 삭제, 검증 게임은 DevView 를 메뉴로 연다 (JGEditor 세션) | 2026-09-30 22:4x (커밋 `736ddbe`) | `Document/Memory/Etc/Files/2026-09-30_jgeditor_C-3_verify.txt`: GFW · JGEditor 빌드 exit 0, `gmtest` 156/156, 검증 게임 에디터에서 클릭 → `entity E3.1 · cell (3, 3)` / `cell (5, 0)` (이관 전과 같은 값), DevView 선택 · Undo, 궤도 끌기 |
 | 2-7 | GameMaster 흐름 교체 (ProjectAH ER-009, 사용자 결정 2026-10-01 "안 3 최소형") — `IGameplayFlow`(`Start` · `RunPendingStep` · `CanEndTurn` · `EndTurn` · `GetName`) + `PGameMaster::SetFlow`, 옛 페이즈 기계 → 기본 흐름 `PGameplayRoundTurnFlow`(동작 그대로), 턴 상태 공용 칸 `Actors` · `Step` · `NextStep`, 입력 행동자 한 곳(`HGameplayState::CollectInputActors` · `IsInputActor` · `FirstInputActor` — 컨트롤러 · 세션 · AI 러너 · `EnumerateLegal` · DevView 가 씀), `EGameplayPhase::Flow`, 이벤트 `StepChanged` · `FlowStepLimitExceeded`, 명령당 흐름 단계 한도 1024, 규칙 지문에 흐름 이름 | 2026-10-01 11:1x (커밋 `736ddbe`) | `Files/2026-10-01_ER-009_verify.txt`: GFW · JGEditor 빌드 exit 0 · 경고 0, `gmtest` 110/110(§13 흐름 18 새로) + 월드 64/64, `net.test all` 101/101, 2 프로세스 kernel · world OK(체크섬은 공용 칸이 늘어 바뀜, 호스트 = 클라), NetDuel 완주 OK(seq 13, desyncs 0), 에디터 DevView `Step TurnMain · Input E1.1` → Undo 뒤 `Input E0.1`(캡처 `Files/2026-10-01_er009_devview_*.png`). 넣지 않음: 데이터 기반 페이즈 정의, 숨은 정보 동시 선택, 캠페인 관리자 |
 | 1-9 | Phase 2 · C-3 · 2-7 커밋 (사용자, 같은 파일의 Server Phase 5 · 게임 UI 와 한 커밋) | 2026-10-01 12:16 | 커밋 `736ddbe` "엔진 구현": `git show --name-status` 로 새 파일(`Components/*` · `CameraActor` · `GameplayBoardLayout` · `GameplayFlow.h` · `GameplayRoundTurnFlow.*` · JGEditor `Widgets/*`) 추적, `GameplayPhaseMachine.*` 삭제 반영 확인. 커밋 소스와 같은 Bin 의 회귀는 11:22 기록(`gmtest` 110 + 64 · `net.test all` 101, `Files/2026-10-01_ER-009_verify.txt` 끝). 커밋 뒤 메인 전체 빌드(12:58, DataTable 세션)에서도 `gmtest` OK · `net.test all` 101 — 그 세션 알림 |
+| C26 | 자체 테스트 저장 파일(리뷰 C26, D-19 ③ 사용자 "권고대로") — 저장 · 로드 검사 두 곳이 실행 폴더(`Bin/DevelopEngine`, git 추적 파일 2개)가 아니라 `<엔진 Temp>/GameMasterSelfTest/<Save · Pending>_<실행 토큰>.json` 에 쓰고 읽은 뒤 지운다(`GameMasterSelfTest.cpp` `selfTestFilePath`, 토큰 = 프로세스당 `HGuid` — 엔진 Temp 를 여러 실행이 함께 써서). `Bin/DevelopEngine/GameMasterSelfTest_{Save,Pending}.json` 삭제 | 2026-10-02 10:55 (미커밋) | `Files/2026-10-02_D-19_crashwalk_C26_verify.txt`: GFW 빌드 exit 0 · 경고 0, `gmtest` 110 + 64 통과, 실행 뒤 Bin · Temp 에 파일 0, `git status` 는 두 파일 삭제(` D`)뿐 |
+| D-19 ⑤ | 공용 도구 crashwalk 제한 시간(GFW 세션이 맡음, 사용자 "권고대로") — 닫기 · 멈춤 검사를 루프 맨 앞으로(디버그 이벤트가 끊이지 않아도 본다), `build.bat` VS 2022 Community · `/utf-8`, exe 재빌드 | 2026-10-02 10:3x (미커밋) | 같은 파일: 메인 Bin 런처 60초 → 60초에 WM_CLOSE · 종료 코드 0 · error 0 · live 0, 창 없는 대상 → 3 + 5초 뒤 스레드 덤프 · 종료 코드 4 |
+| C-4 | D-7(DevConsole 5-1, 에디터가 GFW 를 엔진 모듈로 늘 연결) 뒤 낡은 설명 정리(총괄 세션 요청) — `Core/GameFrameWorksModule.cpp:12` `gmtest` 주석 한 줄, 현황 §3 콘솔 · 창 등록 행, §4 09-30 오전 행(주석 덧붙임), §5 에디터 안 `gmtest`, §6 런처 설명, §8 #4 | 2026-10-02 11:1x (미커밋) | 주석 · 문서만(동작 변경 없음 — 한 줄을 한 줄로 바꿔 줄 번호도 그대로라 다시 빌드하지 않음). 근거: `JGEditor.cpp:27` `EDITOR_ENGINE_MODULES` 에 `GameFrameWorks`, `:145` 씬 뷰포트는 게임 모듈을 연결했을 때만 |
+| C-1 | 게임 템플릿 의존성 (D-19 ② 사용자 "권고대로", **DevOps 세션 구현**) — `Build/Templates/GameProject` 게임 모듈 `module.json` 의존 `[Core, Asset, Graphics, GameFrameWorks]`, 에디터 모듈 `[Core, Asset, Graphics, GUI, GameFrameWorks, {PROJECT_NAME}]`, 템플릿 `{PROJECT_NAME}Module.cpp` 주석(에디터 · JGConsole 이 GFW 를 먼저 연결). JGBuildTool include 전이(근본안)는 DevOps 보류 C1-H1 "GFW 의존 모듈이 늘 때" | 2026-10-02 (미커밋) | DevOps 알림 · `Document/Memory/DevOps/TODO.md` 완료 이력 "C-1 (GFW)": 메인 트리 엔진으로 새 게임 프로젝트(C1Check)의 게임 · 에디터 모듈이 `Actors/CameraActor.h` · `Components/StaticMeshComponent.h` · `Data/DataTable.h` include + `static_assert(sizeof)` → 배치 2 exit 0 → 게임 솔루션 16 프로젝트 오류 0 → 런처 40초 종료 0 · error 0 · live 0. GFW 세션이 템플릿 두 `module.json` 내용을 확인함. 이미 만든 게임 프로젝트(검증 게임 · ProjectAH)는 템플릿을 다시 읽지 않는다 — 각자 `module.json` 에 |
 
 ---
 

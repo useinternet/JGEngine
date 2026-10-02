@@ -1,6 +1,6 @@
 # Server(네트워크 · 리슨 서버) TODO
 
-작성 2026-09-30, 갱신 09-30 23:1x (Phase 5). `Files/Network_TODO.md`(09-29 작성 · 09-30 11:45 갱신)를 통합 · 최신화한 것. 항목 ID 는 그대로 쓴다(Phase-번호). 현황은 `현황.md`.
+작성 2026-09-30, 갱신 10-02 11:1x (5-5 최소 로비). `Files/Network_TODO.md`(09-29 작성 · 09-30 11:45 갱신)를 통합 · 최신화한 것. 항목 ID 는 그대로 쓴다(Phase-번호). 현황은 `현황.md`.
 결정(09-29, 사용자): 방안 A(호스트 권한 명령 중계 + 결정론 복제) · 위치 `GameFrameWorks/Network/` · 전송 Winsock TCP(`INetTransport` 뒤) · 이름 `PGameplaySession` · `INetTransport` · `PNet*`.
 규칙: 한 항목이 끝나면 완료 이력으로 옮기고 `현황.md` §4 에 한 줄. 커밋은 사용자가 한다. Phase 5 는 사용자 지시(09-30 22:1x "페이즈 5 시작해줘")로 착수했다.
 
@@ -10,8 +10,10 @@
 
 | 순서 | ID | 항목 | 착수 조건 | 완료 기준 |
 |---|---|---|---|---|
-| 1 | 5-7 | **Phase 5 커밋** (사용자) — 아래 "커밋 체크리스트 (5-7)" | GFW Phase 2 · C-3 · GUI 1-2 변경과 한 커밋(같은 파일 · 헤더). 커밋 전 `tasklist` 에 다른 세션 cl · link 없음 | 커밋 뒤 메인 트리에서 `gmtest` 156 · `net.test all` 101 · 2 프로세스 kernel · world OK |
-| 2 | 5-5 | 최소 로비 — **사용자 결정 대기**(범위 · 시점, `현황.md` §8 #2) | C-3 위젯 이관 완료(JGEditor 담당 세션) | 권고안: JGEditor 개발용 창 — 세션 상태 · 슬롯 표 · Host · Join · Leave · 호스트 "월드 다시 로드". 게임 프로젝트(NetDuel)로 두 런처에서 창으로 호스트 · 참가 · 새 판 시작 확인 |
+| 1 | 5-8 | **5-5 최소 로비 · 검사 포트 수정 커밋** (사용자) — 아래 "커밋 체크리스트 (5-5)" | `JGEditor.cpp` 의 DevConsole D-7 미커밋 변경과 같은 파일 → 함께 | 커밋 뒤 엔진 런처 30 초 종료 0, 게임 프로젝트 에디터에서 `Windows/Session Lobby` 가 열린다 |
+| — | ER-006 | ProjectAH 요청: 시작 전 퇴장 슬롯 해제 · 준비 상태 · 강퇴 — **사용자 결정 전, 착수하지 않음** | 사용자 결정 | 요청 문서 완료 기준(4명 방에 들어왔다 나가기 4번 뒤 5번째가 들어온다) · 관찰은 `현황.md` §5 |
+
+Phase 5(5-1 ~ 5-7)는 끝났다. 엔진 범위로 남은 Server 항목은 없다(보류 표는 조건이 생길 때).
 
 ---
 
@@ -19,22 +21,20 @@
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| 5-5 | 최소 로비 — 슬롯 목록 · (준비) · 시작 | 중 | 미착수 · **결정 대기** | C-3 이관 완료, 사용자 결정 | 위 표 | 엔진 API 는 있음(`GetSlots` · `OnSlotsChanged` · `SetSlotControllers` · `HostSession` · `JoinSession` · `LeaveSession` · `LoadWorld`). 위치는 사용자 결정(09-30 밤) "위젯은 JGEditor" 에 따른다. "준비" 는 프로토콜 추가가 필요하다 |
-| 5-7 | Phase 5 커밋 | 상 | 사용자 | — | 위 표 | |
+| 5-8 | 5-5 커밋 | 상 | 사용자 | — | 위 표 | |
 
-### 커밋 체크리스트 (5-7)
+### 커밋 체크리스트 (5-5)
 
-Phase 5 가 고친 파일(09-30 23:0x 메인 트리 반영). 같은 파일에 다른 트랙 미커밋 변경이 섞여 있으니 트랙별로 나누지 말고 함께 넣는다.
+10-02 11:0x(5-5) · 11:5x(검사 포트) 메인 트리 반영분. 모두 미커밋(새 파일은 미추적).
 
 | 분류 | 파일 | 섞인 다른 트랙 변경 |
 |---|---|---|
-| 세션 · 메시지 · 검증 | `Source/Runtime/GameFrameWorks/Network/Session/GameplayHostSession.h/.cpp` · `GameplayClientSession.h/.cpp` · `Network/Messages/GameplayNetMessage.cpp` · `Network/GameplayNetSelfTest.h/.cpp` | 없음 |
-| 게임 인스턴스 · 모듈 | `Source/Runtime/GameFrameWorks/Core/GameInstance.h/.cpp` · `Core/GameFrameWorksModule.cpp` | `GameFrameWorksModule.cpp` 에 C-3(위젯 등록 제거) · GFW Phase 2 |
-| 액터 | `Source/Runtime/GameFrameWorks/Actors/GameMasterActor.h/.cpp` · `GameplayControllerActor.h/.cpp` | GFW Phase 2(보드 배치 · 피킹) · C-3(주석 "씬 뷰포트") |
-| JGConsole | `Source/Programs/JGConsole/NetCommands.cpp` | 없음 |
-| 템플릿 · 문서 | `Build/Templates/GameProject/Source/{PROJECT_NAME}/{PROJECT_NAME}EntryActor.cpp` · `Document/Memory/GameModule/Files/게임프로젝트_생성가이드.md` | 가이드에 GameModule 09-30 저녁 변경 |
-| 도구 · 증적 (신규 미추적 포함) | `Document/Memory/tools/net_two_process/run_two_process.sh` · `Document/Memory/Server/Files/tools/net_duel_testgame/`(3) · `Document/Memory/Server/Files/2026-09-30_phase5_*.txt`(3) · Server 문서 | — |
-| 바이너리 | `Bin/DevelopEngine/GameFrameWorks.dll/.exp/.lib` · `JGConsole.exe` · `JGEditor.dll/.exp/.lib` (23:0x 메인 트리 빌드) | 다른 트랙 재빌드와 같은 파일 |
+| 창 (신규) | `Source/Editor/JGEditor/Widgets/SessionLobby.h` · `SessionLobby.cpp` | 없음 |
+| 검사 포트 (10-02 11:4x) | `Source/Runtime/GameFrameWorks/Network/Transport/NetTcpTransport.h/.cpp`(`GetListenPort`) · `Network/GameplayNetSelfTest.cpp`(TCP 절 빈 포트) · `Files/2026-10-02_net_test_port_results.txt` | 없음 |
+| 메뉴 | `Source/Editor/JGEditor/JGEditor.cpp` — include 1줄 + `Windows/Session Lobby` 블록 | DevConsole D-7(엔진 모듈 목록에 `GameFrameWorks` · 주석) |
+| 도구 · 증적 (신규) | `Document/Memory/Server/Files/tools/net_lobby_check/`(4) · `Document/Memory/Server/Files/2026-10-02_5-5_lobby_*`(결과 txt · 두 로그 · 캡처 4) · Server 문서 | — |
+| 바이너리 | `Bin/DevelopEngine/JGEditor.dll/.exp/.lib` (11:0x 메인 빌드) | 다른 트랙 재빌드와 같은 파일 |
+| 넣지 않는 것 | `Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp` 의 UI 검사 훅 — 워크트리에만 적용했다. 메인에는 없다 | — |
 
 ---
 
@@ -65,7 +65,7 @@ Phase 5 가 고친 파일(09-30 23:0x 메인 트리 반영). 같은 파일에 �
 | 세션 상태에 `Lobby` · `Traveling` 분리(구조설계 §8) | 구현은 `Ready` · `OnTravelRequested` + 보관 메시지로 충분했다. 월드 이동 중 상태 질의가 필요해질 때 |
 | PCH 맨 앞 `winsock2.h`(증적 `Files/2026-09-29_winsock_include_probe.txt`) | `WIN32_LEAN_AND_MEAN` 도입 등 PCH 를 어차피 바꿀 때 — 코드는 이미 `_WINSOCKAPI_` 분기로 대비 |
 | 명령 스트림 직렬화 규약 문서화(GFW 백로그) | 외부 도구가 프로토콜을 읽어야 할 때. 지금은 `GameplayNetMessage.h` 주석이 규약 |
-| 로비 "준비" 표시(클라 → 호스트 메시지 + 슬롯 필드) | 게임이 전원 준비 뒤 시작을 요구할 때. 지금은 호스트가 시작 시점을 정한다 |
+| 로비 "준비" 표시(클라 → 호스트 메시지 + 슬롯 필드) | 게임이 전원 준비 뒤 시작을 요구할 때(ProjectAH ER-006 의 "있으면 좋음" 과 같은 항목, 사용자 결정 전). 지금은 호스트가 시작 시점을 정한다(5-5 창의 Reload World) |
 | `-join` 자동 재시도 | 호스트보다 먼저 띄우는 사용 방식이 필요해질 때. 지금은 한 번 접속하고 거부되면 Closed(게임이 `OnClosed` 로 처리) |
 | 세션 알림을 게임 인스턴스가 다시 내보내기(세션 교체에도 구독 유지) | 게임이 `OnLocalCommandRejected` 등을 구독하면서 Host · Join · Leave 로 세션을 바꿀 때. 지금은 세션 객체에 직접 구독 |
 
@@ -106,14 +106,17 @@ Phase 5 가 고친 파일(09-30 23:0x 메인 트리 반영). 같은 파일에 �
 | C-1 (0-7 · 1-6 · 2-9 · 3-6 · 4-3) | Phase 0–4 커밋 (사용자) | 09-30 17:30 | `4c8ac73` "문서 정리" — `Network/` 17 파일 + `NetCommands.cpp` · GameMaster 변경 · `Core/ConsoleCommand/` · `Main.cpp` · Bin 산출물 포함, 작업 트리 clean (09-30 저녁 git 확인) |
 | N-2 | 문서 이동 뒤 코드 주석 경로 갱신 | 09-30 (확인) | `NetTcpTransport.cpp:5` 가 이미 `Document/Memory/Server/Files/2026-09-29_winsock_include_probe.txt` 를 가리킴 |
 | V-1 | 커밋된 코드 기준 재검증 (`gmtest` · `net.test all` · 2 프로세스) | 09-30 22:2x | Phase 5 착수 전 스냅숏(메인 트리 22:20) 기준선: 빌드 오류 0 · `gmtest` 156/156 · `net.test all` 66/66 · 2 프로세스 OK(`16006860866352003711`) — `Files/2026-09-30_phase5_results.txt` 첫 절 |
-| 5-1 | `JGGameInstance` 세션 소유(`GetSession` · `IsAuthority` · `HostSession` · `JoinSession` · `LeaveSession`), 틱 순서 세션 → 이동 → 월드, `LoadWorld` 가 엔트리 전에 `NotifyTravel`, 클라 이동 따라가기, 종료 시 닫기(최대 2 초), 인스턴스 교체 시 세션 넘김 | 09-30 23:0x (미커밋) | world 절: 로비 입장 · Travel → StartGame · 두 번째 월드 이동 · Welcome 의 월드로 진행 중 입장 · LeaveSession 이어받기. 2 프로세스 world 모드 |
-| 5-2 | `JGGameMasterActor` BeginPlay 붙기 · EndPlay 떼기 · `StartGame` · `GetSession` · `executeNow` → `SubmitLocal` · 결과 `Sent`. 호스트 세션 `adoptStartedGameMaster` | 09-30 23:0x (미커밋) | world 절(호스트 `Executed` · 클라 `Sent` · 언로드 시 떼기 · 클라 `StartGame` false), `gmtest` 156(게임 인스턴스 절이 세션 경유로 통과) |
-| 5-2b | 엔트리 규약: 템플릿 `EntryActor.cpp` 주석 예시 · 생성 가이드 4절 한 줄 · 3절 멀티플레이 실행 방법 | 09-30 23:0x (미커밋) | NetDuel 생성 시 새 템플릿이 들어감, NetDuel 엔트리가 규약대로 동작 |
-| 5-3 | 컨트롤러 `IsLocallyControlled` · `GetInputActor` · `BeginCommand` → bool · `ResolveChoice` "not your choice" | 09-30 23:0x (미커밋) | world 절 컨트롤러 검사 5개 |
-| 5-4 | 실행 인자 `-host[=포트]` · `-bind=` · `-join=주소[:포트]` · `-name=` (게임 인스턴스가 프로세스 명령줄에서 읽음) | 09-30 23:0x (미커밋) | NetDuel 런처 2개: `hosting on port 47791 as Host` · `joining 127.0.0.1:47791 as Guest` → slot 1 |
+| 5-1 | `JGGameInstance` 세션 소유(`GetSession` · `IsAuthority` · `HostSession` · `JoinSession` · `LeaveSession`), 틱 순서 세션 → 이동 → 월드, `LoadWorld` 가 엔트리 전에 `NotifyTravel`, 클라 이동 따라가기, 종료 시 닫기(최대 2 초), 인스턴스 교체 시 세션 넘김 | 09-30 23:0x · 커밋 `736ddbe` | world 절: 로비 입장 · Travel → StartGame · 두 번째 월드 이동 · Welcome 의 월드로 진행 중 입장 · LeaveSession 이어받기. 2 프로세스 world 모드 |
+| 5-2 | `JGGameMasterActor` BeginPlay 붙기 · EndPlay 떼기 · `StartGame` · `GetSession` · `executeNow` → `SubmitLocal` · 결과 `Sent`. 호스트 세션 `adoptStartedGameMaster` | 09-30 23:0x · 커밋 `736ddbe` | world 절(호스트 `Executed` · 클라 `Sent` · 언로드 시 떼기 · 클라 `StartGame` false), `gmtest` 156(게임 인스턴스 절이 세션 경유로 통과) |
+| 5-2b | 엔트리 규약: 템플릿 `EntryActor.cpp` 주석 예시 · 생성 가이드 4절 한 줄 · 3절 멀티플레이 실행 방법 | 09-30 23:0x · 커밋 `736ddbe` | NetDuel 생성 시 새 템플릿이 들어감, NetDuel 엔트리가 규약대로 동작 |
+| 5-3 | 컨트롤러 `IsLocallyControlled` · `GetInputActor` · `BeginCommand` → bool · `ResolveChoice` "not your choice" | 09-30 23:0x · 커밋 `736ddbe` | world 절 컨트롤러 검사 5개 |
+| 5-4 | 실행 인자 `-host[=포트]` · `-bind=` · `-join=주소[:포트]` · `-name=` (게임 인스턴스가 프로세스 명령줄에서 읽음) | 09-30 23:0x · 커밋 `736ddbe` | NetDuel 런처 2개: `hosting on port 47791 as Host` · `joining 127.0.0.1:47791 as Guest` → slot 1 |
 | 5-6 | 검증: `net.test world`(35) · `net.host/join -world`(2 프로세스 world 모드) · NetDuel 런처 2개 결투 완주 | 09-30 23:13 | `Files/2026-09-30_phase5_results.txt` — 런처 결투 `net-duel: OK (seq 13, checksum 9198514108868742568, winner team 0)`, 양쪽 종료 0 · 오류 로그 0. 메인 트리 반영 뒤 `gmtest` 156 · 101/101 · 2 프로세스 kernel · world OK · 엔진 런처 30 초 종료 0 |
-| N-1 | `net.test` 를 GFW 모듈(`GameplayNetSelfTest.cpp`)의 `HAutoConsoleCommand` 로 이동. `NetCommands.cpp` 는 `net.host` · `net.join` | 09-30 23:0x (미커밋) | JGConsole 도움말에 세 명령, `net.test all` 101/101 |
+| N-1 | `net.test` 를 GFW 모듈(`GameplayNetSelfTest.cpp`)의 `HAutoConsoleCommand` 로 이동. `NetCommands.cpp` 는 `net.host` · `net.join` | 09-30 23:0x · 커밋 `736ddbe` | JGConsole 도움말에 세 명령, `net.test all` 101/101 |
 | P5-a | 월드 이름 NAME_NONE 왕복 버그 — `Welcome` · `Travel` 의 이름을 없음 = 빈 문자열로 주고받음 | 09-30 22:4x | 로비 입장 뒤 Travel 이 1번만(수정 전 2번: 빈 이름 월드로 한 번 더) — world 절 `travels 1 / 1` |
+| 5-7 | Phase 5 커밋 (사용자 일괄 커밋) | 10-01 12:16 | `736ddbe` "엔진 구현" — 5-1 ~ 5-4 · 5-6 · N-1 · 도구 전부. 문서의 "미커밋" 표기는 10-02 에 git log 기준으로 정리 |
+| 5-5 | 최소 로비 = JGEditor 개발용 창 `JGSessionLobby`(`Windows/Session Lobby`): 고정 버튼 줄 Host(포트 · 이 기계에서만) · Join(주소 · 포트) · Leave · Reload World(권한 쪽, 지금 참가자로 새 판), 이름 · 포트 · 주소 칸, 세션 상태, 슬롯 표. "준비" 없음. 엔진 변경 없음 | 10-02 11:0x (미커밋) | `Files/2026-10-02_5-5_lobby_results.txt` — NetDuel 런처 두 개(싱글로 시작)를 창으로만: Host → Join(진행 중 입장 · 문서) → Reload World(이동 알림 · 새 판) → 두 쪽 seq 15 · checksum `10057767511302857797` 같음 → Leave(싱글로 이어받기). 양쪽 종료 0 · 오류 0. 메인 반영 뒤 PreBuild · JGEditor 빌드 오류 0 · 엔진 런처 30 초 종료 0 |
+| P5-b | `net.test transport` 고정 포트(47790 · 47791) 충돌 — TCP 절이 `Listen(0)` + `PNetTcpTransport::GetListenPort()` 로 빈 포트를 쓰고, 거부 검사는 받았다 닫은 포트로 | 10-02 11:5x (미커밋) | 다른 프로세스가 47790 을 듣는 채로 transport 19/19 · `net.test all` 101/101 · `gmtest` 174 · 2 프로세스 kernel · world OK (`Files/2026-10-02_net_test_port_results.txt`) |
 
 ---
 

@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>빌드 속도 검토</title>
+<meta name="description" content="2026-10-02 JGEngine 엔진 빌드가 느려진 원인 측정과 개선안(병렬 컴파일, PCH, worktree 위치) 검토 보고">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6; --deemph: #8d8c86;
+    --good: #0ca30c; --warning: #fab219; --neutral: #6da7ec;
+    --callout: #eef4fc; --warn-bg: #fdf6e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5; --deemph: #6b6a65;
+      --good: #0ca30c; --warning: #fab219; --neutral: #5598e7;
+      --callout: #14213a; --warn-bg: #2a2310;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --deemph: #6b6a65; --neutral: #5598e7; --callout: #14213a; --warn-bg: #2a2310;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .lead ol { margin: 4px 0 0; padding-left: 22px; }
+  .lead li { margin: 4px 0; }
+  .callout { background: var(--warn-bg); border-left: 4px solid var(--warning); border-radius: 6px; padding: 12px 16px; margin: 16px 0; }
+  .callout strong { display: block; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+  tr.rec td { background: var(--callout); }
+  .tiles { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0 4px; }
+  .tile { flex: 1 1 200px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+  .tile .label { font-size: 13px; color: var(--ink-2); }
+  .tile .value { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .tile .note { font-size: 13px; color: var(--ink-2); }
+  .chart { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px 10px; position: relative; }
+  .chart-title { font-weight: 600; margin-bottom: 2px; }
+  .chart-sub { font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+  .bars { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; row-gap: 6px; column-gap: 12px; align-items: center; }
+  .bars .lbl { font-size: 14px; color: var(--ink); text-align: right; line-height: 1.3; }
+  .bars .lbl small { display: block; font-size: 12px; color: var(--ink-2); }
+  .bars .track { position: relative; height: 28px; display: flex; align-items: center; outline: none; border-radius: 4px; }
+  .bars .track:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+  .bars .bar { height: 20px; background: var(--deemph); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bars .bar.hl { background: var(--accent); }
+  .bars .track:hover .bar, .bars .track:focus .bar { filter: brightness(1.12); }
+  .bars .val { margin-left: 8px; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+  .axis { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; column-gap: 12px; margin-top: 4px; }
+  .axis .ticks { position: relative; height: 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .axis .ticks span { position: absolute; top: 2px; transform: translateX(-50%); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .axis .ticks span:first-child { transform: none; }
+  .axis .ticks span:last-child { transform: translateX(-100%); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none; z-index: 5; max-width: 260px; }
+  .tip b { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .small { font-size: 13px; color: var(--ink-2); }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  pre { font: 13px/1.5 Consolas, "D2Coding", monospace; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; overflow-x: auto; }
+  @media (max-width: 720px) {
+    table { display: block; overflow-x: auto; }
+    .bars, .axis { grid-template-columns: 110px 1fr; }
+    .bars .lbl { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>빌드 속도 검토</h1>
+  <div class="meta">2026-10-02 · DevOps(구 GameModule) · 엔진 솔루션 <code>JGEngine.sln</code> DevelopEngine|x64 · HEAD <code>efba16a</code> · 상세 기록: <a href="Memory/DevOps/Files/빌드속도_검토_2026-10-02.md">빌드속도_검토_2026-10-02.md</a></div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 엔진 전체 빌드가 <strong>272.6초</strong>(4분 33초)입니다. 원인의 대부분은 <strong>한 프로젝트 안의 .cpp를 한 번에 하나씩 컴파일하는 설정</strong>입니다. 32스레드 머신에서 동시에 도는 컴파일이 평균 1.27개이고, 빌드 중 CPU 사용률은 20% 안팎입니다. GameFrameWorks가 09-28 파일 1개에서 10-01 95개로 커지면서 이 모듈 하나가 순서대로 약 150초를 차지하게 됐고, 그래서 체감상 갑자기 느려졌습니다.</p>
+    <p><strong>권하는 것</strong> (위에서부터, 아래 표의 BS 번호):</p>
+    <ol>
+      <li><strong>BS-1 병렬 컴파일(<code>/MP</code>) 켜기.</strong> premake 템플릿 한 줄, 소스 변경 없음. 전체 빌드 272.6 → <strong>약 57초</strong>.</li>
+      <li><strong>BS-2 PCH에 spdlog · rapidjson 넣기.</strong> <code>PCH.h</code>에 pragma 1줄 + include 6줄. 컴파일 CPU가 절반이 되고 전체 빌드는 약 50초. 공용 헤더 하나를 고친 뒤 빌드는 지금의 1/7~1/10.</li>
+      <li><strong>BS-3 worktree · 검증용 게임 프로젝트를 <code>%TEMP%</code> 밖에 두기.</strong> 작업 방식. 지금 에이전트 worktree는 헤더 수정을 증분으로 못 잡아 매번 전체를 다시 빌드합니다.</li>
+    </ol>
+  </div>
+
+  <div class="callout" style="background:var(--callout);border-left-color:var(--accent)">
+    <strong>적용 결과 (2026-10-02 11:50 · 사용자 결정 D-20 "권고대로 진행")</strong>
+    BS-1(<code>/MP</code>) · BS-2(PCH) · BS-3(지침서 규칙)을 적용했습니다. 메인 트리 전체 다시 빌드 272.6 → <strong>66.0초</strong>, GameFrameWorks 공용 헤더 수정 219.8 → <strong>22.3초</strong>, Core 공용 헤더 수정 356.1 → <strong>40.2초</strong>, 게임 솔루션(엔진 포함) 67.5초. 오류 0, 경고는 전과 같습니다. 회귀 테스트도 통과했고, <code>net.test</code>의 TCP 항목만 다른 프로그램이 같은 포트(47790)를 쓰고 있어 다시 확인할 예정입니다. 미커밋. 기록: <a href="Memory/DevOps/Files/2026-10-02_BS1-BS2-BS3_적용_검증.txt">적용 검증</a>.
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="label">전체 빌드 (지금)</div><div class="value">272.6초</div><div class="note">동시 컴파일 평균 1.27개</div></div>
+    <div class="tile"><div class="label">전체 빌드 (BS-1 + BS-2)</div><div class="value">약 50초</div><div class="note">조용할 때 측정 · 다른 빌드와 겹치면 70초 안팎</div></div>
+    <div class="tile"><div class="label">GameFrameWorks 헤더 하나 수정</div><div class="value">219.8 → 27.0초</div><div class="note">권장 구현(/MP + PCH) · 평소 작업에서 가장 큰 차이</div></div>
+  </div>
+
+  <h2>1. 설정별 전체 빌드 시간</h2>
+  <div class="chart" id="chart-full">
+    <div class="chart-title">엔진 전체 빌드(깨끗한 상태) — 초, 짧을수록 좋음</div>
+    <div class="chart-sub">같은 소스(HEAD <code>efba16a</code>), 설정만 바꿔 측정. 파란 막대가 권하는 조합입니다.</div>
+    <div class="bars" role="list">
+      <!-- 행은 스크립트가 data 에서 만든다 -->
+    </div>
+    <div class="axis"><div></div><div class="ticks" aria-hidden="true"></div></div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>권장 조합(BS-1 + BS-2)</span><span><i style="background:var(--deemph)"></i>비교한 다른 설정</span></div>
+    <div class="tip" role="status" aria-live="polite"></div>
+  </div>
+  <p class="small" style="margin-top:8px">다른 세션 빌드가 같은 시간에 돌면 값이 최대 40%까지 늘어납니다(권장 조합을 세 번 재면 49.9 / 54.2 / 69.5초). 그래프는 다른 빌드가 거의 없을 때 잰 값입니다. 숫자 표는 아래 2절.</p>
+
+  <h2>2. 무엇이 시간을 쓰나</h2>
+  <h3>2-1. 파일을 하나씩 컴파일한다 (가장 큰 원인)</h3>
+  <p>지금 생성되는 프로젝트 설정에는 프로젝트 안 병렬 컴파일(<code>/MP</code> 또는 MSBuild MultiToolTask)이 없습니다. MSBuild <code>-m</code>은 프로젝트끼리만 병렬로 돌리는데, 의존이 Core → Asset → Graphics → GameFrameWorks → JGEditor · JGConsole 한 줄이라 실제로는 거의 한 개씩 돕니다. 컴파일이 이어진 271초 중 <strong>215초는 컴파일 1개만</strong> 돌았습니다.</p>
+  <table>
+    <thead><tr><th>모듈(지금 설정)</th><th class="num">파일</th><th class="num">CPU 합(초)</th><th class="num">걸린 시간(초)</th><th>메모</th></tr></thead>
+    <tbody>
+      <tr><td class="name">GameFrameWorks</td><td class="num">95</td><td class="num">153.9</td><td class="num">163.0</td><td>.cpp 75 + 리플렉션 생성 20. 걸린 시간 ≈ CPU 합 = 직렬</td></tr>
+      <tr><td class="name">Graphics</td><td class="num">37</td><td class="num">55.7</td><td class="num">62.8</td><td></td></tr>
+      <tr><td class="name">PCH 만들기</td><td class="num">14</td><td class="num">27.0</td><td class="num">—</td><td>프로젝트마다 1번</td></tr>
+      <tr><td class="name">Core</td><td class="num">37</td><td class="num">22.7</td><td class="num">22.7</td><td>모든 모듈이 이걸 기다림</td></tr>
+      <tr><td class="name">GUI</td><td class="num">22</td><td class="num">20.7</td><td class="num">23.4</td><td>ImGui 포함</td></tr>
+      <tr><td class="name">나머지 9개</td><td class="num">44</td><td class="num">64.3</td><td class="num">—</td><td>Asset · Devkit · AI · DevConsole · DevStatistics · JGEditor · 툴 4개</td></tr>
+    </tbody>
+  </table>
+  <table style="margin-top:12px">
+    <thead><tr><th>날짜(커밋)</th><th class="num">엔진 .cpp</th><th class="num">GameFrameWorks .cpp</th><th class="num">GFW 리플렉션 헤더</th></tr></thead>
+    <tbody>
+      <tr><td>09-28 (<code>fcace8f</code>)</td><td class="num">107</td><td class="num">1</td><td class="num">0</td></tr>
+      <tr><td>09-29 (<code>1308fd5</code>)</td><td class="num">150</td><td class="num">42</td><td class="num">13</td></tr>
+      <tr><td>09-30 (<code>4c8ac73</code>)</td><td class="num">162</td><td class="num">50</td><td class="num">13</td></tr>
+      <tr><td>10-01 (<code>efba16a</code>)</td><td class="num">191</td><td class="num">75</td><td class="num">20</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">GameFrameWorks가 사흘 사이 커지면서 직렬 구간이 그만큼 길어졌습니다. 이것이 "느려졌다"의 직접적인 이유입니다.</p>
+
+  <h3>2-2. 파일마다 같은 헤더를 다시 읽는다</h3>
+  <p>컴파일 CPU 344초 중 <strong>323초(94%)가 헤더 처리</strong>(프런트엔드)입니다. <code>PCH.h</code> + <code>Core.h</code> + 빈 함수뿐인 <code>AI/Main.cpp</code>도 1.3초가 걸립니다. <code>Core.h</code>가 spdlog(로그) · rapidjson(JSON) · 엔진 Core 헤더 30여 개를 끌어오고, 엔진 헤더 59개가 <code>Core.h</code>를 include하므로 거의 모든 파일이 이 묶음을 다시 읽습니다. 지금 PCH에는 STL · DirectX 12 · <code>Windows.h</code>만 들어 있습니다.</p>
+
+  <h3>2-3. 문제가 아닌 것</h3>
+  <p>링크는 13번 합 9.6초(최대 1.4초)로 병목이 아닙니다. Core가 정적 라이브러리(<code>Core.lib</code> 54 MB)라 DLL마다 링크되지만 지금 크기에서는 괜찮습니다.</p>
+
+  <h3>2-4. 실험 숫자</h3>
+  <table>
+    <thead><tr><th>#</th><th>설정</th><th class="num">전체 빌드(초)</th><th class="num">컴파일 CPU 합(초)</th><th class="num">평균 동시 컴파일</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td>r1</td><td>지금</td><td class="num">272.6</td><td class="num">344</td><td class="num">1.27</td><td>기준</td></tr>
+      <tr><td>r2</td><td>+ 병렬 컴파일(MultiToolTask)</td><td class="num">56.8</td><td class="num">722</td><td class="num">13.1</td><td>BS-1(MultiToolTask로 측정 — <code>/MP</code>도 같은 수준, m1). 32개가 동시에 돌아 파일당 시간은 2배(E코어 · 메모리 경합)</td></tr>
+      <tr><td>r3</td><td>r2 + 64비트 호스트 컴파일러</td><td class="num">61.9</td><td class="num">891</td><td class="num">14.7</td><td>이득 없음(링크만 빨라짐)</td></tr>
+      <tr><td>r4</td><td>r2 + PCH에 <code>Core.h</code> 통째</td><td class="num">51.5</td><td class="num">217</td><td class="num">4.4</td><td>CPU 가장 적음. Core 헤더를 고치면 PCH 14개를 다시 만듦 → 선택안</td></tr>
+      <tr class="rec"><td>r5</td><td>r2 + PCH에 spdlog · rapidjson</td><td class="num">49.9</td><td class="num">368</td><td class="num">7.6</td><td>BS-2(권장). 서드파티라 PCH가 바뀌지 않음. 이 실행은 4996 pragma 없이 넣어 fmt 경고가 1만 건 났다 → 최종안은 pragma 포함(m1, 경고 0)</td></tr>
+      <tr><td>r6</td><td>r5 + <code>/Zi</code> + <code>/DEBUG:FASTLINK</code></td><td class="num">47.7</td><td class="num">344</td><td class="num">7.5</td><td>2초(잡음 수준). Edit and Continue를 잃어 하지 않음</td></tr>
+      <tr class="rec"><td>m1</td><td><code>/MP</code> + PCH 최종안(4996 pragma 포함)</td><td class="num">68.9</td><td class="num">770</td><td class="num">11.7</td><td>BS-1 권장 구현. 같은 시각 MultiToolTask + 같은 PCH(m3)는 95.4초 — 둘 다 부하가 겹친 측정이라 r 계열보다 김. 경고 수는 기준선과 같음</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">약 50초가 하한인 이유: 의존 줄(Core → Asset → Graphics → GameFrameWorks → JGEditor)의 단계마다 PCH 만들기(약 5초) + 컴파일 + 링크가 순서대로 이어집니다. 더 줄이려면 모듈 구조를 바꿔야 해서 지금은 권하지 않습니다(5절).</p>
+
+  <h2>3. 평소 작업에서 걸리는 시간</h2>
+  <p>저장소 안 무시 폴더(<code>Temp/</code>, <code>%TEMP%</code> 밖)의 worktree에서, 실제 헤더 파일의 수정 시각을 바꿔 쟀습니다.</p>
+  <table id="incremental">
+    <thead><tr><th>상황</th><th class="num">지금</th><th class="num">병렬만<br><span class="small">(MultiToolTask)</span></th><th class="num">권장 구현<br><span class="small">(/MP + PCH)</span></th><th class="num">참고<br><span class="small">(MultiToolTask + PCH)</span></th><th>메모</th></tr></thead>
+    <tbody>
+      <tr><td class="name">아무것도 안 바꿈</td><td class="num">2.1초</td><td class="num">3.2초</td><td class="num">3.8초</td><td class="num">2.4초</td><td>차이 없음(검사만)</td></tr>
+      <tr><td class="name">.cpp 하나 수정</td><td class="num">6.4초</td><td class="num">10.5초</td><td class="num">8.2초</td><td class="num">5.7초</td><td>컴파일 1개 + 링크. 차이는 측정 편차 수준</td></tr>
+      <tr class="rec"><td class="name">GameFrameWorks 공용 헤더 수정</td><td class="num">219.8초</td><td class="num">39.4초</td><td class="num">27.0초</td><td class="num">22.8초</td><td>파일 100개 재컴파일. <strong>8~10배</strong></td></tr>
+      <tr class="rec"><td class="name">Core 공용 헤더 수정</td><td class="num">356.1초</td><td class="num">72.4초</td><td class="num">47.9초</td><td class="num">35.7초</td><td>224개 재컴파일. <strong>7~10배</strong></td></tr>
+      <tr><td class="name">전체 다시 빌드</td><td class="num">426.2초</td><td class="num">108.1초</td><td class="num">81.1초</td><td class="num">69.5초</td><td>새 worktree · 새 게임 프로젝트 · 클린 빌드</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:8px">이 표는 모두 같은 위치에서 쟀지만 시각이 달라 다른 세션 빌드(0~7개)와 노트북 발열의 영향이 섞였습니다. 그래서 1절(조용할 때 잰 전체 빌드)보다 값이 큽니다. 칸끼리는 비율로 보세요. 두 헤더 시나리오 모두 지금의 1/7~1/10로 줄었습니다(설정마다 한 번씩 잰 값).</p>
+
+  <h2>4. 권고안</h2>
+  <table>
+    <thead><tr><th>ID</th><th>무엇을</th><th>어디를</th><th>효과(측정)</th><th>주의</th></tr></thead>
+    <tbody>
+      <tr class="rec"><td class="name">BS-1</td><td>프로젝트 안 병렬 컴파일(<code>/MP</code>)</td><td><code>Source/Programs/JGBuildTool/Template/BuildTemplate.lua</code>에 premake <code>flags { "MultiProcessorCompile" }</code> 한 줄. 엔진 · 게임 솔루션이 같은 템플릿을 쓴다 → 엔진 <code>GenerateProjectFiles.bat</code> · 게임 배치 2를 다시 돌리면 적용</td><td>전체 272.6 → 56~69초, GFW 헤더 수정 219.8 → 39초(PCH와 함께 27초)</td><td>MultiToolTask(전체 동시 수 제한)도 비슷하게 빠르지만 premake beta1에 설정이 없어 <code>Directory.Build.props</code>를 엔진 · 게임 프로젝트마다 둬야 하고, <code>%TEMP%</code> worktree에서는 <strong>매 빌드 전부 다시 컴파일</strong>했다(변경 없음 빌드 70초). <code>/MP</code>는 <code>%TEMP%</code>에서도 변경 없음 빌드 컴파일 0개</td></tr>
+      <tr class="rec"><td class="name">BS-2</td><td>PCH에 spdlog · rapidjson 추가</td><td><code>Source/PCH/PCH.h</code> 끝에 include 6줄 + 앞에 <code>#pragma warning(disable : 4996)</code></td><td>컴파일 CPU 722 → 368초, 전체 약 50초</td><td>엔진 <code>String.h</code>가 이미 파일 전체에서 4996을 끄므로 동작은 같다. 이 pragma 없이 넣으면 fmt 경고가 1만 건 나온다(측정에서 확인). 엔진 · 게임 솔루션이 같은 PCH를 쓴다</td></tr>
+      <tr><td class="name">BS-3</td><td>worktree · 검증용 게임 프로젝트를 <code>%TEMP%</code> 밖에</td><td>작업 방식(지침서에 넣을지는 사용자 결정). 예: 저장소 안 <code>Temp/wt/&lt;이름&gt;</code>(git 무시 폴더)</td><td><code>%TEMP%</code>에서는 MSBuild 파일 추적이 꺼져(MSB8029) 헤더를 고쳐도 다시 컴파일하지 않는다 → 에이전트가 매번 전체 다시 빌드</td><td>파일 바꾸는 것 없음. 세션마다 worktree 위치만 바꾼다. 저장소 <code>Temp/</code>를 통째로 지우면 그 안 worktree도 지워지므로 <code>git worktree prune</code> 필요. 여러 세션이 동시에 전체 빌드를 돌리면 서로 느려지는 것은 그대로(BS-1 · BS-2로 한 번에 쓰는 시간이 줄어 덜 겹친다)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. 하지 않을 것 · 나중 후보</h2>
+  <table>
+    <thead><tr><th>항목</th><th>판단</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td class="name">64비트 호스트 컴파일러</td><td>하지 않음</td><td>r3 61.9초 &gt; r2 56.8초. 링크만 빨라지는데 링크는 병목이 아님</td></tr>
+      <tr><td class="name"><code>/Zi</code> · FASTLINK</td><td>하지 않음</td><td>2초 이득(잡음 수준), Edit and Continue를 잃음</td></tr>
+      <tr><td class="name">Core를 DLL로 · 링크 최적화</td><td>하지 않음(지금)</td><td>링크 합 10초. 모듈 구조 변경이라 링크가 병목이 될 때</td></tr>
+      <tr><td class="name">의존 줄 줄이기 · 공용 PCH</td><td>나중 후보</td><td>권고 뒤 하한 약 50초. 모듈마다 정의(<code>_GRAPHICS</code> 등)가 달라 PCH를 프로젝트끼리 공유할 수 없음</td></tr>
+      <tr><td class="name">게임 프로젝트가 엔진 바이너리 공유</td><td>나중 후보</td><td>지금은 게임 솔루션마다 엔진 14개를 다시 컴파일(결정 D3). BS-1 · BS-2는 게임 솔루션에도 그대로 적용됨</td></tr>
+      <tr><td class="name">컴파일러 캐시 · Unity 빌드</td><td>나중 후보</td><td>worktree마다 같은 소스를 다시 컴파일하는 비용을 없앨 수 있으나 디버그 정보 형식(<code>/Z7</code>) · 이름 충돌 정리가 필요</td></tr>
+      <tr><td class="name">Defender 제외 · Dev Drive</td><td>사용자 판단</td><td>보안 설정이라 에이전트가 바꾸지 않음. 측정하지 않음</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 측정 방법</h2>
+  <p>머신: i9-13980HX 24코어 / 32스레드, RAM 64 GB, NVMe RAID0, Windows Defender 실시간 보호 켜짐. VS2022 Community MSBuild, MSVC 14.38, v143. 메인 트리는 다른 세션이 쓰므로 HEAD를 별도 worktree로 받아 쟀고, 설정은 명령줄(MSBuild 속성 · 환경 변수)과 worktree 안 <code>PCH.h</code>로만 바꿨습니다. 컴파일러 <code>/Bt+</code>로 파일별 시간과 시각을, 링커 <code>/time</code>으로 링크 시간을 받아 집계했습니다. 스크립트는 <a href="Memory/DevOps/Files/tools/build_timing/">Memory/DevOps/Files/tools/build_timing/</a>.</p>
+  <pre>CL=/Bt+ LINK=/time BS_WT=&lt;worktree&gt; BS_LOG=&lt;로그&gt; bash run_build.sh r2 Rebuild -p:UseMultiToolTask=true -p:EnforceProcessCountAcrossBuilds=true
+python analyze.py &lt;로그&gt;/r2.log</pre>
+</main>
+<script>
+  // 막대 그래프: 값은 측정(초). 텍스트는 textContent 로만 넣는다.
+  (function () {
+    var data = [
+      { label: "지금", note: "직렬 컴파일", value: 272.6, hl: false },
+      { label: "+ 병렬 컴파일", note: "BS-1 (MultiToolTask로 측정)", value: 56.8, hl: false },
+      { label: "+ 병렬 + 64비트 호스트", note: "r3", value: 61.9, hl: false },
+      { label: "+ 병렬 + PCH(Core.h)", note: "r4, 선택안", value: 51.5, hl: false },
+      { label: "+ 병렬 + PCH(spdlog · rapidjson)", note: "BS-1 + BS-2", value: 49.9, hl: true },
+      { label: "r5 + /Zi + FASTLINK", note: "r6", value: 47.7, hl: false }
+    ];
+    var max = 300;
+    var root = document.getElementById("chart-full");
+    var bars = root.querySelector(".bars");
+    var tip = root.querySelector(".tip");
+    data.forEach(function (d) {
+      var lbl = document.createElement("div");
+      lbl.className = "lbl";
+      lbl.textContent = d.label;
+      var sm = document.createElement("small");
+      sm.textContent = d.note;
+      lbl.appendChild(sm);
+      var track = document.createElement("div");
+      track.className = "track";
+      track.tabIndex = 0;
+      track.setAttribute("role", "listitem");
+      track.setAttribute("aria-label", d.label + " " + d.value + "초");
+      var bar = document.createElement("div");
+      bar.className = "bar" + (d.hl ? " hl" : "");
+      bar.style.width = (d.value / max * 100).toFixed(2) + "%";
+      var val = document.createElement("span");
+      val.className = "val";
+      val.textContent = d.value.toFixed(1) + "초";
+      track.appendChild(bar);
+      track.appendChild(val);
+      bars.appendChild(lbl);
+      bars.appendChild(track);
+      function show(ev) {
+        tip.textContent = "";
+        var b = document.createElement("b");
+        b.textContent = d.value.toFixed(1) + "초";
+        var t = document.createElement("span");
+        t.textContent = d.label + " · 지금 대비 " + (272.6 / d.value).toFixed(1) + "배";
+        tip.appendChild(b);
+        tip.appendChild(t);
+        tip.style.display = "block";
+        var r = root.getBoundingClientRect();
+        var tr = track.getBoundingClientRect();
+        var x = ev && ev.clientX ? ev.clientX - r.left + 12 : tr.left - r.left + 40;
+        var y = tr.top - r.top - 6;
+        x = Math.min(x, r.width - tip.offsetWidth - 8);
+        tip.style.left = Math.max(8, x) + "px";
+        tip.style.top = Math.max(8, y - tip.offsetHeight) + "px";
+      }
+      function hide() { tip.style.display = "none"; }
+      track.addEventListener("pointermove", show);
+      track.addEventListener("pointerleave", hide);
+      track.addEventListener("focus", function () { show(null); });
+      track.addEventListener("blur", hide);
+    });
+    var ticks = root.querySelector(".ticks");
+    [0, 60, 120, 180, 240, 300].forEach(function (t) {
+      var s = document.createElement("span");
+      s.style.left = (t / max * 100) + "%";
+      s.textContent = t + "초";
+      ticks.appendChild(s);
+    });
+  })();
+</script>
+</body>
+</html>

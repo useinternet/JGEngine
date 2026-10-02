@@ -12,7 +12,8 @@ JGType H{PROJECT_NAME}Module::GetModuleType() const
 
 void H{PROJECT_NAME}Module::StartupModule()
 {
-	// 런처는 GameFrameWorks 를 연결하지 않으므로 게임 모듈이 연결한다.
+	// 에디터(JGEditor)와 JGConsole 은 GameFrameWorks 를 먼저 연결한다 — 이미 연결돼 있으면 true 만 돌려준다.
+	// 다른 호스트(예: 게임 단독 실행)에서도 돌도록 게임 모듈이 직접 연결해 둔다.
 	if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWorks") == false)
 	{
 		JG_LOG({PROJECT_NAME}, ELogLevel::Critical, "Fail Connect GameFrameWorks Module...");

@@ -46,3 +46,13 @@ namespace fs = std::filesystem;
 
 #pragma comment(lib, "zlibstatic.lib")
 #pragma comment(lib, "assimp-mt.lib")
+
+// 서드파티 헤더(바뀌지 않는다). 거의 모든 파일이 Core.h 로 이것을 다시 읽어서 PCH 에 둔다(DevOps BS-2, 2026-10-02).
+// String/String.h 와 같이 4996 을 끄고 넣는다 — fmt 가 stdext::checked_array_iterator(STL4043)를 쓴다.
+#pragma warning(disable : 4996)
+#include "spdlog/spdlog.h"
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/ostreamwrapper.h"
+#include "rapidjson/istreamwrapper.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/document.h"
