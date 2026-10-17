@@ -48,8 +48,8 @@ bool PGameUIRenderer::Render(const HGameUIDrawList& drawList, const PSharedPtr<I
 		drawCommand.Texture = command.Texture;
 		if (drawCommand.Texture.IsValid() == false && command.Font != nullptr)
 		{
-			// 글꼴 아틀라스. 바뀌었으면 여기서 GPU 텍스처를 다시 만든다(업로드는 이번 프레임 드로우보다 먼저 실행된다).
-			drawCommand.Texture = command.Font->GetAtlasTexture();
+			// 글꼴 아틀라스 페이지. 바뀌었으면 여기서 GPU 텍스처를 다시 만든다(업로드는 이번 프레임 드로우보다 먼저 실행된다).
+			drawCommand.Texture = command.Font->GetAtlasTexture(command.FontPage);
 			if (drawCommand.Texture.IsValid() == false)
 			{
 				// 아틀라스가 없으면 흰 사각형이 되므로 그리지 않는다.

@@ -1,0 +1,81 @@
+DevConsole 5-1 (진행현황 D-7) 검증 기록 — 프로젝트 없이 띄운 에디터에서 GameFrameWorks 명령 노출
+2026-10-02 10:3x~10:5x, DevConsole 세션(8113cd65). 사용자 결정 2026-10-02 "권고대로"(진행현황 D-19 ④ = 선택지 (a)), 총괄 세션이 요청.
+
+1. 변경 — Source/Editor/JGEditor/JGEditor.cpp 한 파일(추가분만 Edit. Server 5-5 도 고칠 수 있는 파일)
+---------------------------------------------------------------------------------------------
+- EDITOR_ENGINE_MODULES 끝에 "GameFrameWorks"(7개: Graphics, GUI, Asset, DevStatistics, DevConsole, Devkit, GameFrameWorks).
+  맨 뒤에 둔 이유: 게임 모듈이 연결하던 때와 순서가 같다 — 다른 엔진 모듈이 모두 올라간 뒤 시작하고, 종료 때는 게임 모듈 다음 · 창과
+  다른 엔진 모듈보다 먼저 내린다. (요청 문구 "Graphics · GUI 뒤" 를 만족하면서 GFW 가 Asset · Devkit 보다 먼저 올라가는 새 순서를 만들지 않는다.)
+- openSceneViewport 조건: JGGameInstance::HasInstance() == false 이면 반환 → _connectedProjectModules.empty() || HasInstance() == false 이면 반환.
+  GFW StartupModule 이 JGGameInstance 를 만들어 init() 에서 s_instance 를 세우므로, GFW 를 늘 연결하면 프로젝트가 없어도 HasInstance() 가 true 다.
+  그래서 "게임 모듈을 연결했는가"로 프로젝트 모드를 가른다(빈 월드 창이 저절로 뜨지 않게).
+- disconnectProjectModules 의 DisconnectModule("GameFrameWorks") 는 그대로 둔다(게임 모듈 바로 뒤 · 창보다 먼저 내리는 순서).
+  역순 해제 루프가 GameFrameWorks 를 한 번 더 부르지만 아무 일도 하지 않는다(아래 2).
+- 주석 갱신: 엔진 모듈 목록(이유 · 순서 · 게임 모듈의 ConnectModule 은 true 만 받음), 씬 뷰포트 메뉴("월드가 없으면 안내 문구"), disconnectProjectModules.
+
+2. 코드 확인
+------------
+- GModuleGlobalSystem::ConnectModule: 이미 연결된 모듈이면 true 만 돌려준다(참조 카운트 없음) → 게임 템플릿의 ConnectModule("GameFrameWorks") 는
+  성공으로 지나가고 "Fail Connect GameFrameWorks Module..." Critical 이 나오지 않는다(프로젝트 모드 로그로 확인, 아래 5).
+- DisconnectModule: 찾지 못하면 true → 두 번째 해제 무해. 로그에서 "GameFrameWorks module startup/shutdown" 은 각 1번.
+- 위젯이 GFW 를 만지는 곳:
+  · 프레임마다(OnUpdate · OnGenerateGUI): Scene Viewport · Gameplay DevView 는 HasInstance() → GetWorld() 순으로 보고 월드가 없으면
+    "No world is loaded" 안내만 그린다 → 프로젝트 없는 에디터에서 메뉴로 열어도 안내 문구.
+  · 종료: JGSceneViewport::OnShutdown 은 렌더러만 해제(Graphics 는 GUI 보다 늦게 내려감), JGGameplayDevView::OnShutdown 은 GameMaster 약한
+    참조 Pin(이미 내려갔으면 null) 뒤 자기 관찰자만 정리, JGDataTableEditor 소멸자는 빈 함수. 종료 순서(프로젝트 모듈 → GFW → 창 → 엔진 모듈 역순
+    = GUI 위젯 정리)는 프로젝트 모드에서 원래 그랬던 순서와 같고, 종료가 시작되면 프레임이 돌지 않는다 → 내려간 GFW 를 만지지 않는다.
+
+3. 빌드
+-------
+- 메인 트리: JGEditor 프로젝트만(MSBuild Temp/ProjectFiles/JGEditor.vcxproj -p:BuildProjectReferences=false, DevelopEngine|x64).
+  메인 Bin 은 10:17~10:18 HEAD 빌드이고 그 뒤 커밋 없음. 다른 세션 미커밋 GameMasterSelfTest.cpp(GFW C26)는 컴파일하지 않았다.
+  결과 23.6초, 경고 0 · 오류 0, Bin/DevelopEngine/JGEditor.dll 10:40:38.
+- 검증 게임: scratchpad 에 CreateGameProject.bat <scratchpad>\DcCheck DcCheck → GenerateProjectFiles.bat → DcCheck.sln DevelopEngine 전체 빌드
+  431초(다른 세션 빌드 2개와 동시), 16 프로젝트, 오류 0, 경고는 LNK4098 4건(기준선)만. 산출물 · 중간 파일은 DcCheck\Bin · DcCheck\Temp\Obj(메인과 분리).
+
+4. 프로젝트 없는 에디터 — 메인 Bin, 러너 Files/tools/devconsole_ui_runner.ps1.txt(디버거 없음, WM_CLOSE 직접)
+-----------------------------------------------------------------------------------------------------------
+- imgui.ini 백업(sha1 1f97dc1e…) → [JGWidget][Open] 를 "JGDevConsole=1" 한 줄로(JGSceneViewport 항목 없음 = OpenWidgetByDefault 를 불렀다면
+  씬 뷰포트가 열렸을 상태) → 실행 → 원복(해시 같음, git 변경 없음).
+- 입력: help ↵, gmtest ↵ (DevConsole 입력줄이 열릴 때 포커스를 가져 타이핑만으로 들어간다)
+- 로그(PID 31008 계열):
+  "GameFrameWorks module startup" → "Startup JGEditor Module..."
+  "[GUI]: Layout: reopened JGDevConsole" (다른 창 없음)
+  help → "6 commands": datatable.selftest, datatable.validate, gameui.selftest, gmtest, help, net.test  ← GFW 가 선언한 명령 5개가 모두 보인다
+  "GameMaster self test: 110 passed, 0 failed", "World self test: 64 passed, 0 failed", "gmtest: OK (0 failures)"
+  종료: "GameFrameWorks module shutdown" → … → "Shutdown JGEditor Module...", "was not unregistered" 0, Memory Chunk 두 개 live blocks 0, 종료 코드 0
+- [error] 2 · [warning] 2 · [critical] 0: GameMaster error 2 · warning 1 은 gmtest 의 의도된 거부 검사(같은 시각 JGConsole.exe gmtest 에도 같은 3줄,
+  종료 0), Asset "NOT Support Asset Path" 는 이전 실행 로그부터 있던 경고. "remote pending 44 (total 55)"(청크 1)도 이전 로그와 같다.
+- 씬 뷰포트가 저절로 열리지 않음: 종료 때 저장된 [JGWidget][Open] 은 "JGDevConsole=1" 하나(열렸다면 JGSceneViewport=1 이 저장된다).
+  캡처 Files/2026-10-02_devconsole_5-1_noproject.png — 제목 "JGEditor", DevConsole 만, 마지막 줄 gmtest: OK.
+
+5. 프로젝트 모드 에디터 — 검증 게임 DcCheck(scratchpad), 같은 러너
+-----------------------------------------------------------------
+- 게임 Bin 에 새 imgui.ini: [JGWidget][Open] "JGDevConsole=1" 한 줄(JGSceneViewport 항목 없음 → 기본 창이면 열려야 한다)
+- 입력: help ↵, gmtest ↵
+- 로그(PID 34584 계열):
+  "Project DcCheck: project …/DcCheck/, engine C:/Develop/JGEngine/"
+  "GameFrameWorks module startup" → "DcCheck entry actor entered world" → "JGGameInstance: world loaded (DcCheck)" → "Startup DcCheck Module..."
+  → "Startup DcCheckEditor Module..." → SceneViewport_* 렌더 자원 등록(씬 뷰포트 열림) → "Startup JGEditor Module..."
+  "Fail Connect" 0(게임 모듈의 ConnectModule("GameFrameWorks") 는 true)
+  help → 6 commands(위와 같은 목록), gmtest: GameMaster 110 passed, World 50 passed(게임 인스턴스 절은 "world DcCheck is already loaded" 경고와 함께
+  건너뜀 — GameFrameWorksModule.cpp 주석대로), "gmtest: OK (0 failures)"
+  종료: "Shutdown DcCheckEditor Module..." → "Shutdown DcCheck Module..." → "world unloaded (DcCheck)" → "PGameplaySession: closed (shutdown)"
+  → "GameFrameWorks module shutdown"(1번) → 엔진 모듈(씬 뷰포트 자원 해제) → "Shutdown JGEditor Module...", "not unregistered" 0, live blocks 0, 종료 코드 0
+- [error] 2 · [warning] 3 · [critical] 0: gmtest 의 GameMaster 3줄 + WorldSelfTest 건너뜀 경고 1 + Asset 경고 1(위와 같은 이유).
+- 씬 뷰포트가 프로젝트 모드에서 저절로 열림: 종료 때 저장된 [JGWidget][Open] 에 "JGSceneViewport=1". 캡처 Files/2026-10-02_devconsole_5-1_project.png
+  — 제목 "JGEditor - DcCheck", 메뉴 Windows · DcCheck, 창 "Scene Viewport" 에 "World DcCheck: no active camera"(템플릿 게임에는 카메라가 없다 —
+  카메라 있는 월드의 그리기 · 클릭은 이 변경이 건드리지 않는 경로. 위젯 코드 · 월드 · 카메라 API 변경 없음).
+
+6. 알게 된 것(이번 범위 밖 — 보류로 넘김)
+-----------------------------------------
+- 새 프로젝트처럼 imgui.ini 에 창 항목이 없으면 DevConsole 창이 Pos 60,60 · Size 32x108 로 아주 작게 뜬다(게임 Bin ini 에 그대로 저장됨).
+  엔진 어디에도 SetNextWindowSize(…, FirstUseEver) 가 없어 창이 내용(자식 패널)에 맞춰 줄어든다. 5-1 과 무관한 기존 동작 → TODO_DevConsole B-11.
+- net.test 는 이미 GFW Network/GameplayNetSelfTest.cpp 로 옮겨져 있다(Server 트랙, 커밋 736ddbe) → TODO_DevConsole B-2 를 완료로 옮김.
+- 5-1 로 낡은 주석(다른 트랙 몫, 알림만): 게임 템플릿 {PROJECT_NAME}Module.cpp:15 "런처는 GameFrameWorks 를 연결하지 않으므로"(DevOps),
+  GameFrameWorksModule.cpp:13 gmtest 주석 "프로젝트 모드 에디터(게임 모듈이 연결)"(GameFrameWorks).
+
+7. 정리
+-------
+- 메인 Bin imgui.ini 원복(해시 같음). 검증 게임 DcCheck 와 러너 사본 · 로그는 이 세션 scratchpad 에만 있다(저장소 밖).
+- 커밋은 사용자 몫: TODO_DevConsole 5-2 커밋 묶음.

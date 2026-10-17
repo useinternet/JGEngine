@@ -303,7 +303,7 @@ void JGGameplayDevView::drawEntities()
 		return;
 	}
 
-	const float32 listHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f);
+	const float32 listHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f * HGUI::GetDpiScale());   // 최소 높이는 100% 기준 — 화면 배율을 곱한다(D-22 ②)
 	HGUI::BeginChild("##DevViewEntityList", HVector2(0.0f, listHeight));
 	for (uint64 i = 0; i < _cachedEntityIds.size(); ++i)
 	{
@@ -317,7 +317,7 @@ void JGGameplayDevView::drawEntities()
 
 	if (_cachedComponents.Empty() == false)
 	{
-		const float32 valueHeight = HMath::Max(_contentSize.y * 0.3f, 100.0f);
+		const float32 valueHeight = HMath::Max(_contentSize.y * 0.3f, 100.0f * HGUI::GetDpiScale());
 		HGUI::Text(PString::Format("Selected %s", _selectedEntity.ToString()));
 		HGUI::BeginChild("##DevViewEntityValues", HVector2(0.0f, valueHeight));
 		HGUI::Text(_cachedComponents);
@@ -332,7 +332,7 @@ void JGGameplayDevView::drawEventLog()
 		return;
 	}
 
-	const float32 logHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f);
+	const float32 logHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f * HGUI::GetDpiScale());
 	HGUI::BeginChild("##DevViewEventLog", HVector2(0.0f, logHeight));
 	for (const PString& line : _eventLog)
 	{

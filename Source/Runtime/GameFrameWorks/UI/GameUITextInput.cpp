@@ -231,7 +231,8 @@ void PGameUITextInput::onBuildDraw(HGameUIDrawContext& context)
 
 	// 선택 · 글은 좌우 여백 안쪽만 보인다.
 	HGameUIDrawContext inner = context;
-	inner.Clip = intersect(context.Clip, toPixels(HRect(contentLeft, _layoutRect.top, contentRight, _layoutRect.bottom), scale));
+	// 그리기 변환이 있으면(ER-014) 변환한 사각형을 감싸는 축 정렬 사각형으로 자른다.
+	inner.Clip = intersect(context.Clip, toPixels(LocalToCanvasBounds(HRect(contentLeft, _layoutRect.top, contentRight, _layoutRect.bottom)), scale));
 	if (isEmptyRect(inner.Clip) == false)
 	{
 		int32 start = 0;
@@ -270,7 +271,7 @@ void PGameUITextInput::onBuildDraw(HGameUIDrawContext& context)
 	{
 		const float32 caretX = originX + boundaries[(size_t)_caret];
 		const HRect caret(caretX - CaretWidth * 0.5f, lineTop, caretX + CaretWidth * 0.5f, lineTop + lineHeight);
-		context.DrawList->AddQuad(toPixels(caret, scale), HRect(0.0f, 0.0f, 1.0f, 1.0f), style.CaretColor, nullptr, nullptr, intersect(context.Clip, pixelRect));
+		context.DrawList->AddQuad(toPixels(caret, scale), HRect(0.0f, 0.0f, 1.0f, 1.0f), style.CaretColor, nullptr, nullptr, intersect(context.Clip, toPixels(LocalToCanvasBounds(_layoutRect), scale)));
 	}
 }
 

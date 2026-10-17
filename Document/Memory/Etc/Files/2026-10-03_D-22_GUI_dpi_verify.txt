@@ -1,0 +1,45 @@
+D-22 ② 에디터 화면 배율(DPI) — GUI 몫 검증 기록 (2026-10-03, GUI 세션)
+근거: GameFrameWorks/Files/ER-012_ER-013_검토_2026-10-02.md §3.2 · §3.3, 진행현황 D-22. JGEditor 몫(프로세스 Per-Monitor V2 인식 · HPlatform::GetDpiScale ·
+WM_DPICHANGED 창 크기 · 런처 호출 · 에디터 고정 픽셀)은 Temp/wt/dpi(JGEditor 작업 폴더) — Etc/TODO_JGEditor.md · Etc/Files/2026-10-03_GP-E1_D-22_verify.txt.
+
+§1. 바꾼 것 (작업 폴더 Temp/wt/dpigui = Temp/wt/dpi 거울 + GUI 변경, 10-03 11시 코드 · 빌드 → 사용량 한도로 멈춤 → 17시 이어서 검증)
+- GUI/Backends/GUIBackend.h: DpiScale(글꼴 · 스타일에 쓴 배율) · GetDpiScale().
+- GUI/Backends/DX12GUIBackend.h/.cpp:
+  - 시작 때 주 창 모니터의 배율(HPlatform::GetDpiScale)로 글꼴 · 스타일을 만든다(ApplyDpiScale).
+  - 글꼴(EGUIFont 순서 그대로): 정수 배율(100% · 200%)은 ProggyClean 13 · 26 × 배율 + 한글 14 × 배율(지금까지와 같음).
+    정수가 아니면(125% · 150%) ProggyClean(픽셀 글꼴)이 번지므로 한글 글꼴(Content/Fonts/EditorKorean.ttf → 맑은 고딕) 하나로 13 · 26 × 배율.
+  - 스타일: StyleColorsDark + 뷰포트 설정을 BaseStyle 로 두고 매번 BaseStyle × ScaleAllSizes(배율)(테두리 1px 는 그대로).
+  - WM_DPICHANGED(주 창이 배율이 다른 모니터로) → PendingDpiScale → 다음 NewFrame(프레임 밖)에서 GPU 대기 → 글꼴 아틀라스 · 스타일 다시 만들기 →
+    ImGui_ImplDX12_InvalidateDeviceObjects(다음 ImGui_ImplDX12_NewFrame 이 텍스처 · PSO 를 다시 만듦). 로그 한 줄.
+- GUI/GUI.h/.cpp: 임시 스텁 → HGUI::GetDpiScale()(백엔드 값, 1.0 = 96 DPI), JGEditor 요청 HGUI::IsAppFocusLost()(ImGui AppFocusLost),
+  HGUI 안 고정 픽셀(패널 여백 · 모서리, 막대 높이 · 틈, 딱지 · 범례 · 토글 크기, 표 칸 여백, 그래프 여백, 풍선 도움말 열)에 ScaledPx.
+- GUI/Grid/GUIGrid.cpp: 행 번호 칸 · 기본 칸 폭 · 칸 여백 · 콤보 최소 폭 · 최대 높이 · 체크 모서리 × 배율.
+- Editor/DevStatistics/MemoryStatistics.cpp(Memory 트랙 창 — D-22 에디터 고정 픽셀로 함께 고침): 카드 높이 100 · 4열 기준 640 · 간격 · 표 열 폭 ·
+  막대 높이 · 그래프 높이 150 · 간격 × 배율. 고치기 전 125% 캡처에서 카드 둘째 줄이 잘렸고 150% 에서 표 열 글자가 잘렸다.
+- 규칙: HGUI 함수가 받는 크기 · 폭 · 간격은 실제 픽셀 — 고정 값은 부르는 쪽이 HGUI::GetDpiScale() 을 곱한다(JGEditor 데이터 테이블은 이미 그렇게 함).
+- 안 한 것: imgui.ini 를 배율로 바꾸지 않음. 정정(JGEditor 합친 검증): 도킹 칸 너비도 픽셀 그대로라(비율 아님) 처음 실행 때 옆 칸이 1/배율로 좁아 보인다 —
+  이 기록 §3 의 "오른쪽 칸 약 624 논리 픽셀"이 그 결과(ini 777px 가 그대로 적용). 사용자 확인 항목(바꾸려면 배치 한 번 키우기 0.5~1일).
+  ImPlot 기본 스타일 배율 없음(HGUI 가 밀어 넣는 여백만). DevConsole 작은 간격(6 · 8 · 12 · 14 · 16px, 창 여백 10x8)은 그대로 — 폭은 글자 기준이라 잘림 없음.
+
+§2. 빌드: Temp/wt/dpigui 전체 빌드 51초(오류 0), 고친 뒤 증분 빌드 오류 0.
+
+§3. 실행 확인 (이 PC: 주 모니터 3840x2160 @120 DPI = 125%, 보조 2560x1600 @144 DPI = 150%, 왼쪽 -2560,572)
+- 방법: 메인 Bin imgui.ini(도킹: Gameplay DevView · Scene Viewport 탭 · DevConsole · MemoryStatistics)를 작업 폴더 Bin 에 복사 →
+  스크래치패드 dbgcount(디버거로 실행, 디버그 이벤트 · OutputDebugString 수, 80초 뒤 WM_CLOSE) 아래 프로젝트 없는 런처 →
+  25초 뒤 캡처 → SetWindowPos 로 150% 모니터로 옮김 → 6초 뒤 캡처 → 원래 자리로 → 캡처. (입력은 보내지 않음, 창 이동 · 캡처만)
+- 로그: "GUI DPI scale 1.25 (editor font malgun.ttf, 16px)" → "GUI DPI scale 1.25 -> 1.50: fonts and style rebuilt" →
+  "GUI DPI scale 1.50 -> 1.25: fonts and style rebuilt". 창 2420x1399 @120 → 2904x1679 @144(JGEditor WM_DPICHANGED 제안 사각형) → 2420x1399 @120.
+- 종료 코드 0, live blocks 0, [error] · [critical] 0, 경고 기존 1줄(Asset "NOT Support Asset Path").
+- 디버거: OutputDebugString 0건(실행 중 · 종료 때 모두 — 예전에는 종료 때 D3D12 "Live Producer …" 보고가 있었다), 첫 기회 C++ 예외 2(잡힌 것,
+  세 번 실행 모두 같은 수 — 바뀐 코드와 관계는 기준선이 없어 미확인), 스레드 이름 예외(정상).
+- 첫 실행에서 되돌리기 SetWindowPos 가 먹지 않은 적 한 번(창이 150% 에 남음) — 둘째 · 셋째 실행은 정상. 글꼴 다시 만들기(한글 11,172자) 중에
+  호출이 겹친 것으로 보이나 원인 미확인.
+- 캡처: Files/2026-10-03_D-22_GUI_125.png(125%, 글자 맑은 고딕 16px 선명, 카드 두 줄 보임), _GUI_150_moved.png(150% 로 옮긴 뒤 — DevConsole 마지막 줄에
+  다시 만든 로그), _GUI_125_before_memstats_fix.png(MemoryStatistics 고치기 전 — 카드 둘째 줄 잘림).
+- 알려진 것: 실행 중 모니터를 옮기면 ImGui 도킹 칸의 픽셀 폭은 그대로라(창이 커진 만큼은 가운데 칸이 받음) 오른쪽 칸이 논리 폭으로 좁아져
+  MemoryStatistics 표 오른쪽이 잘린다 — 칸을 넓히면 됨. 시작 때는 imgui.ini 비율대로라 해당 없음. 125% 에서도 이 배치(오른쪽 칸 약 624 논리 픽셀)는
+  표 고정 열 합이 칸보다 조금 넓어 오른쪽 딱지 열이 조금 잘린다(배율 전 논리 배치와 같은 조건).
+- 검사: 작업 폴더 Bin gameui.selftest 256/256(이 폴더 GFW UI 는 GG-15 전 판), input.selftest 34/34.
+
+§4. 넘김: 바뀐 7파일을 Temp/wt/dpi 에 복사(17:3x, 복사 전 그쪽 파일이 거울 뒤 바뀌지 않았음 확인 → 두 폴더 Source 동일).
+  다음은 JGEditor: 합친 빌드 → e2e · GfwView · 같은 창 · 같은 레이아웃 전/후 캡처 → 총괄 → 사용자 확인 → 그때 메인(MainTree.cmd, 같은 -name=).

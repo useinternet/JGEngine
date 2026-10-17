@@ -1,0 +1,57 @@
+GP-C1 엔진 입력 계층(Core) 검증 기록 — 2026-10-02 밤 (GUI 세션)
+지시: 사용자 결정 D-23(게임 빌드 파이프라인, "권고 대로") 의 GUI 몫 — 진행현황 D-23 행(작업 지시서) · 엔진 총괄 메시지. 설계 DevOps/Files/게임빌드파이프라인_설계_2026-10-02.md §4-6 · §5 GP-C1 · §7
+작업 위치: 1단계 InputEvent.h 는 메인 트리에 바로(새 헤더, include 하는 곳 없음), 나머지는 저장소 Temp/wt/gp_c1 (HEAD 0bd6356, 지침서 §3 새 규칙) → 검증 → 메인 반영 → 워크트리 지움
+
+== 1. 바뀐 코드 ==
+새 파일
+  Source/Runtime/Core/Input/InputEvent.h — EInputEventType(PointerMove · Down · Up · Wheel · Leave, KeyDown · KeyUp, Char, FocusGained · FocusLost),
+    EPointerButton(Left · Right · Middle · X1 · X2), EInputModifier(JG_ENUM_FLAG: Shift · Ctrl · Alt), HInputEvent(Position = 창 클라이언트 픽셀, Button,
+    WheelDelta = HVector2 — 설계 초안의 float 를 가로 휠까지 담게 바꿈(DevOps 확인), Key = 기존 EKeyCode, bRepeat, Modifiers, Codepoint = UTF-32)
+  Source/Runtime/Core/Platform/Windows/WindowsInput.h/.cpp — HWindowsInputTranslator: Win32 메시지 → HInputEvent(OS 를 바꾸지 않는 순수 변환 + 상태:
+    눌린 버튼 비트 · UTF-16 앞쪽 서로게이트). WM_MOUSEMOVE · [L/R/M/X]BUTTONDOWN/DBLCLK/UP · MOUSEWHEEL · MOUSEHWHEEL(휠은 화면 좌표 그대로 넘김) ·
+    MOUSELEAVE(버튼을 누른 채면 무시) · KEYDOWN/UP · SYSKEYDOWN/UP(bit 30 = 반복) · CHAR(서로게이트 쌍 합침, 짝 없는 것 · 제어 문자 버림) · SETFOCUS · KILLFOCUS(상태 지움).
+    ToEngineKeyCode = HPlatform::GetSystemKeyCode 를 거꾸로 펼친 256칸 표
+  Source/Programs/JGConsole/InputSelfTest.cpp — input.selftest [-window=<초> [-mode=windowed|fixed|borderless]] [-clipboard] (콘솔 명령은 Core 정적 라이브러리에 두지 않는다는 규칙대로 JGConsole)
+수정
+  Core/Platform/JWindow.h — HWindowCallBacks::OnInput(JG_DECLARE_MULTICAST_DELEGATE(HOnInput, const HInputEvent&)), EWindowMode{ Windowed, BorderlessFullscreen },
+    HJWindowArguments::Mode · bResizable
+  Core/Platform/Windows/WindowsJWindow.h/.cpp — 창에 객체를 붙임(GWLP_USERDATA, 소멸자에서 끊음), 창 프로시저: 원시 WndProc 브로드캐스트 뒤
+    **OnInput 구독자가 있을 때만** dispatchInput(보조 키 = GetKeyState, 첫 이동에 TrackMouseEvent(TME_LEAVE), 첫 누름에 SetCapture · 마지막 뗌 · 포커스 잃음에 ReleaseCapture,
+    휠 ScreenToClient). 창 모드: 테두리 없는 전체 화면 = WS_POPUP + 주 모니터 사각형, 크기 고정 = WS_THICKFRAME · WS_MAXIMIZEBOX 뺌. 옛 주석 처리 매핑 코드 지움
+  Core/Platform/Platform.h/.cpp — HPlatform::GetClipboardText · SetClipboardText(UTF-8 ↔ CF_UNICODETEXT, WideCharToMultiByte), SetImeCompositionRect(창, 커서 사각형:
+    조합 창 CFS_FORCE_POSITION · 후보 창 CFS_EXCLUDE — ImGui Win32 백엔드와 같은 방식, imm32 는 #pragma comment)
+에디터 영향: 에디터는 OnInput 을 구독하지 않으므로 창 프로시저의 새 경로가 돌지 않는다(SetCapture · TrackMouseEvent 도 안 함) — ImGui 입력 그대로
+
+== 2. 빌드 ==
+워크트리: PreBuild(새 파일 3) → 전체 빌드 42초, 오류 0 · 컴파일 경고 0 (저장소 Temp/wt 라 MSB8029 없음 — 증분 빌드가 헤더를 따라감)
+메인: Platform.h/.cpp 만 그사이 DevOps 가 고침(GP-D1 GetExecutableDirectory · FileHelper include) → git merge-file 3-way(LF 로 맞춰서): Platform.h 충돌 0,
+  Platform.cpp 충돌 1(같은 자리 include 두 줄 — 둘 다 살림). 나머지 6파일은 HEAD 와 같아 복사(CRLF). Platform.h 끝 줄(원래 줄바꿈 없음)에 CR 만 붙어
+  git 이 텍스트로 보지 않던 것(ls-files --eol w/-text) 고침 → 차이 = 내 변경 15줄. 메인 PreBuild → 빌드 42초, 오류 0 · 경고 0
+
+== 3. 헤드리스 ==
+JGConsole.exe input.selftest → "input.selftest: OK (34/34)", 종료 0, live blocks 0 (워크트리 · 메인)
+  포인터: 이동(클라이언트 픽셀 · 보조 키), 창 밖 음수 좌표 그대로, 왼쪽 · 오른쪽 누름(겹침) · 뗌, 누른 채 나감 없음, 나감, 가운데 · X1 · X2, 두 번 누름 = 누름,
+    세로 휠 −2칸(y) · 가로 휠 1칸(x)
+  키: 누름 + 보조 키, 반복(bit 30), 뗌(Enter), Alt+F4(SYSKEYDOWN) = 누름, 표에 없는 키(Shift) = Unknown, 15개 키 왕복(가상 키 ↔ 엔진 키), 범위 밖 = Unknown
+  글자: ASCII, 한글 U+D55C, 서로게이트 쌍 → U+1F600, 짝 없는 뒤쪽 버림, 끊긴 쌍은 다음 글자 살림, 제어 문자(08 · 0D · 1B · 7F) 버림
+  포커스: 얻음, 잃음 = 눌린 버튼 · 기다리던 서로게이트 잊음, 입력 아닌 메시지(WM_PAINT · WM_SIZE) 이벤트 없음
+회귀(메인 Bin): gameui.selftest OK (243/243) · gmtest OK(World 64) · console.selftest OK (64/64, help 에 input.selftest) · datatable.selftest OK (127/127) · net.test all 101 passed — 모두 종료 0 · live blocks 0
+  (워크트리(HEAD)의 net.test 는 96/101 — "bind port 47790 failed (WSA 10048)": 다른 세션의 perl.exe(22:04 시작)가 127.0.0.1:47790 을 잡고 있어 TCP 5검사가 못 묶임.
+   메인 쪽 검사는 다른 포트를 써서 통과. 입력 계층과 무관)
+
+== 4. 실제 창 (input.selftest -window=20 + Etc/Files/tools/gp_c1_window_check.ps1.txt(.ps1 로 바꿔 실행, -BinDir · -OutFile) — 그 창에만 PostMessageW) ==
+워크트리 · 메인 Bin 두 번, 같은 19 이벤트:
+  PointerMove (100,120) → PointerLeave(실제 커서가 창 밖이라 TrackMouseEvent 직후 Windows 가 보냄 — 정상) → PointerDown 왼쪽 (100,120) → PointerMove (-30,50)(누른 채 창 밖)
+  → (누른 채 WM_MOUSELEAVE: 이벤트 없음) → PointerUp (-30,50) → 오른쪽 누름 · 뗌 (200,210) → PointerWheel (10,20) 세로 +1(화면 좌표로 보낸 것을 클라이언트로 바꿈)
+  → KeyDown A · Char 'a'(TranslateMessage 가 만든 것) · KeyDown A 반복 · Char 'a' · KeyUp A → Char 'a' → Char U+D64D U+AE38 U+B3D9(홍길동 — IME 확정 글자와 같은 WM_CHAR 길)
+  → Char U+1F600(서로게이트 쌍) → (제어 문자 08: 이벤트 없음) → PointerLeave → WM_CLOSE 로 닫힘, live blocks 0
+  창이 뒤에서 떠 포커스를 못 받아 FocusGained/Lost 는 이 실행에 없음(가짜 메시지 검사로 확인)
+창 모드: -mode=fixed → popup 0 · thickframe 0 · maximizebox 0, -mode=borderless → popup 1 · thickframe 0, 창 사각형 = 주 모니터 사각형(이 프로세스 기준 3072x1728)
+실제 한글 IME 조합(조합 창이 커서 옆) · 클립보드 왕복은 자동 검사에 넣지 않음 — 클립보드는 사용자 클립보드를 바꾸므로(input.selftest -clipboard 로 직접),
+  IME 위치는 게임 호스트 입력란 연결(GP-F1 · GP-D3) 때 확인
+
+== 5. 에디터 ImGui 입력 그대로 (검증 게임 GameUIDemo, 메인 엔진) ==
+새 규칙대로 검증 게임을 저장소 Temp/Games/GameUIDemo 에 다시 만듦: CreateGameProject.bat → Files/tools/gameui_demo_testgame 소스 복사 → GenerateProjectFiles → 빌드 50초 오류 0
+gameui_e2e.ps1 -WaitSeconds 25 → 20단계 모두 README 기대대로(End Turn · Menu · 메뉴 중 막힘 · Esc 닫기 · 월드 피킹 · 비활성 Draw · Resume · 주소 192.168.0.10:4777 · 이름 홍길동ab ·
+  입력 중 Esc 해제만 · 다음 Esc 뒤로가기), "GameUIDemo atlas filled: pages 2", [error] 0 · 경고 1(기존) · live blocks 0(청크 1 remote pending 44 = 기준선), 종료 0
+  (첫 시도는 제 실행 명령이 출력을 3줄로 잘라 파이프라인이 스크립트를 끊음 — 남은 검증 게임 창은 WM_CLOSE 로 정상 종료시키고 다시 돌림)

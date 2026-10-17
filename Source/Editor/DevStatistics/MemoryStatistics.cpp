@@ -50,7 +50,13 @@ namespace
 	const float64 HistorySeconds  = 60.0;    // 추이 그래프 가로 범위
 	const float64 HistoryInterval = 0.25;    // 표본 간격
 	const float64 FullUsage       = 90.0;    // 이 사용률 이상이면 다음 할당이 페이지를 추가한다
-	const float32 PanelGap        = 8.0f;
+	const float32 PanelGap        = 8.0f;    // 아래 고정 크기는 96 DPI 기준 — 쓸 때 scaledPx 로 화면 배율을 곱한다(D-22 ②)
+
+	// 96 DPI 기준 픽셀 → 지금 화면 배율의 픽셀. HGUI 에 넘기는 크기 · 폭 · 간격은 실제 픽셀이다.
+	float32 scaledPx(float32 InPixels)
+	{
+		return InPixels * HGUI::GetDpiScale();
+	}
 
 	float64 toMB(uint64 InBytes)
 	{
@@ -179,7 +185,7 @@ namespace
 		HGUI::PopFont();
 		if (InMeter >= 0.0f)
 		{
-			HGUI::SegmentedBar({ { InMeter, ColorInUse } }, HVector2(0.0f, 6.0f), ColorInUseTrack);
+			HGUI::SegmentedBar({ { InMeter, ColorInUse } }, HVector2(0.0f, scaledPx(6.0f)), ColorInUseTrack);
 		}
 		else
 		{
@@ -195,8 +201,9 @@ namespace
 	{
 		// 좁으면 두 줄로 (2 × 2)
 		const float32  Avail    = HGUI::GetContentRegionAvail().x;
-		const int32    Columns  = (Avail >= 640.0f) ? 4 : 2;
-		const HVector2 CardSize((Avail - PanelGap * static_cast<float32>(Columns - 1)) / static_cast<float32>(Columns), 100.0f);
+		const float32  Gap      = scaledPx(PanelGap);
+		const int32    Columns  = (Avail >= scaledPx(640.0f)) ? 4 : 2;
+		const HVector2 CardSize((Avail - Gap * static_cast<float32>(Columns - 1)) / static_cast<float32>(Columns), scaledPx(100.0f));
 		const float64  InUsePercent = percentOf(InStatInfo.TotalAllocatedBytes, InStatInfo.TotalCommittedBytes);
 
 		drawStatCard("##memory_card_committed", CardSize, "Committed", formatBytes(InStatInfo.TotalCommittedBytes),
@@ -204,7 +211,7 @@ namespace
 			PString::Format("Pages the pool holds from the OS, plus live large blocks.\nPages %s (%s empty). Grew %s, released %s since start.",
 				formatCount(InTotals.Pages).GetCStr(), formatCount(InTotals.EmptyPages).GetCStr(),
 				formatCount(InTotals.Growths).GetCStr(), formatCount(InTotals.Releases).GetCStr()));
-		HGUI::SameLine(PanelGap);
+		HGUI::SameLine(scaledPx(PanelGap));
 
 		drawStatCard("##memory_card_in_use", CardSize, "In use", formatBytes(InStatInfo.TotalAllocatedBytes),
 			PString::Format("%.1f%% of committed", InUsePercent), static_cast<float32>(InUsePercent / 100.0),
@@ -212,13 +219,13 @@ namespace
 				formatBytes(InTotals.HeaderBytes).GetCStr()));
 		if (Columns == 4)
 		{
-			HGUI::SameLine(PanelGap);
+			HGUI::SameLine(scaledPx(PanelGap));
 		}
 
 		drawStatCard("##memory_card_blocks", CardSize, "Live blocks", formatCount(InTotals.LiveBlocks),
 			PString::Format("%s allocations so far", formatCount(InTotals.Allocations).GetCStr()), -1.0f,
 			"Blocks allocated right now on every thread, large blocks included.");
-		HGUI::SameLine(PanelGap);
+		HGUI::SameLine(scaledPx(PanelGap));
 
 		drawStatCard("##memory_card_large", CardSize, "Large blocks", formatCount(InStatInfo.LargeLive),
 			PString::Format("%s live, %u cached", formatBytes(InStatInfo.LargeBytes).GetCStr(), InStatInfo.LargeCachedCount), -1.0f,
@@ -233,10 +240,10 @@ namespace
 		// 범례는 제목 줄에 둔다 (그래프 안에 두면 선이 범례 높이를 지날 때 겹친다).
 		HGUI::BeginPanel("##memory_trend", HVector2(0.0f, 0.0f), ColorSurface, ColorBorder);
 		HGUI::Text("Pool over time", ColorTextPrimary);
-		HGUI::SameLine(20.0f);
+		HGUI::SameLine(scaledPx(20.0f));
 		HGUI::PushStyleColor(EGUIColor::Text, ColorTextSecondary);
 		HGUI::LegendItem("Committed", ColorCommitted);
-		HGUI::SameLine(16.0f);
+		HGUI::SameLine(scaledPx(16.0f));
 		HGUI::LegendItem("In use", ColorInUse);
 		HGUI::PopStyleColor();
 		HGUI::SameLine();
@@ -245,7 +252,7 @@ namespace
 
 		HPlotLinesArguments Args;
 		Args.TitleName = "memory_trend_plot";
-		Args.PlotSize  = HVector2(-1.0f, 150.0f);
+		Args.PlotSize  = HVector2(-1.0f, scaledPx(150.0f));
 		Args.XMin      = -HistorySeconds;
 		Args.XMax      = 0.0;
 		for (float64 Time : InTimes)
@@ -288,11 +295,11 @@ namespace
 
 		if (HGUI::BeginTable("##memory_thread_table", 5))
 		{
-			HGUI::TableSetupColumn("Thread", 96.0f);
+			HGUI::TableSetupColumn("Thread", scaledPx(96.0f));
 			HGUI::TableSetupColumn("Usage");
-			HGUI::TableSetupColumn("In use / Committed", 150.0f, true);
-			HGUI::TableSetupColumn("Remote frees", 96.0f, true);
-			HGUI::TableSetupColumn("Large live", 110.0f, true);
+			HGUI::TableSetupColumn("In use / Committed", scaledPx(150.0f), true);
+			HGUI::TableSetupColumn("Remote frees", scaledPx(96.0f), true);
+			HGUI::TableSetupColumn("Large live", scaledPx(110.0f), true);
 			HGUI::PushStyleColor(EGUIColor::Text, ColorTextMuted);
 			HGUI::TableHeadersRow();
 			HGUI::PopStyleColor();
@@ -312,7 +319,7 @@ namespace
 
 				HGUI::TableNextColumn();
 				HGUI::SegmentedBar({ { static_cast<float32>(percentOf(InUse, Committed) / 100.0), ColorInUse },
-					{ static_cast<float32>(percentOf(Headers, Committed) / 100.0), ColorHeader } }, HVector2(0.0f, 8.0f), ColorInUseTrack);
+					{ static_cast<float32>(percentOf(Headers, Committed) / 100.0), ColorHeader } }, HVector2(0.0f, scaledPx(8.0f)), ColorInUseTrack);
 				HGUI::ItemTooltip(PString::Format("In use     %s  (%.1f%%)\nHeaders    %s  (%.1f%%)\nFree       %s  (%.1f%%)\nCommitted  %s",
 					formatBytes(InUse).GetCStr(), percentOf(InUse, Committed),
 					formatBytes(Headers).GetCStr(), percentOf(Headers, Committed),
@@ -345,9 +352,9 @@ namespace
 		HGUI::Spacing();
 		HGUI::PushStyleColor(EGUIColor::Text, ColorTextSecondary);
 		HGUI::LegendItem("In use", ColorInUse);
-		HGUI::SameLine(16.0f);
+		HGUI::SameLine(scaledPx(16.0f));
 		HGUI::LegendItem("Headers", ColorHeader);
-		HGUI::SameLine(16.0f);
+		HGUI::SameLine(scaledPx(16.0f));
 		HGUI::LegendItem("Free", ColorInUseTrack);
 		HGUI::PopStyleColor();
 
@@ -361,15 +368,15 @@ namespace
 			return;
 		}
 
-		HGUI::TableSetupColumn("Class", 64.0f, true);
+		HGUI::TableSetupColumn("Class", scaledPx(64.0f), true);
 		HGUI::TableSetupColumn("Usage");
-		HGUI::TableSetupColumn("Live / Total", 120.0f, true);
-		HGUI::TableSetupColumn("Pages", 56.0f, true);
-		HGUI::TableSetupColumn("Grew", 44.0f, true);
-		HGUI::TableSetupColumn("Released", 64.0f, true);
-		HGUI::TableSetupColumn("Peak", 64.0f, true);
-		HGUI::TableSetupColumn("Allocs", 88.0f, true);
-		HGUI::TableSetupColumn("", 40.0f);
+		HGUI::TableSetupColumn("Live / Total", scaledPx(120.0f), true);
+		HGUI::TableSetupColumn("Pages", scaledPx(56.0f), true);
+		HGUI::TableSetupColumn("Grew", scaledPx(44.0f), true);
+		HGUI::TableSetupColumn("Released", scaledPx(64.0f), true);
+		HGUI::TableSetupColumn("Peak", scaledPx(64.0f), true);
+		HGUI::TableSetupColumn("Allocs", scaledPx(88.0f), true);
+		HGUI::TableSetupColumn("", scaledPx(40.0f));
 		HGUI::PushStyleColor(EGUIColor::Text, ColorTextMuted);
 		HGUI::TableHeadersRow();
 		HGUI::PopStyleColor();
@@ -393,20 +400,20 @@ namespace
 
 			// 사용률: 막대 + 오른쪽 숫자
 			HGUI::TableNextColumn();
-			float32 BarWidth = HGUI::GetContentRegionAvail().x - 56.0f;
-			if (BarWidth < 24.0f)
+			float32 BarWidth = HGUI::GetContentRegionAvail().x - scaledPx(56.0f);
+			if (BarWidth < scaledPx(24.0f))
 			{
-				BarWidth = 24.0f;
+				BarWidth = scaledPx(24.0f);
 			}
 			HGUI::SegmentedBar({ { static_cast<float32>(Usage / 100.0), bFull ? ColorCritical : ColorInUse } },
-				HVector2(BarWidth, 6.0f), bFull ? ColorCriticalTrack : ColorInUseTrack);
+				HVector2(BarWidth, scaledPx(6.0f)), bFull ? ColorCriticalTrack : ColorInUseTrack);
 			HGUI::ItemTooltip(PString::Format("%s blocks: %s of %s live (%.1f%%), peak %s\n%s (%s empty), %s per page\nGrew %s, released %s, %s so far",
 				formatClassSize(SizeClass.BlockSize).GetCStr(), formatCount(SizeClass.Live).GetCStr(), formatCount(SizeClass.Total).GetCStr(), Usage,
 				formatCount(SizeClass.Peak).GetCStr(), formatNoun(SizeClass.Pages, "page", "pages").GetCStr(), formatCount(SizeClass.EmptyPages).GetCStr(),
 				formatNoun(SizeClass.BlocksPerPage, "block", "blocks").GetCStr(),
 				formatNoun(SizeClass.Growths, "page", "pages").GetCStr(), formatCount(SizeClass.Releases).GetCStr(),
 				formatNoun(SizeClass.AllocCount, "allocation", "allocations").GetCStr()));
-			HGUI::SameLine(8.0f);
+			HGUI::SameLine(scaledPx(8.0f));
 			HGUI::TextRight(PString::Format("%.1f%%", Usage));
 
 			HGUI::TableNextColumn();
@@ -466,11 +473,11 @@ namespace
 
 		HGUI::Spacing();
 		HGUI::Badge("FULL", ColorCritical, ColorTextPrimary);
-		HGUI::SameLine(6.0f);
+		HGUI::SameLine(scaledPx(6.0f));
 		HGUI::Text("90% or more used: the next allocation adds a page", ColorTextMuted);
-		HGUI::SameLine(18.0f);
+		HGUI::SameLine(scaledPx(18.0f));
 		HGUI::Badge("GREW", ColorWarning, ColorInk);
-		HGUI::SameLine(6.0f);
+		HGUI::SameLine(scaledPx(6.0f));
 		HGUI::Text("added pages since start", ColorTextMuted);
 
 		HGUI::EndPanel();

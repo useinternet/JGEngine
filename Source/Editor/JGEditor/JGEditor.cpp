@@ -10,6 +10,7 @@
 #include "Widgets/SceneViewport.h"
 #include "Widgets/GameplayDevView.h"
 #include "Widgets/DataTableEditor.h"
+#include "Widgets/SessionLobby.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -20,7 +21,10 @@ JG_MODULE_IMPL(HJGEditorModule, JGEDITOR_C_API)
 namespace
 {
 	// 에디터가 쓰는 엔진 모듈. 연결은 이 순서, 종료는 역순이다(JGDev_Graphics 에서 옮긴 순서 그대로).
-	const char* const EDITOR_ENGINE_MODULES[] = { "Graphics", "GUI", "Asset", "DevStatistics", "DevConsole", "Devkit" };
+	// GameFrameWorks 는 프로젝트 없이 띄운 에디터에서도 그 모듈의 콘솔 명령(gmtest)을 쓰게 연결한다(DevConsole 5-1, 사용자 결정 2026-10-02).
+	// 맨 뒤에 두어 게임 모듈이 연결하던 때와 같은 순서를 지킨다: 다른 엔진 모듈이 모두 올라간 뒤 시작하고, 게임 모듈 다음 · 다른 엔진 모듈보다 먼저 내린다.
+	// 게임 모듈의 ConnectModule("GameFrameWorks") 는 이미 연결돼 있으면 true 만 돌려준다(참조 카운트 없음).
+	const char* const EDITOR_ENGINE_MODULES[] = { "Graphics", "GUI", "Asset", "DevStatistics", "DevConsole", "Devkit", "GameFrameWorks" };
 }
 
 JGType HJGEditorModule::GetModuleType() const
@@ -36,7 +40,10 @@ void HJGEditorModule::StartupModule()
 	{
 		winArgs.Title = PString::Format("JGEditor - %s", HFileHelper::ProjectName());
 	}
-	winArgs.Size = HVector2Int(1936, 1119);
+	// 기본 창 크기는 100%(96 DPI) 기준 1936x1119(클라이언트 1920x1080)다. 프로세스가 DPI 인식이면 창 크기가 실제 픽셀이므로 화면 배율을 곱한다
+	// (D-22 ②, 인식은 JGLauncher 시작 코드). 화면보다 크면 Windows 가 줄인다(인식 전과 같다).
+	const float32 dpiScale = HPlatform::GetDpiScale();
+	winArgs.Size = HVector2Int((int32)(1936.0f * dpiScale + 0.5f), (int32)(1119.0f * dpiScale + 0.5f));
 	_window = HPlatform::CreateJWindow(winArgs);
 
 	GCoreSystem::GetGlobalValues().MainWindow = _window.GetRawPointer();
@@ -81,7 +88,7 @@ void HJGEditorModule::openDefaultWidgets()
 		return;
 	}
 	
-	// 게임 월드 창. GameFrameWorks 가 돌지 않으면(프로젝트 없이 띄운 에디터) 창은 안내 문구만 그린다.
+	// 게임 월드 창. 월드가 없으면(프로젝트 없이 띄운 에디터) 창은 안내 문구만 그린다.
 	HMainMenuItem SceneViewportItem;
 	SceneViewportItem.MenuPath = "Windows/Scene Viewport";
 	SceneViewportItem.Action.BindLambda([]()
@@ -118,12 +125,27 @@ void HJGEditorModule::openDefaultWidgets()
 			}
 		});
 	GUIModule->AddMainMenuItem(DataTableEditorItem);
+
+	// 세션 로비 개발용 창(호스트 · 참가 · 떠나기 · 새 판). 게임 인스턴스의 세션을 보여 주고 바꾼다.
+	HMainMenuItem SessionLobbyItem;
+	SessionLobbyItem.MenuPath = "Windows/Session Lobby";
+	SessionLobbyItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGSessionLobby>();
+			}
+		});
+	GUIModule->AddMainMenuItem(SessionLobbyItem);
 }
 
 void HJGEditorModule::openSceneViewport()
 {
-	// 게임 모듈이 GameFrameWorks 를 연결했을 때(프로젝트 모드)만 연다. 게임 모듈은 openDefaultWidgets 뒤에 연결되므로 여기서 본다.
-	if (JGGameInstance::HasInstance() == false)
+	// 프로젝트 모드에서 게임 모듈을 연결했을 때만 연다(프로젝트 없이 띄운 에디터에 빈 월드 창이 저절로 뜨지 않게).
+	// GameFrameWorks 는 엔진 모듈로 늘 연결돼 게임 인스턴스가 있으므로 게임 인스턴스 유무만으로는 가를 수 없다.
+	// 게임 모듈은 openDefaultWidgets 뒤에 연결되므로 여기서 본다.
+	if (_connectedProjectModules.empty() || JGGameInstance::HasInstance() == false)
 	{
 		return;
 	}
@@ -176,6 +198,7 @@ void HJGEditorModule::disconnectProjectModules()
 		_connectedProjectModules.pop_back();
 	}
 
-	// 게임 모듈이 연결한 GameFrameWorks 도 엔진 모듈보다 먼저 내린다. 연결돼 있지 않으면 아무 일도 하지 않는다.
+	// GameFrameWorks 는 게임 모듈 바로 뒤, 창을 내리기 전에 내린다(게임 모듈이 연결하던 때의 순서). 엔진 모듈 목록에도 있어
+	// 역순 해제가 한 번 더 부르지만, 이미 내려간 모듈이면 DisconnectModule 은 아무 일도 하지 않고 true 를 돌려준다.
 	GModuleGlobalSystem::GetInstance().DisconnectModule("GameFrameWorks");
 }

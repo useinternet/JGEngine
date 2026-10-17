@@ -16,7 +16,12 @@ public:
 	virtual void Initialize();
 	virtual void Shutdown();
 
+	// 글꼴 · 스타일에 쓴 화면 배율(1.0 = 96 DPI). HGUI::GetDpiScale 이 읽는다.
+	float32 GetDpiScale() const { return DpiScale; }
+
 protected:
+	float32 DpiScale = 1.0f;
+
 	void GenerateGUI();
 	void GenerateMainMenuGUI();
 };

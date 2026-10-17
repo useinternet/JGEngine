@@ -1,0 +1,113 @@
+D-22 ② 에디터 화면 배율(DPI) — JGEditor 몫 + GUI 몫을 합친 빌드 검증 기록
+작성 2026-10-03 18:00, JGEditor 세션. 엔진 총괄 배정(10-03 17:2x, 사용자 지시 "사용량 한도로 멈춘 작업 이어서 진행").
+§1~§6 은 작업 폴더 검증(18:00). 사용자 확인(19:07) 뒤 메인에 반영했다 — §7(19:19).
+
+§1. 합친 것 (작업 폴더 Temp/wt/dpi)
+- 17:37 메인 Source · Content · Build 를 거울 복사(GG-15 등 메인 최신). DPI 로 바꾼 17파일은 작업 폴더 판을 지킴
+  (복사 전 메인 쪽 17파일 수정 시각이 모두 10:24 거울 이전 → 메인의 다른 변경과 겹치지 않음).
+  - JGEditor 몫 10파일: Core Platform.h/.cpp(EnableDpiAwareness · GetDpiScale), WindowsJWindow.cpp(WM_DPICHANGED 제안 사각형),
+    JGLauncher Main.cpp(맨 앞 EnableDpiAwareness), JGEditor.cpp(창 1936x1119 × 배율), SceneViewport.h/.cpp(최소 이미지 · 궤도 배율 + 아래 FocusLost),
+    GameplayDevView.cpp · DataTableEditor.cpp · SessionLobby.cpp(고정 픽셀 × 배율). diff = 2026-10-03_D-22-2_jgeditor_worktree.diff(544줄, 줄 끝 무시).
+  - GUI 몫 7파일(GUI 세션 17:3x 복사, 기록 2026-10-03_D-22_GUI_dpi_verify.txt): 글꼴 · 스타일 배율, 125% · 150% 는 맑은 고딕 13 · 26 × 배율,
+    모니터를 옮기면 글꼴 다시 만듦, HGUI::GetDpiScale · HGUI::IsAppFocusLost, HGUI · Grid · MemoryStatistics 고정 픽셀 × 배율.
+- 새로 넣은 것: SceneViewport 포커스 잃음 처리. 앱이 OS 포커스를 잃거나(ImGui AppFocusLost) 창이 ImGui 포커스를 잃은 프레임에
+  게임 뷰포트로 FocusLost 를 보낸다(GFW GP-F1c: 게임 UI 누름 취소 · 끌기는 "취소"로 끝). 그 뒤 버튼이 다 풀릴 때까지 포인터를 넘기지 않아
+  나중 풀림이 클릭으로 가지 않는다. 누르던 중이었으면 로그 "SceneViewport focus lost (app|window): press canceled".
+
+§2. 빌드
+- Temp/wt/dpi: PreBuild → MSBuild JGEngine.sln DevelopEngine|x64 exit 0, 42초(17:41), 오류 0.
+  바이너리 확인: JGEditor.dll 에 focus lost 문자열, GUI.dll 에 malgun, JGLauncher.exe 가 SetProcessDpiAwarenessContext 를 씀.
+- 검증 게임(저장소 Temp/Games, EngineRoot = Temp/wt/dpi): GameUIDemo_DPI 는 GFW Files/tools/gameui_demo_testgame 최신 HUD(GG-15, 루트 11개)로 바꿈.
+  GameUIDemo_DPI exit 0(49초, 17:43), GfwView_DPI exit 0(54초, 17:44). .\GenerateProjectFiles.bat 다시 실행 뒤 증분 빌드 1 · 2초(바뀐 것 없음).
+
+§3. 검사 (이 PC: 주 모니터 3840x2160 125%, 보조 2560x1600 150% 왼쪽)
+(1) 게임 UI e2e 22단계 (gameui_e2e.ps1, imgui.ini 없이, 17:46): README 기대 결과와 모두 같다.
+    창 DPI 인식 2(모니터별), "GUI DPI scale 1.25 (editor font malgun.ttf, 16px)", 기본 배치 렌더 1280x720 → 800x450.
+    1 End Turn (turn 2) · 2 Menu → 일시정지 메뉴 · 3 · 4 막힘 · 5 Esc → back handled · 6 turn 3 · 7 "nothing (no controller in the world)" ·
+    8 Draw 클릭 로그 없음 · 9 · 10 Menu → Resume · 14 address committed: 192.168.0.10:4777 · 17 name committed: 홍길동ab · 19 로그 없음("abz" 없음) ·
+    20 "Back (Esc): no game UI back handler" · 21 drag begin Card1 at (334, 912) → dropped on DropZone at (1010, 912) ·
+    22 drag begin (1010, 912) → "returned, drop target none at (2395, 912)".
+    [error] · [critical] 0, warning 은 기존 1줄(Asset NOT Support Asset Path), ID3D12 0, live blocks 0, 종료 0. 캡처 2026-10-03_D-22-2_gameui_e2e_input.png
+(2) GfwView 피킹 · DevView · 궤도 (gfw_worldview_verify.ps1, gfw_phase2_testgame/imgui.ini):
+    run1(README 좌표): 피킹 정상, 그러나 DevView 엔티티 줄 (1400,190) 이 E3.1 이 아니라 E1.1 을 눌렀다 — 글꼴이 13 → 16px 로 커져 목록 줄 간격이
+    약 21px 가 됨. 캡처로 다시 잼: E3.1 줄 (1400, 233), Undo (1347, 103).
+    run2(17:50, 클릭 "1000,1000;658,417;1400,233;1347,103;948,598", 오른쪽 끌기 500→600):
+      Controller click: actor Entity_E3.1 entity E3.1 at (601.40, 25.18, 582.83) distance 1770.67 / board cell (3, 3) at (608.78, 0.00, 602.73)
+      Controller click: actor none / board cell (5, 0) at (948.41, 0.00, 31.01)
+      → 같은 엔티티 · 같은 칸. 숫자가 메인 기록(593.75 … / (600.03, 0.00, 600.10))과 조금 다른 것은 이미지 위치 · 크기가 달라 같은 앱 좌표가
+        이미지의 (0.503, 0.497) 를 누르기 때문(메인은 (0.500, 0.500)).
+      DevView: E3.1 선택 → Zone: Units, Board: (3, 3), Health 25 · Team 1. Undo 뒤 Sequence 0 | Round 1 | Step TurnMain | Input E0.1 | Turns 1,
+        Undo 0, 이벤트 로그 "-- state replaced (undo / load / replay)". 궤도: 오른쪽 끌기로 보드가 돈다.
+      [error] 2줄 = 에디터 안 gmtest 의도(R5 · §13), warning 기준선, ID3D12 0, live 0, 종료 0. 캡처 2026-10-03_D-22-2_gfwview_devview_undo.png
+    → 메인 반영 때 gfw_phase2_testgame/README.md 의 DevView 클릭 좌표를 이 값으로 바꿔야 한다(GFW 문서, 반영 때 같이).
+(3) JGConsole(작업 폴더 Bin): input.selftest OK (34/34), gameui.selftest OK (296/296, 경고 3줄 = 음성 검사), live 0, 종료 0.
+(4) 포커스 잃음 (새 도구 tools/sceneviewport_focuslost_check.ps1, GameUIDemo_DPI, imgui.ini 없이, 17:54):
+    A End Turn 누름 → WM_KILLFOCUS → 뗌 → WM_SETFOCUS : "SceneViewport focus lost (app): press canceled", End Turn 클릭 없음
+    B 그냥 클릭                                         : "GameUIDemo End Turn clicked (turn 2)" (A 가 턴을 넘기지 않았다)
+    C 금색 카드 끌기 → WM_KILLFOCUS → 뗌               : "drag end Card1: canceled (moves 82)" + "focus lost (app): press canceled"
+    D 다시 끌어 놓을 곳에                               : drag begin Card1 at (334, 912) (제자리로 돌아와 있었음) → "dropped on DropZone at (1010, 912)"
+    live 0, 종료 0. (창 포커스 잃음 경로 — 누른 채 다른 ImGui 창으로 포커스가 가는 경우 — 는 스크립트로 만들지 못해 확인 안 함)
+
+§4. 전 · 후 캡처 (tools/editor_dpi_before_after.ps1, 17:55 ~ 17:58)
+- 방법: 같은 imgui.ini(메인 Bin 것 — Gameplay DevView · Scene Viewport 탭 / DevConsole / 오른쪽 MemoryStatistics)를 두 Bin 에 두고 프로젝트 없는 에디터를 띄움 →
+  주 모니터 (200,120) 에 2420x1399(실제 픽셀) → 화면 캡처 → 보조 모니터 (-2500,640) 로 옮기고 같은 2420x1399 로 다시 맞춤 → 화면 캡처 → WM_CLOSE.
+  화면 캡처(보이는 창 경계, DWM)라 사용자가 보는 그대로다(비인식 창은 Windows 가 늘린 흐린 그림). 입력은 보내지 않음.
+- 전 = 메인 Bin(지금 메인 빌드, MainTree.cmd -name=JGEditor exec 로 감쌈): DPI 인식 0. 125% 에서 창 2420x1399 · 클라이언트 2400x1350
+  (앱에는 1920x1080), 150% 로 옮기면 Windows 가 1.5배로 늘림. 종료 0, live 0. 메인 imgui.ini 는 실행 전 백업 → 끝나고 되돌림(같음 확인).
+- 후 = 합친 빌드(Temp/wt/dpi Bin): DPI 인식 2. 125% 창 2420x1399 · 클라이언트 2402x1352(실제 픽셀). 옮기자 WM_DPICHANGED 제안 2904x1679 →
+  다시 2420x1399. 로그 "GUI DPI scale 1.25 (editor font malgun.ttf, 16px)" → "GUI DPI scale 1.25 -> 1.50: fonts and style rebuilt". 종료 0, live 0.
+- 파일(Document/Memory/Etc/Files):
+  2026-10-03_D-22-2_editor_before_125.png · _before_150.png · _after_125.png · _after_150.png
+  2026-10-03_D-22-2_editor_text_zoom.png (왼쪽 위 글자 부분 2배 확대, 전 · 후 × 125% · 150%)
+- 본 것:
+  · 글자: 전은 ProggyClean(픽셀 글꼴)을 1.25 · 1.5배로 늘려 번짐. 후는 맑은 고딕으로 실제 픽셀에 그려 선명(125% 16px, 150% 약 20px).
+    글꼴 모양이 바뀜: 고정폭 → 비례폭이라 같은 글이 더 좁다(DevConsole 줄이 짧아짐). 글자 높이는 125% 에서 거의 같다(13 × 1.25 = 16.25 ↔ 16).
+  · 칸 너비: imgui.ini 의 도킹 칸 크기는 픽셀 숫자 그대로 쓴다(GUI 결정: ini 를 배율로 바꾸지 않음). 전에는 그 숫자가 논리 픽셀이라 Windows 가
+    1.25배로 늘려 보였고, 후에는 실제 픽셀이다 → 같은 ini 에서 오른쪽 MemoryStatistics 칸이 125% 에서 약 20% 좁아 보인다
+    (카드가 한 줄 4개 → 2 × 2, 크기 표 오른쪽 GREW 딱지가 잘림). 150% 로 옮기면 더 좁아져 Peak · Allocs 열도 잘린다.
+    칸 경계를 끌어 넓히면 해결되고, 넓힌 크기는 ini 에 저장된다. 늘어난 창 폭은 가운데 칸(씬 뷰포트 · DevConsole)이 받는다.
+  · 창: 같은 실제 크기(2420x1399)라 창 크기 자체는 같다. 150% 모니터로 옮기면 합친 빌드는 Windows 제안대로 1.2배(2904x1679)로 커진다
+    — 이 모니터(2560 폭)보다 넓어 캡처는 같은 크기로 다시 맞춘 뒤 찍었다.
+  · 제목 표시줄 색 차이(전 흰색 · 후 검정)는 캡처 때 창 활성 상태 차이로 보인다(이번 변경은 제목 표시줄을 건드리지 않음).
+
+§5. 사용자 확인 포인트 (총괄 → 사용자)
+- 125% · 150% 에서 에디터 글꼴이 ProggyClean 에서 맑은 고딕(13 · 26 × 배율)으로 바뀐다 — 글자 모양 · 글자 폭 · 창 · 여백 느낌이 달라진다.
+- 흐림이 없어진다(Windows 가 늘리던 그림 → 실제 픽셀).
+- 저장된 배치(imgui.ini)의 칸 너비는 그대로 픽셀이라, 오른쪽에 둔 MemoryStatistics 같은 칸이 처음 한 번 좁아 보일 수 있다 — 끌어서 넓히면 된다.
+- 모니터를 옮기면 글꼴이 다시 만들어진다(짧은 멈칫 · 로그 한 줄). 칸 너비는 픽셀 그대로라 배율이 큰 모니터에서는 칸 안이 더 좁아진다.
+
+§6. 메인 반영 (사용자 확인 뒤에만)
+- 17파일을 메인에 넣는다: JGEditor 몫 10파일은 diff 를 메인 줄 끝(CRLF) 그대로 다시 적용(작업 폴더의 DataTableEditor · SessionLobby · GameplayDevView 는
+  sed 로 LF 가 됨 — 파일째 복사하지 않음), GUI 몫 7파일은 GUI 판(작업 폴더 GUI.h/.cpp 의 임시 스텁 시절 흔적 없음 확인).
+- MainTree.cmd -name=JGEditor build(또는 hold → 복사 → build) → 메인 Bin 으로 e2e · GfwView · selftest 한 번 더.
+- GFW 문서: gfw_phase2_testgame/README.md DevView 클릭 좌표(1400,233 · 1347,103 — 125%, 인식 빌드), GameUIDemo e2e 는 그대로.
+- JGLauncher Main.cpp 는 DevOps 파일(알림함), DataTableEditor 는 DataTable 트랙, SessionLobby 는 Server 트랙 파일 — 반영 때 각 트랙에 알림.
+- 거울(17:37) 뒤 메인에 GUI GG-17(17:50, Core FileIO/FileHelper.h/.cpp · GFW UI/GameUIFile.h · GameUIManager.h/.cpp · GameUISelfTest.cpp)이 들어왔다.
+  DPI 17파일과 겹치지 않는다(18:0x 확인). 전 캡처의 메인 Bin 은 GG-17 이 들어간 17:51 빌드 — 프로젝트 없는 에디터 화면에는 게임 UI 가 없어 비교에 영향 없음.
+
+§7. 메인 반영 (사용자 확인 2026-10-03 19:07 "윈도우 설정에 따른 배율을 반영한다는 이야기면 권고대로 진행" → 총괄 지시, 저장 칸 배치는 (가) 지금대로)
+- 19:10:45 MainTree.cmd -name=JGEditor hold -minutes=20 → 19:18:52 release (약 8분).
+- 준비(잠금 전): 17파일을 메인 파일의 줄 끝 방식으로 맞춘 사본을 스크래치에 만듦 — 작업 폴더의 SessionLobby.cpp · GUI.cpp 는 LF, 메인은 CRLF 라 CRLF 로.
+  사본과 메인의 차이 줄 수가 줄 끝 무시 여부와 상관없이 같음(17파일 모두) = 실제 변경만 다름. BOM 없음은 그대로.
+- 넣기 직전 17파일의 메인 수정 시각이 준비 때와 같음을 다시 확인(GUI 7파일 기준 10-02 23:00, JGEditor 10파일 기준 거울 때) → 복사 → 해시 일치.
+  메인의 다른 변경(GG-17 등)과 겹치는 파일 없음 — 메인 기준 그대로 17파일만 바뀜.
+- MainTree exec GenerateProjectFiles.bat(PreBuild) exit 0 → MainTree build: 첫 시도 8초 만에 LINK LNK1104 Graphics.dll(파일을 열 수 없음)로 exit 1,
+  그 순간 메인 Bin 에 Graphics.dll 이 없었다(잡은 프로세스는 찾지 못함 — 메인 Bin 에서 도는 프로세스 0) → 곧바로 다시 build exit 0(16초), C++ 경고 0.
+  Bin 의 DLL · exe 모두 19:11 새 빌드, JGEditor.dll(focus lost) · GUI.dll(GUI DPI scale) · JGLauncher.exe(SetProcessDpiAwarenessContext) 확인. Graphics.dll 이 빠져 있던 시간은 약 30초.
+- 메인 Bin 검사(MainTree exec): input.selftest OK (34/34), gameui.selftest OK (300/300 — GG-17 로 4 늘어남), gmtest OK(World 64 · GameViewport 31, 실패 0),
+  console.selftest OK (64/64), datatable.selftest OK (127/127). 모두 종료 0(오류 줄은 일부러 넣은 음성 검사).
+- 메인 Bin 에디터(프로젝트 없음, editor_dpi_before_after.ps1 -MainTreeName JGEditor, 사용자 imgui.ini 백업 → 되돌림 · 해시 같음): DPI 인식 2, 125% 창 2420x1399 ·
+  클라이언트 2402x1352, "GUI DPI scale 1.25 (editor font malgun.ttf, 16px)", 150% 로 옮기면 "1.25 -> 1.50: fonts and style rebuilt", 종료 0, live 0, [error] 0.
+  캡처 Files/2026-10-03_D-22-2_main_editor_125.png.
+- 메인 엔진 검증 게임(EngineRoot = 메인): GameUIDemo_JGE(HUD 를 GG-15 최신으로) · GfwView_JGE 다시 생성(MainTree exec) · 빌드 exit 0(44 · 42초).
+  e2e 22단계: §3(1) 과 같은 결과(1 turn 2 … 14 192.168.0.10:4777 · 17 홍길동ab · 20 no back handler · 21 dropped on DropZone (1010, 912) · 22 returned, drop target none (2395, 912)),
+  [error] · [critical] 0, warning 기존 1줄, ID3D12 0, live 0, 종료 0.
+  GfwView(새 좌표 1400,233 · 1347,103): 피킹 E3.1 · (3, 3) / (5, 0) 숫자 §3(2) 와 같음, DevView E3.1 선택 → Board (3, 3) · Health 25, Undo 뒤 Sequence 0 · Turns 1 ·
+  "-- state replaced", 궤도 끌기로 화면이 바뀜(평균 픽셀 차 70), [error] 2줄 = gmtest 의도, ID3D12 0, live 0, 종료 0. 캡처 Files/2026-10-03_D-22-2_main_gfwview_devview_undo.png.
+  포커스 잃음 A~D: §3(4) 와 같음(A press canceled · B turn 2 · C drag canceled · D dropped), live 0, 종료 0.
+- 함께 고친 문서: GameFrameWorks/Files/tools/gfw_phase2_testgame/README.md(DevView 클릭 좌표 · 화면 배율 설명 · 마지막 실행 기록).
+- 사용자가 할 것: 처음 한 번 에디터의 옆 칸(예: MemoryStatistics)을 끌어 넓히면 그 크기가 저장된다. 커밋은 사용자.
+- DevOps 확인(19:2x 알림): 메인 Bin `JGLauncher -game`(엔진 단독, MainTree exec) — -game 분기 그대로, 클라이언트 실제 픽셀 1920x1080, 종료 0 · error 0 · live 0.
+  개발 -game 도 패키지(부트스트랩)처럼 DPI 인식.
+- 19:2x 정리(총괄 지시): git worktree remove Temp/wt/dpi · Temp/wt/dpigui(dpigui 는 마지막 수정 17:32, 메인과 다른 파일은 옛 GFW 사본 8개 · 반영된 GUI 7파일뿐),
+  검증 게임 Temp/Games/GameUIDemo_DPI · GfwView_DPI 삭제. Temp/wt/gg16(GUI 진행 중) · Temp/Games/GameUIDemo_GUI 는 그대로.

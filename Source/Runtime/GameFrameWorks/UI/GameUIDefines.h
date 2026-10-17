@@ -11,7 +11,7 @@ enum class EGameUIPointerEventType
 	Move,    // 포인터 이동
 	Down,    // 버튼 누름
 	Up,      // 버튼 뗌
-	Wheel,   // 휠 (Wheel 값)
+	Wheel,   // 휠 (Wheel · WheelHorizontal 값)
 	Leave,   // 포인터가 그리는 영역을 벗어남. 호버를 푼다
 };
 
@@ -28,6 +28,7 @@ enum class EGameUIHorizontalAlign
 	Left,
 	Center,
 	Right,
+	Justify,   // 양쪽 맞춤(글자 요소): 자동으로 바뀐 줄을 폭에 맞춰 편다. 문단 마지막 줄 · 말줄임 줄은 왼쪽
 };
 
 enum class EGameUIVerticalAlign
@@ -64,12 +65,14 @@ enum class EGameWidgetInputMode
 };
 
 // 호스트가 넣는 포인터 이벤트. 좌표는 렌더 타깃 픽셀(왼쪽 위 원점, 아래로 +y).
+// 휠은 한 칸 = 1.0(고해상도 휠은 소수). Wheel = 세로(앞으로 굴리면 + — 위로 넘긴다), WheelHorizontal = 가로(오른쪽으로 +).
 struct HGameUIPointerEvent
 {
-	EGameUIPointerEventType Type   = EGameUIPointerEventType::Move;
+	EGameUIPointerEventType Type            = EGameUIPointerEventType::Move;
 	HVector2                Position;
-	EGameUIPointerButton    Button = EGameUIPointerButton::Left;
-	float32                 Wheel  = 0.0f;
+	EGameUIPointerButton    Button          = EGameUIPointerButton::Left;
+	float32                 Wheel           = 0.0f;
+	float32                 WheelHorizontal = 0.0f;
 };
 
 // 호스트가 넣는 편집 키(글자 입력 포커스가 있을 때, PGameUIManager::HandleKey). 글자 자체는 HandleTextInput 으로 따로 온다.
@@ -85,4 +88,50 @@ enum class EGameUIKey
 	End,
 	Tab,         // 같은 위젯의 다음 입력란(Shift 면 앞)
 	SelectAll,   // Ctrl+A
+};
+
+// 요소 그리기 변환(ER-014). 배치는 그대로 두고 그릴 때와 입력 판정 때만 적용하며 자식에 곱해진다. 기준점 = 요소 배치 사각형 안 피벗 자리.
+struct HGameUIRenderTransform
+{
+	float32  Angle = 0.0f;                     // 도. 화면에서 시계 방향이 +
+	HVector2 Scale = HVector2(1.0f, 1.0f);     // 가로 · 세로 배율
+	HVector2 Translation;                      // 배치 뒤 옮기기(논리 단위)
+};
+
+// 트윈이 움직이는 요소 속성(GG-16, UI/GameUITween.h). 값: 위치 · 크기 · 배율 · 옮기기 · 넘긴 양 = HVector2, 각도 · 불투명도 = 실수, 색 = HLinearColor.
+enum class EGameUITweenProperty : int32
+{
+	Position,      // SetPosition(배치 — 자식도 따라 다시 배치된다)
+	Size,          // SetSize
+	Angle,         // 그리기 변환 각도(도)
+	Scale,         // 그리기 변환 배율
+	Translation,   // 그리기 변환 옮기기(논리 단위)
+	Opacity,       // SetOpacity
+	Color,         // 그림 · 글 요소의 색(그 밖의 요소는 움직이지 않는다)
+	ScrollOffset,  // 스크롤 칸의 넘긴 양(GG-20, 그 밖의 요소는 움직이지 않는다 — 부드럽게 넘기기)
+	Count,
+};
+
+// 2D 아핀 변환 p' = (A·x + C·y + X, B·x + D·y + Y). 게임 UI 그리기 · 판정용(기본값 = 단위 변환).
+struct GAMEFRAMEWORKS_API HGameUIAffine
+{
+	float32 A = 1.0f;
+	float32 B = 0.0f;
+	float32 C = 0.0f;
+	float32 D = 1.0f;
+	float32 X = 0.0f;
+	float32 Y = 0.0f;
+
+	// pivot(논리) 을 기준으로 회전 · 배율을 적용하고 옮기는 변환.
+	static HGameUIAffine FromRenderTransform(const HGameUIRenderTransform& transform, const HVector2& pivot);
+	// (this · rhs)(p) = this(rhs(p)) — rhs 를 먼저 적용한다.
+	HGameUIAffine operator*(const HGameUIAffine& rhs) const;
+	HVector2 Apply(const HVector2& point) const;
+	// 뒤집을 수 없으면(배율 0) 단위 변환.
+	HGameUIAffine Inverse() const;
+	// 같은 변환을 scale 배 한 좌표계에서(논리 → 렌더 타깃 픽셀): S · this · S⁻¹.
+	HGameUIAffine Scaled(float32 scale) const;
+	// 넓이 배율의 제곱근(가로 · 세로 배율의 기하 평균). 글자를 그 배율로 래스터화할 때 쓴다.
+	float32 GetUniformScale() const;
+	bool IsIdentity() const;
 };

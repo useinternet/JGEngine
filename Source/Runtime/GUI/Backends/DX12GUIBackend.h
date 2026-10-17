@@ -20,6 +20,11 @@ class PDX12GUIBackend : public PGUIBackend
 	uint32 SrvRegionEnd    = 1024;
 	const uint32 MaxSrvCount = 1024;
 
+	// 화면 배율(D-22 ②): 글꼴 · 스타일은 DpiScale(PGUIBackend) 로 만든다. 주 창이 배율이 다른 모니터로 옮겨 가면(WM_DPICHANGED)
+	// 새 배율을 PendingDpiScale 에 두고 다음 NewFrame(프레임 밖)에서 글꼴 아틀라스 · 스타일을 다시 만든다.
+	float32    PendingDpiScale = 0.0f;   // 0 이면 바뀐 것 없음
+	ImGuiStyle BaseStyle;                // 배율을 곱하기 전 스타일
+
 public:
 	PDX12GUIBackend();
 	virtual ~PDX12GUIBackend();
@@ -33,7 +38,8 @@ public:
 private:
 	void OnUpdate(HDX12CommandList* cmdList, HDX12Resource* backBuffer, D3D12_CPU_DESCRIPTOR_HANDLE rtv, D3D12_RESOURCE_STATES& outState);
 	void OnPresent();
-	void OnResize(uint32 inWidth, uint32 inHeight);
+	// 글꼴(아틀라스)과 스타일을 Scale 로 다시 만든다. 프레임 밖에서만 부른다 — 아틀라스 텍스처는 다음 ImGui_ImplDX12_NewFrame 이 올린다.
+	void ApplyDpiScale(float32 Scale);
 
 #ifdef _PLATFORM_WINDOWS
 	void OnWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);

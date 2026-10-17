@@ -8,6 +8,18 @@
 
 #pragma warning( disable : 4244 )
 
+// 96 DPI 기준 픽셀 → 지금 화면 배율의 픽셀(D-22 ②). 테두리 두께(1px)는 곱하지 않는다(ImGui ScaleAllSizes 와 같은 규칙).
+static float32 ScaledPx(float32 InPixels)
+{
+	return InPixels * HGUI::GetDpiScale();
+}
+
+static ImVec2 ScaledPx(const ImVec2& InPixels)
+{
+	const float32 Scale = HGUI::GetDpiScale();
+	return ImVec2(InPixels.x * Scale, InPixels.y * Scale);
+}
+
 ImColor ToImGui(const HLinearColor& InColor)
 {
 	return ImColor(InColor.R, InColor.G, InColor.B, InColor.A);
@@ -457,6 +469,9 @@ HGUIImageInput HGUI::InteractiveImage(const PString& InName, uint64 InTextureID,
 	ImGui::SetCursorScreenPos(ItemMin);
 	ImGui::InvisibleButton(InName.GetCStr(), ImVec2(InSize.x, InSize.y),
 		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
+	// 이미지 위 휠은 이 항목이 갖는다(다음 프레임부터 창 스크롤에 쓰이지 않는다). 휠 값은 아래에서 IO 로 그대로 읽는다.
+	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
 
 	const ImGuiIO& IO = ImGui::GetIO();
 	const bool bActive = ImGui::IsItemActive();
@@ -469,6 +484,8 @@ HGUIImageInput HGUI::InteractiveImage(const PString& InName, uint64 InTextureID,
 	}
 	Input.MouseDelta     = HVector2(IO.MouseDelta.x, IO.MouseDelta.y);
 	Input.Wheel          = Input.bHovered ? IO.MouseWheel : 0.0f;
+	// ImGui 가로 휠은 왼쪽이 + 라서 뒤집는다(엔진 입력은 오른쪽이 +).
+	Input.WheelHorizontal = Input.bHovered ? -IO.MouseWheelH : 0.0f;
 	Input.ScreenPosition = HVector2(ItemMin.x, ItemMin.y);
 	return Input;
 }
@@ -565,9 +582,9 @@ void HGUI::BeginPanel(const PString& InName, const HVector2& InSize, const HLine
 	// 색 · 모서리 · 여백 · 테두리 두께는 BeginChild 가 창을 만들 때 읽으므로 바로 되돌린다. 안쪽 항목에는 번지지 않는다.
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ToImGui(InBackground).Value);
 	ImGui::PushStyleColor(ImGuiCol_Border, ToImGui(InBorder).Value);
-	ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 6.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, ScaledPx(6.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 1.0f);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ScaledPx(ImVec2(12.0f, 10.0f)));
 	// 반환값과 상관없이 EndChild 를 불러야 한다(ImGui 규칙). 휠은 바깥 창이 스크롤한다.
 	ImGui::BeginChild(InName.GetCStr(), ImVec2(InSize.x, (InSize.y > 0.0f) ? InSize.y : 0.0f), ChildFlags, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 	ImGui::PopStyleVar(3);
@@ -582,7 +599,7 @@ void HGUI::EndPanel()
 void HGUI::SegmentedBar(const HList<HGUIBarSegment>& InSegments, const HVector2& InSize, const HLinearColor& InTrack)
 {
 	const float32 Width      = (InSize.x > 0.0f) ? InSize.x : ImGui::GetContentRegionAvail().x;
-	const float32 BarHeight  = (InSize.y > 0.0f) ? InSize.y : 8.0f;
+	const float32 BarHeight  = (InSize.y > 0.0f) ? InSize.y : ScaledPx(8.0f);
 	const float32 LineHeight = ImMax(BarHeight, ImGui::GetTextLineHeight());
 	if (Width <= 0.0f)
 	{
@@ -593,8 +610,8 @@ void HGUI::SegmentedBar(const HList<HGUIBarSegment>& InSegments, const HVector2&
 	const float32 Top      = Cursor.y + (LineHeight - BarHeight) * 0.5f;
 	const float32 Bottom   = Top + BarHeight;
 	const float32 Right    = Cursor.x + Width;
-	const float32 Rounding = ImMin(4.0f, BarHeight * 0.5f);
-	const float32 Gap      = 2.0f;     // 구간은 선 대신 틈으로 나눈다
+	const float32 Rounding = ImMin(ScaledPx(4.0f), BarHeight * 0.5f);
+	const float32 Gap      = ScaledPx(2.0f);     // 구간은 선 대신 틈으로 나눈다
 	ImDrawList*   DrawList = ImGui::GetWindowDrawList();
 
 	float32 Position = Cursor.x;
@@ -608,7 +625,8 @@ void HGUI::SegmentedBar(const HList<HGUIBarSegment>& InSegments, const HVector2&
 		}
 
 		// 아주 작은 구간도 보이게 틈을 뺀 뒤 2px 는 남긴다.
-		SegmentWidth = ImMax(SegmentWidth, bFirst ? 2.0f : Gap + 2.0f);
+		const float32 MinWidth = ScaledPx(2.0f);
+		SegmentWidth = ImMax(SegmentWidth, bFirst ? MinWidth : Gap + MinWidth);
 		const float32 PieceLeft  = bFirst ? Position : Position + Gap;
 		const float32 PieceRight = ImMin(Position + SegmentWidth, Right);
 		if (PieceRight > PieceLeft)
@@ -643,11 +661,11 @@ void HGUI::Badge(const PString& InText, const HLinearColor& InBackground, const 
 {
 	// 글자 줄 높이를 그대로 써서 표의 행 높이를 바꾸지 않는다. 배경만 위아래로 1px 넓힌다.
 	const ImVec2  TextSize = ImGui::CalcTextSize(InText.GetCStr());
-	const float32 PaddingX = 5.0f;
+	const float32 PaddingX = ScaledPx(5.0f);
 	const ImVec2  Min      = ImGui::GetCursorScreenPos();
 	const ImVec2  Max(Min.x + TextSize.x + PaddingX * 2.0f, Min.y + TextSize.y);
 	ImDrawList*   DrawList = ImGui::GetWindowDrawList();
-	DrawList->AddRectFilled(ImVec2(Min.x, Min.y - 1.0f), ImVec2(Max.x, Max.y + 1.0f), ToImGui(InBackground), 3.0f);
+	DrawList->AddRectFilled(ImVec2(Min.x, Min.y - 1.0f), ImVec2(Max.x, Max.y + 1.0f), ToImGui(InBackground), ScaledPx(3.0f));
 	DrawList->AddText(ImVec2(Min.x + PaddingX, Min.y), ToImGui(InTextColor), InText.GetCStr());
 	ImGui::Dummy(ImVec2(Max.x - Min.x, Max.y - Min.y));
 }
@@ -655,19 +673,19 @@ void HGUI::Badge(const PString& InText, const HLinearColor& InBackground, const 
 void HGUI::LegendItem(const PString& InLabel, const HLinearColor& InColor)
 {
 	const float32 LineHeight = ImGui::GetTextLineHeight();
-	const float32 SwatchSize = 8.0f;
+	const float32 SwatchSize = ScaledPx(8.0f);
 	const ImVec2  Cursor     = ImGui::GetCursorScreenPos();
 	const ImVec2  SwatchMin(Cursor.x, Cursor.y + (LineHeight - SwatchSize) * 0.5f);
-	ImGui::GetWindowDrawList()->AddRectFilled(SwatchMin, ImVec2(SwatchMin.x + SwatchSize, SwatchMin.y + SwatchSize), ToImGui(InColor), 2.0f);
+	ImGui::GetWindowDrawList()->AddRectFilled(SwatchMin, ImVec2(SwatchMin.x + SwatchSize, SwatchMin.y + SwatchSize), ToImGui(InColor), ScaledPx(2.0f));
 	ImGui::Dummy(ImVec2(SwatchSize, LineHeight));
-	ImGui::SameLine(0.0f, 5.0f);
+	ImGui::SameLine(0.0f, ScaledPx(5.0f));
 	ImGui::TextUnformatted(InLabel.GetCStr());
 }
 
 bool HGUI::BeginTable(const PString& InName, int32 InColumnCount)
 {
 	// 칸 여백은 행마다 다시 읽으므로 EndTable 까지 유지한다.
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(6.0f, 4.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ScaledPx(ImVec2(6.0f, 4.0f)));
 	const ImGuiTableFlags Flags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings;
 	if (ImGui::BeginTable(InName.GetCStr(), InColumnCount, Flags) == false)
 	{
@@ -782,8 +800,8 @@ void HGUI::PlotLines(const HPlotLinesArguments& InArgs)
 	ImPlot::PushStyleColor(ImPlotCol_AxisText, AxisText);
 	ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ToImGui(InArgs.GridColor).Value);
 	ImPlot::PushStyleColor(ImPlotCol_AxisTick, Transparent);
-	ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(4.0f, 6.0f));
-	ImPlot::PushStyleVar(ImPlotStyleVar_LegendSpacing, ImVec2(14.0f, 0.0f));
+	ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ScaledPx(ImVec2(4.0f, 6.0f)));
+	ImPlot::PushStyleVar(ImPlotStyleVar_LegendSpacing, ScaledPx(ImVec2(14.0f, 0.0f)));
 
 	const PString PlotID = PString("##") + InArgs.TitleName;
 	ImPlotFlags PlotFlags = ImPlotFlags_NoMenus | ImPlotFlags_NoBoxSelect | ImPlotFlags_NoMouseText | ImPlotFlags_NoFrame;
@@ -855,7 +873,7 @@ void HGUI::PlotLines(const HPlotLinesArguments& InArgs)
 				const bool bHasColor  = SeriesIndex < static_cast<int32>(InArgs.SeriesColors.size());
 				LegendItem(InArgs.SeriesLabels[SeriesIndex], bHasColor ? InArgs.SeriesColors[SeriesIndex] : HLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
 				// 값 열: 여백 + 색 사각형 + 간격 + 가장 긴 이름 + 16px
-				ImGui::SameLine(ImGui::GetStyle().WindowPadding.x + 8.0f + 5.0f + LabelWidth + 16.0f);
+				ImGui::SameLine(ImGui::GetStyle().WindowPadding.x + ScaledPx(8.0f + 5.0f + 16.0f) + LabelWidth);
 				ImGui::TextUnformatted(PString::Format(InArgs.ValueFormat, Values[Nearest]).GetCStr());
 			}
 			ImGui::EndTooltip();
@@ -1054,9 +1072,9 @@ bool HGUI::ToggleChip(const PString& InId, const PString& InLabel, const PString
 	const ImGuiStyle& Style        = ImGui::GetStyle();
 	const ImGuiID     Id           = Window->GetID(InId.GetCStr());
 	const float32     Height       = ImGui::GetFrameHeight();
-	const float32     DotSize      = 6.0f;
-	const float32     PaddingX     = 9.0f;
-	const float32     Gap          = 6.0f;
+	const float32     DotSize      = ScaledPx(6.0f);
+	const float32     PaddingX     = ScaledPx(9.0f);
+	const float32     Gap          = ScaledPx(6.0f);
 	const ImVec2      LabelSize    = ImGui::CalcTextSize(InLabel.GetCStr());
 	const ImVec2      TrailingSize = InTrailing.Empty() ? ImVec2(0.0f, 0.0f) : ImGui::CalcTextSize(InTrailing.GetCStr());
 	const float32     Width        = PaddingX + DotSize + Gap + LabelSize.x + (InTrailing.Empty() ? 0.0f : Gap + TrailingSize.x) + PaddingX;
@@ -1235,4 +1253,20 @@ void HGUI::SetKeyboardFocusHere()
 void HGUI::SameLineAt(float32 InOffsetX)
 {
 	ImGui::SameLine(InOffsetX);
+}
+
+float32 HGUI::GetDpiScale()
+{
+	HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+	if (GUIModule == nullptr)
+	{
+		return 1.0f;
+	}
+	PSharedPtr<PGUIBackend> Backend = GUIModule->GetGUIBackend().Pin();
+	return Backend.IsValid() ? Backend->GetDpiScale() : 1.0f;
+}
+
+bool HGUI::IsAppFocusLost()
+{
+	return ImGui::GetIO().AppFocusLost;
 }

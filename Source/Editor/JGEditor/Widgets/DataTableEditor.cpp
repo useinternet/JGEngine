@@ -15,6 +15,12 @@ namespace
 	constexpr float32 IssueListHeight    = 120.0f;
 	constexpr int64   FileCheckInterval  = 1000;   // ms
 
+	// 위 크기와 아래 고정 픽셀 값은 100%(96 DPI) 기준이다 — 화면 배율을 곱해 쓴다(D-22 ②, 매 프레임 읽는다).
+	float32 scaled(float32 inPixels)
+	{
+		return inPixels * HGUI::GetDpiScale();
+	}
+
 	int64 nowMs()
 	{
 		return (int64)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -358,9 +364,9 @@ public:
 	{
 		if (inColumn == 0)
 		{
-			return 140.0f;
+			return scaled(140.0f);
 		}
-		return defaultColumnWidth(GetContent().Schema.Columns[inColumn - 1].Type);
+		return scaled(defaultColumnWidth(GetContent().Schema.Columns[inColumn - 1].Type));
 	}
 
 	virtual PString GetRowLabel(int32 inRow) const override
@@ -1102,13 +1108,13 @@ void HDataTableEditorTab::DrawNewColumnModal()
 
 	HGUI::AlignTextToFramePadding();
 	HGUI::Text("Name");
-	HGUI::SameLineAt(80.0f);
-	HGUI::InputTextWithHint("NewColumnName", "column name", NewColumnName, 220.0f);
+	HGUI::SameLineAt(scaled(80.0f));
+	HGUI::InputTextWithHint("NewColumnName", "column name", NewColumnName, scaled(220.0f));
 
 	HGUI::AlignTextToFramePadding();
 	HGUI::Text("Type");
-	HGUI::SameLineAt(80.0f);
-	if (HGUI::BeginCombo("NewColumnType", DataTableColumnTypeToString((EDataTableColumnType)NewColumnType), 220.0f))
+	HGUI::SameLineAt(scaled(80.0f));
+	if (HGUI::BeginCombo("NewColumnType", DataTableColumnTypeToString((EDataTableColumnType)NewColumnType), scaled(220.0f)))
 	{
 		for (int32 t = 0; t < (int32)EDataTableColumnType::Count; ++t)
 		{
@@ -1125,7 +1131,7 @@ void HDataTableEditorTab::DrawNewColumnModal()
 		HGUI::Text(NewColumnError, errorColor());
 	}
 
-	if (HGUI::Button("Add", HVector2(100.0f, 0.0f)))
+	if (HGUI::Button("Add", HVector2(scaled(100.0f), 0.0f)))
 	{
 		const PString name = trimmedCopy(NewColumnName);
 		PString reason;
@@ -1144,7 +1150,7 @@ void HDataTableEditorTab::DrawNewColumnModal()
 		}
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
+	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
 	{
 		HGUI::CloseCurrentPopup();
 	}
@@ -1314,7 +1320,7 @@ void HDataTableEditorTab::DrawColumnPanel()
 		return;
 	}
 
-	const float32 labelWidth = 90.0f;
+	const float32 labelWidth = scaled(90.0f);
 	const float32 fieldWidth = -1.0f;
 	auto field = [&](const char* inLabel, const char* inId, PString& value, const char* inHint)
 	{
@@ -1334,7 +1340,7 @@ void HDataTableEditorTab::DrawColumnPanel()
 		HGUI::Separator();
 		field("Name", "PendingKeyColumn", PendingKeyColumn, "Id");
 		HGUI::TextWrapped("Rows are found by this key. Keys must be unique and have no spaces.");
-		if (HGUI::Button("Apply", HVector2(90.0f, 0.0f)))
+		if (HGUI::Button("Apply", HVector2(scaled(90.0f), 0.0f)))
 		{
 			ApplyPending();
 		}
@@ -1403,13 +1409,13 @@ void HDataTableEditorTab::DrawColumnPanel()
 	}
 
 	HGUI::Spacing();
-	if (HGUI::Button("Apply", HVector2(90.0f, 0.0f)))
+	if (HGUI::Button("Apply", HVector2(scaled(90.0f), 0.0f)))
 	{
 		ApplyPending();
 	}
 	HGUI::SameLine();
 	HGUI::BeginDisabled(bPendingEdited == false);
-	if (HGUI::Button("Revert", HVector2(90.0f, 0.0f)))
+	if (HGUI::Button("Revert", HVector2(scaled(90.0f), 0.0f)))
 	{
 		LoadPending(true);
 	}
@@ -1417,17 +1423,17 @@ void HDataTableEditorTab::DrawColumnPanel()
 
 	HGUI::Spacing();
 	HGUI::Separator();
-	if (HGUI::Button("< Move", HVector2(70.0f, 0.0f)))
+	if (HGUI::Button("< Move", HVector2(scaled(70.0f), 0.0f)))
 	{
 		MoveColumn(SelectedGridColumn, -1);
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Move >", HVector2(70.0f, 0.0f)))
+	if (HGUI::Button("Move >", HVector2(scaled(70.0f), 0.0f)))
 	{
 		MoveColumn(SelectedGridColumn, 1);
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Delete", HVector2(70.0f, 0.0f)))
+	if (HGUI::Button("Delete", HVector2(scaled(70.0f), 0.0f)))
 	{
 		DeleteColumn(SelectedGridColumn);
 	}
@@ -1706,7 +1712,7 @@ void JGDataTableEditor::OnGenerateGUI()
 
 void JGDataTableEditor::drawToolbar(HDataTableEditorTab* activeTab)
 {
-	if (HGUI::BeginCombo("DataTableOpen", "Open table...", 240.0f))
+	if (HGUI::BeginCombo("DataTableOpen", "Open table...", scaled(240.0f)))
 	{
 		HList<HDataTableAssetEntry> tables;
 		GetLoadedDataTables(tables);
@@ -1787,7 +1793,7 @@ void JGDataTableEditor::drawToolbar(HDataTableEditorTab* activeTab)
 			HGUI::SetKeyboardFocusHere();
 			activeTab->bFocusFilterRequest = false;
 		}
-		HGUI::InputTextWithHint("DataTableFilter", "Filter (Ctrl+F)", activeTab->Filter, 220.0f);
+		HGUI::InputTextWithHint("DataTableFilter", "Filter (Ctrl+F)", activeTab->Filter, scaled(220.0f));
 		if (activeTab->ViewSortColumn >= 0)
 		{
 			HGUI::SameLine();
@@ -1845,13 +1851,13 @@ void JGDataTableEditor::drawTab(HDataTableEditorTab& tab)
 
 	const HVector2 available = HGUI::GetContentRegionAvail();
 	const float32 statusHeight = HGUI::GetFrameHeightWithSpacing();
-	const float32 issuesHeight = IssueListHeight;
+	const float32 issuesHeight = scaled(IssueListHeight);
 	const bool    bShowPanel   = tab.SelectedGridColumn >= 0;
-	const float32 gridWidth    = bShowPanel ? available.x - ColumnPanelWidth - 8.0f : available.x;
+	const float32 gridWidth    = bShowPanel ? available.x - scaled(ColumnPanelWidth) - scaled(8.0f) : available.x;
 	float32       gridHeight   = available.y - issuesHeight - statusHeight - HGUI::GetFrameHeightWithSpacing();
-	if (gridHeight < 120.0f)
+	if (gridHeight < scaled(120.0f))
 	{
-		gridHeight = 120.0f;
+		gridHeight = scaled(120.0f);
 	}
 
 	HList<HGUIGridEvent> events;
@@ -1862,7 +1868,7 @@ void JGDataTableEditor::drawTab(HDataTableEditorTab& tab)
 	if (bShowPanel)
 	{
 		HGUI::SameLine();
-		HGUI::BeginChild("##DataTableColumnPanel", HVector2(ColumnPanelWidth, gridHeight));
+		HGUI::BeginChild("##DataTableColumnPanel", HVector2(scaled(ColumnPanelWidth), gridHeight));
 		tab.DrawColumnPanel();
 		if (HGUI::Button("Close panel", HVector2(-1.0f, 0.0f)))
 		{
@@ -1901,8 +1907,8 @@ void JGDataTableEditor::drawNewTableModal()
 
 	HGUI::AlignTextToFramePadding();
 	HGUI::Text("Content");
-	HGUI::SameLineAt(110.0f);
-	if (HGUI::BeginCombo("NewTableContent", _newTableContent, 260.0f))
+	HGUI::SameLineAt(scaled(110.0f));
+	if (HGUI::BeginCombo("NewTableContent", _newTableContent, scaled(260.0f)))
 	{
 		if (HFileHelper::GameContentDirectory().Empty() == false && HGUI::Selectable(JG_ASSET_GAME_PATH_RECOGNITION_TOEKN, DataTableSameText(_newTableContent, JG_ASSET_GAME_PATH_RECOGNITION_TOEKN)))
 		{
@@ -1917,13 +1923,13 @@ void JGDataTableEditor::drawNewTableModal()
 
 	HGUI::AlignTextToFramePadding();
 	HGUI::Text("Path");
-	HGUI::SameLineAt(110.0f);
-	HGUI::InputTextWithHint("NewTablePath", "Data/MyTable", _newTablePath, 260.0f);
+	HGUI::SameLineAt(scaled(110.0f));
+	HGUI::InputTextWithHint("NewTablePath", "Data/MyTable", _newTablePath, scaled(260.0f));
 
 	HGUI::AlignTextToFramePadding();
 	HGUI::Text("Key column");
-	HGUI::SameLineAt(110.0f);
-	HGUI::InputTextWithHint("NewTableKeyColumn", "Id", _newTableKeyColumn, 260.0f);
+	HGUI::SameLineAt(scaled(110.0f));
+	HGUI::InputTextWithHint("NewTableKeyColumn", "Id", _newTableKeyColumn, scaled(260.0f));
 
 	HGUI::Text("ASCII letters, digits, _ - / only (file paths are narrow-character).", mutedColor());
 	if (_newTableError.Empty() == false)
@@ -1931,7 +1937,7 @@ void JGDataTableEditor::drawNewTableModal()
 		HGUI::Text(_newTableError, errorColor());
 	}
 
-	if (HGUI::Button("Create", HVector2(110.0f, 0.0f)))
+	if (HGUI::Button("Create", HVector2(scaled(110.0f), 0.0f)))
 	{
 		PString tokenPath;
 		PString error;
@@ -1971,7 +1977,7 @@ void JGDataTableEditor::drawNewTableModal()
 		}
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Cancel", HVector2(110.0f, 0.0f)))
+	if (HGUI::Button("Cancel", HVector2(scaled(110.0f), 0.0f)))
 	{
 		HGUI::CloseCurrentPopup();
 	}
@@ -1999,7 +2005,7 @@ void JGDataTableEditor::drawCloseModal()
 	}
 
 	HGUI::Text(PString::Format("%s has unsaved changes.", tab->Document->GetTokenPath()));
-	if (HGUI::Button("Save and close", HVector2(130.0f, 0.0f)))
+	if (HGUI::Button("Save and close", HVector2(scaled(130.0f), 0.0f)))
 	{
 		if (saveTab(*tab, true))
 		{
@@ -2008,13 +2014,13 @@ void JGDataTableEditor::drawCloseModal()
 		HGUI::CloseCurrentPopup();
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Discard", HVector2(100.0f, 0.0f)))
+	if (HGUI::Button("Discard", HVector2(scaled(100.0f), 0.0f)))
 	{
 		removeTab(tab);
 		HGUI::CloseCurrentPopup();
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
+	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
 	{
 		_closeRequest = nullptr;
 		HGUI::CloseCurrentPopup();
@@ -2057,7 +2063,7 @@ void JGDataTableEditor::drawSaveConfirmModal()
 		}
 	}
 	HGUI::Text("Add them as columns first (+ Column) to keep the values.", mutedColor());
-	if (HGUI::Button("Save anyway", HVector2(120.0f, 0.0f)))
+	if (HGUI::Button("Save anyway", HVector2(scaled(120.0f), 0.0f)))
 	{
 		tab->bDropConfirmed = true;
 		saveTab(*tab, true);
@@ -2065,7 +2071,7 @@ void JGDataTableEditor::drawSaveConfirmModal()
 		HGUI::CloseCurrentPopup();
 	}
 	HGUI::SameLine();
-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
+	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
 	{
 		_saveConfirm = nullptr;
 		HGUI::CloseCurrentPopup();

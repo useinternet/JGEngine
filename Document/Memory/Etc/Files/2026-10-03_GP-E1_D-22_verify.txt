@@ -1,0 +1,72 @@
+JGEditor GP-E1 (씬 뷰포트 → GameFrameWorks PGameViewport) + D-22 ① (렌더 해상도 = 보이는 크기) 구현 · 검증 기록
+작성 2026-10-03 10:1x, JGEditor 세션. 엔진 총괄 배정(사용자 결정 D-23 · D-22, 10-03 09:44 "어제 멈춘 작업 이어서"). 메인 트리 C:\Develop\JGEngine, DevelopEngine|x64, 화면 125%.
+
+== 바꾼 것 (Source/Editor/JGEditor/Widgets/SceneViewport.h/.cpp 만) ==
+- 렌더 · 게임 UI 라우팅을 GFW PGameViewport(Viewport/GameViewport.h, 10-02 23:05 판, GP-F1 · F1b)로 넘김: _renderer · forwardPointerToGameUI · forwardTextInput(옛 구현) 삭제
+  → _viewport = PGameViewport::Initialize("SceneViewport", 1280, 720), OnUpdate 에서 Render().
+- 에디터에 남긴 것: ImGui 입력 → HInputEvent(뷰포트 픽셀 = 이미지 좌표 × 뷰포트크기/이미지크기) 변환
+  (호버 · 누르는 중 PointerMove, 벗어나면 PointerLeave, bClicked → PointerDown, 뗌 → PointerUp, 휠 → PointerWheel.y),
+  대상(EGameViewportInputTarget)이 None 인 오른쪽 끌기 · 휠 → 궤도 · 줌, 클릭 결과 글(GameUI → "game UI (not picked)", World → 첫 컨트롤러 GetLastPick,
+  None → ViewportPointToRay + PickActor "(no controller in the world)"), 키(창 포커스): 입력란 포커스면 ClaimTextEditKeys · 글자(제어 문자 · U+FFFD 빼고) → Char,
+  편집 키 → KeyDown(Backspace · Delete · ← · → 반복, Home · End · Tab · Enter · KeypadEnter · Esc 한 번), Ctrl(Alt 아님)+A/C/X/V → KeyDown, IME 자리 = GetTextInputCaretRect → HGUI::SetTextInputPosition.
+  입력란 포커스가 없으면 Esc → KeyDown → "Back (Esc): handled by game UI" / "no game UI back handler". e2e 가 보는 로그 줄은 옛 글 그대로.
+- D-22 ①: 이미지 = 내용 영역에 16:9 로 맞춘 정수 픽셀(최소 640x360). 그 크기가 0.3초(HGUI::GetTime) 그대로이고 뷰포트 크기와 다르면 한 번
+  PGameViewport::Resize + 로그 "SceneViewport render size AxB -> CxD (game UI scale S)". 렌더 텍스처는 다음 Render 가 맞춘다(GP-F1b). 텍스처는 매 프레임 GetDisplayTexture 로 다시 받음.
+  상태 줄에 "render WxH" 추가.
+- 검증 도구(새): Document/Memory/Etc/Files/tools/sceneviewport_resize_check.ps1 — 런처 → 캡처 a → 창을 빠르게 N 단계로 줄임 → 기다림 → 캡처 b → WM_CLOSE.
+
+== 빌드 ==
+검증 게임(저장소 Temp/Games, 엔진 = 메인 소스):
+  GameUIDemo_JGE  CreateGameProject.bat → 테스트 코드 복사 → GenerateProjectFiles.bat → MSBuild exit 0
+    수정 전 기준선 63초 / 수정 뒤 증분 28초(SceneViewport.cpp · .generation.cpp 만), error 0, C++ warning 0
+  GfwView_JGE     같은 순서, MSBuild exit 0 (59초), error 0
+메인 JGEditor.vcxproj(-p:BuildProjectReferences=false): 첫 시도 10:05 컴파일 뒤 LNK1104(JGEditor.dll 을 열 수 없음 — 다른 세션의 메인 JGConsole 실행과 겹침),
+  그 사이 메인 Bin 에 JGEditor.dll 이 없었다(10:05:41 ~ 10:08:36). JGConsole 이 끝난 뒤 다시 링크 exit 0 → Bin/DevelopEngine/JGEditor.dll 10:08:36.
+
+== GP-E1 완료 기준: 게임 UI e2e 20단계 (GameFrameWorks/Files/tools/gameui_demo_testgame/gameui_e2e.ps1, imgui.ini 없이) ==
+수정 전(기준선, 같은 PC · 같은 조건): 1단계(End Turn) 클릭 로그 없음 — PostMessage 첫 클릭이 먹지 않음. 2~20단계는 README 그대로(6단계가 턴 2).
+수정 뒤: 20단계 모두 README 기대 결과와 같다. 로그 원문(jg_log.txt 발췌):
+  [JGEditor]: SceneViewport render size 1280x720 -> 640x360 (game UI scale 0.333)      ← 기본 창(최소 이미지) 크기로 한 번
+  1  SceneViewport Click (0.889, 0.911): game UI (not picked) + GameUIDemo End Turn clicked (turn 2)
+  2  Click (0.920, 0.036): game UI + GameUIDemo Menu clicked
+  3  Click (0.889, 0.911): game UI (not picked)    4  Click (0.245, 0.494): game UI (not picked)
+  5  GameUI back handled by JGGameUIDemoPauseMenu + SceneViewport Back (Esc): handled by game UI
+  6  End Turn clicked (turn 3)                       7  Click (0.245, 0.494): nothing (no controller in the world)
+  8  Click (0.727, 0.911): game UI (not picked)    9  Menu clicked   10  Resume clicked
+  11 Click (0.811, 0.581): game UI   14 GameUIDemo address committed: 192.168.0.10:4777
+  15 Click (0.811, 0.653): game UI   17 GameUIDemo name committed: 홍길동ab
+  18 Click (0.811, 0.653): game UI   19 (로그 없음)   20 SceneViewport Back (Esc): no game UI back handler
+  [error] · [critical] 0, warning 은 기준선 1줄(Asset NOT Support Asset Path), ID3D12 메시지 0, live blocks 0, 종료 0
+  캡처 Files/2026-10-03_GP-E1_gameui_e2e_input.png (턴 3, 입력란 192.168.0.10:4777 · 홍길동ab, 상태 줄 render 640x360)
+
+== GP-E1 완료 기준: 궤도 · 피킹 · DevView (GfwView_JGE, gfw_phase2_testgame/imgui.ini) ==
+run1(README 순서: 빈 곳 → Windows 메뉴(30,9) → 항목(60,85) → …): 피킹 E3.1 · 칸 (3, 3) / 빈 칸 (5, 0) 정상, 오른쪽 끌기 궤도 정상.
+  DevView 는 열리지 않음 — 이번 실행에서 (30,9) 클릭이 Windows 가 아니라 GfwView 메뉴를 열었다(캡처로 확인). 메뉴 클릭 좌표 문제이고 이번 변경과 무관.
+run2(ini 에 [JGWidget][Open] JGGameplayDevView=1 — 레이아웃 복원으로 DevView 를 시작부터 엶, 메뉴 클릭 없음):
+  [GUI]: Layout: reopened JGGameplayDevView
+  [GameFrameWorks]: Controller click: actor Entity_E3.1 entity E3.1 at (593.75, 21.90, 582.83) distance 1771.47 / board cell (3, 3) at (600.03, 0.00, 600.10)
+  [JGEditor]: SceneViewport Click (0.500, 0.500): (같은 글)        ← 09-30 기록과 숫자까지 같음(World 대상 → 첫 컨트롤러 GetLastPick)
+  [GameFrameWorks]: Controller click: actor none / board cell (5, 0) at (938.00, 0.00, 33.77)   ← 같음
+  DevView: E3.1 선택 → Zone Units · Board (3, 3) · {"Health": 25, "Team": 1}, Undo 뒤 Sequence 0 · Input E0.1 · Turns 1 · Undo 0, 이벤트 로그 "-- state replaced"
+  [error] 2줄 = 에디터 안 gmtest 의도(R5 · §13), ID3D12 0, live blocks 0, 종료 0
+  캡처 Files/2026-10-03_GP-E1_gfwview_pick_devview_undo.png, 궤도 끌기 Files/2026-10-03_GP-E1_gfwview_orbit_drag.png(run1)
+
+== D-22 ① 완료 기준 ==
+창 크기 따라가기(GameUIDemo_JGE, Scene Viewport 를 도킹 공간 전체에 도킹한 imgui.ini, sceneviewport_resize_check.ps1 -WaitSeconds 20 -ShrinkX 600 -ShrinkY 300 -Steps 10 -StepMilliseconds 40):
+  [JGEditor]: SceneViewport render size 1280x720 -> 1742x980 (game UI scale 0.907)     ← 시작 뒤 보이는 크기로 한 번
+  (창을 40ms 간격 10단계로 줄이는 동안 다시 만들지 않음)
+  [JGEditor]: SceneViewport render size 1742x980 -> 1316x740 (game UI scale 0.685)     ← 멈춘 뒤 한 번
+  [error] 0, ID3D12 메시지 0, live blocks 0, 종료 0. 캡처 Files/2026-10-03_D-22_sceneviewport_after_resized_1316x740.png
+선명도 전 · 후(같은 레이아웃 · 같은 캡처 도구 gfw_worldview_verify.ps1, 주황 End Turn 버튼을 기준점으로 같은 영역):
+  수정 전 = 1280x720 을 약 1.36배 늘려 표시 / 수정 뒤 = 1742x980 을 1:1 표시
+  밝기 기울기 평균(높을수록 선명): End Turn 글자 6.84 → 7.81, 왼쪽 서식 패널 문단 13.08 → 17.30
+  캡처 Files/2026-10-03_D-22_sceneviewport_before_1280x720.png · _after_1742x980.png, 글자 확대 비교(위 = 전, 아래 = 뒤) Files/2026-10-03_D-22_sceneviewport_text_before_after.png
+  남은 흐림: 런처가 DPI 를 인식하지 않아 Windows 가 창 전체를 1.25배(이 PC) 늘린다 → D-22 ②(총괄이 따로 배정)
+
+== 메인 트리 확인 ==
+메인 에디터(프로젝트 없음) 12초 실행(imgui.ini 백업 · 되돌림): 종료 0, [error] 0, ID3D12 0, live blocks 0, "Layout: reopened JGDevConsole JGSceneViewport JGGameplayDevView JGMemoryStatistcs"
+  (씬 뷰포트는 GameFrameWorks 가 없어 안내 문구만 그림)
+
+== 남은 것 · 참고 ==
+- 게임 UI e2e 를 쓰는 GUI 세션 GG-14(요소 변환)가 메인 빌드 · e2e 중 — 끝났다는 알림을 받으면 그 뒤 상태로 20단계를 한 번 더 돌린다(이번 게임 빌드는 GG-14 복사(09:52) 뒤 소스로 컴파일됨).
+- gfw_phase2_testgame README 의 메뉴 클릭 순서는 이번에 DevView 를 열지 못했다 — ini 에 JGGameplayDevView=1 을 넣는 방식이 안정적(GFW 문서, GFW 세션에 알림).

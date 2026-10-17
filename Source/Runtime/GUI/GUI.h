@@ -31,6 +31,7 @@ struct HGUIImageInput
 	bool     bDown[(int32)EGUIMouseButton::Count]    = {};  // 이미지에서 시작한 누름이 이어지는 중 (끌기)
 	HVector2 MouseDelta;                                    // 이번 프레임 마우스 이동 (픽셀)
 	float32  Wheel = 0.0f;                                  // 이미지 위에 있을 때만
+	float32  WheelHorizontal = 0.0f;                        // 가로 휠(오른쪽으로 +). 이미지 위에 있을 때만
 	HVector2 ScreenPosition;                                // 이미지 왼쪽 위 (ImGui 화면 좌표. IME 창 자리 계산용)
 };
 
@@ -106,6 +107,7 @@ public:
 	// 접을 수 있는 구역 머리. 펼쳐져 있으면 true (닫는 호출 없음).
 	static bool CollapsingHeader(const PString& InName, bool bDefaultOpen = true);
 	// 마우스 입력을 받는 이미지 (씬 뷰포트). 이미지 위에서 누른 버튼은 창 이동 대신 이 항목이 받는다.
+	// 이미지 위 휠도 이 항목이 받는다 — 창 내용이 넘쳐도 창이 함께 스크롤되지 않는다(뷰포트 줌 · 게임 UI 스크롤).
 	// InName 은 같은 창 안에서 항목을 구분하는 ID 다 (보이지 않는다).
 	static HGUIImageInput InteractiveImage(const PString& InName, uint64 InTextureID, const HVector2& InSize);
 private:
@@ -224,4 +226,10 @@ public:
 	static void SetKeyboardFocusHere();
 	// 같은 줄의 창 왼쪽에서 InOffsetX 픽셀 자리로(라벨 뒤 입력란 줄 맞춤). SameLine(InSpacing) 은 간격이다
 	static void SameLineAt(float32 InOffsetX);
+	// 에디터 화면 배율(1.0 = 96 DPI, 125% = 1.25) — 주 창이 있는 모니터 기준으로 GUI 가 글꼴 · 스타일에 쓴 값.
+	// 창을 배율이 다른 모니터로 옮기면(WM_DPICHANGED) 다음 프레임부터 바뀐다. 에디터 코드의 고정 픽셀 값에 매 프레임 곱한다(캐시하지 않는다).
+	// HGUI 함수가 받는 크기 · 폭(픽셀)은 실제 픽셀이다 — 고정 값을 넘길 때는 이 배율을 곱해서 넘긴다.
+	static float32 GetDpiScale();
+	// 앱이 OS 포커스를 잃은 그 프레임만 true(그 프레임 끝에 ImGui 가 키 · 마우스 버튼 상태를 지운다). 누름 · 끌기 정리에 쓴다.
+	static bool IsAppFocusLost();
 };

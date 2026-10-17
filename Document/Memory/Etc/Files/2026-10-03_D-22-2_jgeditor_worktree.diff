@@ -1,0 +1,544 @@
+--- main/Source/Runtime/Core/Platform/Platform.h
++++ Temp/wt/dpi/Source/Runtime/Core/Platform/Platform.h
+@@ -88,4 +88,12 @@
+ 	static bool    SetClipboardText(const PString& text);
+ 	// 글자 입력 중 OS IME 조합 창 · 후보 창을 window 클라이언트 픽셀의 caretRect(입력 커서 사각형) 옆에 띄운다(후보 창은 커서를 가리지 않게).
+ 	static void    SetImeCompositionRect(HJWHandle window, const HRect& caretRect);
++
++	// -- 화면 배율 (D-22 ②) --
++	// 프로세스를 모니터별 DPI 인식(Per-Monitor V2)으로 바꾼다. 창 좌표 · 크기가 실제 픽셀이 되고 Windows 가 창을 늘려 흐리게 그리지 않는다.
++	// 창을 하나라도 만들기 전에 부른다(프로그램 시작 코드). 안 되면(옛 Windows) 시스템 DPI 인식으로 낮춘다. 모니터별 인식이 되면 true.
++	static bool    EnableDpiAwareness();
++	// 화면 배율(1.0 = 96 DPI, 125% = 1.25). window 가 있으면 그 창이 있는 모니터 기준, 없으면 시스템(주 모니터) 기준.
++	// 프로세스가 DPI 인식이 아니면 Windows 가 늘려 주므로 늘 1.0 이다.
++	static float32 GetDpiScale(HJWHandle window = nullptr);
+ };
+\ No newline at end of file
+--- main/Source/Runtime/Core/Platform/Platform.cpp
++++ Temp/wt/dpi/Source/Runtime/Core/Platform/Platform.cpp
+@@ -390,3 +390,32 @@
+ 	::ImmReleaseContext(window, context);
+ #endif
+ }
++
++bool HPlatform::EnableDpiAwareness()
++{
++#ifdef _PLATFORM_WINDOWS
++	// 이미 정해졌으면(매니페스트 · 앞선 호출) 실패한다 — 그래도 지금 상태를 보고 돌려준다.
++	if (::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) == FALSE)
++	{
++		::SetProcessDPIAware();
++	}
++	const DPI_AWARENESS awareness = ::GetAwarenessFromDpiAwarenessContext(::GetThreadDpiAwarenessContext());
++	return awareness == DPI_AWARENESS_PER_MONITOR_AWARE;
++#else
++	return false;
++#endif
++}
++
++float32 HPlatform::GetDpiScale(HJWHandle window)
++{
++#ifdef _PLATFORM_WINDOWS
++	const UINT dpi = (window != nullptr) ? ::GetDpiForWindow(window) : ::GetDpiForSystem();
++	if (dpi == 0)
++	{
++		return 1.0f;
++	}
++	return (float32)dpi / (float32)USER_DEFAULT_SCREEN_DPI;
++#else
++	return 1.0f;
++#endif
++}
+--- main/Source/Runtime/Core/Platform/Windows/WindowsJWindow.cpp
++++ Temp/wt/dpi/Source/Runtime/Core/Platform/Windows/WindowsJWindow.cpp
+@@ -208,6 +208,15 @@
+ 	case WM_SIZE:
+ 		globalValues.WindowCallBacks->OnResize.BroadCast((uint32)LOWORD(lParam), (uint32)HIWORD(lParam));
+ 		return 0;
++	case WM_DPICHANGED:
++	{
++		// 창이 다른 배율의 모니터로 옮겨 갔다(DPI 인식 프로세스만 받는다). Windows 가 정해 준 크기 · 자리로 바꿔 보이는 크기를 유지한다.
++		// 구독자(GUI 백엔드의 글꼴 · 스타일 배율)는 위 WndProc 브로드캐스트에서 이미 받았다. 크기가 바뀌면 WM_SIZE 가 따라온다.
++		const RECT* suggested = (const RECT*)lParam;
++		::SetWindowPos(hWnd, nullptr, suggested->left, suggested->top, suggested->right - suggested->left, suggested->bottom - suggested->top,
++			SWP_NOZORDER | SWP_NOACTIVATE);
++		return 0;
++	}
+ 	case WM_DESTROY:
+ 		PostQuitMessage(0);
+ 		return 0;
+--- main/Source/Programs/JGLauncher/Main.cpp
++++ Temp/wt/dpi/Source/Programs/JGLauncher/Main.cpp
+@@ -21,6 +21,9 @@
+ 
+ int main(int argc, char** argv)
+ {
++	// 창을 만들기 전에 모니터별 DPI 인식으로(D-22 ②): 에디터 · -game 창을 실제 픽셀로 그린다(Windows 가 늘려 흐리게 하지 않음).
++	HPlatform::EnableDpiAwareness();
++
+ 	// 에디터 호스트. 게임 프로젝트의 Bin 에서 실행하면 JGEditor 가 .jgproject 의 게임 · 에디터 모듈까지 올린다.
+ 	// -game: 에디터 없이 게임만(DevOps GP-D3 · D5) — GameHost 가 창 · 게임 화면을 맡고, codeGen 은 런타임 모듈만 올린다
+ 	//        (JGBuildTool 이 쓴 Temp/CodeGen/runtime_module_info.json). 개발 중 패키지 없이 게임 화면을 볼 때 쓴다.
+--- main/Source/Editor/JGEditor/JGEditor.cpp
++++ Temp/wt/dpi/Source/Editor/JGEditor/JGEditor.cpp
+@@ -40,7 +40,10 @@
+ 	{
+ 		winArgs.Title = PString::Format("JGEditor - %s", HFileHelper::ProjectName());
+ 	}
+-	winArgs.Size = HVector2Int(1936, 1119);
++	// 기본 창 크기는 100%(96 DPI) 기준 1936x1119(클라이언트 1920x1080)다. 프로세스가 DPI 인식이면 창 크기가 실제 픽셀이므로 화면 배율을 곱한다
++	// (D-22 ②, 인식은 JGLauncher 시작 코드). 화면보다 크면 Windows 가 줄인다(인식 전과 같다).
++	const float32 dpiScale = HPlatform::GetDpiScale();
++	winArgs.Size = HVector2Int((int32)(1936.0f * dpiScale + 0.5f), (int32)(1119.0f * dpiScale + 0.5f));
+ 	_window = HPlatform::CreateJWindow(winArgs);
+ 
+ 	GCoreSystem::GetGlobalValues().MainWindow = _window.GetRawPointer();
+--- main/Source/Editor/JGEditor/Widgets/SceneViewport.h
++++ Temp/wt/dpi/Source/Editor/JGEditor/Widgets/SceneViewport.h
+@@ -39,6 +39,10 @@
+ 	bool _bPressUsedByGame[(int32)EGUIMouseButton::Count] = {};
+ 	bool _bPointerWasInside = false;
+ 
++	// 포커스를 잃은 뒤 버튼이 다 풀릴 때까지 포인터를 넘기지 않는다(FocusLost 로 누름을 취소했으므로 그 뒤 풀림은 뗌이 아니다).
++	bool _bWasFocused     = false;
++	bool _bPointerCanceled = false;
++
+ protected:
+ 	virtual PString GetTitleName() const override;
+ 	virtual void OnInitialize() override;
+@@ -57,6 +61,8 @@
+ 	// 이미지 좌표(이미지 왼쪽 위 기준 픽셀) → 뷰포트 픽셀.
+ 	HVector2 toViewport(const HVector2& imagePoint, const HVector2& imageSize) const;
+ 
++	// 창이 ImGui 포커스를 잃었거나 앱이 OS 포커스를 잃은 프레임에 FocusLost 를 넘긴다(게임 뷰포트가 누름 · 게임 UI 끌기를 취소).
++	void handleFocusLoss();
+ 	void handlePointer(PSharedPtr<PWorld> world, PSharedPtr<JGCameraComponent> camera, const HGUIImageInput& input, const HVector2& imageSize);
+ 	// 창에 포커스가 있을 때 키보드: 게임 입력란 포커스가 있으면 글자 입력, 없으면 Esc = 뒤로가기.
+ 	void handleKeyboard(const HGUIImageInput& input, const HVector2& imageSize);
+--- main/Source/Editor/JGEditor/Widgets/SceneViewport.cpp
++++ Temp/wt/dpi/Source/Editor/JGEditor/Widgets/SceneViewport.cpp
+@@ -23,12 +23,14 @@
+ 	constexpr float32 SceneViewportAspect = 16.0f / 9.0f;
+ 
+ 	// 창이 처음 뜰 때 ImGui 는 내용 크기에 창을 맞춘다. 내용(이미지) 크기를 창에서 구하므로 최소 크기가 없으면 창이 작은 채로 남는다.
+-	constexpr int32   SceneViewportMinImageWidth  = 640;
+-	constexpr int32   SceneViewportMinImageHeight = 360;
++	// 100%(96 DPI) 기준 크기다 — 화면 배율(HGUI::GetDpiScale)을 곱해 쓴다(D-22 ②).
++	constexpr float32 SceneViewportMinImageWidth  = 640.0f;
++	constexpr float32 SceneViewportMinImageHeight = 360.0f;
+ 
+ 	// 보이는 크기가 이만큼 그대로이면 렌더 텍스처를 그 크기로 다시 만든다(셰이더 두 개를 다시 컴파일하므로 창을 끄는 동안에는 하지 않는다).
+ 	constexpr float64 SceneViewportResizeSettleSeconds = 0.3;
+ 
++	// 100% 기준 마우스 1픽셀당 궤도 회전. 실제 픽셀로 받으므로 화면 배율로 나눠 같은 손 움직임에 같은 각도를 준다.
+ 	constexpr float32 SceneViewportOrbitRadiansPerPixel = 0.01f;
+ 	constexpr float32 SceneViewportZoomPerWheelStep     = 0.9f;
+ 
+@@ -193,6 +195,7 @@
+ 	// 렌더 텍스처는 크기를 바꾸면 새 객체가 된다 — 보관하지 않고 매 프레임 다시 받는다.
+ 	const HVector2 imageSize((float32)imagePixels.x, (float32)imagePixels.y);
+ 	const HGUIImageInput input = HGUI::InteractiveImage(PString("##SceneViewportImage"), _viewport->GetDisplayTexture()->GetTextureID(), imageSize);
++	handleFocusLoss();
+ 	handlePointer(world, camera, input, imageSize);
+ 	handleKeyboard(input, imageSize);
+ 
+@@ -220,10 +223,13 @@
+ 		height = (int32)floorf(availableHeight);
+ 		width  = (int32)floorf((float32)height * SceneViewportAspect + 0.5f);
+ 	}
+-	if (width < SceneViewportMinImageWidth || height < SceneViewportMinImageHeight)
++	const float32 dpiScale  = HGUI::GetDpiScale();
++	const int32   minWidth  = (int32)(SceneViewportMinImageWidth * dpiScale + 0.5f);
++	const int32   minHeight = (int32)(SceneViewportMinImageHeight * dpiScale + 0.5f);
++	if (width < minWidth || height < minHeight)
+ 	{
+-		width  = SceneViewportMinImageWidth;
+-		height = SceneViewportMinImageHeight;
++		width  = minWidth;
++		height = minHeight;
+ 	}
+ 	return HVector2Int(width, height);
+ }
+@@ -275,6 +281,16 @@
+ 		bAnyDown = bAnyDown || input.bDown[i];
+ 	}
+ 
++	// 포커스를 잃어 누름을 취소했다 — 버튼이 다 풀릴 때까지 아무것도 넘기지 않는다(풀림을 뗌으로 보내지 않는다).
++	if (_bPointerCanceled == true)
++	{
++		if (bAnyDown == true)
++		{
++			return;
++		}
++		_bPointerCanceled = false;
++	}
++
+ 	// 이동 · 벗어남: 이미지 위에 있거나 누르는 중이면 매 프레임 위치를 보낸다(게임 UI 호버 · 끌기).
+ 	if (input.bHovered || bAnyDown)
+ 	{
+@@ -335,7 +351,8 @@
+ 	const int32 right = (int32)EGUIMouseButton::Right;
+ 	if (input.bDown[right] == true && _bPressUsedByGame[right] == false && (input.MouseDelta.x != 0.0f || input.MouseDelta.y != 0.0f))
+ 	{
+-		cameraActor->AddOrbitInput(input.MouseDelta.x * SceneViewportOrbitRadiansPerPixel, input.MouseDelta.y * SceneViewportOrbitRadiansPerPixel, 1.0f);
++		const float32 radiansPerPixel = SceneViewportOrbitRadiansPerPixel / HGUI::GetDpiScale();
++		cameraActor->AddOrbitInput(input.MouseDelta.x * radiansPerPixel, input.MouseDelta.y * radiansPerPixel, 1.0f);
+ 	}
+ 	if (input.Wheel != 0.0f && bWheelUsedByGame == false)
+ 	{
+@@ -343,6 +360,39 @@
+ 	}
+ }
+ 
++void JGSceneViewport::handleFocusLoss()
++{
++	// 앱이 OS 포커스를 잃은 프레임(ImGui 가 그 프레임 끝에 키 · 마우스 버튼을 지운다) 또는 이 창이 ImGui 포커스를 잃은 프레임.
++	const bool bFocused         = HGUI::IsWindowFocused();
++	const bool bAppFocusLost    = HGUI::IsAppFocusLost();
++	const bool bWindowFocusLost = _bWasFocused == true && bFocused == false;
++	_bWasFocused = bFocused;
++	if (bAppFocusLost == false && bWindowFocusLost == false)
++	{
++		return;
++	}
++
++	// 게임 뷰포트가 누르고 있던 버튼의 누름을 취소한다(게임 UI 끌기는 "취소"로 끝난다 — GFW GP-F1c).
++	HInputEvent event;
++	event.Type      = EInputEventType::FocusLost;
++	event.Modifiers = currentModifiers();
++	_viewport->HandleInput(event);
++
++	bool bAnyPressed = false;
++	for (int32 i = 0; i < (int32)EGUIMouseButton::Count; ++i)
++	{
++		bAnyPressed = bAnyPressed || _bPointerWasDown[i];
++		_bPointerWasDown[i]  = false;
++		_bPressUsedByGame[i] = false;
++	}
++	_bPointerWasInside = false;
++	_bPointerCanceled  = true;
++	if (bAnyPressed == true)
++	{
++		JG_LOG(JGEditor, ELogLevel::Info, "SceneViewport focus lost (%s): press canceled", bAppFocusLost ? "app" : "window");
++	}
++}
++
+ void JGSceneViewport::describeLeftClick(PSharedPtr<PWorld> world, const HVector2& normalizedPoint, const HVector2& viewportPoint, EGameViewportInputTarget target)
+ {
+ 	PString result;
+--- main/Source/Editor/JGEditor/Widgets/GameplayDevView.cpp
++++ Temp/wt/dpi/Source/Editor/JGEditor/Widgets/GameplayDevView.cpp
+@@ -303,7 +303,7 @@
+ 		return;
+ 	}
+ 
+-	const float32 listHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f);
++	const float32 listHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f * HGUI::GetDpiScale());   // 최소 높이는 100% 기준 — 화면 배율을 곱한다(D-22 ②)
+ 	HGUI::BeginChild("##DevViewEntityList", HVector2(0.0f, listHeight));
+ 	for (uint64 i = 0; i < _cachedEntityIds.size(); ++i)
+ 	{
+@@ -317,7 +317,7 @@
+ 
+ 	if (_cachedComponents.Empty() == false)
+ 	{
+-		const float32 valueHeight = HMath::Max(_contentSize.y * 0.3f, 100.0f);
++		const float32 valueHeight = HMath::Max(_contentSize.y * 0.3f, 100.0f * HGUI::GetDpiScale());
+ 		HGUI::Text(PString::Format("Selected %s", _selectedEntity.ToString()));
+ 		HGUI::BeginChild("##DevViewEntityValues", HVector2(0.0f, valueHeight));
+ 		HGUI::Text(_cachedComponents);
+@@ -332,7 +332,7 @@
+ 		return;
+ 	}
+ 
+-	const float32 logHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f);
++	const float32 logHeight = HMath::Max(_contentSize.y * 0.25f, 80.0f * HGUI::GetDpiScale());
+ 	HGUI::BeginChild("##DevViewEventLog", HVector2(0.0f, logHeight));
+ 	for (const PString& line : _eventLog)
+ 	{
+--- main/Source/Editor/JGEditor/Widgets/DataTableEditor.cpp
++++ Temp/wt/dpi/Source/Editor/JGEditor/Widgets/DataTableEditor.cpp
+@@ -15,6 +15,12 @@
+ 	constexpr float32 IssueListHeight    = 120.0f;
+ 	constexpr int64   FileCheckInterval  = 1000;   // ms
+ 
++	// 위 크기와 아래 고정 픽셀 값은 100%(96 DPI) 기준이다 — 화면 배율을 곱해 쓴다(D-22 ②, 매 프레임 읽는다).
++	float32 scaled(float32 inPixels)
++	{
++		return inPixels * HGUI::GetDpiScale();
++	}
++
+ 	int64 nowMs()
+ 	{
+ 		return (int64)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+@@ -358,9 +364,9 @@
+ 	{
+ 		if (inColumn == 0)
+ 		{
+-			return 140.0f;
++			return scaled(140.0f);
+ 		}
+-		return defaultColumnWidth(GetContent().Schema.Columns[inColumn - 1].Type);
++		return scaled(defaultColumnWidth(GetContent().Schema.Columns[inColumn - 1].Type));
+ 	}
+ 
+ 	virtual PString GetRowLabel(int32 inRow) const override
+@@ -1102,13 +1108,13 @@
+ 
+ 	HGUI::AlignTextToFramePadding();
+ 	HGUI::Text("Name");
+-	HGUI::SameLineAt(80.0f);
+-	HGUI::InputTextWithHint("NewColumnName", "column name", NewColumnName, 220.0f);
++	HGUI::SameLineAt(scaled(80.0f));
++	HGUI::InputTextWithHint("NewColumnName", "column name", NewColumnName, scaled(220.0f));
+ 
+ 	HGUI::AlignTextToFramePadding();
+ 	HGUI::Text("Type");
+-	HGUI::SameLineAt(80.0f);
+-	if (HGUI::BeginCombo("NewColumnType", DataTableColumnTypeToString((EDataTableColumnType)NewColumnType), 220.0f))
++	HGUI::SameLineAt(scaled(80.0f));
++	if (HGUI::BeginCombo("NewColumnType", DataTableColumnTypeToString((EDataTableColumnType)NewColumnType), scaled(220.0f)))
+ 	{
+ 		for (int32 t = 0; t < (int32)EDataTableColumnType::Count; ++t)
+ 		{
+@@ -1125,7 +1131,7 @@
+ 		HGUI::Text(NewColumnError, errorColor());
+ 	}
+ 
+-	if (HGUI::Button("Add", HVector2(100.0f, 0.0f)))
++	if (HGUI::Button("Add", HVector2(scaled(100.0f), 0.0f)))
+ 	{
+ 		const PString name = trimmedCopy(NewColumnName);
+ 		PString reason;
+@@ -1144,7 +1150,7 @@
+ 		}
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
++	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
+ 	{
+ 		HGUI::CloseCurrentPopup();
+ 	}
+@@ -1314,7 +1320,7 @@
+ 		return;
+ 	}
+ 
+-	const float32 labelWidth = 90.0f;
++	const float32 labelWidth = scaled(90.0f);
+ 	const float32 fieldWidth = -1.0f;
+ 	auto field = [&](const char* inLabel, const char* inId, PString& value, const char* inHint)
+ 	{
+@@ -1334,7 +1340,7 @@
+ 		HGUI::Separator();
+ 		field("Name", "PendingKeyColumn", PendingKeyColumn, "Id");
+ 		HGUI::TextWrapped("Rows are found by this key. Keys must be unique and have no spaces.");
+-		if (HGUI::Button("Apply", HVector2(90.0f, 0.0f)))
++		if (HGUI::Button("Apply", HVector2(scaled(90.0f), 0.0f)))
+ 		{
+ 			ApplyPending();
+ 		}
+@@ -1403,13 +1409,13 @@
+ 	}
+ 
+ 	HGUI::Spacing();
+-	if (HGUI::Button("Apply", HVector2(90.0f, 0.0f)))
++	if (HGUI::Button("Apply", HVector2(scaled(90.0f), 0.0f)))
+ 	{
+ 		ApplyPending();
+ 	}
+ 	HGUI::SameLine();
+ 	HGUI::BeginDisabled(bPendingEdited == false);
+-	if (HGUI::Button("Revert", HVector2(90.0f, 0.0f)))
++	if (HGUI::Button("Revert", HVector2(scaled(90.0f), 0.0f)))
+ 	{
+ 		LoadPending(true);
+ 	}
+@@ -1417,17 +1423,17 @@
+ 
+ 	HGUI::Spacing();
+ 	HGUI::Separator();
+-	if (HGUI::Button("< Move", HVector2(70.0f, 0.0f)))
++	if (HGUI::Button("< Move", HVector2(scaled(70.0f), 0.0f)))
+ 	{
+ 		MoveColumn(SelectedGridColumn, -1);
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Move >", HVector2(70.0f, 0.0f)))
++	if (HGUI::Button("Move >", HVector2(scaled(70.0f), 0.0f)))
+ 	{
+ 		MoveColumn(SelectedGridColumn, 1);
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Delete", HVector2(70.0f, 0.0f)))
++	if (HGUI::Button("Delete", HVector2(scaled(70.0f), 0.0f)))
+ 	{
+ 		DeleteColumn(SelectedGridColumn);
+ 	}
+@@ -1706,7 +1712,7 @@
+ 
+ void JGDataTableEditor::drawToolbar(HDataTableEditorTab* activeTab)
+ {
+-	if (HGUI::BeginCombo("DataTableOpen", "Open table...", 240.0f))
++	if (HGUI::BeginCombo("DataTableOpen", "Open table...", scaled(240.0f)))
+ 	{
+ 		HList<HDataTableAssetEntry> tables;
+ 		GetLoadedDataTables(tables);
+@@ -1787,7 +1793,7 @@
+ 			HGUI::SetKeyboardFocusHere();
+ 			activeTab->bFocusFilterRequest = false;
+ 		}
+-		HGUI::InputTextWithHint("DataTableFilter", "Filter (Ctrl+F)", activeTab->Filter, 220.0f);
++		HGUI::InputTextWithHint("DataTableFilter", "Filter (Ctrl+F)", activeTab->Filter, scaled(220.0f));
+ 		if (activeTab->ViewSortColumn >= 0)
+ 		{
+ 			HGUI::SameLine();
+@@ -1845,13 +1851,13 @@
+ 
+ 	const HVector2 available = HGUI::GetContentRegionAvail();
+ 	const float32 statusHeight = HGUI::GetFrameHeightWithSpacing();
+-	const float32 issuesHeight = IssueListHeight;
++	const float32 issuesHeight = scaled(IssueListHeight);
+ 	const bool    bShowPanel   = tab.SelectedGridColumn >= 0;
+-	const float32 gridWidth    = bShowPanel ? available.x - ColumnPanelWidth - 8.0f : available.x;
++	const float32 gridWidth    = bShowPanel ? available.x - scaled(ColumnPanelWidth) - scaled(8.0f) : available.x;
+ 	float32       gridHeight   = available.y - issuesHeight - statusHeight - HGUI::GetFrameHeightWithSpacing();
+-	if (gridHeight < 120.0f)
++	if (gridHeight < scaled(120.0f))
+ 	{
+-		gridHeight = 120.0f;
++		gridHeight = scaled(120.0f);
+ 	}
+ 
+ 	HList<HGUIGridEvent> events;
+@@ -1862,7 +1868,7 @@
+ 	if (bShowPanel)
+ 	{
+ 		HGUI::SameLine();
+-		HGUI::BeginChild("##DataTableColumnPanel", HVector2(ColumnPanelWidth, gridHeight));
++		HGUI::BeginChild("##DataTableColumnPanel", HVector2(scaled(ColumnPanelWidth), gridHeight));
+ 		tab.DrawColumnPanel();
+ 		if (HGUI::Button("Close panel", HVector2(-1.0f, 0.0f)))
+ 		{
+@@ -1901,8 +1907,8 @@
+ 
+ 	HGUI::AlignTextToFramePadding();
+ 	HGUI::Text("Content");
+-	HGUI::SameLineAt(110.0f);
+-	if (HGUI::BeginCombo("NewTableContent", _newTableContent, 260.0f))
++	HGUI::SameLineAt(scaled(110.0f));
++	if (HGUI::BeginCombo("NewTableContent", _newTableContent, scaled(260.0f)))
+ 	{
+ 		if (HFileHelper::GameContentDirectory().Empty() == false && HGUI::Selectable(JG_ASSET_GAME_PATH_RECOGNITION_TOEKN, DataTableSameText(_newTableContent, JG_ASSET_GAME_PATH_RECOGNITION_TOEKN)))
+ 		{
+@@ -1917,13 +1923,13 @@
+ 
+ 	HGUI::AlignTextToFramePadding();
+ 	HGUI::Text("Path");
+-	HGUI::SameLineAt(110.0f);
+-	HGUI::InputTextWithHint("NewTablePath", "Data/MyTable", _newTablePath, 260.0f);
++	HGUI::SameLineAt(scaled(110.0f));
++	HGUI::InputTextWithHint("NewTablePath", "Data/MyTable", _newTablePath, scaled(260.0f));
+ 
+ 	HGUI::AlignTextToFramePadding();
+ 	HGUI::Text("Key column");
+-	HGUI::SameLineAt(110.0f);
+-	HGUI::InputTextWithHint("NewTableKeyColumn", "Id", _newTableKeyColumn, 260.0f);
++	HGUI::SameLineAt(scaled(110.0f));
++	HGUI::InputTextWithHint("NewTableKeyColumn", "Id", _newTableKeyColumn, scaled(260.0f));
+ 
+ 	HGUI::Text("ASCII letters, digits, _ - / only (file paths are narrow-character).", mutedColor());
+ 	if (_newTableError.Empty() == false)
+@@ -1931,7 +1937,7 @@
+ 		HGUI::Text(_newTableError, errorColor());
+ 	}
+ 
+-	if (HGUI::Button("Create", HVector2(110.0f, 0.0f)))
++	if (HGUI::Button("Create", HVector2(scaled(110.0f), 0.0f)))
+ 	{
+ 		PString tokenPath;
+ 		PString error;
+@@ -1971,7 +1977,7 @@
+ 		}
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Cancel", HVector2(110.0f, 0.0f)))
++	if (HGUI::Button("Cancel", HVector2(scaled(110.0f), 0.0f)))
+ 	{
+ 		HGUI::CloseCurrentPopup();
+ 	}
+@@ -1999,7 +2005,7 @@
+ 	}
+ 
+ 	HGUI::Text(PString::Format("%s has unsaved changes.", tab->Document->GetTokenPath()));
+-	if (HGUI::Button("Save and close", HVector2(130.0f, 0.0f)))
++	if (HGUI::Button("Save and close", HVector2(scaled(130.0f), 0.0f)))
+ 	{
+ 		if (saveTab(*tab, true))
+ 		{
+@@ -2008,13 +2014,13 @@
+ 		HGUI::CloseCurrentPopup();
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Discard", HVector2(100.0f, 0.0f)))
++	if (HGUI::Button("Discard", HVector2(scaled(100.0f), 0.0f)))
+ 	{
+ 		removeTab(tab);
+ 		HGUI::CloseCurrentPopup();
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
++	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
+ 	{
+ 		_closeRequest = nullptr;
+ 		HGUI::CloseCurrentPopup();
+@@ -2057,7 +2063,7 @@
+ 		}
+ 	}
+ 	HGUI::Text("Add them as columns first (+ Column) to keep the values.", mutedColor());
+-	if (HGUI::Button("Save anyway", HVector2(120.0f, 0.0f)))
++	if (HGUI::Button("Save anyway", HVector2(scaled(120.0f), 0.0f)))
+ 	{
+ 		tab->bDropConfirmed = true;
+ 		saveTab(*tab, true);
+@@ -2065,7 +2071,7 @@
+ 		HGUI::CloseCurrentPopup();
+ 	}
+ 	HGUI::SameLine();
+-	if (HGUI::Button("Cancel", HVector2(100.0f, 0.0f)))
++	if (HGUI::Button("Cancel", HVector2(scaled(100.0f), 0.0f)))
+ 	{
+ 		_saveConfirm = nullptr;
+ 		HGUI::CloseCurrentPopup();
+--- main/Source/Editor/JGEditor/Widgets/SessionLobby.cpp
++++ Temp/wt/dpi/Source/Editor/JGEditor/Widgets/SessionLobby.cpp
+@@ -10,7 +10,7 @@
+ 
+ namespace
+ {
+-	constexpr float32 LobbyFieldWidth = 140.0f;
++	constexpr float32 LobbyFieldWidth = 140.0f;   // 100%(96 DPI) 기준 — 쓸 때 화면 배율을 곱한다(D-22 ②)
+ 
+ 	const char* netModeText(EGameplayNetMode mode)
+ 	{
+@@ -63,7 +63,7 @@
+ 		HGUI::AlignTextToFramePadding();
+ 		HGUI::Text(label);
+ 		HGUI::SameLine();
+-		HGUI::InputTextWithHint(id, hint, value, LobbyFieldWidth);
++		HGUI::InputTextWithHint(id, hint, value, LobbyFieldWidth * HGUI::GetDpiScale());
+ 	}
+ 
+ 	// 쓸 수 없는 버튼도 같은 자리에 그린다(흐리게). 눌렸는지만 돌려준다.
+@@ -230,10 +230,10 @@
+ 
+ 	if (HGUI::BeginTable("SessionLobbySlots", 4) == true)
+ 	{
+-		HGUI::TableSetupColumn("Slot", 70.0f);
++		HGUI::TableSetupColumn("Slot", 70.0f * HGUI::GetDpiScale());
+ 		HGUI::TableSetupColumn("Name");
+-		HGUI::TableSetupColumn("Connected", 90.0f);
+-		HGUI::TableSetupColumn("Controls", 120.0f);
++		HGUI::TableSetupColumn("Connected", 90.0f * HGUI::GetDpiScale());
++		HGUI::TableSetupColumn("Controls", 120.0f * HGUI::GetDpiScale());
+ 		HGUI::TableHeadersRow();
+ 
+ 		for (const HGameplayPlayerSlot& slot : slots)

@@ -20,38 +20,65 @@
 
 namespace
 {
-	// 에디터 기본 글꼴(ProggyClean)에 한글을 합친다(GUI BL-3). 데이터 테이블 칸 · 설명 같은 에디터 글에 한글이 나온다.
-	// 엔진 Content/Fonts/EditorKorean.ttf 가 있으면 그것, 없으면 시스템 맑은 고딕. 둘 다 없으면 영문만(경고 한 줄).
-	// 한글 음절 11,172자가 아틀라스에 들어간다 — 큰 글꼴(숫자용)에는 합치지 않는다.
-	void AddKoreanGlyphsToDefaultFont()
+	// 에디터 한글 글꼴(GUI BL-3): 엔진 Content/Fonts/EditorKorean.ttf 가 있으면 그것, 없으면 시스템 맑은 고딕. 둘 다 없으면 빈 글.
+	PString FindEditorKoreanFont()
 	{
-		ImGuiIO& io = ImGui::GetIO();
-
 		PString contentFont;
 		HFileHelper::CombinePath(HFileHelper::EngineContentDirectory(), "Fonts/EditorKorean.ttf", &contentFont);
-		const PString systemFont = "C:/Windows/Fonts/malgun.ttf";
-
-		PString fontPath;
 		if (HFileHelper::Exists(contentFont))
 		{
-			fontPath = contentFont;
+			return contentFont;
 		}
-		else if (HFileHelper::Exists(systemFont))
+		const PString systemFont = "C:/Windows/Fonts/malgun.ttf";
+		if (HFileHelper::Exists(systemFont))
 		{
-			fontPath = systemFont;
+			return systemFont;
 		}
-		if (fontPath.Empty())
+		return PString();
+	}
+
+	// 에디터 글꼴을 화면 배율 크기로 넣는다. 순서 = EGUIFont(0 = 기본, 1 = 큰 글꼴 — 숫자용이라 한글을 합치지 않는다).
+	// 정수 배율(100% · 200%)은 ProggyClean(픽셀 글꼴 — 정수 배만 선명) 13 · 26 × 배율 + 기본 글꼴에 한글 14 × 배율.
+	// 정수가 아니면(125% · 150%) ProggyClean 이 번지므로 한글 글꼴(벡터) 하나로 13 · 26 × 배율(줄 높이는 ProggyClean 과 같다).
+	// 한글이 없으면 영문만(경고 한 줄). 한글 음절 11,172자가 아틀라스에 들어간다.
+	void AddEditorFonts(float32 scale)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		const PString koreanFont = FindEditorKoreanFont();
+		if (koreanFont.Empty())
 		{
-			JG_LOG(GUI, ELogLevel::Warning, "Korean font not found (Content/Fonts/EditorKorean.ttf, %s). Editor text shows Latin only", systemFont);
+			JG_LOG(GUI, ELogLevel::Warning, "Korean font not found (Content/Fonts/EditorKorean.ttf, C:/Windows/Fonts/malgun.ttf). Editor text shows Latin only");
+		}
+
+		const bool bIntegerScale = HMath::Abs(scale - (float32)HMath::RoundToInt(scale)) < 0.01f;
+		if (bIntegerScale || koreanFont.Empty())
+		{
+			ImFontConfig baseConfig;
+			baseConfig.SizePixels = 13.0f * scale;
+			io.Fonts->AddFontDefault(&baseConfig);
+			if (koreanFont.Empty() == false)
+			{
+				ImFontConfig koreanConfig;
+				koreanConfig.MergeMode   = true;
+				koreanConfig.PixelSnapH  = true;
+				koreanConfig.OversampleH = 1;
+				koreanConfig.OversampleV = 1;
+				io.Fonts->AddFontFromFileTTF(koreanFont.GetCStr(), 14.0f * scale, &koreanConfig, io.Fonts->GetGlyphRangesKorean());
+			}
+			ImFontConfig largeConfig;
+			largeConfig.SizePixels = 26.0f * scale;
+			io.Fonts->AddFontDefault(&largeConfig);
 			return;
 		}
 
-		ImFontConfig config;
-		config.MergeMode   = true;
-		config.PixelSnapH  = true;
-		config.OversampleH = 1;
-		config.OversampleV = 1;
-		io.Fonts->AddFontFromFileTTF(fontPath.GetCStr(), 14.0f, &config, io.Fonts->GetGlyphRangesKorean());
+		ImFontConfig baseConfig;
+		baseConfig.PixelSnapH  = true;
+		baseConfig.OversampleH = 1;
+		baseConfig.OversampleV = 1;
+		io.Fonts->AddFontFromFileTTF(koreanFont.GetCStr(), 13.0f * scale, &baseConfig, io.Fonts->GetGlyphRangesKorean());
+		ImFontConfig largeConfig;
+		largeConfig.PixelSnapH = true;
+		io.Fonts->AddFontFromFileTTF(koreanFont.GetCStr(), 26.0f * scale, &largeConfig, io.Fonts->GetGlyphRangesDefault());
 	}
 
 	PSharedPtr<PDirectX12API> findDX12API()
@@ -82,13 +109,6 @@ void PDX12GUIBackend::Initialize()
 	ImPlot::CreateContext();
 
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
-//	io.Fonts->AddFontFromFileTTF("../../Source/Font/Consolas.ttf", 16.0f);
-	// 글꼴 순서 = EGUIFont (HGUI::PushFont). 0 = 기본(ProggyClean 13px), 1 = 큰 글꼴(같은 글꼴 26px — 픽셀 글꼴이라 정수 배만 선명하다)
-	io.Fonts->AddFontDefault();
-	AddKoreanGlyphsToDefaultFont();
-	ImFontConfig LargeFontConfig;
-	LargeFontConfig.SizePixels = 26.0f;
-	io.Fonts->AddFontDefault(&LargeFontConfig);
 	ImGui::StyleColorsDark();
 
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
@@ -101,11 +121,17 @@ void PDX12GUIBackend::Initialize()
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
+	BaseStyle = style;
 
+	// 화면 배율(D-22 ②): 주 창이 있는 모니터 기준(프로세스가 DPI 인식이 아니면 1.0 — Windows 가 창을 늘린다).
+	// 글꼴(EGUIFont 순서, HGUI::PushFont)과 스타일 크기를 이 배율로 만든다.
 	HCoreSystemGlobalValues& globalValues = GCoreSystem::GetGlobalValues();
+	ApplyDpiScale(HPlatform::GetDpiScale((HJWHandle)globalValues.MainWindow->GetHandle()));
+	const char* EditorFontName = (io.Fonts->ConfigData.Size > 0) ? io.Fonts->ConfigData[0].Name : "-";
+	JG_LOG(GUI, ELogLevel::Info, "GUI DPI scale %.2f (editor font %s)", DpiScale, PString(EditorFontName));
 #ifdef _PLATFORM_WINDOWS
 	globalValues.WindowCallBacks->WndProc.AddSP(SharedWrap(this), &PDX12GUIBackend::OnWndProc);
-	globalValues.WindowCallBacks->OnResize.AddSP(SharedWrap(this), &PDX12GUIBackend::OnResize);
+	// 스왑체인 크기 변경은 Graphics 모듈이 창 OnResize 로 직접 한다(GP-G1). ImGui 표시 크기는 imgui_impl_win32 가 매 프레임 클라이언트 크기를 읽는다.
 
 	ImGui_ImplWin32_Init((void*)globalValues.MainWindow->GetHandle());
 #endif
@@ -153,6 +179,27 @@ uint64 PDX12GUIBackend::GPUAllocate(TextureID textureID)
 
 void PDX12GUIBackend::NewFrame()
 {
+	// 주 창이 배율이 다른 모니터로 옮겨 갔다(WM_DPICHANGED): 프레임 밖인 지금 글꼴 아틀라스 · 스타일을 다시 만든다.
+	if (PendingDpiScale > 0.0f)
+	{
+		const float32 NewScale = PendingDpiScale;
+		PendingDpiScale = 0.0f;
+		if (HMath::Abs(NewScale - DpiScale) > 0.001f)
+		{
+			// 앞 프레임이 GPU 에서 옛 글꼴 텍스처를 아직 읽고 있을 수 있다 — 끝나기를 기다린 뒤 놓는다(모니터를 옮길 때만).
+			PSharedPtr<PDirectX12API> IdleAPI = findDX12API();
+			if (IdleAPI.IsValid())
+			{
+				IdleAPI->WaitForGPUIdle();
+			}
+			const float32 OldScale = DpiScale;
+			ApplyDpiScale(NewScale);
+			// 다음 ImGui_ImplDX12_NewFrame 이 새 아틀라스로 글꼴 텍스처 · PSO 를 다시 만든다.
+			ImGui_ImplDX12_InvalidateDeviceObjects();
+			JG_LOG(GUI, ELogLevel::Info, "GUI DPI scale %.2f -> %.2f: fonts and style rebuilt", OldScale, NewScale);
+		}
+	}
+
 	// 프레임 파이프라이닝(5-5): 앞 프레임의 GUI 드로우가 GPU에서 아직 이 힙의 슬롯을 읽고 있을 수 있다.
 	// 프레임 인덱스마다 다른 구간을 써서 그 프레임이 끝나기 전에는 덮지 않는다. (NewFrame은 그래픽 BeginFrame의 펜스 대기 뒤에 불린다)
 	uint32 framesInFlight = 1;
@@ -248,6 +295,20 @@ void PDX12GUIBackend::OnUpdate(HDX12CommandList* cmdList, HDX12Resource* backBuf
 	CurrentSrvIndex = SrvRegionStart;
 }
 
+void PDX12GUIBackend::ApplyDpiScale(float32 Scale)
+{
+	DpiScale = Scale;
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.Fonts->Clear();
+	AddEditorFonts(Scale);
+
+	// ScaleAllSizes 는 곱하기라 배율을 바꿀 때마다 배율 전 스타일에서 다시 곱한다(테두리 두께는 그대로).
+	ImGuiStyle& Style = ImGui::GetStyle();
+	Style = BaseStyle;
+	Style.ScaleAllSizes(Scale);
+}
+
 void PDX12GUIBackend::OnPresent()
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -258,28 +319,14 @@ void PDX12GUIBackend::OnPresent()
 	}
 }
 
-void PDX12GUIBackend::OnResize(uint32 inWidth, uint32 inHeight)
-{
-	PSharedPtr<PJGGraphicsAPI> GraphicsAPI;
-	if (HJGGraphicsModule* GraphicsModule = GModuleGlobalSystem::GetInstance().FindModule<HJGGraphicsModule>())
-	{
-		GraphicsAPI = GraphicsModule->GetGraphicsAPI();
-	}
-	JG_CHECK(GraphicsAPI.IsValid());
-
-	PSharedPtr<PDirectX12API> DX12API = Cast<PDirectX12API>(GraphicsAPI);
-	JG_CHECK(DX12API.IsValid());
-
-	HCoreSystemGlobalValues& GlobalValues = GCoreSystem::GetGlobalValues();
-	HVector2Int ClientSize = GlobalValues.MainWindow->GetClientSize();
-
-	PSharedPtr<PDX12FrameBuffer> FrameBuffer = DX12API->GetFrameBuffer();
-	FrameBuffer->Resize(ClientSize.x, ClientSize.y);
-}
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void PDX12GUIBackend::OnWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (msg == WM_DPICHANGED)
+	{
+		// 주 창이 배율이 다른 모니터로 옮겨 갔다(DPI 인식 프로세스만 받는다). 아틀라스는 프레임 밖에서만 바꿀 수 있어 다음 NewFrame 에서.
+		PendingDpiScale = (float32)HIWORD(wParam) / (float32)USER_DEFAULT_SCREEN_DPI;
+	}
 	ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 }
 

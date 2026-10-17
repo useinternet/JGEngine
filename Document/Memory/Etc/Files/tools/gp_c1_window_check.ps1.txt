@@ -1,0 +1,63 @@
+param(
+    [string]$BinDir,
+    [string]$OutFile,
+    [string]$Mode = "windowed",
+    [int]$Seconds = 20
+)
+# GP-C1 real window check: JGConsole input.selftest -window opens "JGInputCheck" and prints every OnInput event.
+# This script posts Win32 input messages to that window only (PostMessageW, no SendKeys, no foreground change).
+$ErrorActionPreference = "Stop"
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class GPC1 {
+    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowW(IntPtr cls, string title);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool PostMessageW(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT p);
+}
+"@
+
+function MakeLParam([int]$x, [int]$y) { return [IntPtr](([int64]($y -band 0xFFFF) -shl 16) -bor ([int64]($x -band 0xFFFF))) }
+function Post([uint32]$msg, [int64]$w, [int64]$l) { [GPC1]::PostMessageW($script:hwnd, $msg, [IntPtr]$w, [IntPtr]$l) | Out-Null; Start-Sleep -Milliseconds 60 }
+
+$args2 = @("input.selftest", "-window=$Seconds", "-mode=$Mode")
+$proc = Start-Process -FilePath (Join-Path $BinDir "JGConsole.exe") -ArgumentList $args2 -WorkingDirectory $BinDir -RedirectStandardOutput $OutFile -PassThru -WindowStyle Hidden
+$script:hwnd = [IntPtr]::Zero
+for ($i = 0; $i -lt 100; $i++) {
+    Start-Sleep -Milliseconds 100
+    $script:hwnd = [GPC1]::FindWindowW([IntPtr]::Zero, "JGInputCheck")
+    if ($script:hwnd -ne [IntPtr]::Zero) { break }
+}
+if ($script:hwnd -eq [IntPtr]::Zero) { Write-Output "window not found"; $proc.Kill(); exit 2 }
+Write-Output "window $($script:hwnd)"
+Start-Sleep -Milliseconds 500
+
+$WM_MOUSEMOVE = 0x0200; $WM_LBUTTONDOWN = 0x0201; $WM_LBUTTONUP = 0x0202; $WM_RBUTTONDOWN = 0x0204; $WM_RBUTTONUP = 0x0205
+$WM_MOUSEWHEEL = 0x020A; $WM_MOUSELEAVE = 0x02A3; $WM_KEYDOWN = 0x0100; $WM_KEYUP = 0x0101; $WM_CHAR = 0x0102; $WM_CLOSE = 0x0010
+
+Post $WM_MOUSEMOVE 0 (MakeLParam 100 120)
+Post $WM_LBUTTONDOWN 1 (MakeLParam 100 120)
+Post $WM_MOUSEMOVE 1 (MakeLParam -30 50)            # pointer outside while the button is held
+Post $WM_MOUSELEAVE 0 0                             # ignored while held
+Post $WM_LBUTTONUP 0 (MakeLParam -30 50)
+Post $WM_RBUTTONDOWN 2 (MakeLParam 200 210)
+Post $WM_RBUTTONUP 0 (MakeLParam 200 210)
+$pt = New-Object GPC1+POINT; $pt.X = 10; $pt.Y = 20; [GPC1]::ClientToScreen($script:hwnd, [ref]$pt) | Out-Null
+Post $WM_MOUSEWHEEL ([int64](120 -shl 16)) (MakeLParam $pt.X $pt.Y)   # screen coordinates -> expect client (10, 20)
+Post $WM_KEYDOWN 0x41 0x001E0001
+Post $WM_KEYDOWN 0x41 0x401E0001                    # repeat bit
+Post $WM_KEYUP 0x41 0xC01E0001
+Post $WM_CHAR 0x61 1                                # 'a'
+Post $WM_CHAR 0xD64D 1                              # Hangul committed text (IME result arrives as WM_CHAR)
+Post $WM_CHAR 0xAE38 1
+Post $WM_CHAR 0xB3D9 1
+Post $WM_CHAR 0xD83D 1                              # surrogate pair -> U+1F600
+Post $WM_CHAR 0xDE00 1
+Post $WM_CHAR 0x08 1                                # control character: no Char event
+Post $WM_MOUSELEAVE 0 0                             # leave (no button held)
+Start-Sleep -Milliseconds 300
+Post $WM_CLOSE 0 0
+if (-not $proc.WaitForExit(15000)) { Write-Output "timeout"; $proc.Kill(); exit 3 }
+Write-Output "exit $($proc.ExitCode)"
+exit 0

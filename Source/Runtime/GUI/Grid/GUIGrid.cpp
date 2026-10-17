@@ -1,5 +1,6 @@
 #include "PCH/PCH.h"
 #include "Grid/GUIGrid.h"
+#include "GUI.h"
 #include "Imgui/imgui.h"
 #include "Imgui/imgui_internal.h"
 
@@ -8,6 +9,12 @@ namespace
 	constexpr float32 RowLabelColumnWidth = 48.0f;
 	constexpr float32 DefaultColumnWidth  = 120.0f;
 	constexpr float32 CellPaddingX        = 4.0f;
+
+	// 96 DPI 기준 픽셀 → 지금 화면 배율의 픽셀(D-22 ②)
+	float32 scaledPx(float32 pixels)
+	{
+		return pixels * HGUI::GetDpiScale();
+	}
 
 	const ImU32 ErrorBorderColor = IM_COL32(235, 87, 87, 255);
 
@@ -255,12 +262,12 @@ void PGUIGrid::Draw(const PString& inId, const IGUIGridSource& inSource, const H
 	{
 		// 행 번호 칸 + 열 0(키 열) + 머리 행을 고정한다
 		ImGui::TableSetupScrollFreeze(2, 1);
-		ImGui::TableSetupColumn("##row", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoResize, RowLabelColumnWidth);
+		ImGui::TableSetupColumn("##row", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoHide | ImGuiTableColumnFlags_NoResize, scaledPx(RowLabelColumnWidth));
 		for (int32 c = 0; c < columnCount; ++c)
 		{
 			const float32 width = inSource.GetColumnWidth(c);
 			const ImGuiTableColumnFlags columnFlags = ImGuiTableColumnFlags_WidthFixed | ((c == 0) ? ImGuiTableColumnFlags_NoHide : ImGuiTableColumnFlags_None);
-			ImGui::TableSetupColumn(inSource.GetColumnHeader(c).GetCStr(), columnFlags, (width > 0.0f) ? width : DefaultColumnWidth);
+			ImGui::TableSetupColumn(inSource.GetColumnHeader(c).GetCStr(), columnFlags, (width > 0.0f) ? width : scaledPx(DefaultColumnWidth));
 		}
 
 		drawHeader(inSource, rowCount, columnCount, rowHeight, outEvents);
@@ -406,7 +413,7 @@ void PGUIGrid::drawRowLabel(const IGUIGridSource& inSource, int32 inRow, int32 i
 
 	const PString label = inSource.GetRowLabel(inRow);
 	const ImVec2 textSize = ImGui::CalcTextSize(label.GetCStr());
-	const ImVec2 textPosition(cellMin.x + width - textSize.x - CellPaddingX, cellMin.y + (inRowHeight - textSize.y) * 0.5f);
+	const ImVec2 textPosition(cellMin.x + width - textSize.x - scaledPx(CellPaddingX), cellMin.y + (inRowHeight - textSize.y) * 0.5f);
 	ImGui::GetWindowDrawList()->AddText(textPosition, ImGui::GetColorU32(ImGuiCol_TextDisabled), label.GetCStr());
 }
 
@@ -521,9 +528,9 @@ void PGUIGrid::drawCell(const IGUIGridSource& inSource, int32 inRow, int32 inCol
 	if (editor == EGUIGridEditor::Checkbox)
 	{
 		const float32 boxSize = ImGui::GetFontSize();
-		const ImVec2 boxMin(cellMin.x + CellPaddingX, cellMin.y + (inRowHeight - boxSize) * 0.5f);
+		const ImVec2 boxMin(cellMin.x + scaledPx(CellPaddingX), cellMin.y + (inRowHeight - boxSize) * 0.5f);
 		const ImVec2 boxMax(boxMin.x + boxSize, boxMin.y + boxSize);
-		drawList->AddRect(boxMin, boxMax, textColor, 2.0f);
+		drawList->AddRect(boxMin, boxMax, textColor, scaledPx(2.0f));
 		if (cell.bChecked)
 		{
 			ImGui::RenderCheckMark(drawList, ImVec2(boxMin.x + boxSize * 0.15f, boxMin.y + boxSize * 0.15f), textColor, boxSize * 0.7f);
@@ -539,7 +546,7 @@ void PGUIGrid::drawCell(const IGUIGridSource& inSource, int32 inRow, int32 inCol
 		}
 
 		const ImVec2 textSize = ImGui::CalcTextSize(text.c_str());
-		const float32 textX = cell.bAlignRight ? (cellMax.x - textSize.x - CellPaddingX) : (cellMin.x + CellPaddingX);
+		const float32 textX = cell.bAlignRight ? (cellMax.x - textSize.x - scaledPx(CellPaddingX)) : (cellMin.x + scaledPx(CellPaddingX));
 		drawList->PushClipRect(cellMin, cellMax, true);
 		drawList->AddText(ImVec2(textX, cellMin.y + (inRowHeight - textSize.y) * 0.5f), textColor, text.c_str());
 		drawList->PopClipRect();
@@ -612,7 +619,8 @@ void PGUIGrid::drawCombo(const IGUIGridSource& inSource, HList<HGUIGridEvent>& o
 		return;
 	}
 
-	ImGui::SetNextWindowSizeConstraints(ImVec2((_focusCellWidth > 220.0f) ? _focusCellWidth : 220.0f, 0.0f), ImVec2(FLT_MAX, 360.0f));
+	const float32 minComboWidth = scaledPx(220.0f);
+	ImGui::SetNextWindowSizeConstraints(ImVec2((_focusCellWidth > minComboWidth) ? _focusCellWidth : minComboWidth, 0.0f), ImVec2(FLT_MAX, scaledPx(360.0f)));
 	if (ImGui::BeginPopup("##gridcombo") == false)
 	{
 		// 바깥을 눌러 닫혔다
