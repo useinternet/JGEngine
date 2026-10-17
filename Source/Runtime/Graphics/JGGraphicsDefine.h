@@ -486,7 +486,7 @@ struct H2DDrawCommand
 };
 
 // 화면 공간 2D 삼각형 배치(게임 UI 등). 정점 · 인덱스 · 명령은 호출 동안만 읽는다.
-// 알파 블렌드, 깊이 · 컬링 없음. 셰이더는 엔진 내장(Source/Shader/draw2d.hlsl).
+// 알파 블렌드, 깊이 · 컬링 없음. 셰이더는 엔진 내장(Content/Shaders/draw2d.hlsl).
 struct H2DDrawArguments
 {
 	const H2DVertex*      Vertices     = nullptr;

@@ -1,0 +1,51 @@
+공용 캡처 스크립트 경로 수정 — 검증 기록 (Graphics, 2026-10-11 00:0x)
+=====================================================================
+요청: 사용자 대시보드 명령(2026-10-11 00:01) "지금 진행해줘" → 엔진 총괄 전달.
+대상: Document/Memory/tools/capture_devscene.ps1 (공용 도구 — Graphics · GUI · DevConsole · DevOps 가 씀)
+
+문제
+- 옛 PC 경로 C:\JG\JGEngine 이 세 곳에 박혀 있었다: 기본 -OutPath(3줄, 게다가 09-17 증적 파일 이름
+  Document\Memory\2026-09-17_phase4_capture.png), 런처 $exe(24줄), 작업 폴더 $workDir(25줄).
+  → 저장소가 C:\Develop\JGEngine 인 이 PC 에서는 Start-Process 에서 바로 실패했다(09-30 발견, 진행현황 6절 리스크).
+
+바꾼 것 (스크립트 한 파일)
+- 저장소 위치 = $PSScriptRoot(<저장소>\Document\Memory\tools)의 세 단계 위. 런처 = <저장소>\Bin\DevelopEngine\JGLauncher.exe.
+- -WorkDir 인자 추가(기본 <저장소>\Bin\DevelopEngine = 예전과 같은 동작 — jg_log.txt 를 Bin 에서 읽는 기존 절차 그대로).
+  다른 폴더를 주면 imgui.ini · jg_log.txt · DevScene 리드백 PNG 가 그 폴더 것을 쓴다 → 메인 imgui.ini(사용자 창 배치)를
+  건드리지 않고 DevScene(JGDevFeature=1)을 열 수 있다.
+- 기본 -OutPath = <저장소>\Temp\Capture\devscene_capture.png(git 무시 폴더, 매번 덮어씀). 옛 기본값은 문서 폴더의 09-17 증적
+  파일을 덮어쓰는 이름이었다. 저장 폴더가 없으면 만든다. 상대 경로 -OutPath · -WorkDir 는 지금 폴더 기준으로 푼다.
+- 런처 · 작업 폴더가 없으면 경로를 찍고 종료 코드 1(예전엔 Start-Process 예외). 시작할 때 런처 · 작업 폴더 경로를 찍는다.
+- 머리 주석: 쓰는 법 · 인자 · 종료 코드 · MainTree.cmd 로 감싸는 법(지침서 3절).
+- 파일을 UTF-8 BOM 으로 저장: 예전 파일(BOM 없음)은 Windows PowerShell 5.1 이 CP949 로 읽어 한글 주석이 깨져 읽혔다
+  (파서가 읽은 주석 속 한글 음절: 옛 파일 22, 새 파일 316). 출력 문구는 영어 그대로라 동작에는 영향 없었음.
+- 캡처 · 종료 절차(창 찾기 · 대기 · PrintWindow · WM_CLOSE · 종료 코드 2~5)는 그대로.
+
+검증 (메인 Bin, Build\BatchFiles\MainTree.cmd -name=Graphics exec … — 지침서 3절)
+작업 폴더 Temp\GPTest 에 HEAD 의 imgui.ini(도킹 배치) + [JGWidget][Open] JGDevFeature=1 → 메인 Bin\DevelopEngine\imgui.ini 는
+두 실행 전후 md5 90a1c2bb151ac9c728beb7e13b76d9b7 그대로.
+
+ 1) 00:09:07  exec capture_devscene.ps1 -WaitSeconds 25 -WorkDir C:\Develop\JGEngine\Temp\GPTest   (-OutPath 기본값)
+    Launcher C:\Develop\JGEngine\Bin\DevelopEngine\JGLauncher.exe     ← $PSScriptRoot 기준으로 찾음
+    WorkDir  C:\Develop\JGEngine\Temp\GPTest
+    Window rect: 154,154 1936x1119
+    Saved C:\Develop\JGEngine\Temp\Capture\devscene_capture.png       ← 기본 저장 폴더를 만들어 저장
+    ExitCode 0   (MainTree: exit 0 after 27s)
+    캡처: 에디터 메뉴바 · DevFeature 창 · X Bot(씬 뷰) 정상 → 2026-10-11_capture_devscene_capture.png
+    로그: Start Collect Shader in (../../Content/Shaders) · Layout: reopened JGDevFeature · PSO 3 ·
+          리드백 Scene 중앙 0.174 / Albedo 65,587 px · 중앙 255, 리드백 PNG 2장이 메인 Bin 의 것과 같은 내용,
+          D3D12 DebugLayer 0 · [error]/[critical] 0 · Memory Chunk Shutdown live blocks 0(2/2).
+          경고는 기존 2줄뿐(NOT Support Asset Path, ReadbackTextureImmediate called inside a frame).
+
+ 2) 00:10:08  exec capture_devscene.ps1 -WaitSeconds 15 -WorkDir Temp\GPTest -OutPath Temp\Capture\relative_test.png
+    (상대 경로 — 저장소 루트에서 실행) → WorkDir C:\Develop\JGEngine\Temp\GPTest, Saved C:\Develop\JGEngine\Temp\Capture\relative_test.png,
+    ExitCode 0, D3D12 0 · 오류 0 · live 0. 로그 2026-10-11_capture_devscene_jg_log.txt 는 이 실행의 것(1번 로그는 같은 폴더라 덮어씀).
+
+ MainTree 기록(Temp\MainTree\history.log):
+    2026-10-11 00:09:35 | Graphics | exec capture_devscene.ps1 -WaitSeconds 25 -WorkDir C:\Develop\JGEngine\Temp\GPTest | waited 1s | ran 27s | exit 0
+    2026-10-11 00:10:25 | Graphics | exec capture_devscene.ps1 -WaitSeconds 15 -WorkDir Temp\GPTest -OutPath Temp\Capture\... | waited 0s | ran 17s | exit 0
+
+하지 않은 것
+- 기본 작업 폴더(메인 Bin)로 실행하는 확인 — 메인 imgui.ini 를 읽고 다시 저장하므로 하지 않았다. 기본 작업 폴더 = 런처를 찾은 같은
+  저장소 위치 + Bin\DevelopEngine.
+- 다른 트랙 문서(GUI 1-10 선행 조건 등) 수정 — 담당 세션 몫.

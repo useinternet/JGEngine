@@ -46,11 +46,20 @@ void HJGGraphicsModule::StartupModule()
 	GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::GraphicsBegin, PTaskDelegate::CreateRaw(this, &HJGGraphicsModule::BeginFrame));
 	GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::GraphicsEnd, PTaskDelegate::CreateRaw(this, &HJGGraphicsModule::EndFrame));
 
+	// 스왑체인 크기는 Graphics 가 직접 맞춘다. (전에는 GUI 백엔드가 했다 — GUI 없는 호스트에서는 창을 바꿔도 그대로였다)
+	_windowResizeHandle = globalValues.WindowCallBacks->OnResize.AddRaw(this, &HJGGraphicsModule::OnWindowResize);
+
 	JG_LOG(Graphics, ELogLevel::Trace, "Startup Graphics Module...");
 }
 
 void HJGGraphicsModule::ShutdownModule()
 {
+	// 런처 종료(GCoreSystem::Destroy)는 창 콜백을 먼저 지운 뒤 모듈을 내린다. 그때는 뺄 구독도 없다.
+	HCoreSystemGlobalValues& globalValues = GCoreSystem::GetGlobalValues();
+	if (globalValues.WindowCallBacks != nullptr)
+	{
+		globalValues.WindowCallBacks->OnResize.Remove(_windowResizeHandle);
+	}
 	GCoreSystem::GetInstance().UnRegisterSystemInstance<GShaderLibrary>();
 	if (_graphicsAPI != nullptr)
 	{
@@ -79,6 +88,16 @@ void HJGGraphicsModule::EndFrame()
 	}
 
 	_graphicsAPI->EndFrame();
+}
+
+void HJGGraphicsModule::OnWindowResize(uint32 inWidth, uint32 inHeight)
+{
+	if (_graphicsAPI == nullptr)
+	{
+		return;
+	}
+
+	_graphicsAPI->OnWindowResized(inWidth, inHeight);
 }
 
 PSharedPtr<PJGGraphicsAPI> HJGGraphicsModule::GetGraphicsAPI() const

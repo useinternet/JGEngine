@@ -1,0 +1,286 @@
+diff --git a/Source/Editor/JGEditor/JGEditor.cpp b/Source/Editor/JGEditor/JGEditor.cpp
+index fbd7021..1867f28 100644
+--- a/Source/Editor/JGEditor/JGEditor.cpp
++++ b/Source/Editor/JGEditor/JGEditor.cpp
+@@ -10,6 +10,8 @@
+ #include "Widgets/SceneViewport.h"
+ #include "Widgets/GameplayDevView.h"
+ #include "Widgets/DataTableEditor.h"
++#include "JGGraphics.h"   // [GPTEST-TEMP]
++#include <chrono>         // [GPTEST-TEMP]
+ 
+ #ifdef _PLATFORM_WINDOWS
+ #include "Platform/Windows/WindowsJWindow.h"
+@@ -21,6 +23,60 @@ namespace
+ {
+ 	// 에디터가 쓰는 엔진 모듈. 연결은 이 순서, 종료는 역순이다(JGDev_Graphics 에서 옮긴 순서 그대로).
+ 	const char* const EDITOR_ENGINE_MODULES[] = { "Graphics", "GUI", "Asset", "DevStatistics", "DevConsole", "Devkit" };
++
++	// [GPTEST-TEMP] GP-G1 검증: JG_GPTEST_NOGUI=1 이면 GUI 없이 Graphics · Asset 만 연결한다(worktree 전용, 메인에 넣지 않음)
++	const char* const GPTEST_NOGUI_MODULES[] = { "Graphics", "Asset" };
++	bool isGPTestNoGUI()
++	{
++		char value[8] = {};
++		size_t valueLength = 0;
++		return getenv_s(&valueLength, value, sizeof(value), "JG_GPTEST_NOGUI") == 0 && valueLength > 1;
++	}
++
++	// [GPTEST-TEMP] GP-G3 검증: GUI 없이 2초 쉬고 VSync 끔 3초 → 켬 3초 → 끔 3초 동안 fps 를 로그로 남긴다
++	struct HGPTestNoGUIFps
++	{
++		int32 Phase    = -1;   // -1 = 준비(2초), 0 끔, 1 켬, 2 끔, 3 끝
++		int32 Frames   = 0;
++		bool  bStarted = false;
++		std::chrono::steady_clock::time_point Start;
++	};
++	HGPTestNoGUIFps GGPTestFps;
++
++	void gpTestNoGUITick()
++	{
++		HGPTestNoGUIFps& state = GGPTestFps;
++		if (state.Phase >= 3)
++		{
++			return;
++		}
++
++		const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
++		if (state.bStarted == false)
++		{
++			state.bStarted = true;
++			state.Start    = now;
++			state.Frames   = 0;
++			GetGraphicsAPI().SetVSyncEnabled(state.Phase == 1);
++			return;
++		}
++
++		++state.Frames;
++		const float64 elapsed = std::chrono::duration<float64>(now - state.Start).count();
++		const float64 phaseSeconds = (state.Phase < 0) ? 2.0 : 3.0;
++		if (elapsed < phaseSeconds)
++		{
++			return;
++		}
++
++		if (state.Phase >= 0)
++		{
++			JG_LOG(JGEditor, ELogLevel::Info, "GPTEST : nogui fps %.1f over %.1f s (VSync %s)", (float64)state.Frames / elapsed, elapsed,
++				PString(GetGraphicsAPI().IsVSyncEnabled() ? "on" : "off"));
++		}
++		++state.Phase;
++		state.bStarted = false;
++	}
+ }
+ 
+ JGType HJGEditorModule::GetModuleType() const
+@@ -41,6 +97,21 @@ void HJGEditorModule::StartupModule()
+ 
+ 	GCoreSystem::GetGlobalValues().MainWindow = _window.GetRawPointer();
+ 
++	if (isGPTestNoGUI())   // [GPTEST-TEMP]
++	{
++		for (const char* moduleName : GPTEST_NOGUI_MODULES)
++		{
++			GModuleGlobalSystem::GetInstance().ConnectModule(moduleName);
++		}
++		JG_LOG(JGEditor, ELogLevel::Info, "GPTEST : started without GUI (Graphics, Asset only)");
++		GGPTestFps = HGPTestNoGUIFps();
++		GScheduleGlobalSystem::GetInstance().ScheduleByFrame(EMainThreadExecutionOrder::Update, PTaskDelegate::CreateLambda([]()
++			{
++				gpTestNoGUITick();
++			}));
++		return;
++	}
++
+ 	for (const char* moduleName : EDITOR_ENGINE_MODULES)
+ 	{
+ 		if (GModuleGlobalSystem::GetInstance().ConnectModule(moduleName) == false)
+@@ -63,6 +134,15 @@ void HJGEditorModule::ShutdownModule()
+ 
+ 	_window = nullptr;
+ 
++	if (isGPTestNoGUI())   // [GPTEST-TEMP]
++	{
++		for (int32 i = (int32)std::size(GPTEST_NOGUI_MODULES) - 1; i >= 0; --i)
++		{
++			GModuleGlobalSystem::GetInstance().DisconnectModule(GPTEST_NOGUI_MODULES[i]);
++		}
++		return;
++	}
++
+ 	const int32 numEngineModules = (int32)std::size(EDITOR_ENGINE_MODULES);
+ 	for (int32 i = numEngineModules - 1; i >= 0; --i)
+ 	{
+diff --git a/Source/Runtime/Devkit/DevScene.cpp b/Source/Runtime/Devkit/DevScene.cpp
+index 3d30fd5..07a963c 100644
+--- a/Source/Runtime/Devkit/DevScene.cpp
++++ b/Source/Runtime/Devkit/DevScene.cpp
+@@ -128,6 +128,137 @@ namespace
+ 	}
+ }
+ 
++// [GPTEST-TEMP begin] D-23 GP-G2 · G3 검증용 임시 코드 (worktree 전용, 메인에 넣지 않음). JG_GPTEST=1 로 켠다, JG_GPTEST_VSYNC=1 이면 VSync
++#include <chrono>
++#include "Platform/JWindow.h"
++namespace
++{
++	struct HGPTestState
++	{
++		bool  bActive = false;
++		int32 Frame   = 0;
++		PSharedPtr<IRawTexture> SubmitTexture;
++		std::chrono::steady_clock::time_point FpsStart;
++		int32 FpsFrames = 0;
++		bool  bFpsDone  = false;
++	};
++	HGPTestState GGPTest;
++
++	bool gpTestEnv(const char* inName)
++	{
++		char value[8] = {};
++		size_t valueLength = 0;
++		return getenv_s(&valueLength, value, sizeof(value), inName) == 0 && valueLength > 1;
++	}
++
++	void gpTestLogReadback(const char* inLabel, PSharedPtr<IRawTexture> inTexture)
++	{
++		HTexturePixels pixels;
++		if (inTexture == nullptr || GetGraphicsAPI().ReadbackTextureImmediate(inTexture, pixels) == false || pixels.IsValid() == false)
++		{
++			JG_LOG(Devkit, ELogLevel::Error, "GPTEST : %s readback failed", PString(inLabel));
++			return;
++		}
++
++		if (pixels.Format == ETextureFormat::R16G16B16A16_Float)
++		{
++			const uint16* center = (const uint16*)pixels.GetPixel(pixels.Width / 2, pixels.Height / 2);
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : %s %dx%d (FP16) center (%.3f, %.3f, %.3f, %.3f)", PString(inLabel),
++				(int32)pixels.Width, (int32)pixels.Height, halfToFloat(center[0]), halfToFloat(center[1]), halfToFloat(center[2]), halfToFloat(center[3]));
++		}
++		else
++		{
++			const uint8* center = pixels.GetPixel(pixels.Width / 2, pixels.Height / 2);
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : %s %dx%d (8bit) center (%d, %d, %d, %d)", PString(inLabel),
++				(int32)pixels.Width, (int32)pixels.Height, (int32)center[0], (int32)center[1], (int32)center[2], (int32)center[3]);
++		}
++	}
++
++	void gpTestUpdate(PSharedPtr<PSceneRenderer> inRenderer)
++	{
++		if (GGPTest.bActive == false || inRenderer == nullptr)
++		{
++			return;
++		}
++
++		++GGPTest.Frame;
++		const int32 frame = GGPTest.Frame;
++		if (frame == 40)
++		{
++			const bool bResized = inRenderer->Resize(1280, 720);
++			const HTextureInfo& info = inRenderer->GetDisplayTexture()->GetTextureInfo();
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : Resize(1280, 720) -> %s, display texture %dx%d, renderer %dx%d", PString(bResized ? "true" : "false"),
++				(int32)info.Width, (int32)info.Height, (int32)inRenderer->GetWidth(), (int32)inRenderer->GetHeight());
++		}
++		else if (frame == 50)
++		{
++			gpTestLogReadback("display after resize", inRenderer->GetDisplayTexture());
++			gpTestLogReadback("output after resize", inRenderer->GetOutputTexture());
++			const bool bSame = inRenderer->Resize(1280, 720);
++			const bool bZero = inRenderer->Resize(0, 720);
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : Resize(same) -> %s, Resize(0, 720) -> %s, renderer %dx%d", PString(bSame ? "true" : "false"),
++				PString(bZero ? "true" : "false"), (int32)inRenderer->GetWidth(), (int32)inRenderer->GetHeight());
++		}
++		else if (frame == 55)
++		{
++			// 백 버퍼(클라이언트 크기)와 다른 1280x720 을 제출 → 복사를 건너뛰고 로그 한 번(D3D 오류 없어야 함)
++			GetGraphicsAPI().SubmitFinalTexture(inRenderer->GetDisplayTexture());
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : submitted mismatched texture (1280x720)");
++		}
++		else if (frame == 60)
++		{
++			// 클라이언트 크기와 같은 텍스처 → 매 프레임 백 버퍼로 복사된다(GUI 가 덮지 않은 곳이 파랗게)
++			const HVector2Int clientSize = GCoreSystem::GetGlobalValues().MainWindow->GetClientSize();
++			HTextureInfo info;
++			info.Name       = "GPTest_Submit";
++			info.Width      = (uint32)clientSize.x;
++			info.Height     = (uint32)clientSize.y;
++			info.Format     = ETextureFormat::R8G8B8A8_Unorm;
++			info.Flags      = ETextureFlags::Allow_RenderTarget;
++			info.MipLevel   = 1;
++			info.ArraySize  = 1;
++			info.ClearColor = HLinearColor(0.1f, 0.3f, 0.8f, 1.0f);
++			GGPTest.SubmitTexture = GetGraphicsAPI().CreateRawTexture(info);
++			GetGraphicsAPI().GetGraphicsCommand()->ClearTexture(GGPTest.SubmitTexture);
++			GetGraphicsAPI().SubmitFinalTexture(GGPTest.SubmitTexture);
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : submitted matching texture (%dx%d)", (int32)info.Width, (int32)info.Height);
++		}
++		else if (frame == 90)
++		{
++			GetGraphicsAPI().SubmitFinalTexture(nullptr);
++			GGPTest.SubmitTexture = nullptr;
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : submit cleared");
++		}
++		else if (frame == 95)
++		{
++			const bool bResized = inRenderer->Resize(1920, 1080);
++			JG_LOG(Devkit, ELogLevel::Info, "GPTEST : Resize(1920, 1080) -> %s", PString(bResized ? "true" : "false"));
++		}
++		else if (frame == 105)
++		{
++			gpTestLogReadback("display after resize back", inRenderer->GetDisplayTexture());
++			gpTestLogReadback("output after resize back", inRenderer->GetOutputTexture());
++		}
++		else if (frame == 120)
++		{
++			GGPTest.FpsStart  = std::chrono::steady_clock::now();
++			GGPTest.FpsFrames = 0;
++		}
++		else if (frame > 120 && GGPTest.bFpsDone == false)
++		{
++			++GGPTest.FpsFrames;
++			const float64 elapsed = std::chrono::duration<float64>(std::chrono::steady_clock::now() - GGPTest.FpsStart).count();
++			if (elapsed >= 3.0)
++			{
++				GGPTest.bFpsDone = true;
++				JG_LOG(Devkit, ELogLevel::Info, "GPTEST : fps %.1f over %.1f s (VSync %s)", (float64)GGPTest.FpsFrames / elapsed, elapsed,
++					PString(GetGraphicsAPI().IsVSyncEnabled() ? "on" : "off"));
++			}
++		}
++	}
++}
++// [GPTEST-TEMP end]
++
+ void JGDevScene::OnInitialize()
+ {
+ 	FramesSinceMeshLoaded = 0;
+@@ -143,10 +274,19 @@ void JGDevScene::OnInitialize()
+ 	Camera = Scene->CreateCamera(camera);
+ 
+ 	RequestMeshLoad();
++
++	// [GPTEST-TEMP]
++	GGPTest = HGPTestState();
++	GGPTest.bActive = gpTestEnv("JG_GPTEST");
++	if (gpTestEnv("JG_GPTEST_VSYNC"))
++	{
++		GetGraphicsAPI().SetVSyncEnabled(true);
++	}
+ }
+ 
+ void JGDevScene::OnShutdown()
+ {
++	GGPTest = HGPTestState();   // [GPTEST-TEMP]
+ 	Mesh     = nullptr;
+ 	Renderer = nullptr;
+ 	Scene    = nullptr;
+@@ -179,6 +319,11 @@ void JGDevScene::OnUpdate()
+ 			DumpReadbackOnce();
+ 		}
+ 	}
++
++	if (MeshInstance.IsValid())   // [GPTEST-TEMP]
++	{
++		gpTestUpdate(Renderer);
++	}
+ }
+ 
+ void JGDevScene::OnGenerateGUI()

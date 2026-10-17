@@ -249,6 +249,27 @@ void PDirectX12API::SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture)
 	GetFrameBuffer()->SubmitTexture(inTexture);
 }
 
+void PDirectX12API::OnWindowResized(uint32 inWidth, uint32 inHeight)
+{
+	if (_frameBuffer != nullptr)
+	{
+		_frameBuffer->Resize(inWidth, inHeight);
+	}
+}
+
+void PDirectX12API::SetVSyncEnabled(bool inEnabled)
+{
+	if (_frameBuffer != nullptr)
+	{
+		_frameBuffer->SetVSyncEnabled(inEnabled);
+	}
+}
+
+bool PDirectX12API::IsVSyncEnabled() const
+{
+	return (_frameBuffer != nullptr) ? _frameBuffer->IsVSyncEnabled() : false;
+}
+
 PSharedPtr<IJGGraphicsCommand> PDirectX12API::GetGraphicsCommand() const
 {
 	PSharedPtr<PDX12GraphicsCommand> command = Allocate<PDX12GraphicsCommand>();
@@ -331,13 +352,18 @@ void PDirectX12API::DestroyCommittedResource(HDX12ComPtr<HDX12Resource> resource
 		return;
 	}
 
-	PResourceStateTracker::UnRegisterResource(resource.Get());
-
 	// 프레임 파이프라이닝(5-5): 앞서 제출한 프레임이 GPU에서 아직 이 리소스를 쓰고 있을 수 있다.
 	// 커맨드 리스트는 정점/인덱스 버퍼와 텍스처 바인딩에 참조를 남기지 않으므로, 모든 해제가 지나는 이곳에서 그 프레임이 끝날 때까지 참조를 들고 있는다.
+	// 상태 추적 등록도 그때까지 남긴다(5-33): 아직 제출하지 않은 리스트 — 콘솔 명령처럼 End() 뒤에 기록해 다음 End() 에 제출되는 것 포함 — 의
+	// 보류 배리어가 이 리소스의 이전 상태를 찾아야 한다. 여기서는 "소유자가 놓음"만 표시하고 등록 해제는 미룬 해제가 한다.
 	if (_commandQueue != nullptr)
 	{
+		PResourceStateTracker::ReleaseResource(resource.Get());
 		_commandQueue->DeferRelease(resource);
+	}
+	else
+	{
+		PResourceStateTracker::UnRegisterResource(resource.Get());
 	}
 }
 

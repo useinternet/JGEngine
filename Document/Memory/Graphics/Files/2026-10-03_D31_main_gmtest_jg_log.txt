@@ -1,0 +1,124 @@
+[:36452:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 8641446074776419327. pages are created on first request
+[:36452:][info][Core]: Active Thread: [673323787]
+[:36452:][info][Core]: Active Thread: [604560880]
+[:36452:][info][Core]: Active Thread: [2824319381]
+[:36452:][info][Core]: Active Thread: [2328770400]
+[:36452:][info][Core]: Active Thread: [992603564]
+[:36452:][info][Core]: Active Thread: [3441757248]
+[:36452:][info][Core]: Active Thread: [1049983887]
+[:36452:][info][Core]: Active Thread: [2278672676]
+[:36452:][info][Core]: Active Thread: [2991295124]
+[:36452:][info][Core]: Active Thread: [4066008148]
+[:36452:][info][Core]: Active Thread: [2345479058]
+[:36452:][info][Core]: Active Thread: [3392337786]
+[:36452:][info][Core]: Active Thread: [1065727326]
+[:36452:][info][Core]: Active Thread: [237220328]
+[:36452:][info][Core]: Active Thread: [3623274265]
+[:36452:][info][Core]: Active Thread: [1309976827]
+[:36452:][info][Core]: Active Thread: [911568952]
+[:36452:][info][Core]: Active Thread: [40692471]
+[:36452:][info][Core]: Active Thread: [3415050780]
+[:36452:][info][Core]: Active Thread: [842806045]
+[:36452:][info][Core]: Active Thread: [2595263329]
+[:36452:][info][Core]: Active Thread: [1474289533]
+[:36452:][info][Core]: Active Thread: [2681074025]
+[:36452:][info][Core]: Active Thread: [2381505074]
+[:36452:][info][Core]: Active Thread: [17509911]
+[:36452:][info][Core]: Active Thread: [555115331]
+[:36452:][info][Core]: Active Thread: [1157203227]
+[:36452:][info][Core]: Active Thread: [290007176]
+[:36452:][info][Core]: Active Thread: [3515559272]
+[:36452:][info][Core]: Active Thread: [1719034687]
+[:36452:][info][Core]: Active Thread: [2289533520]
+[:36452:][info][Core]: Active Thread: [4006434354]
+[:36452:][info][Core]: Active Thread Totoal Count: 32 
+[:36452:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:36452:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:36452:][info][Core]: Recognized Class List...
+[:36452:][debug][Core]: - JGStaticMeshComponent
+[:36452:][debug][Core]: - JGGameplayEntityComponent
+[:36452:][debug][Core]: - JGAssetImporter
+[:36452:][debug][Core]: - JGGameplayEffect
+[:36452:][debug][Core]: - JGGameplayDevView
+[:36452:][debug][Core]: - JGMemoryStatistcs
+[:36452:][debug][Core]: - JGGameplayEntityActor
+[:36452:][debug][Core]: - JGDevConsole
+[:36452:][debug][Core]: - JGSceneViewport
+[:36452:][debug][Core]: - JGDataTableEditor
+[:36452:][debug][Core]: - JGSessionLobby
+[:36452:][debug][Core]: - JGAsset
+[:36452:][debug][Core]: - JGDevFeature
+[:36452:][debug][Core]: - JGDevScene
+[:36452:][debug][Core]: - JGDevSettings
+[:36452:][debug][Core]: - JGActor
+[:36452:][debug][Core]: - JGCameraComponent
+[:36452:][debug][Core]: - JGCameraActor
+[:36452:][debug][Core]: - JGGameEntryActor
+[:36452:][debug][Core]: - JGPickShapeComponent
+[:36452:][debug][Core]: - JGGameMasterActor
+[:36452:][debug][Core]: - JGGameplayControllerActor
+[:36452:][debug][Core]: - JGGameplayCue
+[:36452:][debug][Core]: - JGActorComponent
+[:36452:][debug][Core]: - JGGameInstance
+[:36452:][debug][Core]: - JGWidget
+[:36452:][debug][Core]: - JGDataTable
+[:36452:][debug][Core]: - JGGameplayCommandHandler
+[:36452:][debug][Core]: - JGGameplayModifier
+[:36452:][debug][Core]: - JGGameplayTrigger
+[:36452:][debug][Core]: - JGGameWidget
+[:36452:][debug][Core]: - JGStaticMesh
+[:36452:][debug][Core]: - JGTexture
+[:36452:][debug][Core]: - JGFBXAssetImporter
+[:36452:][debug][Core]: - JGWidgetComponent
+[:36452:][info][GameFrameWorks]: GameFrameWorks module startup
+[:36452:][info][ConsoleCommand]: > gmtest
+[:36452:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.88 MB)
+[:36452:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:36452:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.00 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+[:36452:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.12 MB)
+[:36452:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.19 MB)
+[:36452:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 1.25 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 3 pages (93 blocks, growth #2, chunk committed 1.31 MB)
+[:36452:][info][Memory]: [ID: 0] class 4096 B grew to 4 pages (60 blocks, growth #3, chunk committed 1.38 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 4 pages (124 blocks, growth #3, chunk committed 1.44 MB)
+[:36452:][warning][GameMaster]: PGameMaster::Undo: disabled while a network session is bound
+[:36452:][error][GameMaster]: PGameplayRuleEngine: RequestChoice(TestAskInHandler) outside an effect Resolve is rejected. Enqueue an effect that requests it
+[:36452:][info][Memory]: [ID: 0] class 16 B grew to 3 pages (6138 blocks, growth #2, chunk committed 1.50 MB)
+[:36452:][info][Memory]: [ID: 0] class 4096 B grew to 5 pages (75 blocks, growth #4, chunk committed 1.72 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 5 pages (155 blocks, growth #4, chunk committed 1.78 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 6 pages (186 blocks, growth #5, chunk committed 1.84 MB)
+[:36452:][info][Memory]: [ID: 0] class 16 B grew to 4 pages (8184 blocks, growth #3, chunk committed 1.91 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 7 pages (217 blocks, growth #6, chunk committed 1.97 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 8 pages (248 blocks, growth #7, chunk committed 2.03 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 9 pages (279 blocks, growth #8, chunk committed 2.09 MB)
+[:36452:][info][Memory]: [ID: 0] class 16 B grew to 5 pages (10230 blocks, growth #4, chunk committed 2.16 MB)
+[:36452:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.22 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 10 pages (310 blocks, growth #9, chunk committed 2.28 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 11 pages (341 blocks, growth #10, chunk committed 2.34 MB)
+[:36452:][info][Memory]: [ID: 0] class 16 B grew to 6 pages (12276 blocks, growth #5, chunk committed 2.53 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 12 pages (372 blocks, growth #11, chunk committed 2.59 MB)
+[:36452:][info][Memory]: [ID: 0] class 128 B grew to 4 pages (1816 blocks, growth #3, chunk committed 2.66 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 13 pages (403 blocks, growth #12, chunk committed 2.72 MB)
+[:36452:][info][Memory]: [ID: 0] class 2048 B grew to 14 pages (434 blocks, growth #13, chunk committed 2.78 MB)
+[:36452:][error][GameMaster]: PGameplayRuleEngine: flow TestPhases ran 1024 steps without waiting for a command; stopped
+[:36452:][info][GameMasterSelfTest]: GameMaster self test: 120 passed, 0 failed
+[:36452:][info][GameFrameWorks]: JGGameInstance: world loaded (SelfTestWorld)
+[:36452:][info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 0)
+[:36452:][info][GameFrameWorks]: JGGameInstance: world unloaded (SelfTestWorld)
+[:36452:][info][Memory]: [ID: 0] class 512 B grew to 2 pages (248 blocks, growth #1, chunk committed 2.84 MB)
+[:36452:][info][GameFrameWorks]: PickController click: actor none / board cell (0, 3) at (0.00, 0.00, 3.00)
+[:36452:][info][WorldSelfTest]: World self test: 64 passed, 0 failed
+[:36452:][info][GameUI]: GameUI push JGGameWidget on Game (stack 1)
+[:36452:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:36452:][info][GameUI]: GameUI push JGGameWidget on Menu (stack 1)
+[:36452:][info][GameUI]: GameUI remove JGGameWidget from Menu (stack 0)
+[:36452:][info][GameUI]: GameUI back handled by JGGameWidget
+[:36452:][info][GameUI]: Font loaded : C:/Windows/Fonts/malgun.ttf
+[:36452:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:36452:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:36452:][info][GameViewportSelfTest]: GameViewport self test: 31 passed, 0 failed
+[:36452:][info][GameFrameWorks]: gmtest: OK (0 failures)
+[:36452:][info][Network]: PGameplaySession: closed (shutdown)
+[:36452:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:36452:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 45, committed 2.84 MB, live blocks 0, remote pending 0 (total 0), large live 0

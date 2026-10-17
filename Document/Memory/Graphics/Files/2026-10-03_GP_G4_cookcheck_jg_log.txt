@@ -1,0 +1,116 @@
+[:51344:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 15743356343501227373. pages are created on first request
+[:51344:][info][Core]: Active Thread: [4060160334]
+[:51344:][info][Core]: Active Thread: [963207972]
+[:51344:][info][Core]: Active Thread: [2579730749]
+[:51344:][info][Core]: Active Thread: [3351742219]
+[:51344:][info][Core]: Active Thread: [3848465115]
+[:51344:][info][Core]: Active Thread: [1708147756]
+[:51344:][info][Core]: Active Thread: [4055384250]
+[:51344:][info][Core]: Active Thread: [3032699388]
+[:51344:][info][Core]: Active Thread: [1266379092]
+[:51344:][info][Core]: Active Thread: [2833351972]
+[:51344:][info][Core]: Active Thread: [1854917020]
+[:51344:][info][Core]: Active Thread: [226672528]
+[:51344:][info][Core]: Active Thread: [3923130173]
+[:51344:][info][Core]: Active Thread: [1749238976]
+[:51344:][info][Core]: Active Thread: [885045093]
+[:51344:][info][Core]: Active Thread: [920418934]
+[:51344:][info][Core]: Active Thread: [4239327358]
+[:51344:][info][Core]: Active Thread: [4270551203]
+[:51344:][info][Core]: Active Thread: [1884312612]
+[:51344:][info][Core]: Active Thread: [1310472480]
+[:51344:][info][Core]: Active Thread: [3371479132]
+[:51344:][info][Core]: Active Thread: [2401085465]
+[:51344:][info][Core]: Active Thread: [1993175433]
+[:51344:][info][Core]: Active Thread: [3323574879]
+[:51344:][info][Core]: Active Thread: [596180464]
+[:51344:][info][Core]: Active Thread: [3218522923]
+[:51344:][info][Core]: Active Thread: [2778215131]
+[:51344:][info][Core]: Active Thread: [3873684624]
+[:51344:][info][Core]: Active Thread: [2204218477]
+[:51344:][info][Core]: Active Thread: [916268938]
+[:51344:][info][Core]: Active Thread: [3367485658]
+[:51344:][info][Core]: Active Thread: [3973071375]
+[:51344:][info][Core]: Active Thread Totoal Count: 32 
+[:51344:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:51344:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:51344:][info][Core]: Recognized Class List...
+[:51344:][debug][Core]: - JGStaticMeshComponent
+[:51344:][debug][Core]: - JGGameplayEntityComponent
+[:51344:][debug][Core]: - JGAssetImporter
+[:51344:][debug][Core]: - JGGameplayEffect
+[:51344:][debug][Core]: - JGGameplayDevView
+[:51344:][debug][Core]: - JGMemoryStatistcs
+[:51344:][debug][Core]: - JGGameplayEntityActor
+[:51344:][debug][Core]: - JGDevConsole
+[:51344:][debug][Core]: - JGSceneViewport
+[:51344:][debug][Core]: - JGDataTableEditor
+[:51344:][debug][Core]: - JGSessionLobby
+[:51344:][debug][Core]: - JGAsset
+[:51344:][debug][Core]: - JGDevFeature
+[:51344:][debug][Core]: - JGDevScene
+[:51344:][debug][Core]: - JGDevSettings
+[:51344:][debug][Core]: - JGActor
+[:51344:][debug][Core]: - JGCameraComponent
+[:51344:][debug][Core]: - JGCameraActor
+[:51344:][debug][Core]: - JGGameEntryActor
+[:51344:][debug][Core]: - JGPickShapeComponent
+[:51344:][debug][Core]: - JGGameMasterActor
+[:51344:][debug][Core]: - JGGameplayControllerActor
+[:51344:][debug][Core]: - JGGameplayCue
+[:51344:][debug][Core]: - JGActorComponent
+[:51344:][debug][Core]: - JGGameInstance
+[:51344:][debug][Core]: - JGWidget
+[:51344:][debug][Core]: - JGDataTable
+[:51344:][debug][Core]: - JGGameplayCommandHandler
+[:51344:][debug][Core]: - JGGameplayModifier
+[:51344:][debug][Core]: - JGGameplayTrigger
+[:51344:][debug][Core]: - JGGameWidget
+[:51344:][debug][Core]: - JGStaticMesh
+[:51344:][debug][Core]: - JGTexture
+[:51344:][debug][Core]: - JGFBXAssetImporter
+[:51344:][debug][Core]: - JGWidgetComponent
+[:51344:][info][GameFrameWorks]: GameFrameWorks module startup
+[:51344:][info][ConsoleCommand]: > cookcheck.selftest
+[:51344:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.81 MB)
+[:51344:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.88 MB)
+[:51344:][info][CookCheck]: cookcheck.selftest [good] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 0.94 MB)
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_asset] error   /JGGame/Data/Items.jgasset : reference '/JGGame/Meshes/Missing.jgasset' at JGObject.JGDataTable.Rows[0].Mesh and 2 more place(s) is not in the cook set
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_asset] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_texture] error   /JGGame/Meshes/Box.jgasset : reference '/JGEngine/Textures/Gone' at JGObject.JGStaticMesh.Material is not in the cook set
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_texture] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [case] error   /JGGame/Data/Items.jgasset : reference '/JGGame/meshes/box.jgasset' at JGObject.JGDataTable.Rows[0].Mesh and 2 more place(s) differs in case from '/JGGame/Meshes/Box.jgasset' (asset lookup is case-sensitive)
+[:51344:][info][CookCheck]: cookcheck.selftest [case] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_font] error   /JGGame/Data/Items.jgasset : reference '/JGEngine/Fonts/Default.ttf' at JGObject.JGDataTable.Rows[0].Font is not in the cook set
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_font] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_table] error   /JGGame/Data/Items.jgasset : reference '/JGGame/Data/Nope' at JGObject.JGDataTable.Columns[2].Table is not in the cook set
+[:51344:][info][CookCheck]: cookcheck.selftest [missing_table] warning /JGGame/Data/Items.jgasset : data table column 'Next': table '/JGGame/Data/Nope' of column 'Next' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [duplicate_guid] error   /JGGame/Meshes/Box.jgasset : GUID 3851030721-59263-16867-187-111-7-33-246-33-232-216 is also used by /JGEngine/Meshes/BoxCopy.jgasset (the asset database keeps only the first one; give the copy a new _guid)
+[:51344:][info][CookCheck]: cookcheck.selftest [duplicate_guid] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.00 MB)
+[:51344:][info][Memory]: [ID: 0] class 1024 B grew to 3 pages (186 blocks, growth #2, chunk committed 1.06 MB)
+[:51344:][info][CookCheck]: cookcheck.selftest [bad_guid] error   /JGGame/Misc/NoGuid.jgasset : JGAsset._guid is missing
+[:51344:][info][CookCheck]: cookcheck.selftest [bad_guid] error   /JGGame/Misc/TextGuid.jgasset : JGAsset._guid 'abc-def' is not a GUID
+[:51344:][info][CookCheck]: cookcheck.selftest [bad_guid] error   /JGGame/Misc/WideGuid.jgasset : JGAsset._guid '7-70000-2-3-4-5-6-7-8-9-10' is not a GUID
+[:51344:][info][CookCheck]: cookcheck.selftest [bad_guid] error   /JGGame/Misc/ZeroGuid.jgasset : JGAsset._guid '0-1-2-3-4-5-6-7-8-9-10' is not a GUID
+[:51344:][info][CookCheck]: cookcheck.selftest [bad_guid] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [format] error   /JGGame/Misc/Broken.jgasset : JSON line 4, column 1: Missing a name for object member.
+[:51344:][info][CookCheck]: cookcheck.selftest [format] error   /JGGame/Misc/NoObject.jgasset : JGObject is missing
+[:51344:][info][CookCheck]: cookcheck.selftest [format] error   /JGGame/Misc/NoType.jgasset : JGObjectType is missing
+[:51344:][info][CookCheck]: cookcheck.selftest [format] error   C:/Develop/JGEngine/Temp/CookCheckSelfTest/format/Outside/Stray.jgasset : file is outside the content mounts
+[:51344:][info][CookCheck]: cookcheck.selftest [format] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [duplicate_key] error   /JGGame/Data/Items.jgasset : data table row 2 'Item_A', key 'Id': key 'Item_A' is a duplicate of row 1
+[:51344:][info][CookCheck]: cookcheck.selftest [duplicate_key] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_A', column 'Next': row 'Other_Z' is not found
+[:51344:][error][Json]: Fail Read Json: JGObject
+[:51344:][error][DataTable]: JGDataTable load : FormatVersion 99 is newer than this build reads (1) (row -1, column -1)
+[:51344:][error][DataTable]: JGDataTable load : Columns is missing or not a list (row -1, column -1)
+[:51344:][info][CookCheck]: cookcheck.selftest [table_format] error   /JGGame/Data/Wrong.jgasset : data table: FormatVersion 99 is newer than this build reads (1)
+[:51344:][info][CookCheck]: cookcheck.selftest [table_format] error   /JGGame/Data/Wrong.jgasset : data table: Columns is missing or not a list
+[:51344:][info][CookCheck]: cookcheck.selftest [table_format] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[:51344:][info][CookCheck]: cookcheck.selftest [engine_content] 5 file(s), 0 asset(s), 0 error(s), 0 warning(s), 0 ms
+[:51344:][info][CookCheck]: cookcheck.selftest [engine_content_with_tempasset] 6 file(s), 1 asset(s), 0 error(s), 0 warning(s), 2246 ms
+[:51344:][info][CookCheck]: cookcheck.selftest: OK (26/26)
+[:51344:][info][Network]: PGameplaySession: closed (shutdown)
+[:51344:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:51344:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 17, committed 1.06 MB, live blocks 0, remote pending 0 (total 0), large live 0

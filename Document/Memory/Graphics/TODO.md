@@ -1,13 +1,13 @@
 # Graphics TODO
 
-- 갱신 2026-10-01 14:00 (5-14 출력 색 공간 (a) 8비트 sRGB 완료 · 미커밋. 5-30은 `736ddbe`로 커밋됨). 옛 TODO `Files/Graphics_TODO.md`(2026-09-16 작성, 09-29 23:49 마지막 갱신)를 코드 기준으로 통합했다. 항목 번호(Phase N-M)는 그대로 쓴다(다른 트랙 문서가 참조).
+- 갱신 2026-10-11 00:1x (공용 캡처 스크립트 경로 수정 완료 — 사용자 대시보드 명령 10-11 00:01, 미커밋. 5-33 프레임 밖 GPU 기록 방어 완료 — 사용자 결정 D-31 (가), 미커밋. 게임 빌드 파이프라인 Graphics 몫 GP-G1~G4 완료 · 미커밋. 5-14는 `efba16a`, 5-30은 `736ddbe`로 커밋됨). 옛 TODO `Files/Graphics_TODO.md`(2026-09-16 작성, 09-29 23:49 마지막 갱신)를 코드 기준으로 통합했다. 항목 번호(Phase N-M)는 그대로 쓴다(다른 트랙 문서가 참조).
 - 규칙: 항목이 끝나면 "완료 이력"으로 옮기고 근거(캡처 · 로그 · 커밋)를 적는다. 임시 검증 코드는 `git diff`로 제거를 확인한다. 커밋은 사용자가 한다. 현재 상황과 함정은 `현황.md`.
 - 원칙: 지금 구체적 문제가 있는 것만 미완료 표에 둔다. "나중에 필요할지도"는 보류 표(재검토 조건 명시).
 
 ## 다음에 할 일 (사용자 2026-09-30: 5-30 · 5-14 외 나머지는 "지금 안 함". 아래는 다음에 착수할 때의 순서)
 | 순서 | ID | 할 일 | 착수 조건 | 완료 기준 |
 |---|---|---|---|---|
-| 1 | 커밋 | 5-14 변경 커밋(사용자) | 없음 | 아래 "커밋 체크리스트 (5-14)" |
+| 1 | 커밋 | GP-G1~G4 · 5-33 · 공용 캡처 스크립트 변경 커밋(사용자). 5-14 는 `efba16a` 로 커밋됨 | 없음 | 아래 커밋 체크리스트 3개(공용 캡처 스크립트 · 5-33 · GP-G1~G4) |
 | 2 | 5-29 | FBX 머터리얼 임포트 + sRGB 텍스처 포맷 + 밉 생성 | 5-2 완료(됨). sRGB 슬롯 규칙은 D-3(10-01) 결과대로: 3D 알베도 = `_SRGB`(샘플링 때 선형으로 풀림), 노멀 · 러프니스 = 선형, 2D · UI 이미지 = UNORM 그대로 | 테스트 FBX(`Files/tools/fbx_embedded_texture/`) 임포트 → 메시 머터리얼이 텍스처 에셋을 참조 → 씬 뷰와 알베도 리드백에 텍스처 색이 보임(단색 255 아님), 밉 체인이 올라가고 리드백 · 저장이 밉을 처리, 오류 · D3D12 메시지 0, PSO 수 고정 |
 | 3 | 5-31 | 임포트 진입점 콘솔 명령 `asset.import <fbx> -out=<Content 경로>` | 콘솔 명령 시스템 완료(2026-09-30). 5-29와 순서 무관 | 런처 DevConsole에서 명령 실행 → `Content` 아래 `.jgasset` 생성, `AssetPath` 채워짐(5-20 메시 경로 확인), 다음 실행 시작 로드에서 경고 없이 로드. 메시 · 텍스처 플래그 선택 규칙 문서화 |
 | 4 | 5-32 | DevScene 창(`JGDevFeature`)을 여는 메뉴 항목 | 없음 | 메뉴에서 열고 닫을 수 있음. 지금은 imgui.ini `[JGWidget][Open]`에 `JGDevFeature=1`을 넣어야만 열린다(검증 절차가 이걸 쓴다) |
@@ -83,7 +83,7 @@
 | 5-7 | `PScene` · `HSceneCamera` · `HSceneMesh` · `PSceneRenderer`, `Camera.h` 삭제, `Scene` → `Screen` 개명 | 2026-09-29 | `Files/2026-09-29_5-7_step1_capture.png`, `Files/build_2026-09-29_5-7.log`, 리드백 PNG 바이트 동일, `Files/2026-09-29_Phase5-7_PScene_설계.md`, 커밋 `1308fd5` |
 | 5-22 | DevScene 합성 패스 · G버퍼 · 카메라를 `PSceneRenderer`/`PScene`으로 이관 | 2026-09-29 | 〃 |
 | 5-26 (1)~(3) | 버퍼 `_shadowData` 제거, CPU 사본은 `HStaticSubMesh`, `HRenderSubMesh`, `_bounds` 임포트 때 저장(`GetBounds`) | 2026-09-29 | `Files/2026-09-29_5-26_capture.png` · `5-26a_capture.png`, `Files/build_2026-09-29_5-26.log` · `_5-26_bounds.log` · `_5-26_final_devkit.log`, `Files/tools/boundstest_snippet.cpp.txt`. (1)(2)는 `1308fd5`, (3)은 `4c8ac73`(09-30 사용자 커밋) |
-| 5-23 | 메모리 풀 블록 한도(2MB `out_of_range`) | 2026-09-28 (Memory Phase 2) | `Document/Memory/Memory/Files/Memory_TODO.md` 2-1, `Document/Memory/Memory/Files/2026-09-28_memtest_phase2_results.txt` |
+| 5-23 | 메모리 풀 블록 한도(2MB `out_of_range`) | 2026-09-28 (Memory Phase 2) | `Document/Memory/Core/Files/Memory_TODO.md` 2-1, `Document/Memory/Core/Files/2026-09-28_memtest_phase2_results.txt` |
 | 5-27 | 풀 고갈이 조용히 nullptr 반환 | 2026-09-28 (Memory Phase 2) | 〃(성장형 클래스, 실패는 Critical + `abort()`) |
 | 설계 규칙 09-16 | 스마트 포인터 타입은 `IMemoryObject` 뿌리 하나(오프셋 0) | 2026-09-16 | `Files/2026-09-16_Graphics_현황분석.md` 진행 기록 19:20 |
 | 설계 규칙 09-17 | 엔진 컨테이너를 static 저장소에 두지 않음 | 2026-09-17 | `Files/2026-09-17_Phase4_Surface메시드로우.md` 버그 4 |
@@ -91,9 +91,32 @@
 | 코딩 규칙 09-21 | 조건문 본문 한 줄 금지(Allman, 탭) | 2026-09-21 | 옛 TODO 항목 |
 | 0 (회귀) | 새 PC(`C:\Develop\JGEngine`, RTX 4090 Laptop) 첫 실행 확인 | 2026-09-30 | 19:57 다른 세션의 런처 실행 로그(`Files/2026-09-30_newpc_launcher_jg_log.txt`: 오류 0 · D3D12 0 · PSO 2 · live 0, 리드백 수치 65,587 px · 255 / 0.174, PNG가 커밋된 것과 바이트 동일) + 21:1x 5-30 검증 실행(종료 코드 0). 화면 캡처만 공용 스크립트 옛 경로 문제로 못 함 |
 | 5-30 | 에셋 저장 형식: 큰 배열을 base64 문자열로(사용자 결정 (a)안). `PJsonData::AddBinaryMember/GetBinaryData/IsString`, 텍스처 `Pixels`(zlib + base64), 메시 `VertexStride` + `Vertexes` · `Indexes`(base64), 옛 형식(숫자 배열) 읽기 유지. 1024² 노이즈 73.7MB → 5.6MB, X Bot 36.2MB → 2.9MB(로드 1,215 → 278ms). (2) 저장 GPU 왕복 · D-10 재저장은 보류 표로 | 2026-09-30 | `Files/2026-09-30_Phase5-30_저장형식.md`, `Files/2026-09-30_5-30_formattest_jg_log.txt`(텍스처 · 메시 왕복 PASS, 오류 0 · D3D12 0 · PSO 2 · live 0 · 종료 0, 리드백 PNG 바이트 동일), `Files/build_2026-09-30_5-30.log`, `Files/tools/format_test_snippet.cpp.txt`. 사용자 커밋 `736ddbe`(10-01 12:16) |
-| 5-14 | 출력 색 공간 (a) 8비트 sRGB(사용자 결정 D-3, 10-01): 프레임버퍼 `R8G8B8A8_Unorm`, `PSceneRenderer` 디스플레이 패스(FP16 선형 → sRGB 인코딩 → `GetDisplayTexture()`), DevScene · SceneViewport는 디스플레이 텍스처를 보여 주고 게임 UI는 그 위에 그림, ImGui PSO 포맷 = 프레임버퍼 포맷, `HGUI::DisplayColor` · 메모리 창 `displayColor` 변환 제거, 메모리 그래프 면 알파 0.035 → 0.10. 톤매핑 곡선은 안 넣음(1.0 넘는 밝기 없음) | 2026-10-01 | `Files/2026-10-01_Phase5-14_출력색공간.md`, `Files/2026-10-01_5-14_60s_run.txt`(오류 0 · D3D12 0 · PSO 3 · live 0 · 종료 0), `Files/2026-10-01_5-14_capture.png`(창 배경 69 → 15, 메뉴 바 105 → 36, 장면 픽셀 그대로), 리드백 PNG 바이트 동일, `Files/build_2026-10-01_5-14.log`. 게임 UI(프로젝트 모드)는 게임 UI 세션이 e2e 20단계 · D3D12 0으로 확인(`GameFrameWorks/Files/2026-10-01_gameui_er_srgb514.png`). 미커밋 |
+| 5-14 | 출력 색 공간 (a) 8비트 sRGB(사용자 결정 D-3, 10-01): 프레임버퍼 `R8G8B8A8_Unorm`, `PSceneRenderer` 디스플레이 패스(FP16 선형 → sRGB 인코딩 → `GetDisplayTexture()`), DevScene · SceneViewport는 디스플레이 텍스처를 보여 주고 게임 UI는 그 위에 그림, ImGui PSO 포맷 = 프레임버퍼 포맷, `HGUI::DisplayColor` · 메모리 창 `displayColor` 변환 제거, 메모리 그래프 면 알파 0.035 → 0.10. 톤매핑 곡선은 안 넣음(1.0 넘는 밝기 없음) | 2026-10-01 | `Files/2026-10-01_Phase5-14_출력색공간.md`, `Files/2026-10-01_5-14_60s_run.txt`(오류 0 · D3D12 0 · PSO 3 · live 0 · 종료 0), `Files/2026-10-01_5-14_capture.png`(창 배경 69 → 15, 메뉴 바 105 → 36, 장면 픽셀 그대로), 리드백 PNG 바이트 동일, `Files/build_2026-10-01_5-14.log`. 게임 UI(프로젝트 모드)는 게임 UI 세션이 e2e 20단계 · D3D12 0으로 확인(`GameFrameWorks/Files/2026-10-01_gameui_er_srgb514.png`). 사용자 커밋 `efba16a`(10-01) |
+| GP-G1 | 스왑체인 크기 변경을 GUI 백엔드 → Graphics(`HJGGraphicsModule::OnWindowResize` → `PJGGraphicsAPI::OnWindowResized` → `PDX12FrameBuffer::Resize`), 0 x 0 최소화 = Present 만 건너뜀, `ResizeBuffers` 실패 로그 · 옛 크기 유지, Graphics 종료 때 창 콜백 널 검사(사용자 결정 D-23, 엔진 총괄 배정) | 2026-10-02 | GUI 없이 크기 변경 3회 · 최소화/복원 D3D12 0 · 종료 0(`Files/2026-10-02_GP_runA_nogui_jg_log.txt`), 에디터 크기 변경 정상(`Files/2026-10-02_GP_main_editor_capture.png`), 디버거 실행 DXGI · D3D12 0(`Files/2026-10-02_GP_runD_dbgevents.txt`). 미커밋 |
+| GP-G2 | `PSceneRenderer::Resize(w, h)`(같은 크기 true · 0 false · 아니면 렌더 대상 · 머터리얼 재생성). D-22 ① 의 렌더러 쪽 | 2026-10-02 | 1920x1080 → 1280x720 → 1920x1080: 크기 = 요청값, 리드백 112 · 0.163 → 116 · 0.174(원래 값), 새 PSO 없음(`Files/2026-10-02_GP_runB_editor_jg_log.txt`). 소비: GFW GP-F1b(10-03, D3D12 0). 미커밋 |
+| GP-G3 | `SubmitFinalTexture` 크기 · 포맷 가드(건너뜀 + 구간마다 Info 한 번), `SetVSyncEnabled/IsVSyncEnabled`, Alt+Enter 막힘 확인 | 2026-10-02 | VSync 켬 60.5fps · 간격 2 시험 31.6fps(`Files/2026-10-02_GP_runC_vsync_jg_log.txt` · `_runC_sync2_jg_log.txt`), 어긋난 · 맞는 제출 D3D12 0, Alt+Enter 뒤 창 사각형 그대로. 미커밋 |
+| GP-G4 | 셰이더 `Source/Shader` → `Content/Shaders`(git mv 5), `EngineShaderDirectory()` = 모든 모드 `EngineContentDirectory()/Shaders`, 주석 경로 2곳 | 2026-10-02 23:09 (회귀 10-03) | 에디터 "Start Collect Shader in (../../Content/Shaders)" 템플릿 4 · 오류 0(`Files/2026-10-02_GP_G4_main_editor_jg_log.txt`), 10-03 DevScene PSO 3 · 리드백 PNG 이동 전과 바이트 동일 · D3D12 0(`Files/2026-10-03_GP_G4_devscene_jg_log.txt`), JGConsole `cookcheck.selftest` 26/26 · 엔진 Content 5파일(`Files/2026-10-03_GP_G4_cookcheck_jg_log.txt`). 쿡 실제 실행: DevOps M2(10-03 10:1x 확인) GameUIDemo `cook.run` 86초 exit 0 — 엔진 Content 5(`Content/Shaders`) · 스모크 300프레임 exit 0(`DevOps/Files/2026-10-03_GP-D3-D6_구현_검증.txt` 35행). DevOps 가 `CookCommand.cpp` 임시 복사 코드를 지워(이제 `Content/Shaders` 가 없으면 쿠킹 실패) 코드의 `Source/Shader` 참조 0. 기록 `Files/2026-10-03_GP-G1-G4_게임빌드파이프라인_Graphics.md`. 미커밋 |
+| 5-33 | 프레임 밖 GPU 기록 방어(사용자 결정 D-31 (가), 10-03 19:31): ① 렌더러를 버려도 렌더 텍스처의 상태 기록(`PResourceStateTracker`)을 그 프레임의 GPU 작업이 끝날 때까지 남김(`ReleaseResource` 표시 → 미룬 해제가 `UnRegisterResource`) ② 프레임 밖에서 리스트를 다시 쓰기 전에 그 인덱스의 마지막 제출이 GPU 에서 끝나길 기다림(`waitForFrameReuse`). Graphics 5파일, 다른 세션 파일 0 | 2026-10-03 | GFW 장면(콘솔 명령 안 64x36 렌더러 → Render → Resize(32,18) → Render → 버림) 수정 전 D3D12 [538] 16 · [527] 12, GPU 부하에서 + [552] 2 → 수정 뒤 0(`Files/2026-10-03_D31_R*_*_jg_log.txt`), 회귀: DevScene PSO 3 · 리드백 PNG 바이트 동일 · 창 시험 · Alt+Enter · 에디터 안 / 헤드리스 `gmtest` OK · D3D12 0 · live 0(worktree · 메인 `MainTree.cmd`), 기록 `Files/2026-10-03_5-33_프레임밖GPU기록방어.md`. 미커밋 |
+| 캡처 도구 | 공용 캡처 스크립트 경로 수정(사용자 대시보드 명령 10-11 00:01, 엔진 총괄 전달): `Document/Memory/tools/capture_devscene.ps1` 의 옛 PC 경로 `C:\JG\JGEngine` 세 곳 → `$PSScriptRoot` 기준, `-WorkDir` 추가(기본 메인 `Bin\DevelopEngine` = 예전 동작), 기본 `-OutPath` = `Temp\Capture\devscene_capture.png`, 런처 · 작업 폴더 없음 = 종료 코드 1, UTF-8 BOM | 2026-10-11 | `MainTree.cmd -name=Graphics exec` 2회(작업 폴더 `Temp\GPTest` 에 `JGDevFeature=1`): 종료 0 · DevScene · X Bot 캡처 · PSO 3 · 리드백 0.174 / 65,587 px · D3D12 0 · 오류 0 · live 0, 상대 경로 인자 정상, 메인 imgui.ini md5 그대로. 기록 `Files/2026-10-11_capture_devscene_경로수정_검증.txt`(+ `_capture.png` · `_jg_log.txt`). 미커밋 |
 
-## 커밋 체크리스트 (5-14, 2026-10-01)
+## 커밋 체크리스트 (공용 캡처 스크립트, 2026-10-11 00:1x)
+- `Document/Memory/tools/capture_devscene.ps1` 한 파일(공용 도구 — 엔진 코드가 아니라 빌드 · Bin 과 무관). 같은 폴더의 `tools/crashwalk/*` 변경은 GFW(D-19 ⑤) 것.
+- 문서: `Graphics/Files/2026-10-11_capture_devscene_경로수정_검증.txt` · `_capture.png` · `_jg_log.txt`, 현황 · TODO, `Document/Memory/진행현황.md`.
+
+## 커밋 체크리스트 (5-33, 2026-10-03 19:4x) — GP-G1~G4 와 같은 커밋 권장
+- 소스 5개(모두 Graphics): `Source/Runtime/Graphics/DirectX12/DirectX12API.cpp`(GP-G1~G3 과 같은 파일), `DirectX12/Classes/ResourceStateTracker.h` · `.cpp`, `DirectX12/Classes/CommandQueue.h` · `.cpp`. 새 파일 없음(PreBuild 불필요).
+- `Bin/DevelopEngine/Graphics.{dll,exp,lib}`: 10-03 19:44 메인 빌드(`MainTree.cmd -name=Graphics build`, 오류 0). 헤더는 Graphics 내부(`DirectX12/Classes`)라 다른 DLL 은 다시 빌드할 필요 없다.
+- 문서: `Graphics/Files/2026-10-03_5-33_프레임밖GPU기록방어.md`, `Files/2026-10-03_D31_*`(로그 7 · 캡처 1), `Files/build_2026-10-03_d31_{baseline,fix,main}.log`, `Files/tools/d31_test_snippet.diff.txt`, 현황 · TODO, `Document/Memory/진행현황.md`.
+
+## 커밋 체크리스트 (GP-G1~G4, 2026-10-03)
+- 소스 13개: `Source/Runtime/Graphics/JGGraphicsAPI.h`, `JGGraphics.h` · `.cpp`, `JGGraphicsDefine.h`(주석), `DirectX12/DirectX12API.h` · `.cpp`, `DirectX12/DX12FrameBuffer.h` · `.cpp`, `Classes/SceneRenderer.h` · `.cpp`, `Source/Runtime/GUI/Backends/DX12GUIBackend.h` · `.cpp`, `Source/Runtime/Core/FileIO/FileHelper.cpp`(`EngineShaderDirectory()` 블록만 — 같은 파일에 DevOps D1 미커밋 변경).
+- 이동 5개: `Source/Shader/*` → `Content/Shaders/*`(git mv, 인덱스에 `R` 로 올라 있음). 새 소스 파일 없음 → PreBuild 불필요(셰이더는 프로젝트 파일에 없다).
+- `Bin/DevelopEngine/*`: 10-02 23:09 메인 빌드(오류 0). `PJGGraphicsAPI` vtable · `PSceneRenderer` 크기가 바뀌었으므로 Graphics 를 쓰는 모든 DLL 이 같은 빌드여야 한다. 커밋 직전 최신 빌드인지 확인.
+- 문서: `Document/Memory/Graphics/`(현황 · TODO · Files 새 파일: `2026-10-03_GP-G1-G4_게임빌드파이프라인_Graphics.md`, `2026-10-02_GP_runA_nogui_jg_log.txt` · `_runB_editor_jg_log.txt` · `_runB_capture.png` · `_runC_vsync_jg_log.txt` · `_runC_sync2_jg_log.txt` · `_runD_dbgevents.txt` · `_main_editor_jg_log.txt` · `_main_editor_capture.png` · `_G4_main_editor_jg_log.txt`, `2026-10-03_GP_G4_devscene_jg_log.txt` · `_devscene_capture.png` · `_cookcheck_jg_log.txt`, `build_2026-10-02_gp_g123.log` · `_gp_g123_main.log` · `_gp_g4_main.log`, `tools/gp_window_test.ps1`, `tools/gp_g123_test_snippet.diff.txt`), `Document/Memory/진행현황.md`.
+- 같이 들어가야 하는 다른 트랙: DevOps D1(`FileHelper.cpp` 같은 파일 · 패키지 분기가 이미 `Content/Shaders` 를 봄), DevOps `CookCommand.cpp`(10-03 `Source/Shader` 임시 복사 코드 삭제 — `Content/Shaders` 가 없으면 쿠킹 실패. G4 없이 커밋하면 쿠킹이 깨지므로 같은 커밋).
+- 검증용 `Temp/GPTest`(작업 폴더) · worktree `Temp/wt/gp_graphics` 는 `Temp/`(git 무시)라 커밋 대상 아님.
+
+## 커밋 체크리스트 (5-14, 2026-10-01) — 완료: 사용자 커밋 `efba16a`(10-01)
 - 소스 9개: `Source/Runtime/Graphics/DirectX12/DirectX12API.cpp`, `Source/Runtime/Graphics/Classes/SceneRenderer.h` · `.cpp`, `Source/Runtime/Devkit/DevScene.cpp`, `Source/Editor/JGEditor/Widgets/SceneViewport.cpp`, `Source/Runtime/GUI/Backends/DX12GUIBackend.cpp`, `Source/Runtime/GUI/GUI.cpp` · `GUI.h`, `Source/Editor/DevStatistics/MemoryStatistics.cpp`. 새 파일 없음(PreBuild 불필요).
 - 같은 파일에 다른 트랙의 미커밋 변경이 섞여 있다: `DX12GUIBackend.cpp`(한글 글꼴, GUI BL-3), `GUI.cpp/.h`(DataTable 그리드 등). 파일 단위로 나눠 커밋할 수 없다.
 - `Bin/DevelopEngine/*`: 13:33 메인 트리 빌드(오류 0) 결과. 커밋 직전 최신 빌드인지 확인.
@@ -111,4 +134,4 @@
 |---|---|---|
 | 5-8 | `EndDraw()` 정리, `_renderPassConstantBuffer` 제거 또는 사용 | `EndDraw`는 렌더 타깃 → PIXEL_SHADER_RESOURCE 전이라는 역할이 Phase 3에서 확정됐고, 렌더 패스 데이터는 `SetRenderPassData`가 리스트의 업로드 할당자로 복사하므로 영구 CB가 필요 없다. 남은 것은 `DX12GraphicsCommand.h:24`의 미사용 선언 1줄 — 동작 문제 없음. 그 파일을 다음에 고칠 때 지운다 |
 | 5-9 | 커밋 정리: WIP 커밋을 의미 단위로 나눌지 | 사용자가 직접 작업 단위로 커밋하고 있다(09-16 ~ 09-29 12회). 커밋 단위는 사용자 몫이라 TODO로 관리하지 않는다 |
-| 2-2 잔여 | `Source/Shader/scene_shader.hlsl` 용도 결정 | 참조 0, `GShaderLibrary`가 템플릿으로 수집만 한다(로그 "Collect scene_shader"). 삭제만 남았고 문제를 일으키지 않는다. 셰이더 폴더를 다음에 고칠 때 지운다 |
+| 2-2 잔여 | `Content/Shaders/scene_shader.hlsl`(10-02 전 `Source/Shader`) 용도 결정 | 참조 0, `GShaderLibrary`가 템플릿으로 수집만 한다(로그 "Collect scene_shader"). 삭제만 남았고 문제를 일으키지 않는다. GP-G4(이동만, 사용자 결정 범위)에서는 그대로 옮겼다 — 셰이더 내용을 다음에 고칠 때 지운다 |

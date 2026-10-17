@@ -42,6 +42,7 @@ private:
 	// 해제를 미룬 리소스. FrameSerial 번 프레임의 제출이 GPU에서 끝나야 놓는다.
 	// 번호는 해제 시점의 _submittedFrameCount(= 지금 기록 중이거나 다음에 제출될 프레임)라서, End()와 다음 Begin() 사이(GC 등)에 해제돼도
 	// 방금 제출한 프레임이 끝나기 전에는 놓지 않는다. 프레임 인덱스 버킷으로 나누면 그 구간의 해제가 한 프레임 일찍 풀린다.
+	// 상태 추적 등록(PResourceStateTracker)도 놓을 때 함께 지운다(5-33).
 	struct HDeferredRelease
 	{
 		uint64 FrameSerial = 0;
@@ -98,6 +99,9 @@ private:
 	PSharedPtr<PCommandList> RequestCommandList(ECommandListType commandListType, uint64 commandID, uint64 priority);
 	PSharedPtr<PCommandList> CreateCommandList(ECommandListType commandListType);
 	void releaseDeferred(uint64 inCompletedFrameSerial);
+	void unregisterReleased(HList<HDeferredRelease>& inReleased);
+	// Close 상태의 리스트를 Reset 하기 전에, 그 인덱스를 마지막으로 제출한 프레임이 GPU 에서 끝났는지 확인하고 아니면 기다린다. (5-33)
+	void waitForFrameReuse(const HFrameContext& inFrame);
 	ECommandListState GetCommandListState(PSharedPtr<PCommandList> cmdList);
 	void SetCommandListState(PSharedPtr<PCommandList> cmdList, ECommandListState state);
 };

@@ -39,7 +39,7 @@ class GRAPHICS_API PDirectX12API : public PJGGraphicsAPI
 	HJGGraphicsArguments _arguments;
 	bool _bIsSupportedRayTracing;
 
-	// 2D 그리기 내장 셰이더(Source/Shader/draw2d.hlsl). 처음 쓸 때 한 번만 컴파일한다(실패해도 다시 시도하지 않는다).
+	// 2D 그리기 내장 셰이더(Content/Shaders/draw2d.hlsl). 처음 쓸 때 한 번만 컴파일한다(실패해도 다시 시도하지 않는다).
 	PSharedPtr<IRawGraphicsShader> _draw2DShader;
 	bool _bDraw2DShaderTried = false;
 
@@ -57,8 +57,11 @@ protected:
 	virtual void Destroy() override;
 	virtual void BeginFrame() override;
 	virtual void EndFrame() override;
+	virtual void OnWindowResized(uint32 inWidth, uint32 inHeight) override;
 public:
 	virtual void SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture) override;
+	virtual void SetVSyncEnabled(bool inEnabled) override;
+	virtual bool IsVSyncEnabled() const override;
 public:
 	virtual PSharedPtr<IJGGraphicsCommand> GetGraphicsCommand() const override;
 

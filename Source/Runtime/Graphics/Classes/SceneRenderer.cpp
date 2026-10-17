@@ -43,6 +43,7 @@ bool PSceneRenderer::Initialize(const PString& inName, uint32 inWidth, uint32 in
 		return false;
 	}
 
+	_name   = inName;
 	_width  = inWidth;
 	_height = inHeight;
 
@@ -59,6 +60,26 @@ bool PSceneRenderer::Initialize(const PString& inName, uint32 inWidth, uint32 in
 	const bool bComposite = createCompositeMaterial(inName);
 	const bool bDisplay   = createDisplayMaterial(inName);
 	return bComposite && bDisplay;
+}
+
+bool PSceneRenderer::Resize(uint32 inWidth, uint32 inHeight)
+{
+	if (inWidth == 0 || inHeight == 0)
+	{
+		JG_LOG(Graphics, ELogLevel::Warning, "%s : SceneRenderer Resize(%dx%d) ignored. Keeping %dx%d", _name, (int32)inWidth, (int32)inHeight, (int32)_width, (int32)_height);
+		return false;
+	}
+
+	if (inWidth == _width && inHeight == _height)
+	{
+		return true;
+	}
+
+	// 옛 텍스처 · 머터리얼은 참조가 끊기면 놓이고, GPU 리소스는 DestroyCommittedResource 의 미룬 해제로 그 프레임이 끝난 뒤 놓인다.
+	// 셰이더 코드가 같아 PSO 는 캐시에서 다시 쓴다(새 PSO 없음).
+	JG_LOG(Graphics, ELogLevel::Trace, "%s : SceneRenderer resized %dx%d -> %dx%d", _name, (int32)_width, (int32)_height, (int32)inWidth, (int32)inHeight);
+	const PString name = _name;   // Initialize 가 _name 을 다시 쓰므로 사본을 넘긴다(자기 대입 방지)
+	return Initialize(name, inWidth, inHeight);
 }
 
 void PSceneRenderer::Render(const PScene& inScene, HSceneCameraID inCamera)

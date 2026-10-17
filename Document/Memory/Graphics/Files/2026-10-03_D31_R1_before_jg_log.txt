@@ -1,0 +1,365 @@
+[:20052:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 5516371859271167087. pages are created on first request
+[:20052:][info][Core]: Active Thread: [4033140822]
+[:20052:][info][Core]: Active Thread: [2014190609]
+[:20052:][info][Core]: Active Thread: [4137853647]
+[:20052:][info][Core]: Active Thread: [184485654]
+[:20052:][info][Core]: Active Thread: [1810849719]
+[:20052:][info][Core]: Active Thread: [3641443795]
+[:20052:][info][Core]: Active Thread: [2490367895]
+[:20052:][info][Core]: Active Thread: [3189127331]
+[:20052:][info][Core]: Active Thread: [1633223991]
+[:20052:][info][Core]: Active Thread: [3709084961]
+[:20052:][info][Core]: Active Thread: [3269429344]
+[:20052:][info][Core]: Active Thread: [1892510419]
+[:20052:][info][Core]: Active Thread: [1075542527]
+[:20052:][info][Core]: Active Thread: [3489165848]
+[:20052:][info][Core]: Active Thread: [2622126319]
+[:20052:][info][Core]: Active Thread: [82279344]
+[:20052:][info][Core]: Active Thread: [678336817]
+[:20052:][info][Core]: Active Thread: [1084549031]
+[:20052:][info][Core]: Active Thread: [1081572950]
+[:20052:][info][Core]: Active Thread: [4068201619]
+[:20052:][info][Core]: Active Thread: [310683221]
+[:20052:][info][Core]: Active Thread: [1625991403]
+[:20052:][info][Core]: Active Thread: [2318772590]
+[:20052:][info][Core]: Active Thread: [2883267087]
+[:20052:][info][Core]: Active Thread: [3130701365]
+[:20052:][info][Core]: Active Thread: [1480293869]
+[:20052:][info][Core]: Active Thread: [2407089801]
+[:20052:][info][Core]: Active Thread: [3899765004]
+[:20052:][info][Core]: Active Thread: [1174903191]
+[:20052:][info][Core]: Active Thread: [3732293608]
+[:20052:][info][Core]: Active Thread: [3911617154]
+[:20052:][info][Core]: Active Thread: [1469563460]
+[:20052:][info][Core]: Active Thread Totoal Count: 32 
+[:20052:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:20052:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:20052:][trace][Graphics]: DirectX12 Init Start
+[:20052:][trace][Graphics]: Success Create D3D12Device
+[:20052:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:20052:][info][Graphics]: VideoMemory : 16050  MB
+[:20052:][trace][Graphics]: Create DescriptorAllocator...
+[:20052:][trace][Graphics]: Create CommandQueue...
+[:20052:][trace][Graphics]: Create ResourceStagingManager...
+[:20052:][trace][Graphics]: Create FrameBuffer...
+[:20052:][trace][Graphics]: Create Default Resources...
+[:20052:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:20052:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:20052:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.81 MB)
+[:20052:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:20052:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:20052:][info][Graphics]: Start Collect Shader in (../../Content/Shaders)
+[:20052:][trace][Graphics]: Collect compute_shader_template
+[:20052:][trace][Graphics]: Collect draw2d
+[:20052:][trace][Graphics]: Collect graphics_shader_template
+[:20052:][trace][Graphics]: Collect scene_shader
+[:20052:][info][Graphics]: Complete Collect Shader
+[:20052:][trace][Graphics]: DirectX12 Init End
+[:20052:][trace][Graphics]: Startup Graphics Module...
+[:20052:][info][GUI]: GUI DPI scale 1.25 (editor font malgun.ttf, 16px)
+[:20052:][trace][Asset]: Startup Asset Module...
+[:20052:][info][GameFrameWorks]: GameFrameWorks module startup
+[:20052:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:20052:][trace][JGEditor]: Startup JGEditor Module...
+[:20052:][info][Core]: Recognized Class List...
+[:20052:][debug][Core]: - JGStaticMeshComponent
+[:20052:][debug][Core]: - JGGameplayEntityComponent
+[:20052:][debug][Core]: - JGAssetImporter
+[:20052:][debug][Core]: - JGGameplayEntityActor
+[:20052:][debug][Core]: - JGDevConsole
+[:20052:][debug][Core]: - JGGameplayEffect
+[:20052:][debug][Core]: - JGGameplayDevView
+[:20052:][debug][Core]: - JGMemoryStatistcs
+[:20052:][debug][Core]: - JGSceneViewport
+[:20052:][debug][Core]: - JGDataTableEditor
+[:20052:][debug][Core]: - JGSessionLobby
+[:20052:][debug][Core]: - JGAsset
+[:20052:][debug][Core]: - JGDevFeature
+[:20052:][debug][Core]: - JGDevScene
+[:20052:][debug][Core]: - JGDevSettings
+[:20052:][debug][Core]: - JGActor
+[:20052:][debug][Core]: - JGCameraComponent
+[:20052:][debug][Core]: - JGCameraActor
+[:20052:][debug][Core]: - JGGameEntryActor
+[:20052:][debug][Core]: - JGPickShapeComponent
+[:20052:][debug][Core]: - JGGameMasterActor
+[:20052:][debug][Core]: - JGGameplayControllerActor
+[:20052:][debug][Core]: - JGGameplayCue
+[:20052:][debug][Core]: - JGActorComponent
+[:20052:][debug][Core]: - JGGameInstance
+[:20052:][debug][Core]: - JGWidget
+[:20052:][debug][Core]: - JGDataTable
+[:20052:][debug][Core]: - JGGameplayCommandHandler
+[:20052:][debug][Core]: - JGGameplayModifier
+[:20052:][debug][Core]: - JGGameplayTrigger
+[:20052:][debug][Core]: - JGGameWidget
+[:20052:][debug][Core]: - JGStaticMesh
+[:20052:][debug][Core]: - JGTexture
+[:20052:][debug][Core]: - JGFBXAssetImporter
+[:20052:][debug][Core]: - JGWidgetComponent
+[:20052:][trace][Asset]: Start Load Assets in ../../Content
+[:20052:][trace][Graphics]: Register DevScene_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_Output   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_Display   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Depth   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_DepthStencil   Ref : 1
+[:20052:][trace][Graphics]: Register DevScene_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_CompositeMaterial   Ref : 1
+[:20052:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:20052:][trace][Graphics]: Register DevScene_DisplayMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_DisplayMaterial   Ref : 1
+[:20052:][info][GUI]: Layout: reopened JGDevFeature 
+[:20052:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:20052:][trace][Graphics]: Graphics PSO created. cache size 1
+[:20052:][trace][Graphics]: Graphics PSO created. cache size 2
+[:20052:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:20052:][trace][Graphics]: Register UploadAllocator in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : UploadAllocator   Ref : 1
+[:32412:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 17748960255270674359. pages are created on first request
+[:32412:][warning][Asset]: NOT Support Asset Path
+[:32412:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:32412:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:32412:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:32412:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:32412:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:32412:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:32412:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:32412:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:32412:][trace][Core]: Success Load at ../../Content/TempAsset/Sample.jgasset
+[:32412:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:20052:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:20052:][info][Devkit]: DevScene : Camera fitted. Bounds min(-90.3, -0.0, -17.2) max(90.3, 180.9, 14.9) distance 370.2
+[:20052:][info][Devkit]: DevScene : Mesh Loaded (/JGEngine/TempAsset/Sample.jgasset) SubMesh 2, Vertex 28464, Index 147336
+[:20052:][trace][Graphics]: Graphics PSO created. cache size 3
+[:20052:][trace][Graphics]: Register DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 1
+[:20052:][warning][Graphics]: DevScene_Output : ReadbackTextureImmediate called inside a frame. It stalls the GPU; prefer RequestTextureReadback for per-frame reads
+[:20052:][trace][Graphics]: Register DevScene_Output_ReadbackStaging in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : DevScene_Output_ReadbackStaging   Ref : 1
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_Output_ReadbackStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_Output_ReadbackStaging in ResourceRefMap
+[:20052:][info][Devkit]: DevScene : ReadbackTextureImmediate(Scene) 1920x1080, 8 bytes/pixel, 16588800 bytes, center RGBA(0.174, 0.174, 0.174, 1.000), saved ok -> DevScene_Readback_Scene_Immediate.png
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo_ReadbackStaging   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo_ReadbackStaging in ResourceRefMap
+[:20052:][info][Devkit]: DevScene : RequestTextureReadback(Albedo) 1920x1080, 4 bytes/pixel, covered 65587 px (3.2%), center RGBA(255, 255, 255, 255), saved ok -> DevScene_Readback_Albedo_Async.png
+[:20052:][info][ConsoleCommand]: > d31test.renderer
+[:20052:][trace][Graphics]: Register D31Test_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_Output   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_Display   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_Albedo   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_NormalMetallic   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_SpecularRoughness   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_Depth   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_DepthStencil   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_CompositeMaterial   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_DisplayMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_DisplayMaterial   Ref : 1
+[:20052:][trace][Graphics]: D31Test : SceneRenderer resized 64x36 -> 32x18
+[:20052:][trace][Graphics]: Register D31Test_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_Output   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_Display   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_Albedo   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_NormalMetallic   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_SpecularRoughness   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_GBuffer_Depth   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_DepthStencil   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_CompositeMaterial   Ref : 1
+[:20052:][trace][Graphics]: Register D31Test_DisplayMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Add Counting Resource : D31Test_DisplayMaterial   Ref : 1
+[:20052:][info][Devkit]: D31TEST : renderer 64x36 -> Resize(32, 18) true, display 32x18. Renderer is released at the end of this command
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_Display   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_SpecularRoughness   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_DepthStencil   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_Display   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_SpecularRoughness   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_DepthStencil   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_Output   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_Albedo   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_NormalMetallic   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_Depth   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_CompositeMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_DisplayMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_DisplayMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_Output   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_Albedo   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_NormalMetallic   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_GBuffer_Depth   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_CompositeMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : D31Test_DisplayMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister D31Test_DisplayMaterial in ResourceRefMap
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016200AFCDF0:'D31Test_Output') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x000001620086B7B0:'D31Test_Display') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x000001620086C3E0:'D31Test_GBuffer_Albedo') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x000001620086E120:'D31Test_GBuffer_NormalMetallic') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x000001620086FD60:'D31Test_GBuffer_SpecularRoughness') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x000001620071A1F0:'D31Test_GBuffer_Depth') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearDepthStencilView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016200717C40:'D31Test_DepthStencil') (subresource: 0) is invalid for use as a depth buffer.  Expected State Bits (all): 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearDepthStencilView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016200717C40:'D31Test_DepthStencil') (subresource: 1) is invalid for use as a depth buffer.  Expected State Bits (all): 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x00000162007188D0:'D31Test_Output') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203367940:'D31Test_Display') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203369260:'D31Test_GBuffer_Albedo') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x00000162033685D0:'D31Test_GBuffer_NormalMetallic') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203366020:'D31Test_GBuffer_SpecularRoughness') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearRenderTargetView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203369EF0:'D31Test_GBuffer_Depth') (subresource: 0) is invalid for use as a render target.  Expected State Bits (all): 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x4: D3D12_RESOURCE_STATE_RENDER_TARGET.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearDepthStencilView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203366CB0:'D31Test_DepthStencil') (subresource: 0) is invalid for use as a depth buffer.  Expected State Bits (all): 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE.
+[:20052:][error][Graphics]: D3D12 DebugLayer [538] ID3D12CommandQueue1::ExecuteCommandLists: Using ClearDepthStencilView on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Resource state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) of resource (0x0000016203366CB0:'D31Test_DepthStencil') (subresource: 1) is invalid for use as a depth buffer.  Expected State Bits (all): 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE, Actual State: 0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT], Missing State: 0x10: D3D12_RESOURCE_STATE_DEPTH_WRITE.
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x0000016200AFCDF0:'D31Test_Output') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x000001620086B7B0:'D31Test_Display') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x000001620086C3E0:'D31Test_GBuffer_Albedo') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x000001620086E120:'D31Test_GBuffer_NormalMetallic') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x000001620086FD60:'D31Test_GBuffer_SpecularRoughness') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x000001620071A1F0:'D31Test_GBuffer_Depth') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x00000162007188D0:'D31Test_Output') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x0000016203367940:'D31Test_Display') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x0000016203369260:'D31Test_GBuffer_Albedo') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x00000162033685D0:'D31Test_GBuffer_NormalMetallic') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x0000016203366020:'D31Test_GBuffer_SpecularRoughness') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][error][Graphics]: D3D12 DebugLayer [527] ID3D12CommandQueue1::ExecuteCommandLists: Using ResourceBarrier on Command List (0x0000016275865450:'Unnamed ID3D12GraphicsCommandList Object'): Before state (0x4: D3D12_RESOURCE_STATE_RENDER_TARGET) of resource (0x0000016203369EF0:'D31Test_GBuffer_Depth') (subresource: 0) specified by transition barrier does not match with the state (0x0: D3D12_RESOURCE_STATE_[COMMON|PRESENT]) specified in preceding ResourceBarrier or as InitialState
+[:20052:][info][ConsoleCommand]: > gmtest
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+[:20052:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.12 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 1.19 MB)
+[:20052:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.25 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 3 pages (93 blocks, growth #2, chunk committed 1.31 MB)
+[:20052:][info][Memory]: [ID: 0] class 4096 B grew to 4 pages (60 blocks, growth #3, chunk committed 1.38 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 4 pages (124 blocks, growth #3, chunk committed 1.44 MB)
+[:20052:][info][Memory]: [ID: 0] class 256 B grew to 4 pages (960 blocks, growth #3, chunk committed 1.50 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 3 pages (6138 blocks, growth #2, chunk committed 1.56 MB)
+[:20052:][warning][GameMaster]: PGameMaster::Undo: disabled while a network session is bound
+[:20052:][error][GameMaster]: PGameplayRuleEngine: RequestChoice(TestAskInHandler) outside an effect Resolve is rejected. Enqueue an effect that requests it
+[:20052:][info][Memory]: [ID: 0] class 4096 B grew to 5 pages (75 blocks, growth #4, chunk committed 1.62 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 5 pages (155 blocks, growth #4, chunk committed 1.84 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 6 pages (186 blocks, growth #5, chunk committed 1.91 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 4 pages (8184 blocks, growth #3, chunk committed 1.97 MB)
+[:20052:][info][Memory]: [ID: 0] class 128 B grew to 4 pages (1816 blocks, growth #3, chunk committed 2.03 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 7 pages (217 blocks, growth #6, chunk committed 2.09 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 8 pages (248 blocks, growth #7, chunk committed 2.16 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 5 pages (10230 blocks, growth #4, chunk committed 2.22 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 9 pages (279 blocks, growth #8, chunk committed 2.28 MB)
+[:20052:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.34 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 10 pages (310 blocks, growth #9, chunk committed 2.41 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 11 pages (341 blocks, growth #10, chunk committed 2.47 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 6 pages (12276 blocks, growth #5, chunk committed 2.53 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 12 pages (372 blocks, growth #11, chunk committed 2.72 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 13 pages (403 blocks, growth #12, chunk committed 2.78 MB)
+[:20052:][info][Memory]: [ID: 0] class 2048 B grew to 14 pages (434 blocks, growth #13, chunk committed 2.84 MB)
+[:20052:][info][Memory]: [ID: 0] class 16 B grew to 7 pages (14322 blocks, growth #6, chunk committed 2.91 MB)
+[:20052:][error][GameMaster]: PGameplayRuleEngine: flow TestPhases ran 1024 steps without waiting for a command; stopped
+[:20052:][info][GameMasterSelfTest]: GameMaster self test: 120 passed, 0 failed
+[:20052:][info][GameFrameWorks]: JGGameInstance: world loaded (SelfTestWorld)
+[:20052:][info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 0)
+[:20052:][info][GameFrameWorks]: JGGameInstance: world unloaded (SelfTestWorld)
+[:20052:][info][Memory]: [ID: 0] class 512 B grew to 2 pages (248 blocks, growth #1, chunk committed 2.97 MB)
+[:20052:][info][GameFrameWorks]: PickController click: actor none / board cell (0, 3) at (0.00, 0.00, 3.00)
+[:20052:][info][WorldSelfTest]: World self test: 64 passed, 0 failed
+[:20052:][info][GameUI]: GameUI push JGGameWidget on Game (stack 1)
+[:20052:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:20052:][info][GameUI]: GameUI push JGGameWidget on Menu (stack 1)
+[:20052:][info][GameUI]: GameUI remove JGGameWidget from Menu (stack 0)
+[:20052:][info][GameUI]: GameUI back handled by JGGameWidget
+[:20052:][info][GameUI]: Font loaded : C:/Windows/Fonts/malgun.ttf
+[:20052:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:20052:][info][GameFrameWorks]: ViewportController click: actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none
+[:20052:][info][GameViewportSelfTest]: GameViewport self test: 30 passed, 0 failed
+[:20052:][info][GameFrameWorks]: gmtest: OK (0 failures)
+[:20052:][trace][Graphics]: FrameBuffer : resized to 1582x953
+[:20052:][trace][Graphics]: FrameBuffer : resized to 1982x1078
+[:20052:][trace][Graphics]: FrameBuffer : resized to 1232x828
+[:20052:][trace][Graphics]: FrameBuffer : window minimized. Present paused
+[:20052:][trace][Graphics]: FrameBuffer : window restored (1232x828)
+[:20052:][info][Network]: PGameplaySession: closed (shutdown)
+[:20052:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:20052:][trace][Asset]: Shutdown Asset Module...
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_Display   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_Display in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_SpecularRoughness   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_GBuffer_SpecularRoughness in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_DepthStencil   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_DepthStencil in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_Output   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_Output in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Albedo   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_GBuffer_Albedo in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_NormalMetallic   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_GBuffer_NormalMetallic in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_GBuffer_Depth   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_GBuffer_Depth in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_CompositeMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_CompositeMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : DevScene_DisplayMaterial   Ref : 0
+[:20052:][trace][Graphics]: UnRegister DevScene_DisplayMaterial in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:20052:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:20052:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:20052:][trace][Graphics]: Shutdown Graphics Module...
+[:20052:][trace][JGEditor]: Shutdown JGEditor Module...
+[:20052:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 29, committed 1.81 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:20052:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0

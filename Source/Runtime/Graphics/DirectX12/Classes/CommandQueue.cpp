@@ -166,24 +166,60 @@ void PCommandQueue::DeferRelease(HDX12ComPtr<HDX12Resource> resource)
 
 void PCommandQueue::ReleaseAllDeferred()
 {
-	HLockGuard<HMutex> lock(_deferredReleaseMutex);
-	_deferredReleases.clear();
+	HList<HDeferredRelease> released;
+	{
+		HLockGuard<HMutex> lock(_deferredReleaseMutex);
+		released.swap(_deferredReleases);
+	}
+
+	unregisterReleased(released);
 }
 
 void PCommandQueue::releaseDeferred(uint64 inCompletedFrameSerial)
 {
-	HLockGuard<HMutex> lock(_deferredReleaseMutex);
+	HList<HDeferredRelease> released;
+	{
+		HLockGuard<HMutex> lock(_deferredReleaseMutex);
 
-	// 번호 오름차순이므로 앞에서부터 끝난 프레임의 것만 놓는다.
-	uint64 releaseCount = 0;
-	while (releaseCount < _deferredReleases.size() && _deferredReleases[releaseCount].FrameSerial <= inCompletedFrameSerial)
-	{
-		++releaseCount;
+		// 번호 오름차순이므로 앞에서부터 끝난 프레임의 것만 놓는다.
+		uint64 releaseCount = 0;
+		while (releaseCount < _deferredReleases.size() && _deferredReleases[releaseCount].FrameSerial <= inCompletedFrameSerial)
+		{
+			++releaseCount;
+		}
+		if (releaseCount > 0)
+		{
+			released.assign(_deferredReleases.begin(), _deferredReleases.begin() + releaseCount);
+			_deferredReleases.erase(_deferredReleases.begin(), _deferredReleases.begin() + releaseCount);
+		}
 	}
-	if (releaseCount > 0)
+
+	unregisterReleased(released);
+}
+
+void PCommandQueue::unregisterReleased(HList<HDeferredRelease>& inReleased)
+{
+	// GPU 가 이 리소스들을 쓰는 프레임이 끝났으니 상태 추적 등록을 지우고 참조를 놓는다(등록 해제가 먼저 — 참조를 놓으면 주소가 다시 쓰일 수 있다). (5-33)
+	// 추적기 뮤텍스를 잡으므로 _deferredReleaseMutex 밖에서 부른다.
+	for (HDeferredRelease& deferred : inReleased)
 	{
-		_deferredReleases.erase(_deferredReleases.begin(), _deferredReleases.begin() + releaseCount);
+		PResourceStateTracker::UnRegisterResource(deferred.Resource.Get());
+		deferred.Resource = nullptr;
 	}
+	inReleased.clear();
+}
+
+void PCommandQueue::waitForFrameReuse(const HFrameContext& inFrame)
+{
+	// 이 인덱스의 리스트는 FramesInFlight 프레임 전에 제출됐다. Begin() 이 그 완료를 기다린 뒤(프레임 안)라면 바로 지나간다.
+	// End() 와 다음 Begin() 사이(콘솔 명령처럼 프레임 밖)에서 먼저 요청되면 GPU 가 아직 그 리스트를 실행 중일 수 있으니 Reset 전에 기다린다. (5-33)
+	if (_fence->Get()->GetCompletedValue() >= inFrame.FenceValue)
+	{
+		return;
+	}
+
+	JG_LOG(Graphics, ELogLevel::Trace, "CommandQueue : command list requested outside the frame while the GPU still runs its previous use. Waiting for the GPU");
+	_fence->WaitForFenceValue(inFrame.FenceValue);
 }
 
 bool PCommandQueue::IsFenceComplete(uint64 fenceValue) const
@@ -206,7 +242,8 @@ PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType comm
 
 	commandID = 16777619U * (uint64)commandListType ^ commandID;
 
-	// 지금 기록 중인 프레임 인덱스의 리스트. Close 상태면 이 인덱스를 마지막으로 제출한 프레임이 끝난 뒤(Begin에서 기다림)라 Reset해도 된다.
+	// 지금 기록 중인 프레임 인덱스의 리스트. Close 상태면 이 인덱스를 마지막으로 제출한 프레임이 끝난 뒤에 Reset한다
+	// (프레임 안이면 Begin에서 이미 기다렸고, 프레임 밖이면 waitForFrameReuse가 기다린다).
 	HFrameContext& frame = _frames[_frameIndex];
 
 	PSharedPtr<PCommandList> result = nullptr;
@@ -222,6 +259,10 @@ PSharedPtr<PCommandList> PCommandQueue::RequestCommandList(ECommandListType comm
 		PSharedPtr<PCommandList> pCmdList = frame.ExecuteCmdLists[priority][commandID];
 		PSharedPtr<PCommandList> pPendingCmdList = frame.ExecutePendingCmdLists[priority][commandID];
 
+		if (GetCommandListState(pCmdList) == ECommandListState::Close || GetCommandListState(pPendingCmdList) == ECommandListState::Close)
+		{
+			waitForFrameReuse(frame);
+		}
 		if (GetCommandListState(pCmdList) == ECommandListState::Close)
 		{
 			pCmdList->Reset();

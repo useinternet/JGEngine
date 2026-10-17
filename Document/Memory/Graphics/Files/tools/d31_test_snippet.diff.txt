@@ -1,0 +1,102 @@
+diff --git a/Source/Runtime/Devkit/DevScene.cpp b/Source/Runtime/Devkit/DevScene.cpp
+index 3d30fd5..8a9bca9 100644
+--- a/Source/Runtime/Devkit/DevScene.cpp
++++ b/Source/Runtime/Devkit/DevScene.cpp
+@@ -128,6 +128,50 @@ namespace
+ 	}
+ }
+ 
++// [D31TEST-TEMP begin] D-31(Graphics 5-33) 검증용 임시 코드 — worktree 전용, 메인에 넣지 않음.
++// 콘솔 명령 d31test.renderer = GFW 가 10-03 에 찾은 장면: 콘솔 명령 안에서 64x36 렌더러를 만들어 Render → Resize(32, 18) → Render → 놓기.
++// JG_D31TEST=1 이면 DevScene 이 메시 로드 뒤 60 · 90 프레임에 "d31test.renderer" · "gmtest" 를 Submit 한다(DevConsole 창 입력과 같은 길 — 스케줄러 프레임 뒤에 실행).
++#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
++namespace
++{
++	bool d31TestEnv(const char* inName)
++	{
++		char value[8] = {};
++		size_t valueLength = 0;
++		return getenv_s(&valueLength, value, sizeof(value), inName) == 0 && valueLength > 1;
++	}
++
++	bool executeD31RendererTest(const HConsoleCommandArgs& InArgs)
++	{
++		PSharedPtr<PScene> scene = Allocate<PScene>();
++		HSceneCamera camera;
++		camera.SetLookAt(HVector3(0.0f, 100.0f, -300.0f), HVector3(0.0f, 100.0f, 0.0f), HVector3(0.0f, 1.0f, 0.0f));
++		const HSceneCameraID cameraID = scene->CreateCamera(camera);
++
++		PSharedPtr<PSceneRenderer> renderer = Allocate<PSceneRenderer>();
++		if (renderer->Initialize(PString("D31Test"), 64, 36) == false)
++		{
++			JG_LOG(Devkit, ELogLevel::Error, "D31TEST : renderer Initialize(64, 36) failed");
++			return false;
++		}
++		renderer->Render(*scene, cameraID);
++		const bool bResized = renderer->Resize(32, 18);
++		renderer->Render(*scene, cameraID);
++
++		const HTextureInfo& info = renderer->GetDisplayTexture()->GetTextureInfo();
++		JG_LOG(Devkit, ELogLevel::Info, "D31TEST : renderer 64x36 -> Resize(32, 18) %s, display %dx%d. Renderer is released at the end of this command",
++			PString(bResized ? "true" : "false"), (int32)info.Width, (int32)info.Height);
++		return bResized && info.Width == 32 && info.Height == 18;
++	}
++
++	HAutoConsoleCommand D31RendererTestCommand(
++		"d31test.renderer",
++		"d31test.renderer",
++		"D-31 test: create a scene renderer inside a console command, render, resize, render, release",
++		&executeD31RendererTest);
++}
++// [D31TEST-TEMP end]
++
+ void JGDevScene::OnInitialize()
+ {
+ 	FramesSinceMeshLoaded = 0;
+@@ -179,6 +223,21 @@ void JGDevScene::OnUpdate()
+ 			DumpReadbackOnce();
+ 		}
+ 	}
++
++	// [D31TEST-TEMP] 메시 로드 뒤 60 · 90 프레임에 콘솔 명령을 Submit(스케줄러 프레임 뒤 실행)
++	if (MeshInstance.IsValid() && d31TestEnv("JG_D31TEST"))
++	{
++		static int32 s_d31Frames = 0;
++		++s_d31Frames;
++		if (s_d31Frames == 60)
++		{
++			GConsoleCommandGlobalSystem::GetInstance().Submit(PString("d31test.renderer"));
++		}
++		else if (s_d31Frames == 90)
++		{
++			GConsoleCommandGlobalSystem::GetInstance().Submit(PString("gmtest"));
++		}
++	}
+ }
+ 
+ void JGDevScene::OnGenerateGUI()
+diff --git a/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp b/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp
+index dc433f9..78900c9 100644
+--- a/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp
++++ b/Source/Runtime/Graphics/DirectX12/DX12GraphicsCommand.cpp
+@@ -203,7 +203,19 @@ void PDX12GraphicsCommand::Draw(const HDrawArguments& inArgs)
+ 		BindVertexBuffer(vertexBuffer);
+ 		BindIndexBuffer(indexBuffer);
+ 
+-		cmdList->DrawIndexed((uint32)indexBuffer->GetIndexCount());
++		// [D31TEST-TEMP] JG_GPUSTRESS=N 이면 메시를 같은 자리에 N 인스턴스로 그려 GPU 를 병목으로 만든다(worktree 전용, 메인에 넣지 않음)
++		static const uint32 s_stressInstances = []()
++		{
++			char value[32] = {};
++			size_t length = 0;
++			if (getenv_s(&length, value, sizeof(value), "JG_GPUSTRESS") != 0 || length <= 1)
++			{
++				return 1u;
++			}
++			const int32 count = atoi(value);
++			return (uint32)(count > 1 ? count : 1);
++		}();
++		cmdList->DrawIndexed((uint32)indexBuffer->GetIndexCount(), s_stressInstances);
+ 	}
+ }
+ 

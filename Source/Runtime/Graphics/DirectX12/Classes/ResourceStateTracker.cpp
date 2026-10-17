@@ -269,6 +269,23 @@ void PResourceStateTracker::UnRegisterResource(HDX12Resource* d3dResource)
 		}
 	}
 }
+void PResourceStateTracker::ReleaseResource(HDX12Resource* d3dResource)
+{
+	if (d3dResource == nullptr)
+	{
+		return;
+	}
+
+	HLockGuard<HSharedMutex> lock(RESOURCE_MUTEX);
+	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
+
+	auto iter = resourceRefMap.find(d3dResource);
+	if (iter != resourceRefMap.end())
+	{
+		(*iter).second.bReleased = true;
+	}
+}
+
 bool PResourceStateTracker::GetResourceState(HDX12Resource* d3dResource, D3D12_RESOURCE_STATES& outState)
 {
 	if (d3dResource == nullptr)
@@ -299,5 +316,6 @@ bool PResourceStateTracker::IsRegistered(HDX12Resource* d3dResource)
 	std::shared_lock<HSharedMutex> lock(RESOURCE_MUTEX);
 	HHashMap<HDX12Resource*, HResourceInfo>& resourceRefMap = HDirectXAPI::GetResourceRefCacheRef();
 
-	return resourceRefMap.find(d3dResource) != resourceRefMap.end();
+	auto iter = resourceRefMap.find(d3dResource);
+	return iter != resourceRefMap.end() && (*iter).second.bReleased == false;
 }

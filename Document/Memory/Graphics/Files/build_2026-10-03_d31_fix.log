@@ -1,0 +1,40 @@
+﻿
+  JGGameBootstrap.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGGameBootstrap.exe
+  Core.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\Core.lib
+  JGLauncher.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGLauncher.exe
+  JGHeaderTool.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGHeaderTool.exe
+  JGBuildTool.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGBuildTool.exe
+  JGGameLaunch.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGGameLaunch.dll
+  Asset.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\Asset.dll
+  CommandList.cpp
+  CommandQueue.cpp
+  DX12Shader.cpp
+  DescriptionAllocator.cpp
+  DynamicDescriptionAllocator.cpp
+  Fence.cpp
+  PipelineState.cpp
+  ResourceStagingManager.cpp
+  ResourceStateTracker.cpp
+  RootSignature.cpp
+  UploadAllocator.cpp
+  DX12ConstantBuffer.cpp
+  DX12FrameBuffer.cpp
+  DX12GraphicsCommand.cpp
+  DX12IndexBuffer.cpp
+  DX12Material.cpp
+  DX12StructuredBuffer.cpp
+  DX12Texture.cpp
+  DX12VertexBuffer.cpp
+  DirectX12API.cpp
+  JGGraphics.cpp
+  Graphics.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\Graphics.dll
+  AI.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\AI.dll
+  DX12GUIBackend.cpp
+  GameFrameWorks.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\GameFrameWorks.dll
+  GameHost.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\GameHost.dll
+  JGConsole.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGConsole.exe
+  GUI.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\GUI.dll
+  DevConsole.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\DevConsole.dll
+  DevStatistics.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\DevStatistics.dll
+  Devkit.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\Devkit.dll
+  JGEditor.vcxproj -> C:\Develop\JGEngine\Temp\wt\d31\Bin\DevelopEngine\JGEditor.dll

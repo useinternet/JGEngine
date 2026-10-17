@@ -50,9 +50,15 @@ protected:
 	virtual void Destroy() = 0;
 	virtual void BeginFrame() = 0;
 	virtual void EndFrame() = 0;
+	// 메인 창 클라이언트 크기가 바뀌면 Graphics 모듈이 부른다(창 OnResize). 0 x 0 = 최소화. GUI 가 없어도 스왑체인이 따라간다. (GP-G1)
+	virtual void OnWindowResized(uint32 inWidth, uint32 inHeight) = 0;
 public:
 
+	// 이 텍스처를 매 프레임 백 버퍼에 복사한다(GUI 보다 먼저). 크기 · 포맷이 백 버퍼와 다르면 그 프레임은 복사하지 않는다(로그 한 번, GP-G3).
 	virtual void SubmitFinalTexture(PSharedPtr<IRawTexture> inTexture) = 0;
+	// 수직 동기. 켜면 Present 가 모니터 주사율에 맞춰 기다린다. 기본은 꺼짐(에디터). 다음 Present 부터 적용된다. (GP-G3)
+	virtual void SetVSyncEnabled(bool inEnabled) = 0;
+	virtual bool IsVSyncEnabled() const = 0;
 public:
 	virtual PSharedPtr<IJGGraphicsCommand> GetGraphicsCommand() const = 0;
 	virtual PSharedPtr<IRawTexture> GetDefaultTexture() const { return _defaultTexture; }

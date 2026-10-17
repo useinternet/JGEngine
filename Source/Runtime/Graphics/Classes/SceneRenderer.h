@@ -31,6 +31,7 @@ class GRAPHICS_API PSceneRenderer : public IMemoryObject
 	PSharedPtr<IRawTexture>  _depthStencilTexture;
 	PSharedPtr<IRawMaterial> _compositeMaterial;
 	PSharedPtr<IRawMaterial> _displayMaterial;
+	PString _name;
 	uint32 _width  = 0;
 	uint32 _height = 0;
 
@@ -39,6 +40,12 @@ public:
 
 	// 출력 · G버퍼 · 깊이 텍스처와 합성 머터리얼을 만든다. inName은 텍스처 이름의 앞부분(디버그용). 다시 부르면 새 크기로 다시 만든다.
 	bool Initialize(const PString& inName, uint32 inWidth, uint32 inHeight);
+	// 렌더 대상(G버퍼 · 깊이 · 출력 · 디스플레이)과 합성 · 디스플레이 머터리얼을 새 크기로 다시 만든다. (GP-G2)
+	// 메인 스레드, Render 밖에서 부른다. 같은 크기면 아무것도 하지 않고 true, 0 이 들어오면 false(이전 그대로).
+	// 텍스처 객체가 바뀌므로 GetDisplayTexture() · GetOutputTexture() · 텍스처 ID 는 보관하지 말고 매 프레임 다시 받는다.
+	// 옛 텍스처는 GPU 가 쓰던 프레임이 끝난 뒤 놓인다(이번 프레임 GUI 가 이미 옛 텍스처를 그리기로 했어도 안전하다).
+	// 크기 변경이 멈춘 뒤 한 번만 부르는 것은 호출자(뷰포트) 몫이다 — 부를 때마다 셰이더 두 개를 다시 컴파일한다.
+	bool Resize(uint32 inWidth, uint32 inHeight);
 	// 카메라를 찾지 못하면 출력은 클리어 색(빨강)으로 남는다.
 	void Render(const PScene& inScene, HSceneCameraID inCamera);
 
