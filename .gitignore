@@ -4,7 +4,15 @@
 *.pdb
 Temp/
 .vs/
-
-
-
-
+# 에디터 창 배치(실행마다 바뀜, PC마다 다름 — GUI 3-5)
+Bin/DevelopEngine/imgui.ini
+# 엔진 솔루션의 DevelopGame · ConfirmGame · ReleaseGame 산출물(3rd-party 사본 포함 — DevOps GP-D0). 추적은 DevelopEngine 만.
+# Bin/ConfirmGame 의 옛 추적 파일 43개는 그대로 추적된다(gitignore 는 이미 추적 중인 파일에 영향 없음).
+Bin/DevelopGame/
+Bin/ConfirmGame/
+Bin/ReleaseGame/
+# 커밋 전 검사(전체 필수 지침 8, 2026-10-17 엔진 총괄): 사용자 메모 · 실행 로그 · 크래시 덤프는 넣지 않는다.
+# 검사기 원본 Build/GitHooks/pre-commit — 깔기 sh Build/GitHooks/install.sh
+Document/Dashboard/사용자메모.md
+jg_log.txt
+*.stackdump
