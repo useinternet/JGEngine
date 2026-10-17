@@ -23,8 +23,10 @@ function DebugConfig(defined)
     runtime       "Debug"
 end
 
+-- Release 구성도 PDB 를 만든다(크래시 분석용). 패키징은 PDB 를 패키지에 넣지 않고 따로 둔다(DevOps GP-D0, 2026-10-02).
 function ConfirmConfig(defined)
-    optimize        "Full" 
+    symbols         "On"
+    optimize        "Full"
     defines         {"_RELEASE", "NDEBUG"}
     cppdialect      "C++20"
     staticruntime   "off"
@@ -32,7 +34,8 @@ function ConfirmConfig(defined)
 end
 
 function ReleaseConfig(defined)
-    optimize        "Full" 
+    symbols         "On"
+    optimize        "Full"
     defines         {"_RELEASE", "NDEBUG"}
     cppdialect      "C++20"
     staticruntime   "off"
@@ -81,6 +84,26 @@ workspace (WORKSPACE_NAME)
             path .. "**.c",
             PCH_HEADER_PATH,
             PCH_CPP_PATH,
+        }
+    end
+
+    -- 엔진과 무관한 단독 실행 파일(module.json "Standalone": true — 게임 패키지 부트스트랩 JGGameBootstrap).
+    -- PCH · Core · 코드젠 없이 그 폴더 소스만. CRT 는 JGBuildTool 이 구성 필터마다 staticruntime "on" 으로 정적 링크한다(DevOps GP-D2, 2026-10-02).
+    function SetStandaloneProjectConfig(kind_name, path, defined)
+        location  (GEN_PROJECT_FILE_PATH)
+        kind (kind_name)
+        language "C++"
+        debugdir  (BIN_PATH)
+        targetdir (BIN_PATH)
+        objdir(OBJECT_PATH)
+        buildoptions { "/utf-8" }
+        flags { "MultiProcessorCompile" }
+        if defined ~= nil then
+            defines {defined}
+        end
+        files {
+            path .. "**.h",
+            path .. "**.cpp",
         }
     end
 
@@ -139,6 +162,44 @@ workspace (WORKSPACE_NAME)
 				includedirs{ "Source/Programs/JGConsole/", "Source/ThirdParty", "Source/", "Source/Runtime/Core/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", }
 				links{ "Core", "GameFrameWorks", }
 				SetCPPProjectConfig("ConsoleApp", "Source/Programs/JGConsole/", {"_JGCONSOLE", })
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+
+
+			project "JGGameBootstrap"
+				SetStandaloneProjectConfig("WindowedApp", "Source/Programs/JGGameBootstrap/", {"_JGGAMEBOOTSTRAP", })
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+					staticruntime "on"
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+					staticruntime "on"
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+					staticruntime "on"
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+					staticruntime "on"
+
+
+			project "JGGameLaunch"
+				includedirs{ "Source/Programs/JGGameLaunch/", "Source/ThirdParty", "Source/", "Temp/CodeGen/JGGameLaunch/", "Source/Runtime/Core/", }
+				links{ "Core", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Programs/JGGameLaunch/", {"_JGGAMELAUNCH", }, "Temp/CodeGen/JGGameLaunch/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
@@ -281,6 +342,24 @@ workspace (WORKSPACE_NAME)
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
 
 
+			project "Audio"
+				includedirs{ "Source/Runtime/Audio/", "Source/ThirdParty", "Source/", "Temp/CodeGen/Audio/", "Source/Runtime/Core/", }
+				links{ "Core", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/Audio/", {"_AUDIO", }, "Temp/CodeGen/Audio/")
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+
+
 			project "Core"
 				includedirs{ "Source/Runtime/Core/", "Source/ThirdParty", "Source/", }
 				links{ }
@@ -321,6 +400,24 @@ workspace (WORKSPACE_NAME)
 				includedirs{ "Source/Runtime/GameFrameWorks/", "Source/ThirdParty", "Source/", "Temp/CodeGen/GameFrameWorks/", "Source/Runtime/Core/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", }
 				links{ "Core", "Asset", "Graphics", }
 				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/GameFrameWorks/", {"_GAMEFRAMEWORKS", }, "Temp/CodeGen/GameFrameWorks/")
+				filter "configurations:DevelopEngine"
+					DebugConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }
+				filter "configurations:DevelopGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPGAME", }
+				filter "configurations:ConfirmGame"
+					ConfirmConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_CONFIRMGAME", }
+				filter "configurations:ReleaseGame"
+					ReleaseConfig()
+					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_RELEASEGAME", }
+
+
+			project "GameHost"
+				includedirs{ "Source/Runtime/GameHost/", "Source/ThirdParty", "Source/", "Temp/CodeGen/GameHost/", "Source/Runtime/Core/", "Source/Runtime/Asset/", "Temp/CodeGen/Asset/", "Source/Runtime/Graphics/", "Temp/CodeGen/Graphics/", "Source/Runtime/GameFrameWorks/", "Temp/CodeGen/GameFrameWorks/", }
+				links{ "Core", "Asset", "Graphics", "GameFrameWorks", }
+				SetDynamicCPPProjectConfig("SharedLib", "Source/Runtime/GameHost/", {"_GAMEHOST", }, "Temp/CodeGen/GameHost/")
 				filter "configurations:DevelopEngine"
 					DebugConfig()
 					defines{"_PLATFORM_WINDOWS", "_DIRECTX12", "_JGPROJECT", "_DEVELOPENGINE", }

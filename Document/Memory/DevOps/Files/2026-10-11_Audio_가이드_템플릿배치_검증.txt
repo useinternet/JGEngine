@@ -1,0 +1,45 @@
+DevOps — 오디오 재생(D-37) 뒤처리(AU-1 ~ 3) + 게임 템플릿 배치 실패 종료 코드(GM-B5) — 2026-10-11 13:26 ~ 14:14, 메인 트리
+부탁: Core 세션(새 런타임 모듈 Source/Runtime/Audio, miniaudio 0.11.25, 의존 Core). Core 가 메인 반영 hold 13:54 → release 14:02.
+
+== 1. JGConsole 시작 연결 모듈에 Audio (AU-3)
+JGConsole 프로그램은 10-07 세션 통합 뒤 DevOps 담당(README 5절). 먼저 넣으면 Audio.dll 이 메인에 오기 전까지 JGConsole 실행마다 연결 실패가
+나므로, DevOps 가 승인하고 Core 가 같은 hold 안에서 Audio.dll 과 함께 넣었다(주석은 DevOps 가 준 그대로).
+  Source/Programs/JGConsole/Main.cpp  CONSOLE_ENGINE_MODULES = { "GameFrameWorks", "Audio" } + 주석 2줄(Audio 의 audio.selftest, 창이 없으면 무음 장치)
+Core 메인 확인: console.selftest 64/64 포함 회귀 10종 종료 0 · live 0.
+주의(가이드 2절 표에 적음): 게임 솔루션의 JGConsole 은 엔진 소스(..\Source\Programs\JGConsole\*.cpp)로 다시 빌드된다 — 배치 2 를 다시 돌리기 전
+  게임 솔루션에는 Audio 프로젝트가 없어 게임 Bin 에 Audio.dll 이 없고, 그 JGConsole 은 실행마다 "Fail Connect Audio Module" 오류 줄(명령 · 종료 코드는 그대로).
+
+== 2. 쿠킹 (AU-2) — Core 검증 게임 Temp/Games/AudioCheck(메인 엔진) 보고서로 확인, 다시 쿠킹하지 않음
+report.txt(2026-10-11T14:01:08) OK 97.1 s: modules = Asset, Graphics, GameFrameWorks, GameHost, Audio, AudioCheck(런타임 모듈 닫힘에 Audio — module.json 의존),
+  binaries ok(DLL 검사 통과 — miniaudio 는 헤더만, 시스템 DLL 은 IsSystemDll 이 System32 로 통과), content engine 5 + game 4, smoke 300 frames exit 0 ·
+  error 0 · reads outside Content 0, warnings 1 = assimp 복사(기존). 패키지 Bin = Asset · Audio · AudioCheck · GameFrameWorks · GameHost · Graphics ·
+  JGGameLaunch · assimp · msvcp140 · vcruntime140 · vcruntime140_1 · JGPackage.json. 쿠킹 코드 변경 없음.
+
+== 3. 생성 가이드 (AU-1)
+Files/게임프로젝트_생성가이드.md
+  2절 표: 새 행 "게임 모듈 *.module.json 의존 변경(예: Audio) → GenerateProjectFiles.bat", 엔진 모듈 추가 행에 Audio 예시 + 게임 Bin JGConsole 연결 실패 줄
+  5절: 다른 엔진으로 옮길 때 EngineRoot 와 GenerateProjectFiles.bat 의 엔진 경로를 둘 다 바꾼다(Core 가 알려 준 함정)
+  6절: belongs to engine 행 보강, 새 행 "게임 GenerateProjectFiles.bat 가 오류를 내고도 종료 0 → 마지막 줄 네 줄로"
+  9절 새로: 소리 쓰기(Core 초안 6항목 — module.json · StartupModule 연결 코드 · Content 소리 파일 · HAudio API · -nosound · 배치 2) + 확인 기록
+  API 이름은 메인 Source/Runtime/Audio/Audio.h · AudioGlobalSystem.cpp(-nosound)와 대조.
+
+== 4. 게임 템플릿 배치 실패 종료 코드 (GM-B5)
+Core 보고: worktree 엔진으로 만든 게임을 메인으로 옮기며 .jgproject EngineRoot 만 바꾸자 Critical "belongs to engine … but this tool is in …" 이 나고도
+  배치는 종료 0.
+원인: 툴(JGHeaderTool · JGBuildTool)은 -project= 를 못 쓰면 "Not a usable game project" Critical + 종료 1, 엔진 GenerateGameProjectFiles.bat 도 1 을
+  돌려준다. 게임 쪽 GenerateProjectFiles.bat(템플릿) 마지막 줄 "if errorlevel 1 pause" 에서 pause 가 배치를 0 으로 끝낸다.
+  스크래치 실험: call 한 배치가 exit /b 1 → "if errorlevel 1 pause" 로 끝나면 cmd /c 종료 0, "if errorlevel 1 ( pause / exit /b 1 )" 이면 1.
+고침: Build/Templates/GameProject/GenerateProjectFiles.bat 마지막 줄 → if errorlevel 1 ( pause · exit /b 1 ) + 주석 2줄(CRLF 유지).
+  템플릿은 배치 1 이 디스크에서 읽으므로 다시 빌드할 것 없음. 이미 만든 게임 프로젝트(ProjectAH · Temp/Games)의 배치는 그대로 — 가이드 6절에 바꾸는 법.
+실제 툴로 확인(메인 Bin, MainTree exec, 검증 게임 Temp/Games/TplCheck — 확인 뒤 삭제):
+  배치 1 CreateGameProject.bat → exit 0, 생성된 GenerateProjectFiles.bat 에 새 마지막 줄(엔진 경로 C:\Develop\JGEngine 치환)
+  배치 2 정상 → exit 0, TplCheck.sln 생성 ("[GenerateGameProjectFiles] done")
+  Project.EngineRoot 를 C:/Develop/JGEngine/Temp/Games 로(다른 엔진 흉내) → 새 배치 exit 1:
+    [critical][Core]: Project TplCheck belongs to engine C:/Develop/JGEngine/Temp/Games/, but this tool is in C:/Develop/JGEngine/. Use that engine's batch files or fix EngineRoot
+    [critical][HeaderTool]: Not a usable game project: C:\Develop\JGEngine\Temp\Games\TplCheck
+    [GenerateGameProjectFiles] failed. See the log above or Build\BatchFiles\jg_log.txt
+  같은 상태에서 옛 마지막 줄 사본(GenerateProjectFiles_old.bat) → 같은 오류 줄인데 exit 0  ← 고치기 전 동작 재현
+  (첫 시도는 검증 스크립트가 EngineRoot 를 "Project" 밖 최상위에 써서 툴이 못 보고 정상 생성 — 키 위치를 고쳐 다시)
+  MainTree history: 14:12:26 old exit 0 · 14:12:47 new exit 1 · 14:12:48 old exit 0.
+함정(기록): Git Bash 에서 MainTree.cmd 로 넘기는 인자의 역슬래시가 사라진다 → 슬래시 경로(C:/Develop/...)로 넘긴다(MainTree 가 프로그램 경로의 / 를 \ 로 바꾼다,
+  배치의 %~f1 도 바꾼다).

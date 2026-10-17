@@ -51,6 +51,11 @@ public:
 	// ModulePath · CodeGenPath 는 자기 루트 기준이라, 게임 프로젝트 솔루션에서는 엔진 모듈 경로에 엔진 루트를 붙여야 한다.
 	bool bEngineModule = true;
 
+	// 선택 필드 "Standalone": true — 엔진과 무관한 단독 실행 파일(게임 패키지 부트스트랩 JGGameBootstrap).
+	// PCH 를 넣지 않고(PCH 의 #pragma comment(lib) 도 없음) Core 를 링크하지 않으며 CRT 를 정적으로 링크한다(DevOps GP-D2, 2026-10-02).
+	// 템플릿(ModuleInfoTemplate.json)에는 쓰지 않는다 — 없으면 false.
+	bool bStandalone = false;
+
 	//PString DevelopEngineFilter;
 	//PString DevelopGameFilter;
 	//PString DevelopConfirmGameFilter;
@@ -119,6 +124,9 @@ protected:
 		{
 			JG_LOG(BuildTool, ELogLevel::Error, "ReleaseGame: fail read json data");
 		}
+
+		// 선택 필드라 없어도 오류가 아니다.
+		json.GetData("Standalone", &bStandalone);
 
 		HFileHelper::CombinePath(HFileHelper::EngineCodeGenDirectory(), ModuleName + "/", &CodeGenPath);
 		CodeGenPath.Remove(0, HFileHelper::EngineDirectory().Length());

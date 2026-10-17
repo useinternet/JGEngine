@@ -21,8 +21,10 @@ function DebugConfig(defined)
     runtime       "Debug"
 end
 
+-- Release 구성도 PDB 를 만든다(크래시 분석용). 패키징은 PDB 를 패키지에 넣지 않고 따로 둔다(DevOps GP-D0, 2026-10-02).
 function ConfirmConfig(defined)
-    optimize        "Full" 
+    symbols         "On"
+    optimize        "Full"
     defines         {"_RELEASE", "NDEBUG"}
     cppdialect      "C++20"
     staticruntime   "off"
@@ -30,7 +32,8 @@ function ConfirmConfig(defined)
 end
 
 function ReleaseConfig(defined)
-    optimize        "Full" 
+    symbols         "On"
+    optimize        "Full"
     defines         {"_RELEASE", "NDEBUG"}
     cppdialect      "C++20"
     staticruntime   "off"
@@ -79,6 +82,26 @@ workspace (WORKSPACE_NAME)
             path .. "**.c",
             PCH_HEADER_PATH,
             PCH_CPP_PATH,
+        }
+    end
+
+    -- 엔진과 무관한 단독 실행 파일(module.json "Standalone": true — 게임 패키지 부트스트랩 JGGameBootstrap).
+    -- PCH · Core · 코드젠 없이 그 폴더 소스만. CRT 는 JGBuildTool 이 구성 필터마다 staticruntime "on" 으로 정적 링크한다(DevOps GP-D2, 2026-10-02).
+    function SetStandaloneProjectConfig(kind_name, path, defined)
+        location  (GEN_PROJECT_FILE_PATH)
+        kind (kind_name)
+        language "C++"
+        debugdir  (BIN_PATH)
+        targetdir (BIN_PATH)
+        objdir(OBJECT_PATH)
+        buildoptions { "/utf-8" }
+        flags { "MultiProcessorCompile" }
+        if defined ~= nil then
+            defines {defined}
+        end
+        files {
+            path .. "**.h",
+            path .. "**.cpp",
         }
     end
 

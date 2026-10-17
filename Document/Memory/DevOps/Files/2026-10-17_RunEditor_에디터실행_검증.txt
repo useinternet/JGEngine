@@ -1,0 +1,148 @@
+RunEditor.cmd — 대시보드 "에디터 실행" 버튼이 부르는 엔진 에디터 실행 스크립트 검증 (DevOps, 2026-10-17 14:37 ~ 14:40)
+배정: 엔진 총괄(사용자 대시보드 명령 10-17 14:29 "혹시 대시보드에 에디터 실행할수있는 버튼 만들어줄수있나??"). 버튼(통합 대시보드 화면 · 서버)은 프로젝트 총괄 몫.
+엔진 코드 변경 없음. 커밋 없음.
+
+1. 만든 것
+  - 새 Build/BatchFiles/RunEditor.cmd — MainTree.ps1 의 새 동작 `editor` 를 부르는 얇은 래퍼(`-name=RunEditor editor %*`).
+  - Build/BatchFiles/MainTree.ps1 — 동작 `editor` 추가(Invoke-Editor · Get-RunningLaunchers), 옵션 기록 $given(-wait 기본값 구분),
+    Exit-Usage 가 editor 일 때 한국어 한 줄, 머리 주석 · 사용법 줄. 한국어 문구 때문에 UTF-8 BOM 으로 저장(Windows PowerShell 5.1 이
+    BOM 없는 .ps1 을 ANSI 로 읽음). 기존 동작(status · build · exec · hold · release)은 그대로.
+  - Build/BatchFiles/MainTree.cmd — 머리 주석에 editor 한 줄.
+  - 검증 도구 Document/Memory/DevOps/Files/tools/runeditor_check.js — 대시보드 서버처럼 Node 에서 파이프로 부른다.
+
+  동작(엔진 단독):
+    1) 빌드 중인지 본다 — MainTree 잠금(Temp\MainTree\lock, build · exec · hold), 도우미 밖 MSBuild · cl · link · lib · rc · mt · cvtres ·
+       premake5(MainTree 와 같은 감지), 10초 안에 바뀐 빌드 출력(Bin\*\*.dll/exe/lib/exp/pdb/ilk/idb, Temp\Obj). 메인 Bin 에서 도는
+       프로그램은 빌드로 치지 않는다. 바쁘면 -wait=<초>(0~600, 기본 0)만큼 1.5~2.5초 간격으로 다시 본 뒤 90.
+    2) 잠금을 잡은 채로 같은 Bin 의 JGLauncher.exe 가 떠 있는지 본다(Win32_Process 의 ExecutablePath) → 떠 있으면 89.
+    3) Start-Process(셸 실행 — 이 프로세스의 핸들 · 파이프를 물려주지 않음)로 Bin\DevelopEngine\JGLauncher.exe 를 그 폴더를 작업 폴더로
+       띄운다. 2초 안에 끝나면 93(종료 코드 · jg_log.txt 안내), 아니면 0. 그 뒤 잠금을 놓는다 — 잠금은 띄우는 2~3초 동안만.
+       이후 MainTree build · hold 는 지금처럼 메인 Bin 에서 도는 에디터를 기다린다.
+  -project=<게임 프로젝트 폴더 | .jgproject>: <Project>\Bin\DevelopEngine\JGLauncher.exe. 그 프로젝트 폴더의 빌드만 보고 메인 트리
+    잠금은 보지 않는다(게임 프로젝트는 따로 빌드되는 다른 트리). .jgproject 가 없으면 92.
+  출력: 한국어 한 줄(파이프로 읽으면 UTF-8). 기록: Temp\MainTree\history.log 에 `editor` 줄.
+
+  종료 코드
+    0   에디터를 띄움 — "에디터를 띄움(pid N) — Bin\DevelopEngine\JGLauncher.exe"
+    89  이미 떠 있음 — "이미 떠 있음 — <exe> pid N, HH:mm:ss 부터. 두 번째는 띄우지 않음"
+    90  빌드 중 — "빌드 중 — <누구>: <무엇>, <시간>째. 끝나면 다시 눌러 주세요" (잠금이 exec 이면 "메인 트리 사용 중 — …",
+        -wait 를 줬으면 "— N초 기다려도 안 끝남")
+    91  사용법이 틀림 — "사용법이 틀림 — <까닭> (RunEditor.cmd [-wait=초] [-name=누구] [-project=게임 프로젝트 폴더])"
+    92  없음 — "에디터 실행 파일이 없음 — <exe> (먼저 빌드)" / "게임 프로젝트가 아님 — <폴더> 에 .jgproject 가 없음"
+    93  못 뜸 — "에디터가 바로 끝남(종료 코드 N) — <Bin>\jg_log.txt 를 보세요" / "에디터를 띄우지 못함 — <예외>"
+
+2. 에디터를 띄우지 않는 경우 (Git Bash → cmd //c, 14:3x)
+  -wait=abc       → 91  사용법이 틀림 — -wait= must be a number from 0 to 600 (…)
+  foo             → 91  사용법이 틀림 — 모르는 인자 foo (…)
+  -wait=700       → 91  (같은 범위 문구)
+  -project=C:\Develop\JGEngine\Document → 92  게임 프로젝트가 아님 — C:\Develop\JGEngine\Document 에 .jgproject 가 없음
+  -project=Temp\Games\LogCheck          → 92  에디터 실행 파일이 없음 — …\Temp\Games\LogCheck\Bin\DevelopEngine\JGLauncher.exe (먼저 빌드)
+                                              (LogCheck 는 패키지 검증용이라 DevelopEngine 에디터를 빌드하지 않았다)
+  -project=C:\NoSuchDir                 → 92  게임 프로젝트가 아님 — C:\NoSuchDir 에 .jgproject 가 없음
+  MainTree 회귀: status → 0 free, exec cmd.exe /d /c exit 7 → 7(잠금 · 기록 그대로), 모르는 동작 bogus → 91(사용법 줄에 editor)
+
+3. 실제 에디터로 세 경우 + 기다리기 (node runeditor_check.js, 2회차 전문 — 1회차 14:37:29 도 ALL PASS, 차이는 아래 4)
+  [14:38:59] engine C:\Develop\JGEngine, game project C:\Develop\JGEngine\Temp\Games\GameUIDemo
+  [14:39:01] status: exit 0 | [MainTree] tree C:\Develop\JGEngine / [MainTree] lock: free / [MainTree] free
+  [14:39:02] -- 1 start
+  [14:39:05] PASS start: exit 0 (want 0), returned 3824 ms, pipes closed 3824 ms
+  [14:39:05]      | 에디터를 띄움(pid 44108) — Bin\DevelopEngine\JGLauncher.exe
+  [14:39:09] PASS editor runs after the script returned: JGLauncher from main Bin: [44108]
+  [14:39:09] PASS editor writes Bin\DevelopEngine\jg_log.txt
+  [14:39:09] -- 2 already running
+  [14:39:11] PASS already running: exit 89 (want 89), returned 1874 ms, pipes closed 1874 ms
+  [14:39:11]      | 이미 떠 있음 — Bin\DevelopEngine\JGLauncher.exe pid 44108, 14:39:03 부터. 두 번째는 띄우지 않음
+  [14:39:12] PASS still one editor
+  [14:39:12] -- 3 a MainTree hold waits for the running editor (as builds do)
+  [14:39:13] PASS status names the editor: exit 1 (want 1), returned 1594 ms, pipes closed 1594 ms
+  [14:39:13]      | [MainTree] tree C:\Develop\JGEngine
+  [14:39:13]      | [MainTree] lock: free
+  [14:39:13]      | [MainTree] running Bin\DevelopEngine\JGLauncher.exe (pid 44108 since 14:39:03)
+  [14:39:13]      | [MainTree] busy
+  [14:39:16] PASS hold while the editor runs: exit 90 (want 90), returned 2802 ms, pipes closed 2802 ms
+  [14:39:16]      | [MainTree] hold not taken: still busy after 0 minute(s)
+  [14:39:21] close: closed, window "JGEditor", exit 0
+  [14:39:21] -- 4 busy: MainTree hold of another session
+  [14:39:23] PASS hold taken: exit 0 (want 0), returned 2706 ms, pipes closed 2706 ms
+  [14:39:23]      | [MainTree] hold taken for DevOpsCheckHold until 14:42:23 (pid 13488) - build and exec with -name=DevOpsCheckHold run inside it; end it with: MainTree.cmd -name=DevOpsCheckHold release
+  [14:39:24] PASS busy (hold): exit 90 (want 90), returned 1029 ms, pipes closed 1029 ms
+  [14:39:24]      | 빌드 중 — DevOpsCheckHold: hold 3m, 2s째. 끝나면 다시 눌러 주세요
+  [14:39:25] PASS no editor started
+  [14:39:25] -- 5 game project editor while the main tree is held
+  [14:39:29] PASS game project start: exit 0 (want 0), returned 3954 ms, pipes closed 3954 ms
+  [14:39:29]      | 에디터를 띄움(pid 32600) — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe
+  [14:39:31] PASS game project already running: exit 89 (want 89), returned 1709 ms, pipes closed 1710 ms
+  [14:39:31]      | 이미 떠 있음 — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe pid 32600, 14:39:27 부터. 두 번째는 띄우지 않음
+  [14:39:35] close: closed, window "JGEditor - GameUIDemo", exit 0
+  [14:39:35] -- 6 -wait=40, the hold ends after about 8 s
+  [14:39:44] release: exit 0 | [MainTree] hold of DevOpsCheckHold released
+  [14:39:47] PASS start after waiting: exit 0 (want 0), returned 12316 ms, pipes closed 12316 ms
+  [14:39:47]      | 에디터를 띄움(pid 39896) — Bin\DevelopEngine\JGLauncher.exe, 빌드가 끝나길 11s 기다린 뒤
+  [14:39:47] PASS waited about 8 s: 12316 ms
+  [14:39:51] close: closed, window "JGEditor", exit 0
+  [14:39:51] -- 7 busy: build output written just now
+  [14:39:53] PASS busy (fresh build output): exit 90 (want 90), returned 1734 ms, pipes closed 1734 ms
+  [14:39:53]      | 빌드 중 — build output written 2s ago (Temp\Obj\_runeditor_probe.tmp). 끝나면 다시 눌러 주세요
+  [14:39:54] PASS no editor started
+  [14:39:54] -- 8 a launcher that ends at once (fake game project, whoami.exe as JGLauncher.exe)
+  [14:39:57] PASS ended at once: exit 93 (want 93), returned 2354 ms, pipes closed 2354 ms
+  [14:39:57]      | 에디터가 바로 끝남(종료 코드 0) — C:\Develop\JGEngine\Temp\Games\_RunEditorFake\Bin\DevelopEngine\jg_log.txt 를 보세요
+  [14:39:58] status: exit 0 | [MainTree] tree C:\Develop\JGEngine / [MainTree] lock: free / [MainTree] free
+  [14:39:58] ALL PASS
+
+  읽는 법
+  - "returned" = cmd 종료까지, "pipes closed" = 출력 파이프가 모두 닫힐 때까지. 두 값이 같다 = 띄운 에디터가 호출한 쪽의 파이프를
+    물고 있지 않다 → 대시보드 서버(Node)가 스크립트 끝을 바로 받는다(에디터가 떠 있는 동안 응답이 걸리지 않음).
+  - 띄우기 약 3.8초 = PowerShell 시작 · 감지 약 1.8초 + 바로 끝나는지 보는 2초.
+  - 3번: 에디터가 떠 있으면 status 가 그 에디터를 보이고 MainTree hold(빌드와 같은 대기)는 -wait=0 에서 90 — 지금처럼 빌드가 에디터를 기다린다.
+  - 4번: 다른 세션의 hold 를 대역(DevOpsCheckHold)으로 잡고 눌렀을 때 90, 에디터 0개.
+  - 5번: 메인 트리가 잡혀 있어도 게임 프로젝트 에디터(GameUIDemo — DevOps 검증 게임, 10-03 빌드)는 뜬다(0), 두 번째는 89.
+  - 6번: -wait=40 으로 기다리다 hold 가 풀린 뒤(14:39:44) 띄움 — 12.3초.
+  - 7번: Temp\Obj 에 방금 쓴 파일(대역 _runeditor_probe.tmp, 바로 지움)이 있으면 90 — 도우미 밖에서 막 끝난 빌드 모양.
+  - 8번: 가짜 게임 프로젝트(Temp\Games\_RunEditorFake, whoami.exe 를 JGLauncher.exe 로 복사, 끝나고 폴더째 지움) → 93.
+  - 띄운 에디터 3개(엔진 2 · GameUIDemo 1)는 창이 뜬 뒤 3초 있다가 WM_CLOSE → 모두 종료 코드 0(2회차). 창 제목 "JGEditor" ·
+    "JGEditor - GameUIDemo". 끝난 뒤 status free, 메인 Bin 에 JGLauncher 0개.
+
+4. 1회차(14:37:29 ~ 14:38:29)와 고친 것
+  - 1회차도 1~7 모두 PASS. 검증 도구가 닫은 에디터의 종료 코드를 못 읽어("exit " 빈칸) 핸들을 먼저 잡게 고침 → 2회차 exit 0.
+  - 바로 끝나는지 보는 시간 3초 → 2초(버튼 응답 4.9초 → 3.8초). 8번(93) 경우를 2회차에 더함.
+  - history 의 editor 줄 "waited" → "took"(띄우는 시간까지 든 전체 시간이라서). 2회차 뒤에 고친 글자 하나라 다시 돌리지 않음
+    (고친 뒤 -project=C:\NoSuchDir → 92 로 스크립트가 읽히는 것만 확인).
+
+5. 확인하지 않은 것
+  - 콘솔 창에서 직접 실행했을 때의 한국어 표시(파이프가 아니면 콘솔 인코딩으로 쓴다 — MainTree 와 같은 방식).
+  - 대시보드 버튼 자체(프로젝트 총괄 몫). 버튼은 종료 코드로 나누거나 출력 한 줄을 그대로 보여 주면 된다.
+
+6. Temp\MainTree\history.log 의 이번 줄(1 · 2회차, 2회차 뒤 회귀 exec 포함)
+  2026-10-03 19:24:43 | DevOps | exec gamehost_e2e.ps1 -Exe C:DevelopJGEngineBinDevelopEngineJGLauncher.exe -Arguments... | waited 0s | ran 18s | exit 0
+  2026-10-03 19:25:35 | DevOps | exec gamehost_e2e.ps1 -Exe C:/Develop/JGEngine/Bin/DevelopEngine/JGLauncher.exe -Argu... | waited 0s | ran 25s | exit 0
+  2026-10-11 14:12:00 | DevOps | exec CreateGameProject.bat C:/Develop/JGEngine/Temp/Games/TplCheck | waited 0s | ran 0s | exit 0
+  2026-10-11 14:12:08 | DevOps | exec GenerateProjectFiles.bat | waited 0s | ran 1s | exit 0
+  2026-10-11 14:12:25 | DevOps | exec GenerateProjectFiles.bat | waited 0s | ran 1s | exit 0
+  2026-10-11 14:12:26 | DevOps | exec GenerateProjectFiles_old.bat | waited 0s | ran 1s | exit 0
+  2026-10-11 14:12:47 | DevOps | exec GenerateProjectFiles.bat | waited 0s | ran 0s | exit 1
+  2026-10-11 14:12:48 | DevOps | exec GenerateProjectFiles_old.bat | waited 0s | ran 0s | exit 0
+  2026-10-11 22:56:34 | DevOps | build DevelopEngine Temp\ProjectFiles\JGGameLaunch.vcxproj | waited 0s | ran 2s | exit 0
+  2026-10-11 22:57:00 | DevOps | build ReleaseGame Temp\ProjectFiles\JGGameLaunch.vcxproj | waited 0s | ran 12s | exit 0
+  2026-10-11 22:57:11 | DevOps | exec CreateGameProject.bat C:/Develop/JGEngine/Temp/Games/LogCheck | waited 0s | ran 0s | exit 0
+  2026-10-11 22:58:55 | DevOps | exec JGConsole.exe -runCook -project=C:/Develop/JGEngine/Temp/Games/LogCheck | waited 0s | ran 1m37s | exit 0
+  2026-10-17 14:37:36 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 4s | exit 0 | 에디터를 띄움(pid 39572) — Bin\DevelopEngine\JGLauncher.exe
+  2026-10-17 14:37:41 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 1s | exit 89 | 이미 떠 있음 — Bin\DevelopEngine\JGLauncher.exe pid 39572, 14:37:33 부터. 두 번째는 띄우지 않음
+  2026-10-17 14:37:47 | DevOpsCheck | hold 1m | gave up after 0m, still busy
+  2026-10-17 14:37:55 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | busy after 0s: DevOpsCheckHold: hold 3m, 1s째
+  2026-10-17 14:38:01 | DevOpsCheck | editor C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe | waited 4s | exit 0 | 에디터를 띄움(pid 46456) — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe
+  2026-10-17 14:38:03 | DevOpsCheck | editor C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe | waited 1s | exit 89 | 이미 떠 있음 — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe pid 46456, 14:37:58 부터. 두 번째는 띄우지 않음
+  2026-10-17 14:38:16 | DevOpsCheckHold | hold 3m | waited 0s | held 23s | released
+  2026-10-17 14:38:21 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 13s | exit 0 | 에디터를 띄움(pid 40196) — Bin\DevelopEngine\JGLauncher.exe, 빌드가 끝나길 13s 기다린 뒤
+  2026-10-17 14:38:27 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | busy after 0s: build output written 2s ago (Temp\Obj\_runeditor_probe.tmp)
+  2026-10-17 14:39:05 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 3s | exit 0 | 에디터를 띄움(pid 44108) — Bin\DevelopEngine\JGLauncher.exe
+  2026-10-17 14:39:10 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 1s | exit 89 | 이미 떠 있음 — Bin\DevelopEngine\JGLauncher.exe pid 44108, 14:39:03 부터. 두 번째는 띄우지 않음
+  2026-10-17 14:39:16 | DevOpsCheck | hold 1m | gave up after 0m, still busy
+  2026-10-17 14:39:24 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | busy after 0s: DevOpsCheckHold: hold 3m, 2s째
+  2026-10-17 14:39:29 | DevOpsCheck | editor C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe | waited 3s | exit 0 | 에디터를 띄움(pid 32600) — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe
+  2026-10-17 14:39:31 | DevOpsCheck | editor C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe | waited 1s | exit 89 | 이미 떠 있음 — C:\Develop\JGEngine\Temp\Games\GameUIDemo\Bin\DevelopEngine\JGLauncher.exe pid 32600, 14:39:27 부터. 두 번째는 띄우지 않음
+  2026-10-17 14:39:44 | DevOpsCheckHold | hold 3m | waited 0s | held 21s | released
+  2026-10-17 14:39:47 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | waited 11s | exit 0 | 에디터를 띄움(pid 39896) — Bin\DevelopEngine\JGLauncher.exe, 빌드가 끝나길 11s 기다린 뒤
+  2026-10-17 14:39:53 | DevOpsCheck | editor Bin\DevelopEngine\JGLauncher.exe | busy after 0s: build output written 2s ago (Temp\Obj\_runeditor_probe.tmp)
+  2026-10-17 14:39:57 | DevOpsCheck | editor C:\Develop\JGEngine\Temp\Games\_RunEditorFake\Bin\DevelopEngine\JGLauncher.exe | waited 1s | exit 93 | 에디터가 바로 끝남(종료 코드 0) — C:\Develop\JGEngine\Temp\Games\_RunEditorFake\Bin\DevelopEngine\jg_log.txt 를 보세요
+  2026-10-17 14:40:11 | DevOps | exec cmd.exe /d /c exit 7 | waited 1s | ran 0s | exit 7

@@ -1,0 +1,27 @@
+{
+  "ModuleInfo": {
+    "ModuleFormat": "SharedLib",
+    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GameFrameWorks" ],
+    "ModuleName": "GameHost",
+    "ModulePath": "Source/Runtime/GameHost/",
+    "Defines": [
+      "_GAMEHOST"
+    ],
+    "DevelopEngine": {
+      "Config": "DebugConfig",
+      "Defines": []
+    },
+    "DevelopGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ConfirmGame": {
+      "Config": "ConfirmConfig",
+      "Defines": []
+    },
+    "ReleaseGame": {
+      "Config": "ReleaseConfig",
+      "Defines": []
+    }
+  }
+}

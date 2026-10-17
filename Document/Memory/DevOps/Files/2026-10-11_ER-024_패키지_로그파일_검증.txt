@@ -1,0 +1,35 @@
+DevOps ER-024 같은 패키지에서 여러 개 띄울 때 로그 파일 따로 쓰기 — 2026-10-11 22:5x ~ 23:00, 메인 트리(미커밋)
+지시: 엔진 총괄(22:51, 사용자 결정 없이 맡김 — 바랄 동작이 정해진 작은 결함). 요청서 C:\Develop\ProjectAH\Document\엔진요청\ER-024_같은_패키지에서_여러_개_띄울_때_로그_파일_따로_쓰기.md
+문제: 한 패키지 폴더에서 같은 <Name>.exe 를 둘 이상 띄우면 모두 Saved/Logs/<Name>.log 를 연다 — 로그 시스템(GLogGlobalSystem)이 시작할 때
+  파일을 비우고 spdlog 가 공유 모드(_SH_DENYNO)로 열어서, 뒤에 뜬 쪽이 앞 기록을 지우고 그 뒤 줄이 섞였다(게임 쪽 확인: 방장 "hosting on port" 줄이 지워짐).
+
+== 1. 변경 — Source/Programs/JGGameLaunch/JGGameLaunch.cpp 한 파일(GP-D2 진입 DLL)
+- claimLogFile: 기본 경로(<루트>/Saved/Logs/<exe 이름>.log)부터 <이름>_2.log, _3.log … (최대 32) 차례로, 파일을 OPEN_ALWAYS 로 열고
+  (있는 내용은 건드리지 않음) 파일 끝 훨씬 뒤(0x7FFFFFFF00000000) 1 바이트에 LockFileEx 배타 잠금(LOCKFILE_FAIL_IMMEDIATELY).
+  잠기면 그 이름은 이 실행 것 — 핸들을 게임이 끝날 때까지 쥔다. ERROR_LOCK_VIOLATION(다른 실행이 쥠) · ERROR_SHARING_VIOLATION(다른 프로그램이
+  혼자 열어 둠)이면 다음 이름, 그 밖의 실패(권한 · 경로)면 예전처럼 기본 이름을 로그 시스템에 맡긴다.
+  왜 이 방식: 잡기가 OS 에서 원자적(동시에 뜬 셋 중 하나만 이긴다), 프로세스가 죽어도 OS 가 푼다, 경로 표기가 달라도 같은 파일이면 같은 잠금,
+  잠금 범위가 로그 내용 밖이라 로그 시스템의 비우기 · 덧붙여 쓰기와 부딪치지 않는다, 남는 파일 없음.
+- -logfile=<경로>: 로그 파일을 고른다. 상대 경로는 <루트>/Saved/Logs 기준, 절대 경로는 그대로. 쓰는 중이면 같은 규칙으로 _2 …
+- 로그 첫머리에 "[GameLaunch]: Log file <경로> (process <pid>)" 한 줄 — 다른 이름을 골랐으면 " - <기본 이름> is in use by another run of this package".
+- 혼자 띄우면 이름 그대로(쿠킹 스모크 · 배포 실행기가 <Name>.log 를 읽는다). 개발 실행(JGLauncher · JGConsole 의 jg_log.txt)은 그대로 — 보류 MT-H1.
+
+== 2. 빌드
+메인 MainTree build -project=JGGameLaunch: DevelopEngine 2초 exit 0(obj 22:56:33 다시 생성), ReleaseGame 12초 exit 0(패키지 호출 경로 컴파일).
+
+== 3. 패키지 확인 — 새 검증 게임 Temp/Games/LogCheck(메인 Bin 배치 1, 템플릿 그대로)
+쿠킹: MainTree exec JGConsole.exe -runCook → 97.2 s OK(build 87.7 s, binaries 11, content 5, 10.8 MB, 경고 assimp 1 — 기존),
+  스모크 300 frames exit 0 · error 0 · Content 밖 읽기 0, smoke.log 에 "Log file …\ReleaseGame.staging\Saved\Logs\LogCheck.log (process 20068)" = 혼자 실행은 기본 이름.
+도구: Files/tools/package_multi_launch.ps1 (같은 exe 를 N 개 한꺼번에 -smoke · 640x360 창으로 띄우고 로그마다 시작 · 종료 · 오류 · pid · 스레드 id 를 셈)
+| 시험 | 결과 |
+| 3개 동시 | 종료 0 ×3, LogCheck.log(pid 24788) · LogCheck_2.log(44732) · LogCheck_3.log(22076), 파일마다 125줄 · 시작 1 · GameHost: shutdown 1 · 오류 0,
+|           | _2 · _3 에 "LogCheck.log is in use by another run of this package", 스레드 id 가 파일끼리 겹치지 않음(섞임 없음) → RESULT OK |
+| 그 뒤 혼자 | 종료 0, LogCheck.log 만 다시 씀(22:59:28, Package 줄 1 = 앞 기록이 깨끗이 지워짐 — 잠금을 쥔 채 로그 시스템의 비우기 정상), _2 · _3 그대로(22:59:14) |
+| -logfile=Host.log 2개 동시 | Saved/Logs/Host.log(21984) · Host_2.log(3860), 각각 시작 1 · 종료 1 · 오류 0 → RESULT OK |
+| -logfile=<절대 경로> | 스크래치패드 abs_check.log 에 씀, 종료 0 |
+| 서술자 없음(Bin/JGPackage.json 뺀 사본) | 종료 2 그대로, Saved/Logs/LogCheck.log 에 "No valid package descriptor" Critical(사본은 지움) |
+| 죽은 실행 | A(1200 프레임) 실행 중 B → LogCheck_2.log(5956), A 강제 종료 뒤 C → LogCheck.log(33888) = 죽어도 잠금이 풀림 |
+
+== 4. 문서
+생성 가이드 8절: 패키지 로그 줄에 _2 · -logfile, "멀티플레이 확인 (패키지)" 의 "패키지 폴더를 하나 복사해 두 번째를 띄운다" → 같은 폴더에서 바로(ER-024).
+검증 게임 Temp/Games/LogCheck 는 남겨 둠(git 무시, EngineRoot = 메인) — 다시 확인할 때 쓴다.

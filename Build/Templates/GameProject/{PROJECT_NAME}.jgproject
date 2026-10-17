@@ -3,6 +3,11 @@
     "Name": "{PROJECT_NAME}",
     "EngineRoot": "{ENGINE_ROOT}",
     "GameModules": [ "{PROJECT_NAME}" ],
-    "EditorModules": [ "{PROJECT_NAME}Editor" ]
+    "EditorModules": [ "{PROJECT_NAME}Editor" ],
+    "Package": {
+      "Version": "0.1.0",
+      "Window": { "Title": "{PROJECT_NAME}", "Width": 1920, "Height": 1080, "Mode": "Windowed", "VSync": true },
+      "ExcludeContent": []
+    }
   }
 }

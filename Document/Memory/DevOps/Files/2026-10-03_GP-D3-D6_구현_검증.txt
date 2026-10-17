@@ -1,0 +1,55 @@
+DevOps GP-D3 · D4 · D5 · D6 구현 · 검증 기록 (2026-10-02 밤 ~ 2026-10-03 10:1x, 워크트리 Temp/wt/gp → 메인 트리 C:\Develop\JGEngine)
+사용자 지시: 10-02 "계속해서 끝까지 진행해줘", 10-03 09:44 "어제 사용량 한도로 멈춘 작업 이어서 진행"(총괄 전달). 설계 Files/게임빌드파이프라인_설계_2026-10-02.md.
+선행(다른 세션, 모두 메인): GUI GP-C1 입력 계층, Graphics GP-G1~G3(스왑체인 크기 · VSync · 제출 크기 가드) · G4(셰이더 → <Engine>/Content/Shaders),
+GameFrameWorks GP-F1 PGameViewport + F1b(렌더 텍스처 크기 맞춤), Data GP-A1 ValidateContentForCook, DevConsole D-30 JGConsole -game(같은 함수, 병합 정상).
+
+== 1. 변경 (전부 메인, 미커밋)
+GP-D5  Core Misc/Module.h/.cpp  HRuntimeModuleInfo(runtime_module_info.json Load/Save/DefaultPath), HModuleSystemInfo::Get 이 RuntimeModulesOnly 면 그 목록
+       Core CoreSystem.h/.cpp  ECoreSystemFlags::RuntimeModulesOnly · GlobalValues.bRuntimeModulesOnly
+       JGBuildTool BuildTool.h/.cpp  writeRuntimeModuleInfo: 뿌리 GameHost + .jgproject GameModules, module.json 의존 따라 SharedLib 만 의존 순서,
+         에디터 모듈(Source/Editor · EditorModules) 의존 → EditorDependencies(경고, 쿠킹 실패), GUI · Devkit 의존 → DevelopmentDependencies(경고)
+       JGLauncher Main.cpp  -game → LaunchModule = GameHost + RuntimeModulesOnly
+GP-D3  Source/Runtime/GameHost/ (새: GameHost.module.json · GameHostDefines.h · GameHostModule.h/.cpp)
+         창(설정 .jgproject Package.Window 또는 Bin/JGPackage.json, 명령줄 -windowed · -fullscreen · -res=WxH · -novsync,
+         클라이언트 1920×1080 → AdjustWindowRectEx 로 바깥 크기, 작업 영역보다 크면 비율 유지 축소) → Graphics · Asset · GameFrameWorks → 게임 모듈,
+         PGameViewport(창 클라이언트 크기), VSync = 설정(기본 켬), OnResize 10프레임 멈춘 뒤 viewport->Resize, OnInput → viewport->HandleInput,
+         End 단계 Render → SubmitFinalTexture, 글자 입력 중 IME 위치, 최소화 중 15ms 쉼, 종료는 뷰포트 → 게임 모듈 → 창 → 엔진 모듈 역순
+       Core CoreSystem.h/.cpp  bExitRequested — 모듈이 시작 중 RequestExit 하면 Create 가 bIsRunning 을 다시 켜지 않는다
+GP-D4  Source/Programs/JGConsole/Cook/ (새: CookCommand.cpp · CookPlatform.h/.cpp) + JGConsole Main.cpp -runCook 별칭
+         cook.run 10단계(검사 → 생성 → MSBuild(VS 2022 v143 를 vswhere 로, 이 PC 의 VS 18 은 피함) → 모듈 → Bin + PE import 감사 · VC++ 런타임 앱 로컬(Redist 14.42)
+         → exe → Content(엔진 RawResources/ · TempAsset/ 제외, ExcludeContent, ValidateContentForCook) → Bin/JGPackage.json → 스모크 → 교체), 출력 가드 · 잠금 · 보고서.
+         10-03: GP-G4 반영으로 Source/Shader 임시 복사 코드 삭제(엔진 Content/Shaders 없으면 실패), __has_include 가드 없앰
+GP-D6  Build/Templates/GameProject/{PROJECT_NAME}.jgproject "Package"(Version · Window 1920×1080 · ExcludeContent), .gitignore Package/ · Saved/,
+       Files/게임프로젝트_생성가이드.md 이름 규칙에 "프로젝트 안 파일 · 폴더 이름도 ASCII(D-26)" + 8절 "게임만 실행 · 패키징"
+도구   Files/tools/gamehost_e2e.ps1 — 게임만 창(-game 또는 패키지 exe)을 띄워 클라이언트 캡처(PrintWindow 2, DPI 인식) · 주황 End Turn 클릭 · WM_CLOSE · 종료 코드
+
+== 2. 워크트리 검증 (10-02 밤 ~ 10-03)
+D5  BuildTool: 엔진 Runtime modules = Asset, Graphics, GameFrameWorks, GameHost / GPCheck = … , GameHost, GPCheck / GameUIDemo = … , GameHost, GameUIDemo
+    에디터 의존 픽스처(GPCheck.module.json 에 DevConsole) → BuildTool 경고 "GPCheck -> DevConsole" · 쿠킹 4단계 실패 · 되돌린 뒤 정상
+D4  GPCheck(-launchmodule=GPCheck, GameHost 전) 81초 exit 0 — 루트 = Bin/ · Content/ · GPCheck.exe, Bin = 런타임 DLL 4 + JGGameLaunch + assimp + CRT 3,
+    PDB → ReleaseGame-Symbols, 보고서. 가드: -config=DevelopEngine 1 · 엔진 상위 출력 1 · 패키지 아닌 폴더 1(파일 보존) · GameHost 없을 때 기본 실행 모듈 1
+M1  Temp/Games/GameUIDemo(GFW 의 gameui_demo_testgame 사본 — 메시 /JGGame/Meshes/XBot.jgasset(_guid 바꾼 사본), 카드 텍스처 Content/Textures 로 옮김)
+    JGLauncher.exe -game: 창 "GameUIDemo" 1920×1080, ImGui 없음, VSync on, 월드(X Bot) + 게임 UI 전부 보임(캡처), 주황 End Turn PostMessage 클릭 →
+    "GameUIDemo End Turn clicked (turn 2)", exit 0 · error 0 · live 0. Graphics gp_window_test.ps1(크기 3번 · 최소화/복원): 복원 뒤 984×661 에 맞춰 그려짐(F1b),
+    크기 바뀌는 순간 한 프레임씩 "does not match … Copy skipped" Info 3줄(의도)
+M2  cook.run GameUIDemo(기본 GameHost) 86초 exit 0 — 엔진 Content 5(Content/Shaders) · 게임 3, 콘텐츠 검사 오류 0, 스모크 300프레임 창 띄움 exit 0 · error 0 ·
+    Content 밖 읽기 0, 46.2 MB, 경고 = assimp 하나. 패키지 GameUIDemo.exe(DPI 인식): 클라이언트 1920×1080 물리 픽셀, 같은 화면 · 클릭 turn 2, exit 0 · live 0,
+    로그 Saved/Logs/GameUIDemo.log "Package GameUIDemo 0.1.0 (ReleaseGame …)"
+    (첫 캡처는 검증 스크립트가 DPI 비인식이라 1536×864 로 잘림 → 스크립트를 Per-Monitor V2 로 고쳐 해결)
+
+== 3. 메인 반영 · 최종 확인 (10-03 09:5x ~ 10:1x)
+D4 · D5 는 10-02 22:5x 메인 반영(그때 메인 빌드가 Data A1 헤더와 겹쳐 CookCommand 매크로로 깨짐 → GUI 세션이 알려 줘 바로 고침).
+D3 · Core bExitRequested · Cook 정리: 메인 복사 → GenerateProjectFiles → 빌드(첫 시도는 다른 세션 실행 · JGEditor E1 적용 중이라 LNK1104 · SceneViewport C2065 —
+  내 변경 아님, 그 세션이 .cpp 를 넣은 뒤) 전체 빌드 77초 exit 0.
+회귀(메인 Bin): gmtest OK · console 64/64 · gameui 256/256 · datatable 127/127 · net.test all OK · input 34/34 · cookcheck 26/26,
+  에디터(따로 폴더, crashwalk 30초) exit 0 · error 0 · live 0 (첫 시도 "Fail Connect Module: JGEditor" 는 다른 세션이 그 순간 JGEditor.dll 을 다시 링크 —
+  10:08:36 파일, 다시 돌려 정상)
+메인 엔진 최종 E2E: GameUIDemo EngineRoot → 메인, 메인 JGConsole -runCook 85.6초 exit 0(경고 assimp 1), 패키지 exe 캡처 · 클릭 turn 2 · exit 0 · live 0,
+  Bin = Asset · GameFrameWorks · GameHost · GameUIDemo · Graphics · JGGameLaunch · assimp · msvcp140 · vcruntime140 · vcruntime140_1 · JGPackage.json
+정리: 워크트리 Temp/wt/gp 삭제(git worktree remove + prune), 검증 게임 Temp/Games/GPCheck · GameUIDemo 는 EngineRoot = 메인으로 남김(무시 폴더)
+
+== 4. 남은 것 · 알림
+- GP-H2 assimp 를 런타임 Graphics 에서 빼기(패키지 5.5 MB) — 보류 후보(Graphics). 쿠킹 경고 1개가 이것.
+- 메인 엔진을 쓰는 게임 프로젝트는 배치 2 를 다시 돌려야 GameHost · 런타임 모듈 목록이 생긴다.
+- 다른 세션: Server GP-S1(패키지 exe 2개로 -host/-join), 게임 구현 GP-P1(ProjectAH 첫 패키지) — 총괄이 배정.
+- 증적 로그: 스크래치패드 d1_* · main4_* · main5_* · cooktest2 · cooktest3 · m1_demo · m2_demo · m2_main (세션 58f46dac…)

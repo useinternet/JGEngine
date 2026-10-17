@@ -30,12 +30,14 @@ private:
 	bool collectionModuleInfos(const PString& workDir, const HHashSet<PString>& workCategories, bool bEngineModule, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap);
 	void collectionModuleInfosInternal(const PString& categoryName, const PString& inCategoryPath, bool bEngineModule, HHashMap<PString, HList<PModuleInfo>>& outModuleInfoMap);
 	bool generateBuildScript();
+	void appendStandaloneProjectScript(const PModuleInfo& moduleInfo, const PString& modulePrefix, PString& outScript) const;
 	bool generateBuildScriptInternal(const HHashMap<PString, HList<PModuleInfo>>& moduleInfoMap, const PString& inGroupName, PString& outScript);
 	void insertIncludePCHHeaderCode();
 	void insertIncludePCHHeaderCodeInternal(const HHashMap<PString, HList<PModuleInfo>>& moduleInfoMap);
 	bool makeProjectFiles();
 	bool makeGameProjectFiles();
 	bool copyThirdPartyBinaries() const;
+	bool writeRuntimeModuleInfo();
 	bool findModuleInfo(const PString& modulePath, PModuleInfo* outModuleInfo) const;
 	PString getDefines(const PModuleInfo& moduleInfo, EModuleFilter filter) const;
 	PString getUserProjectName() const;

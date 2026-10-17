@@ -150,25 +150,29 @@ int wmain(int argc, wchar_t** argv)
 
 	for (;;)
 	{
+		// 제한 시간은 매 바퀴 본다(2026-10-02). 디버그 이벤트가 200ms 안쪽으로 끊이지 않으면(D3D12 디버그 레이어의 스레드 이름 예외 0x406D1388 등)
+		// WaitForDebugEvent 가 시간 초과로 끝나지 않아, 시간 초과 때만 보던 예전 방식은 WM_CLOSE 를 보내지 못했다.
+		// 직전 이벤트는 이미 ContinueDebugEvent 했으므로 대상은 시간 초과 때와 같은 상태다.
+		if (!bClosed && GetTickCount64() - start > closeAfterMs)
+		{
+			EnumWindows(EnumWindowsProc, 0);
+			bClosed = true;
+			closeTime = GetTickCount64();
+		}
+		else if (bClosed && GetTickCount64() - closeTime > hangAfterMs)
+		{
+			printf("=== Process did not exit %llu s after WM_CLOSE. Dumping all threads, then terminating ===\n", hangAfterMs / 1000ULL);
+			SymCleanup(hProcess);
+			SymInitializeW(hProcess, argv[2], TRUE);
+			DumpAllThreads(hProcess, g_targetPid);
+			TerminateProcess(hProcess, 4);
+			bClosed = false;    // 다시 덤프하지 않는다. EXIT_PROCESS_DEBUG_EVENT 가 곧 온다
+			closeAfterMs = ~0ULL;
+		}
+
 		DEBUG_EVENT ev = {};
 		if (!WaitForDebugEvent(&ev, 200))
 		{
-			if (!bClosed && GetTickCount64() - start > closeAfterMs)
-			{
-				EnumWindows(EnumWindowsProc, 0);
-				bClosed = true;
-				closeTime = GetTickCount64();
-			}
-			else if (bClosed && GetTickCount64() - closeTime > hangAfterMs)
-			{
-				printf("=== Process did not exit %llu s after WM_CLOSE. Dumping all threads, then terminating ===\n", hangAfterMs / 1000ULL);
-				SymCleanup(hProcess);
-				SymInitializeW(hProcess, argv[2], TRUE);
-				DumpAllThreads(hProcess, g_targetPid);
-				TerminateProcess(hProcess, 4);
-				bClosed = false;    // 다시 덤프하지 않는다. EXIT_PROCESS_DEBUG_EVENT 가 곧 온다
-				closeAfterMs = ~0ULL;
-			}
 			continue;
 		}
 

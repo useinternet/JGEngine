@@ -1,0 +1,69 @@
+DevOps GP-D0 · GP-D1 · GP-D2 구현 · 검증 기록 (2026-10-02 밤, 워크트리 Temp/wt/gp(HEAD 0bd6356) → 메인 트리 C:\Develop\JGEngine)
+사용자 결정: D-23(① 한 프로세스 · ② 패키지 안 Saved · ③ Content 만 · ④ 배정대로, 기본 화면 1920×1080) + 이어서
+"패키지 여부는 JG_WITH_EDITOR 디파인 하나로 구분(디파인 두 개는 불필요) · IsPackageMode 함수 제거" (10-02 밤 대화).
+
+== 1. 변경
+GP-D0  Source/Programs/JGBuildTool/Class/BuildTool.cpp  copyThirdPartyBinaries 를 엔진 솔루션에도(구성 4개 Bin 에 zlibstatic.lib · assimp-mt.lib · assimp-vc143-mt.dll)
+       Source/Programs/JGBuildTool/Template/BuildTemplate.lua  ConfirmConfig · ReleaseConfig 에 symbols "On"(PDB — .gitignore *.pdb)
+       .gitignore  Bin/DevelopGame/ · Bin/ConfirmGame/ · Bin/ReleaseGame/ (엔진 Release 산출물 · 3rd-party 사본. ConfirmGame 의 옛 추적 43개는 그대로 추적)
+GP-D1  Source/Runtime/Core/CoreDefines.h  JG_WITH_EDITOR: _CONFIRMGAME · _RELEASEGAME 이면 0(패키지 전용), 그 밖 1(구성 디파인이 없어도 1)
+       Source/Runtime/Core/CoreSystem.h/.cpp
+         - HCoreSystemArguments::PackageDirectory · LogFilePath, GlobalValues::PackageLaunchModule · PackageRuntimeModules(STL)
+         - JG_WITH_EDITOR 1: 기본 루트 = 실행 파일 위치 기준 ../../ (작업 폴더 기준과 같으면 상대경로 "../../" 그대로 — 생성물 바이트 동일)
+         - JG_WITH_EDITOR 0: 루트 = 패키지 루트(PackageDirectory), Bin/JGPackage.json 을 읽음. 없거나 못 읽으면 Critical +
+           코드젠 · 실행 모듈을 건너뛰고 Create = false, 종료 코드 2(시스템은 올렸다 내림)
+         - 실행 모듈이 비면 JGPackage.json LaunchModule(기본 GameHost), GCoreSystem::RequestExit(code) · GetExitCode()
+       Source/Runtime/Core/FileIO/PackageDescriptor.h/.cpp (새)  HPackageDescriptor(Bin/JGPackage.json) · HGameWindowSettings(기본 1920×1080 창 · VSync)
+       Source/Runtime/Core/FileIO/ProjectDescriptor.h/.cpp  .jgproject 선택 섹션 "Package"(Version · Window · ExcludeContent)
+       Source/Runtime/Core/FileIO/FileHelper.h/.cpp
+         - JG_WITH_EDITOR 0: EngineContentDirectory = <패키지>/Content/JGEngine, GameContentDirectory = <패키지>/Content/JGGame,
+           EngineShaderDirectory = 엔진 Content 의 Shaders/, 개발 전용 폴더 함수(Source · Build · ThirdParty · Config · Temp · CodeGen 12개)는
+           폴더를 만들지 않고 함수마다 오류 한 번, ReadAllText · FileListInDirectory 가 Content · Saved · Bin 밖이면 폴더마다 경고 한 번(읽기 가드)
+         - 새 SavedDirectory() = <루트>/Saved(엔진 단독 · 게임 프로젝트 · 패키지 공통, 없으면 만듦)
+         - IsPackageMode() · PackageDirectory() 는 넣었다가 사용자 지시로 제거(디파인으로 대신)
+       Source/Runtime/Core/Misc/Module.cpp  JG_WITH_EDITOR 0: HModuleSystemInfo::Get = JGPackage.json RuntimeModules
+       Source/Runtime/Core/Misc/Log.h/.cpp  GLogGlobalSystem(logFilePath) — 비면 jg_log.txt, 폴더 자동 생성
+       Source/Runtime/Core/Platform/Platform.h/.cpp  HPlatform::GetExecutableDirectory()(UTF-8, '/' 로 끝남)
+GP-D2  Source/Programs/JGGameBootstrap/ (새, module.json "Standalone": true, WindowedApp)  <Name>.exe 가 될 부트스트랩:
+         DPI 인식 → SetDllDirectoryW(<루트>\Bin) → Bin\JGGameLaunch.dll 의 JGGameLaunch_Main(루트, 명령줄) → 종료 코드. -smoke= 이면 메시지 상자 없음
+       Source/Programs/JGGameLaunch/ (새, SharedLib · Core)  JGGameLaunch_Main: -smoke=N · -log · -launchmodule=X,
+         로그 <루트>/Saved/Logs/<exe 이름>.log, 종료 코드 0 / 2 서술자 / 3 실행 모듈 연결 실패 / 4 에디터 빌드(패키지로 실행 거절)
+       BuildTool: ModuleInfo.h "Standalone"(선택 필드), BuildTool.cpp appendStandaloneProjectScript(PCH · Core · 코드젠 없음,
+         구성 필터마다 staticruntime "on"), PCH 삽입 건너뜀, module_system_info 에서 Programs 범주 제외(JGGameLaunch 가 codeGen 에 안 올라감)
+       BuildTemplate.lua SetStandaloneProjectConfig
+생성물: jgengine.lua 2개(템플릿 + 새 프로젝트 2개), JGEngine.sln(14 → 16 프로젝트), Temp/CodeGen/JGGameLaunch(미추적)
+
+== 2. 워크트리 검증 (Temp/wt/gp)
+PreBuild(옛 툴) → JGBuildTool 빌드 → PreBuild(새 툴): 구성 4개 Bin 에 3rd-party 3개씩, Bin/ReleaseGame · ConfirmGame 의 새 파일은 git 에 안 보임
+DevelopEngine 전체 빌드 exit 0 · 오류 0 · 경고 C 0 (36초 / 리팩터 뒤 24초)
+ReleaseGame 엔진 빌드(손 복사 없음): exit 0 · 오류 0 · 경고 0 · 51초(리팩터 뒤 32초), PDB 16개 — 10-02 저녁 프로브의 LNK1104 사라짐
+JGGameBootstrap.exe imports = KERNEL32 · USER32 뿐(정적 CRT), RuntimeLibrary MultiThreaded(Debug), PCH 없음, Release 124 KB
+JGGameLaunch.dll exports JGGameLaunch_Main, Release 513 KB
+JGConsole 회귀(HEAD 기준 워크트리): gmtest OK · console 64/64 · gameui 193/193(HEAD 값) · datatable 127/127 · net.test all 101/101
+  (리팩터 뒤 net.test 5건 실패는 127.0.0.1:47790 을 pid 9580 이 LISTEN — HEAD 의 고정 포트 테스트. 메인(Server 의 빈 포트 수정 포함)은 통과, §3)
+작업 폴더 무관: 다른 폴더(스크래치패드 cwdtest/a/b)에서 새 JGConsole gmtest exit 0, cwdtest 아래 아무것도 안 생김.
+  같은 조건에서 옛 JGConsole(메인 Bin, 수정 전)은 cwdtest/old/Temp 를 만들고 종료 때 "Assertion failed: GMemoryGlobalSystem::IsValid()" 로 멈춤(옛 버그 재현)
+검증 게임 Temp/Games/GPCheck(배치 1 · 2, EngineRoot = 워크트리): 게임 솔루션 DevelopEngine 46초 · ReleaseGame 52초 오류 0
+  에디터(JGLauncher, crashwalk 30초): exit 0 · error 0 · "Project GPCheck: project …, engine …/Temp/wt/gp/" · entry actor entered world · live 0
+손 패키지 (Bin = Asset · Graphics · GameFrameWorks · GPCheck · JGGameLaunch · assimp, Content/JGEngine/Shaders, Bin/JGPackage.json LaunchModule=GPCheck)
+  [리팩터 전 · DevelopEngine 바이너리] GPCheck.exe -smoke=120 exit 0 1초, "Package GPCheck …", 리플렉션 클래스(Asset · Graphics · GFW · GPCheck) 등록,
+    Saved/Logs/GPCheck.log, error · warning 0, live 0. 공백 경로 사본 + 다른 작업 폴더 exit 0. 서술자 없음 2 · JGGameLaunch.dll 없음 1 · 게임 DLL 없음 3
+  [리팩터 뒤] DevelopEngine 바이너리 패키지 → exit 4(에디터 빌드 거절, 의도대로)
+  [리팩터 뒤 · ReleaseGame 바이너리 GPCheck_rpkg] -smoke=120 exit 0 1초, "Package GPCheck 0.1.0 (ReleaseGame …)", error · warning 0, live 0, Bin 9.3 MB(assimp 5.5)
+    서술자 없음 2(Critical 에 경로) · 게임 DLL 없음 3 · 복구 0
+  ReleaseGame JGLauncher 를 패키지 없이: Critical "ReleaseGame is a game package build: start it from the package's <Name>.exe" 후 바로 종료
+
+== 3. 메인 트리 반영
+1차(21:5x, GP-D0 · D1 · D2, 런타임 판별판): 소스 복사 + 워크트리 JGBuildTool.exe 복사 → GenerateProjectFiles exit 0 → DevelopEngine 빌드 29초 오류 0 →
+  gmtest OK · console 64/64 · gameui 243/243 · datatable 127/127 · net.test all OK · 에디터 60초 exit 0 · error 0 · live 0
+2차(22:2x, JG_WITH_EDITOR 리팩터 — 파일 7개, 그사이 다른 세션 수정 없음 확인): DevelopEngine 23초 · ReleaseGame 52초 오류 0 · 경고 0 →
+  gmtest OK · console 64/64 · gameui 243/243 · datatable 127/127 · net.test all OK · 에디터 60초 exit 0 · error 0 · live 0
+메인 git 상태(이 작업분): .gitignore(GUI 의 imgui.ini 줄과 같은 파일) · Bin/DevelopEngine/JGBuildTool.exe · 위 소스 · jgengine.lua 2개 · JGEngine.sln 수정,
+  새 PackageDescriptor.* · JGGameBootstrap/ · JGGameLaunch/ — 커밋은 사용자(DevOps TODO 체크리스트)
+
+== 4. 남은 것 · 알림
+- 엔진 셰이더가 아직 Source/Shader 다(GP-G4 Graphics). 패키지 빌드는 Content/JGEngine/Shaders 를 보므로 쿠킹(GP-D4)이 G4 전이라면 Source/Shader 를 그 자리로 복사해야 한다.
+- 메인 엔진을 쓰는 게임 프로젝트는 배치 2 를 다시 돌려야 새 프로젝트 2개 · Release PDB 설정이 들어간다(가이드 표).
+- Release 구성 툴(JGConsole 등)은 패키지 전용이라 실행하면 바로 종료 — 툴은 DevelopEngine 것을 쓴다.
+- 비 ASCII 패키지 경로: FileHelper 가 좁은 문자열로 fs::path 를 만들어(ACP) 깨질 수 있다 — 기존 제한(P4), 보류 후보.
+- 증적 로그: 스크래치패드 gp_*.log · main_*.log (세션 58f46dac…)

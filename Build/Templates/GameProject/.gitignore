@@ -3,3 +3,5 @@ Temp/
 .vs/
 *.sln
 {PROJECT_NAME}.lua
+Package/
+Saved/

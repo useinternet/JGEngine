@@ -1,0 +1,55 @@
+DevOps MT-1 메인 트리 동시 빌드 겹침 줄이기 — 도우미 Build/BatchFiles/MainTree.cmd · MainTree.ps1 (2026-10-03 10:2x ~ 10:44)
+지시: 엔진 총괄(10-03) — 대시보드 제안 "메인 트리 동시 빌드 겹침 줄이기"(권고 담당 DevOps). 엔진 코드는 건드리지 않음, 반나절 이하.
+배경(오늘 겹친 것): 메인 빌드 중 다른 세션 실행 → LNK1104, 다른 세션이 JGEditor.dll 을 다시 링크하는 순간 에디터 실행 → "Fail Connect Module: JGEditor",
+JGEditor 세션 LNK1104, GFW 에디터가 떠 있어 Graphics 재빌드 LNK1168, 다른 세션이 반쯤 반영한 소스를 빌드 → C2065.
+
+== 1. 만든 것 (메인, 미커밋, 엔진 코드 변경 없음)
+Build/BatchFiles/MainTree.cmd  인자를 그대로 넘기는 래퍼(JG_MAINTREE_ARGS, 실행 정책 우회, 64비트 PowerShell)
+Build/BatchFiles/MainTree.ps1  본체(ASCII, PowerShell 5.1) — status · build · exec · hold · release (+ 안쪽 _holder)
+  잠금: Temp\MainTree\lock 배타 핸들 — 쥔 프로세스가 죽으면 OS 가 풀어 남는 잠금이 없다. owner.txt(누가 · 무엇 · 언제 · pid),
+        wait-<pid>.txt(기다리는 세션), history.log(호출마다 기다린 시간 · 실행 시간 · 종료 코드)
+  바쁨 판정
+    (1) 잠금을 다른 build · exec · hold 가 쥠
+    (2) 도우미 밖 빌드: MSBuild(워커 노드 제외)의 솔루션 · 프로젝트 인자 또는 작업 폴더가 트리 안, cl · link · lib · rc · mt · cvtres · premake5 의
+        작업 폴더가 트리 안 — 다른 프로세스의 작업 폴더는 PEB 의 프로세스 매개변수에서 읽는다(64비트 · WOW64). 명령줄 · VS · Rider 빌드 공통
+    (3) 빌드 출력(Bin\<구성>\*.dll .exe .lib .exp .pdb .ilk .idb, Temp\Obj 아래 전부)이 -quiet 초(기본 10) 안에 쓰임
+    (4) build · hold 만: 트리 Bin\ 에서 도는 프로세스(에디터 · 런처 · 콘솔 — DLL 을 잠금). exec 는 기다리지 않고 알리기만(jg_log.txt 공유)
+  제외: Temp\wt\ · Temp\Games\(다른 트리)
+  기다리는 동안 30초마다 무엇을 기다리는지 출력. -wait=분(기본 6, 0 = 바로 실패), 시간 초과 종료 코드 90, 사용법 91, MSBuild · 프로그램 없음 92
+  hold: 숨은 PowerShell 이 잠금을 쥔다(-minutes 기본 15, 최대 60) → 같은 -name= 의 build · exec 는 그 안에서 바로 실행, release 로 풀거나
+        시간이 지나면 저절로 풀림. hold 요청이 기다리는 중에 죽으면 holder 도 잡지 않고 끝난다
+  중첩: exec · build 가 띄운 프로그램 안의 MainTree 호출은 JG_MAINTREE_HELD 를 보고 바로 실행(교착 없음)
+  build: vswhere -version [17.0,18.0) 로 VS 2022 MSBuild(amd64 우선) — 이 PC 의 VS 18 은 피함. 기본 JGEngine.sln -t:Build
+         -p:Configuration=DevelopEngine -p:Platform=x64 -m -nologo -v:minimal -nr:false, -project=이름 → Temp\ProjectFiles\이름.vcxproj
+
+== 2. 시험 — 가짜 트리(스크래치패드 mt/fake, 스크립트 사본) + 대역 exe(sleeper: 64비트 cl.exe · link.exe, 32비트 MSBuild.exe, Bin\DevelopEngine\JGLauncher.exe)
+| 시험 | 결과 |
+| status, 빈 트리 | free 0 (1.1초). 막 복사한 exe 는 "build output written 10s ago" → busy 1 (조용함 창) |
+| exec cmd //c exit 3 · .bat("a b" c → 7) · .ps1(-x hello → 5) · 없는 프로그램 | 3 · 7 · 5 · 92 — 종료 코드 그대로, 인자 그대로 |
+| 인자 없음 | 사용법, 91 |
+| 동시 exec — First(8초) 도는 중 Second | Second "waiting 0s: lock: First - exec sleeper.exe --sleep=8 …" → 5초 뒤 잠금 · 실행, history waited 5s |
+| 도우미 밖 빌드 — cl.exe(작업 폴더 Temp\ProjectFiles) · link.exe(Temp\wt\other) · 32비트 MSBuild JGEngine.sln(상대 경로) · MSBuild -nodemode:1 · Bin\…\JGLauncher.exe | status: MSBuild · cl.exe x1 · JGLauncher 표시, wt 의 link · 워커 노드는 안 셈. exec -wait=0 → 90 |
+| 앱만 떠 있음 | exec 실행 + "note: also running from Bin\ (shared jg_log.txt)", build -wait=0 → 90 "running Bin\DevelopEngine\JGLauncher.exe …" |
+| Temp\Obj\a.obj 방금 씀 | exec 가 11초 기다린 뒤 실행 |
+| hold | 이름 없음 91 · Alpha hold 2분 2초 만에 잡음 · status "lock: Alpha - hold 2m … held until 10:39:14" · Beta exec -wait=0 → 90 · Alpha exec · build 는 hold 안에서 바로(가짜 sln 이라 MSB5010 exit 1 그대로) · 중첩 .bat 안 MainTree exec 바로 · Beta release 거절 1 · Alpha release 0 → free |
+| hold 대기 · 만료 | Alpha hold 중 Beta hold → status "waiting: Beta - hold 1m" → Alpha release 뒤 Beta 잡음(waited 7s) → 1분 뒤 expired · free |
+| hold 요청이 기다리다 죽음 | 앞쪽 PowerShell 강제 종료 → holder 가 잡지 않고 끝, Alpha release 뒤 free. history 문구가 "gave up after 6m" 로 잘못 적혀 "dropped: the hold command ended …" 로 고침 |
+| PowerShell 도구 · 한글 이름 | & MainTree.cmd … exit 4 → $LASTEXITCODE 4. -name=게임구현 hold · status · release · history 정상(Bash 출력 UTF-8) |
+
+== 3. 실제 빌드 — worktree Temp/wt/mt (HEAD 0bd6356) 를 -root= 로
+exec GenerateProjectFiles.bat 5초 exit 0 → build(JGEngine.sln DevelopEngine) 48초 exit 0.
+빌드 중 다른 호출의 status 3회: "lock: DevOps - build DevelopEngine JGEngine.sln, for 22s" + "MSBuild pid … (…\Temp\wt\mt\JGEngine.sln)"
+  + "cl.exe x3 / x7 working in this tree" · "link.exe x1" + "build output written 0~2s ago". 빌드 직후 exec -wait=0 → 90(출력 4초 전).
+  그동안 메인 트리 status 는 free(Temp\wt 는 다른 트리).
+도우미 밖 32비트 MSBuild(…\Current\Bin\MSBuild.exe Temp/ProjectFiles/JGHeaderTool.vcxproj -t:Rebuild — 상대 경로) → status 에 MSBuild · cl.exe x1
+  → build -project=JGHeaderTool 가 29초 기다린 뒤 12초 빌드 exit 0.
+  이때 표시 경로가 "…\Temp\ProjectFiles\Temp/ProjectFiles/JGHeaderTool.vcxproj" 로 틀렸다 — MSBuild 는 빌드 중 작업 폴더를 프로젝트 폴더로 옮긴다.
+  → 상대 경로는 작업 폴더로 판정하고 "인자, working in 폴더" 로 표시하게 고침. 가짜 트리 재시험: 표시 정상, 트리 밖 절대 경로(C:/elsewhere/x.sln)는 안 셈.
+정리: worktree 삭제(셸 작업 폴더가 안에 있어 빈 폴더가 한 번 남음 → rmdir). 메인 트리 빌드 · 실행은 하지 않았다.
+
+== 4. 한계 · 남은 것
+- 도우미를 거치지 않는 실행은 막지 못한다 — 바깥 빌드 · 앱은 감지해 기다릴 뿐. exec 끼리는 차례로 돌아 jg_log.txt 덮어쓰기가 줄지만,
+  도우미 밖 실행과는 여전히 겹칠 수 있다(근본은 실행 파일 로그 경로 옵션 — 보류 MT-H1).
+- 다른 프로세스의 작업 폴더는 같은 사용자 · 64비트 PowerShell 에서만 읽힌다(관리자 권한 프로세스는 못 읽어 무시 → 출력 조용함 창이 대신 잡음).
+- Git Bash 에서는 /c 같은 슬래시 인자가 경로로 바뀐다 → cmd //c. cmd 특수 문자(& | < > ^ %)가 든 명령은 스크립트로 감싸 exec.
+- 다른 세션의 MSBuild 노드 재사용(-nr 기본 켬)으로 쉬는 MSBuild.exe 가 오래 남는다 — 워커 노드라 바쁨으로 세지 않는다.

@@ -1,8 +1,19 @@
 #include "PCH/PCH.h"
 #include "BuildTool.h"
 #include "Misc/Module.h"
+#include "FileIO/ProjectDescriptor.h"
+#include <functional>
 
 #include<stdio.h>
+
+namespace
+{
+	// 게임 실행 호스트 모듈(DevOps GP-D3). 런타임 모듈 닫힘의 뿌리.
+	const char* const GAME_HOST_MODULE = "GameHost";
+
+	// ImGui 기반 개발용 런타임 모듈. 게임 쪽이 의존하면 경고만 한다(패키지에는 들어간다).
+	const char* const DEVELOPMENT_RUNTIME_MODULES[] = { "GUI", "Devkit" };
+}
 
 const PString& PBuildTool::BuildToolDirectory()
 {
@@ -54,13 +65,15 @@ bool PBuildTool::Run()
 		{
 			return false;
 		}
-
-		if (copyThirdPartyBinaries() == false)
-		{
-			return false;
-		}
 	}
 	else if (makeProjectFiles() == false)
+	{
+		return false;
+	}
+
+	// 엔진 솔루션도 구성마다 3rd-party 가 있어야 링크된다. 엔진 Bin 에는 DevelopEngine 에만 손으로 넣은 사본이 있어서
+	// ConfirmGame · ReleaseGame 엔진 빌드가 LNK1104(zlibstatic.lib)로 실패했다(DevOps GP-D0, 2026-10-02).
+	if (copyThirdPartyBinaries() == false)
 	{
 		return false;
 	}
@@ -69,6 +82,12 @@ bool PBuildTool::Run()
 		HModuleSystemInfo moduleSysInfo;
 		for (const HPair<const PString, HList<PModuleInfo>>& _pair : _engineModuleInfoMap)
 		{
+			// Programs 의 DLL(게임 패키지 진입 JGGameLaunch)은 모듈이 아니라 실행 진입점이다 — 시작할 때 codeGen 이 올리지 않는다.
+			if (_pair.first == "Programs")
+			{
+				continue;
+			}
+
 			for (const PModuleInfo& info : _pair.second)
 			{
 				if (info.ModuleFormat == "SharedLib")
@@ -76,7 +95,7 @@ bool PBuildTool::Run()
 					moduleSysInfo.CodeGenableModuleSet.insert(info.ModuleName);
 				}
 			}
-			
+
 		}
 		for (const HPair<const PString, HList<PModuleInfo>>& _pair : _userModuleInfoMap)
 		{
@@ -98,7 +117,138 @@ bool PBuildTool::Run()
 		}
 	}
 
+	// 게임 실행 · 쿠킹이 쓰는 런타임 모듈 목록(DevOps GP-D5 · R5).
+	if (writeRuntimeModuleInfo() == false)
+	{
+		return false;
+	}
+
 	JG_LOG(BuildTool, ELogLevel::Info, "Compelete Build Tool Run..");
+	return true;
+}
+
+bool PBuildTool::writeRuntimeModuleInfo()
+{
+	// 에디터 모듈: 엔진 Source/Editor 의 모듈 + 게임 프로젝트 .jgproject EditorModules.
+	HHashSet<PString> editorModules;
+	for (const HPair<const PString, HList<PModuleInfo>>& pair : _engineModuleInfoMap)
+	{
+		if (pair.first != "Editor")
+		{
+			continue;
+		}
+
+		for (const PModuleInfo& info : pair.second)
+		{
+			editorModules.insert(info.ModuleName);
+		}
+	}
+
+	HRuntimeModuleInfo runtimeInfo;
+	if (HFileHelper::IsProjectMode() == true)
+	{
+		HProjectDescriptor descriptor;
+		if (HProjectDescriptor::Load(HFileHelper::ProjectDirectory(), &descriptor) == true)
+		{
+			runtimeInfo.GameModules = descriptor.GameModules;
+			for (const PString& moduleName : descriptor.EditorModules)
+			{
+				editorModules.insert(moduleName);
+			}
+		}
+	}
+
+	HHashSet<PString> developmentModules;
+	for (const char* moduleName : DEVELOPMENT_RUNTIME_MODULES)
+	{
+		developmentModules.insert(moduleName);
+	}
+
+	// 뿌리 = GameHost + 게임 모듈. 의존을 따라 내려가 SharedLib 만 의존 순서(의존받는 쪽 먼저)로 모은다.
+	HList<PString> roots;
+	if (_moduleInfoPool.find(GAME_HOST_MODULE) != _moduleInfoPool.end())
+	{
+		roots.push_back(GAME_HOST_MODULE);
+	}
+	else
+	{
+		JG_LOG(BuildTool, ELogLevel::Info, "No %s module yet - runtime modules start from the game modules only", GAME_HOST_MODULE);
+	}
+
+	for (const PString& moduleName : runtimeInfo.GameModules)
+	{
+		roots.push_back(moduleName);
+		if (editorModules.find(moduleName) != editorModules.end())
+		{
+			runtimeInfo.EditorDependencies.push_back(PString::Format("GameModules -> %s", moduleName));
+		}
+	}
+
+	HHashSet<PString> visited;
+	std::function<void(const PString&)> visit = [&](const PString& moduleName)
+	{
+		if (visited.find(moduleName) != visited.end())
+		{
+			return;
+		}
+		visited.insert(moduleName);
+
+		if (_moduleInfoPool.find(moduleName) == _moduleInfoPool.end())
+		{
+			JG_LOG(BuildTool, ELogLevel::Error, "Runtime module %s does not exist", moduleName);
+			return;
+		}
+
+		const PModuleInfo& info = _moduleInfoPool[moduleName];
+		for (const PString& dependencyName : info.ModuleDependencies)
+		{
+			if (editorModules.find(dependencyName) != editorModules.end())
+			{
+				runtimeInfo.EditorDependencies.push_back(PString::Format("%s -> %s", moduleName, dependencyName));
+			}
+
+			if (developmentModules.find(dependencyName) != developmentModules.end())
+			{
+				runtimeInfo.DevelopmentDependencies.push_back(PString::Format("%s -> %s", moduleName, dependencyName));
+			}
+
+			visit(dependencyName);
+		}
+
+		if (info.ModuleFormat == "SharedLib")
+		{
+			runtimeInfo.RuntimeModules.push_back(moduleName);
+		}
+	};
+
+	for (const PString& rootName : roots)
+	{
+		visit(rootName);
+	}
+
+	for (const PString& dependency : runtimeInfo.EditorDependencies)
+	{
+		JG_LOG(BuildTool, ELogLevel::Warning, "Runtime module depends on an editor module (%s) - the game cannot be packaged", dependency);
+	}
+
+	for (const PString& dependency : runtimeInfo.DevelopmentDependencies)
+	{
+		JG_LOG(BuildTool, ELogLevel::Warning, "Runtime module depends on a development module (%s) - it ships ImGui in the package", dependency);
+	}
+
+	PString moduleList;
+	for (const PString& moduleName : runtimeInfo.RuntimeModules)
+	{
+		moduleList.Append(moduleList.Empty() ? "" : ", ").Append(moduleName);
+	}
+	JG_LOG(BuildTool, ELogLevel::Info, "Runtime modules: %s", moduleList);
+
+	if (HRuntimeModuleInfo::Save(HRuntimeModuleInfo::DefaultPath(), runtimeInfo) == false)
+	{
+		JG_LOG(BuildTool, ELogLevel::Error, "Fail write %s", HRuntimeModuleInfo::DefaultPath());
+		return false;
+	}
+
 	return true;
 }
 
@@ -294,6 +444,14 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 			const PString enginePrefix = getEngineRootPrefix();
 			const PString modulePrefix = getModuleRootPrefix(moduleInfo);
 
+			// 단독 실행 파일(게임 패키지 부트스트랩): include · links · PCH · 코드젠 없이, 구성마다 CRT 를 정적으로(DevOps GP-D2).
+			if (moduleInfo.bStandalone == true)
+			{
+				appendStandaloneProjectScript(moduleInfo, modulePrefix, outScript);
+				JG_LOG(BuildTool, ELogLevel::Trace, "Module: %s: Compelete Generate Build Script (standalone)", moduleInfo.ModuleName);
+				continue;
+			}
+
 			PString thirdPartyPath = enginePrefix + toEngineRelativePath(arguments.ThirdPartyDirectory);
 
 			PString includeDirs;
@@ -430,6 +588,38 @@ bool PBuildTool::generateBuildScriptInternal(const HHashMap<PString, HList<PModu
 	return true;
 }
 
+void PBuildTool::appendStandaloneProjectScript(const PModuleInfo& moduleInfo, const PString& modulePrefix, PString& outScript) const
+{
+	static const char* const configurationNames[(int32)EModuleFilter::Count] = { "DevelopEngine", "DevelopGame", "ConfirmGame", "ReleaseGame" };
+
+	PString defines;
+	defines.Append("{");
+	for (const PString& define : moduleInfo.Defines)
+	{
+		defines.Append("\"").Append(define).Append("\", ");
+	}
+	defines.Append("}");
+
+	outScript.Append("SetStandaloneProjectConfig(");
+	outScript.Append("\"").Append(moduleInfo.ModuleFormat).Append("\", ");
+	outScript.Append("\"").Append(modulePrefix).Append(moduleInfo.ModulePath).Append("\", ");
+	outScript.Append(defines);
+	outScript.AppendLine(")");
+
+	for (int32 i = 0; i < (int32)EModuleFilter::Count; ++i)
+	{
+		outScript.Append("\t\t\t\t");
+		outScript.Append("filter \"configurations:").Append(configurationNames[i]).AppendLine("\"");
+		outScript.Append("\t\t\t\t\t").Append(moduleInfo.ModuleFilters[i].Config).AppendLine("()");
+		outScript.Append("\t\t\t\t\t").AppendLine(getDefines(moduleInfo, (EModuleFilter)i));
+		// 구성 함수(DebugConfig 등)가 staticruntime "off" 를 정하므로 그 뒤에 덮어쓴다. 엔진 DLL 은 /MD 그대로다.
+		outScript.Append("\t\t\t\t\t").AppendLine("staticruntime \"on\"");
+	}
+
+	outScript.AppendLine("");
+	outScript.AppendLine("");
+}
+
 void PBuildTool::insertIncludePCHHeaderCode()
 {
 	insertIncludePCHHeaderCodeInternal(_engineModuleInfoMap);
@@ -444,6 +634,12 @@ void PBuildTool::insertIncludePCHHeaderCodeInternal(const HHashMap<PString, HLis
 		{
 			// 게임 프로젝트 솔루션을 만들 때는 엔진 소스를 건드리지 않는다 (엔진 쪽은 엔진 PreBuild 가 맡는다).
 			if (HFileHelper::IsProjectMode() == true && moduleInfo.bEngineModule == true)
+			{
+				continue;
+			}
+
+			// 단독 실행 파일은 엔진 PCH 를 쓰지 않는다(넣으면 엔진 헤더와 #pragma comment(lib) 가 딸려 온다).
+			if (moduleInfo.bStandalone == true)
 			{
 				continue;
 			}
