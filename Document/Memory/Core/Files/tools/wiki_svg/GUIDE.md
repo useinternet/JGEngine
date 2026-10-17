@@ -1,0 +1,37 @@
+# 위키 그림 그리기 안내 (엔진 위키 전체)
+
+엔진 위키(`C:/obsidian/ProjectJG/02. 위키/JGEngine/`)의 그림은 모두 이 폴더의 그리개로 그린 SVG다. 기준 문서는 `JGEngine Module/Core.md`(그림 18장)다.
+
+## 파일
+
+- `pages.js` — 문서키 → 위키 문서 경로. 그림은 그 문서 폴더의 `그림/` 에 쓴다.
+- `specs/<문서키>/NN_내용.js` — 그림 원본 한 장. `module.exports = { file, alt, type, ... }`.
+  - `file` = `<문서키>_NN_<내용>`(빈칸 없이). 예: `Core_06_모듈연결`, `GameFrameWorks_00_런타임구조`.
+  - `NN` = 그 문서 안 Mermaid 블록 순서(00부터). 새로 더하는 그림은 기존 번호 뒤에 이어서.
+  - `alt` = "<본문 제목> — 그림 내용 한 문장"(기술 문서체).
+- `render.js` — 그리개. `node render.js <문서키>` 또는 `node render.js <문서키>/NN`. 그림마다 "점검 통과" 또는 경고(글 넘침 · 상자 겹침 · 글이 상자를 덮음 · 글끼리 겹침 · 캔버스 밖)를 찍는다. 경고가 없어질 때까지 고친다.
+- `apply_wiki.js <문서키> [--check]` — 문서의 ```mermaid 블록을 순서대로 그림 줄 `![alt](그림/<file>.svg)` 로 바꾼다.
+- `sync_alt.js [<문서키>] [--check]` — 원본 `alt` 를 고친 뒤 위키 그림 줄의 설명글을 맞춘다.
+
+원본 형식(flow · seq · class)은 `render.js` 각 그리는 함수 머리 주석과 `specs/Core/` 의 예를 본다.
+
+## 모습(그리개가 정함 — 손대지 않는다)
+
+파스텔 채움 + 같은 색 테두리, 같은 색 진한 제목, Segoe UI / 맑은 고딕, 얇은 회색 선과 열린 화살촉, 화살표 글은 선 옆(세로 선이면 오른쪽, 가로 선이면 위, `lpos` 로 바꿈), 묶음 틀 제목은 왼쪽 위.
+
+## 글 규칙(사용자 피드백, 2026-10-17)
+
+- 기술 문서체로 짧게. 조사는 붙여 쓴다(`Core는`, `DLL이`). 기술 용어(호출 · 생성 · 초기화 · 갱신 · 종료 · 등록 · 해제 · 로드 · 의존 · 상속)를 쓴다.
+- 클래스를 나타내는 상자는 **클래스 이름(위) / 한글 설명(아래, 작게)**: flow 상자는 `title` = 이름, `lines` = 한글 설명. class 상자는 `name` + `stereo`. seq 참가자는 `label` + `sub`.
+- 상자 안에 모듈 이름을 길게 나열하지 않는다(기반 클래스나 대표 하나로).
+- 쓰지 않는 말: 절, 덩어리, 바닥, 장면, 풀이, 입말("부르기", "만들기", "켜고 끄기").
+- 번호 참조는 "(3번)", "(2-1)" 처럼 그 문서의 실제 번호로.
+- 범례: class 그림에서 `#`(protected) · `◇`(포함) 같은 기호를 쓰면 범례 상자를 둔다(`specs/Core/00_요약.js` 의 KEY).
+
+## 확인
+
+1. `node render.js <문서키>` — 모두 "점검 통과".
+2. 그림을 PNG로 만들어 직접 본다: `"C:/Program Files/Google/Chrome/Application/chrome.exe" --headless --disable-gpu --hide-scrollbars --user-data-dir=<임시 폴더>/profile --screenshot=<임시 폴더>/x.png --window-size=W,H "file:///<svg 경로>"` (W,H = svg 의 width,height). 잘림 · 겹침 · 어색한 배치를 고친다.
+3. `node apply_wiki.js <문서키>` 로 문서에 넣고 `--check` 로 Mermaid 가 0 인지 본다.
+4. 통합 대시보드 `http://127.0.0.1:47770/#/wiki/02.%20%EC%9C%84%ED%82%A4/JGEngine/...` 에서 그림이 보이는지 본다.
+- 위키 문서에는 문서 작성 방법이나 그림 생성 방법(원본 위치 · 명령) 같은 메타 설명을 쓰지 않는다 — 문서는 엔진 내용만(2026-10-17 사용자: "우리는 문서작성하는거야").
