@@ -38,6 +38,36 @@ void HModuleSystemInfo::ReadJson(const PJsonData& json)
 HModuleSystemInfo HModuleSystemInfo::Get()
 {
 	HModuleSystemInfo sysInfo;
+
+#if JG_WITH_EDITOR == 0
+	// 패키지에는 Temp/CodeGen 이 없다. 쿠킹이 고른 런타임 모듈(JGPackage.json RuntimeModules)만 올린다(DevOps GP-D1 · R5).
+	if (GCoreSystem::HasInstance() == true)
+	{
+		for (const HRawString& moduleName : GCoreSystem::GetGlobalValues().PackageRuntimeModules)
+		{
+			sysInfo.CodeGenableModuleSet.insert(PString(moduleName.c_str()));
+		}
+	}
+
+	return sysInfo;
+#else
+	// 게임만 실행(JGLauncher -game): 에디터 DLL 을 올리지 않도록 JGBuildTool 이 계산한 런타임 모듈만 쓴다(GP-D5 · R5).
+	if (GCoreSystem::HasInstance() == true && GCoreSystem::GetGlobalValues().bRuntimeModulesOnly == true)
+	{
+		HRuntimeModuleInfo runtimeInfo;
+		if (HRuntimeModuleInfo::Load(HRuntimeModuleInfo::DefaultPath(), &runtimeInfo) == true)
+		{
+			for (const PString& moduleName : runtimeInfo.RuntimeModules)
+			{
+				sysInfo.CodeGenableModuleSet.insert(moduleName);
+			}
+
+			return sysInfo;
+		}
+
+		JG_LOG(Core, ELogLevel::Warning, "No %s - run the project's GenerateProjectFiles.bat again. Loading every module instead", HRuntimeModuleInfo::FileName);
+	}
+
 	PString codeGenPath;
 	if (codeGenPath.Empty())
 	{
@@ -59,6 +89,7 @@ HModuleSystemInfo HModuleSystemInfo::Get()
 	}
 
 	return sysInfo;
+#endif
 }
 
 const bool HModuleSystemInfo::Set(const HModuleSystemInfo& inSysInfo)
@@ -79,6 +110,66 @@ const bool HModuleSystemInfo::Set(const HModuleSystemInfo& inSysInfo)
 	}
 
 	return false;
+}
+
+void HRuntimeModuleInfo::WriteJson(PJsonData& json) const
+{
+	json.AddMember("RuntimeModules", RuntimeModules);
+	json.AddMember("GameModules", GameModules);
+	json.AddMember("EditorDependencies", EditorDependencies);
+	json.AddMember("DevelopmentDependencies", DevelopmentDependencies);
+}
+
+void HRuntimeModuleInfo::ReadJson(const PJsonData& json)
+{
+	json.GetData("RuntimeModules", &RuntimeModules);
+	json.GetData("GameModules", &GameModules);
+	json.GetData("EditorDependencies", &EditorDependencies);
+	json.GetData("DevelopmentDependencies", &DevelopmentDependencies);
+}
+
+bool HRuntimeModuleInfo::Load(const PString& path, HRuntimeModuleInfo* outInfo)
+{
+	if (outInfo == nullptr || HFileHelper::Exists(path) == false)
+	{
+		return false;
+	}
+
+	PString text;
+	if (HFileHelper::ReadAllText(path, &text) == false)
+	{
+		return false;
+	}
+
+	PJson json;
+	if (PJson::ToObject(text, &json) == false)
+	{
+		JG_LOG(Core, ELogLevel::Error, "Invalid json: %s", path);
+		return false;
+	}
+
+	return json.GetData("runtime_modules", outInfo);
+}
+
+bool HRuntimeModuleInfo::Save(const PString& path, const HRuntimeModuleInfo& inInfo)
+{
+	PJson json;
+	json.AddMember("runtime_modules", inInfo);
+
+	PString text;
+	if (PJson::ToString(json, &text) == false)
+	{
+		return false;
+	}
+
+	return HFileHelper::WriteAllText(path, text);
+}
+
+PString HRuntimeModuleInfo::DefaultPath()
+{
+	PString path;
+	HFileHelper::CombinePath(HFileHelper::ProjectCodeGenDirectory(), FileName, &path);
+	return path;
 }
 
 

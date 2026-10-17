@@ -197,6 +197,16 @@ enum
 #define JG_CONFIGURATIONS_NAME "ReleaseGame"
 #endif
 
+// 에디터가 있는 빌드인가(언리얼 WITH_EDITOR. DevOps GP-D1, 사용자 결정 2026-10-02 — 디파인 하나로 구분).
+//   1 = DevelopEngine · DevelopGame: 에디터 · 툴 · 개발 실행(JGLauncher -game). 경로는 엔진 · 프로젝트 폴더.
+//   0 = ConfirmGame · ReleaseGame : 게임 패키지 전용. 경로는 <Name>.exe 폴더의 Bin · Content · Saved, 패키지 없이 실행하면 종료한다.
+// 에디터 전용 코드를 출시 빌드에서 뺄 때도 #if JG_WITH_EDITOR 로 쓴다. 구성 디파인이 없으면(툴 밖 코드) 1.
+#if _CONFIRMGAME || _RELEASEGAME
+#define JG_WITH_EDITOR 0
+#else
+#define JG_WITH_EDITOR 1
+#endif
+
 #define TT(text) L##text
 
 #pragma warning (disable : 4275 4251 4005)

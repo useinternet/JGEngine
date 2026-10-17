@@ -3,9 +3,13 @@
 #include "JWindow.h"
 #include "Misc/Guid.h"
 #include "Input/Key.h"
+#include "FileIO/FileHelper.h"
+#include "Math/Rect.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Windows/WindowsJWindow.h"
+#include <imm.h>
+#pragma comment(lib, "imm32.lib")
 #endif
 
 void HPlatform::MemCopy(const void* src, void* dest, uint64 inSize)
@@ -36,6 +40,52 @@ void HPlatform::UnLoadDll(HJInstance instanceID)
 #else
 #endif
 	}
+}
+
+PString HPlatform::GetExecutableDirectory()
+{
+#ifdef _PLATFORM_WINDOWS
+	// 긴 경로도 받도록 버퍼를 늘려 가며 읽는다. 길이가 버퍼와 같으면 잘린 것이다.
+	std::wstring buffer(MAX_PATH, L'\0');
+	DWORD length = 0;
+	while (true)
+	{
+		length = ::GetModuleFileNameW(nullptr, buffer.data(), (DWORD)buffer.size());
+		if (length == 0)
+		{
+			return PString();
+		}
+
+		if (length < buffer.size())
+		{
+			break;
+		}
+
+		buffer.resize(buffer.size() * 2);
+	}
+	buffer.resize(length);
+
+	const std::wstring directory = fs::path(buffer).parent_path().lexically_normal().wstring();
+	const int32 utf8Length = ::WideCharToMultiByte(CP_UTF8, 0, directory.c_str(), (int32)directory.size(), nullptr, 0, nullptr, nullptr);
+	if (utf8Length <= 0)
+	{
+		return PString();
+	}
+
+	HRawString utf8(utf8Length, '\0');
+	::WideCharToMultiByte(CP_UTF8, 0, directory.c_str(), (int32)directory.size(), utf8.data(), utf8Length, nullptr, nullptr);
+
+	PString result = utf8.c_str();
+	HFileHelper::NormalizePath(&result);
+	if (result.EndWidth("/") == false)
+	{
+		result.Append("/");
+	}
+
+	return result;
+#else
+	return PString();
+#endif
 }
 
 PSharedPtr<PJWindow> HPlatform::CreateJWindow(const HJWindowArguments& args)
@@ -216,4 +266,156 @@ int32 HPlatform::GetSystemKeyCode(EKeyCode keyCode)
 	}
 	
 	return 0;
+}
+
+#ifdef _PLATFORM_WINDOWS
+namespace
+{
+	// UTF-8 ↔ UTF-16 (클립보드 CF_UNICODETEXT)
+	std::wstring toUtf16(const PString& text)
+	{
+		if (text.Empty())
+		{
+			return std::wstring();
+		}
+		const int32 length = ::MultiByteToWideChar(CP_UTF8, 0, text.GetCStr(), (int32)text.Size(), nullptr, 0);
+		std::wstring result((size_t)HMath::Max(length, 0), L'\0');
+		if (length > 0)
+		{
+			::MultiByteToWideChar(CP_UTF8, 0, text.GetCStr(), (int32)text.Size(), result.data(), length);
+		}
+		return result;
+	}
+
+	PString toUtf8(const wchar_t* text)
+	{
+		const int32 length = ::WideCharToMultiByte(CP_UTF8, 0, text, -1, nullptr, 0, nullptr, nullptr);
+		if (length <= 1)
+		{
+			return PString();
+		}
+		std::string result((size_t)length, '\0');
+		::WideCharToMultiByte(CP_UTF8, 0, text, -1, result.data(), length, nullptr, nullptr);
+		result.resize((size_t)length - 1);   // 끝의 0
+		return PString(result.c_str());
+	}
+}
+#endif
+
+PString HPlatform::GetClipboardText()
+{
+#ifdef _PLATFORM_WINDOWS
+	if (::OpenClipboard(nullptr) == FALSE)
+	{
+		return PString();
+	}
+
+	PString result;
+	HANDLE data = ::GetClipboardData(CF_UNICODETEXT);
+	if (data != nullptr)
+	{
+		const wchar_t* text = (const wchar_t*)::GlobalLock(data);
+		if (text != nullptr)
+		{
+			result = toUtf8(text);
+			::GlobalUnlock(data);
+		}
+	}
+	::CloseClipboard();
+	return result;
+#else
+	return PString();
+#endif
+}
+
+bool HPlatform::SetClipboardText(const PString& text)
+{
+#ifdef _PLATFORM_WINDOWS
+	const std::wstring wide = toUtf16(text);
+	HGLOBAL memory = ::GlobalAlloc(GMEM_MOVEABLE, (wide.size() + 1) * sizeof(wchar_t));
+	if (memory == nullptr)
+	{
+		return false;
+	}
+	wchar_t* buffer = (wchar_t*)::GlobalLock(memory);
+	if (buffer == nullptr)
+	{
+		::GlobalFree(memory);
+		return false;
+	}
+	memcpy(buffer, wide.c_str(), (wide.size() + 1) * sizeof(wchar_t));
+	::GlobalUnlock(memory);
+
+	if (::OpenClipboard(nullptr) == FALSE)
+	{
+		::GlobalFree(memory);
+		return false;
+	}
+	::EmptyClipboard();
+	// 성공하면 메모리는 클립보드 것이 된다(해제하지 않는다).
+	const bool bSet = ::SetClipboardData(CF_UNICODETEXT, memory) != nullptr;
+	::CloseClipboard();
+	if (bSet == false)
+	{
+		::GlobalFree(memory);
+	}
+	return bSet;
+#else
+	return false;
+#endif
+}
+
+void HPlatform::SetImeCompositionRect(HJWHandle window, const HRect& caretRect)
+{
+#ifdef _PLATFORM_WINDOWS
+	HIMC context = ::ImmGetContext(window);
+	if (context == nullptr)
+	{
+		return;
+	}
+
+	// 조합 창은 커서 자리에, 후보 창은 커서 사각형을 피해(가리지 않게) 띄운다 — ImGui Win32 백엔드와 같은 방식.
+	COMPOSITIONFORM composition = {};
+	composition.dwStyle      = CFS_FORCE_POSITION;
+	composition.ptCurrentPos = POINT{ (LONG)caretRect.left, (LONG)caretRect.top };
+	::ImmSetCompositionWindow(context, &composition);
+
+	CANDIDATEFORM candidate = {};
+	candidate.dwIndex      = 0;
+	candidate.dwStyle      = CFS_EXCLUDE;
+	candidate.ptCurrentPos = POINT{ (LONG)caretRect.left, (LONG)caretRect.top };
+	candidate.rcArea       = RECT{ (LONG)caretRect.left, (LONG)caretRect.top, (LONG)caretRect.right, (LONG)caretRect.bottom };
+	::ImmSetCandidateWindow(context, &candidate);
+
+	::ImmReleaseContext(window, context);
+#endif
+}
+
+bool HPlatform::EnableDpiAwareness()
+{
+#ifdef _PLATFORM_WINDOWS
+	// 이미 정해졌으면(매니페스트 · 앞선 호출) 실패한다 — 그래도 지금 상태를 보고 돌려준다.
+	if (::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) == FALSE)
+	{
+		::SetProcessDPIAware();
+	}
+	const DPI_AWARENESS awareness = ::GetAwarenessFromDpiAwarenessContext(::GetThreadDpiAwarenessContext());
+	return awareness == DPI_AWARENESS_PER_MONITOR_AWARE;
+#else
+	return false;
+#endif
+}
+
+float32 HPlatform::GetDpiScale(HJWHandle window)
+{
+#ifdef _PLATFORM_WINDOWS
+	const UINT dpi = (window != nullptr) ? ::GetDpiForWindow(window) : ::GetDpiForSystem();
+	if (dpi == 0)
+	{
+		return 1.0f;
+	}
+	return (float32)dpi / (float32)USER_DEFAULT_SCREEN_DPI;
+#else
+	return 1.0f;
+#endif
 }

@@ -1,0 +1,54 @@
+델리게이트 AddLambda 가 왼값을 참조로 저장(ER-023) — 수정 · 검증 기록 (2026-10-11 14:21 ~ 14:31, Core 세션)
+
+[요청]
+- 게임 쪽 결함 보고(ProjectAH/Document/엔진요청/ER-023_델리게이트_AddLambda_가_왼값을_참조로_저장.md), 엔진 총괄 배정(고칠 방법이 하나라 사용자 결정 없이).
+- 게임 연출의 덱 업그레이드 화면에서 row->OnClicked.AddLambda(onClick)(onClick = std::function 인자, 왼값)로 단 단추를 누르면 에디터가 죽었다
+  (APPCRASH c0000005, std::_Func_class<void>::operator() 안). 게임은 사본을 잡은 람다로 감싸 이미 피함.
+
+[원인] Source/Runtime/Core/Misc/Delegate.h
+- AddLambda(LambdaType&&) · BindLambda(LambdaType&&) → CreateLambda(TLambda&&) 는 전달 참조라, 왼값을 넘기면 TLambda 가 참조 형(std::function<void()>& 등)으로 추론된다.
+- CreateLambda 가 그 TLambda 를 그대로 PLambdaDelegate<TLambda, …> 에 넘겨 저장 멤버 "TLambda _lambda;" 가 참조 멤버가 됐다. 델리게이트 사본(Clone)도 같은 원본을 가리킨다.
+  → 원래 변수가 사라지거나 바뀐 뒤 부르면 매달린 참조 / 바뀐 함수를 부른다.
+- 같이 찾은 것: HMulticastDelegate::operator+=(T&& l) 가 CreateLambda(std::move(l)) — 왼값을 넘기면 부른 쪽의 람다 · std::function 을 옮겨 가 비워 버린다
+  (엔진 · ProjectAH 에 delegate += 사용처 없음).
+
+[수정] Delegate.h (+12/−3, 이 수정만)
+- CreateLambda: PLambdaDelegate<std::decay_t<TLambda>, …> 로 값 형을 넘긴다(왼값은 복사, 오른값은 이동). BindLambda · AddLambda · += 는 모두 CreateLambda 를 지난다.
+- PLambdaDelegate: 생성자를 복사(const TLambda&) · 이동(TLambda&&) 둘로 — TLambda 가 값 형이 된 뒤 왼값도 받게. Clone 용 생성자(const TLambda&, const tuple&)는 그대로.
+- operator+=: std::move(l) → std::forward<T>(l).
+- 부르는 쪽 모양은 그대로다. 게임 UI 움직임 PGameUITimeline::Call(TFunction&&)(GameUITween.h:178 — CreateLambda 로 넘김)도 같이 사본을 갖게 된다.
+- 주의(바뀐 점): 복사할 수 없는 람다(unique_ptr 를 잡은 람다 등)를 왼값으로 넘기면 이제 컴파일 오류다(전에는 참조로 붙었다). 오른값은 전에도 Clone 이 복사를 요구해 안 됐다 —
+  엔진 · ProjectAH 에 그런 쓰임 없음(아래 사용처).
+
+[자체 검사 delegate.selftest — 람다 저장 9 검사 추가(25 → 34)]
+- AddLambda 왼값 람다(상태 있는 mutable 람다): 구독을 두 번 불러도 원래 람다의 상태는 그대로(사본)
+- AddLambda 왼값 std::function: 건 뒤 변수에 다른 함수를 넣어도 구독은 처음 함수
+- 요청서 완료 기준: std::function 변수가 블록을 나가 사라진 뒤에도 구독이 정상으로 불림(예외 없음 · 결과 맞음)
+- CreateLambda · BindLambda 왼값 람다도 사본, 델리게이트 사본(Clone)은 원본을 지운 뒤에도 자기 람다로 동작
+- 덧붙인 인자(payload): 왼값 · 오른값 람다 모두 그대로 받음
+- += 왼값 std::function: 원래 변수가 비지 않고(옮겨 가지 않음) 구독과 원래 변수 둘 다 동작
+- 결과가 매번 같도록 짰다(상태 비교 · 변수 바꾸기). 매달린 참조를 직접 부르는 검사는 예외를 잡는다.
+
+[검증 1 — 고치기 전: 작업 폴더 Temp/wt/lambda(메인 스냅샷, 복사 439 · 삭제 64), 옛 Delegate.h + 새 검사]
+- PreBuild 종료 0, 빌드 53초 종료 0
+- delegate.selftest: 새 검사 7개 FAILED(AddLambda 람다 · std::function · 사라진 변수 · CreateLambda · BindLambda · Clone · += 비움) 뒤,
+  += 로 비워진 std::function 을 부르다 std::bad_function_call → abort 다이얼로그에서 멈춤(timeout 60 → 124). 남은 프로세스 없음 확인.
+
+[검증 2 — 고친 뒤: 같은 작업 폴더]
+- 빌드 29초 종료 0, 경고는 LNK4098 2줄(기존)뿐
+- delegate.selftest: OK (34/34) × 2, 종료 0 · live 0
+- 회귀 9종(모두 종료 0 · live 0): gmtest · gameui.selftest 461/461 · input.selftest 34/34 · console.selftest 64/64 · datatable.selftest 127/127 ·
+  cookcheck.selftest 26/26 · audio.selftest 49/49 · module.test Audio · net.test all
+- 에디터(crashwalk 30초): 종료 0 · [error]/[critical] 0 · live 0
+
+[검증 3 — 메인 트리 반영: MainTree.cmd -name=Core]
+- status free → hold -minutes=30(14:29:15) → Delegate.h · DelegateSelfTest.cpp 복사(메인 = 스냅샷 + 제 수정만 다름을 diff 로 확인) → build 종료 0(34초, Core 헤더라 거의 모든 모듈)
+- exec JGConsole 10종 모두 종료 0 · live 0: delegate.selftest 34/34 · gmtest · gameui 461 · input 34 · console 64 · datatable 127 · cookcheck 26 · audio 49 · module.test Audio · net.test all
+- exec crashwalk 에디터(프로젝트 없음) 30초: 종료 0 · 오류 0 · live 0, 메인 Bin imgui.ini 백업 → 되돌림(md5 같음)
+- release 14:31:17. 작업 폴더는 메인과 같음을 확인하고 지움.
+
+[참조 저장에 기대던 곳 — 사용처 확인(엔진 · ProjectAH · Temp/Games 전체 검색)]
+- AddLambda · CreateLambda · BindLambda 에 람다 식이 아닌 것(왼값)을 넘기는 곳: 엔진은 GameUITween.h:178(PGameUITimeline::Call 이 받은 함수를 전달 — 이제 사본) 하나,
+  ProjectAH 는 없음(덱 업그레이드 화면은 이미 사본 람다로 감쌈 — 요청서). 델리게이트 += 사용처 없음.
+- 참조 저장에 기대던(원래 변수를 나중에 바꾸면 구독도 따라가길 바라던) 코드는 없다.
+- 게임 프로젝트는 Core 헤더가 바뀌었으니 게임 DLL 을 다시 빌드한다(배치 2 는 필요 없음 — 새 파일 없음).

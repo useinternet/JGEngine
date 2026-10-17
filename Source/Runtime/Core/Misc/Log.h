@@ -42,6 +42,8 @@ class GLogGlobalSystem : public GGlobalSystemInstance<GLogGlobalSystem>
 
 public:
 	GLogGlobalSystem();
+	// logFilePath 가 비면 작업 폴더의 jg_log.txt. 폴더가 없으면 만든다(패키지 Saved/Logs — DevOps GP-D1).
+	explicit GLogGlobalSystem(const HRawString& logFilePath);
 	virtual ~GLogGlobalSystem();
 
 public:

@@ -189,12 +189,18 @@ private:
 template<typename TLambda, typename RetVal, typename... Args>
 class PLambdaDelegate;
 
+// TLambda 는 값 형이다(CreateLambda 가 std::decay_t 로 넘긴다). 왼값은 복사, 오른값은 이동해 람다를 자기 것으로 갖는다
 template<typename TLambda, typename RetVal, typename... Args, typename... Args2>
 class PLambdaDelegate<TLambda, RetVal(Args...), Args2...> : public IDelegateInstance<RetVal, Args...>
 {
 public:
+	explicit PLambdaDelegate(const TLambda& lambda, Args2&&... payload)
+		: _lambda(lambda),
+		_payload(std::forward<Args2>(payload)...)
+	{}
+
 	explicit PLambdaDelegate(TLambda&& lambda, Args2&&... payload)
-		: _lambda(std::forward<TLambda>(lambda)),
+		: _lambda(std::move(lambda)),
 		_payload(std::forward<Args2>(payload)...)
 	{}
 
@@ -250,9 +256,10 @@ public:
 		return Execute_Internal(std::forward<Args>(args)..., std::index_sequence_for<Args2...>());
 	}
 
+	// 살아 있는 주인의 주소(주인 기준 찾기 · 해제의 비교 값). 주인이 죽었으면 nullptr — 같은 주소에 새 객체가 들어와도 맞지 않는다
 	virtual const void* GetOwner() const override
 	{
-		return _object.IsValid() ? nullptr : _object.Pin().GetRawConstPointer();
+		return _object.Pin().GetRawConstPointer();
 	}
 
 	virtual void Clone(void* pDestination) override
@@ -629,11 +636,13 @@ public:
 		return handler;
 	}
 
+	// 람다는 값으로 저장한다(std::decay_t): 왼값(이름 있는 람다 · std::function 변수)은 복사, 오른값은 이동.
+	// 참조로 저장하면 원래 객체가 사라진 뒤 부를 때 매달린 참조가 된다(ER-023). BindLambda · AddLambda · += 도 여기를 지난다
 	template<typename TLambda, typename... Args2>
 	[[nodiscard]] static HDelegate CreateLambda(TLambda&& lambda, Args2... args)
 	{
 		HDelegate handler;
-		handler.Bind<PLambdaDelegate<TLambda, RetVal(Args...), Args2...>>(std::forward<TLambda>(lambda), std::forward<Args2>(args)...);
+		handler.Bind<PLambdaDelegate<std::decay_t<TLambda>, RetVal(Args...), Args2...>>(std::forward<TLambda>(lambda), std::forward<Args2>(args)...);
 		return handler;
 	}
 
@@ -722,7 +731,7 @@ private:
 
 public:
 	constexpr HMulticastDelegate()
-		: _locks(0)
+		: _locks(0), _bHasRemovedWhileLocked(false)
 	{
 	}
 
@@ -731,20 +740,23 @@ public:
 	HMulticastDelegate& operator=(const HMulticastDelegate& other) = default;
 	HMulticastDelegate(HMulticastDelegate&& other) noexcept
 		: _events(std::move(other._events)),
-		_locks(std::move(other._locks))
+		_locks(std::move(other._locks)),
+		_bHasRemovedWhileLocked(other._bHasRemovedWhileLocked)
 	{
 	}
 	HMulticastDelegate& operator=(HMulticastDelegate&& other) noexcept
 	{
 		_events = std::move(other._events);
 		_locks = std::move(other._locks);
+		_bHasRemovedWhileLocked = other._bHasRemovedWhileLocked;
 		return *this;
 	}
 
+	// 왼값은 복사한다(std::move 로 넘기면 부른 쪽의 람다 · std::function 을 옮겨 가 비워 버린다 — ER-023)
 	template<typename T>
 	HDelegateHandle operator+=(T&& l)
 	{
-		return Add(DelegateT::CreateLambda(std::move(l)));
+		return Add(DelegateT::CreateLambda(std::forward<T>(l)));
 	}
 
 	HDelegateHandle operator+=(DelegateT&& handler) noexcept
@@ -759,12 +771,16 @@ public:
 
 	HDelegateHandle Add(DelegateT&& handler) noexcept
 	{
-		for (size_t i = 0; i < _events.size(); ++i)
+		// 방송 중에 뺀 자리(핸들 무효)는 그 콜백이 아직 실행 중일 수 있어 다시 쓰지 않는다 — 방송이 끝날 때 지워진다
+		if (IsLocked() == false)
 		{
-			if (_events[i].Handle.IsValid() == false)
+			for (size_t i = 0; i < _events.size(); ++i)
 			{
-				_events[i] = DelegateHandlerPair(HDelegateHandle(true), std::move(handler));
-				return _events[i].Handle;
+				if (_events[i].Handle.IsValid() == false)
+				{
+					_events[i] = DelegateHandlerPair(HDelegateHandle(true), std::move(handler));
+					return _events[i].Handle;
+				}
 			}
 		}
 		_events.emplace_back(HDelegateHandle(true), std::move(handler));
@@ -807,25 +823,25 @@ public:
 		return Add(DelegateT::CreateSP(pObject, pFunction, std::forward<Args2>(args)...));
 	}
 
+	// pObject 를 주인으로 둔 구독(Raw · 살아 있는 주인의 SP)을 모두 뺀다
 	void RemoveObject(void* pObject)
 	{
-		if (pObject != nullptr)
+		if (pObject == nullptr)
 		{
-			for (uint64 i = 0; i < _events.size(); ++i)
+			return;
+		}
+
+		for (uint64 i = 0; i < _events.size();)
+		{
+			if (_events[i].Handle.IsValid() && _events[i].Callback.GetOwner() == pObject)
 			{
-				if (_events[i].Callback.GetOwner() == pObject)
+				// 빼면 맨 뒤 구독이 i 자리로 온다 — 그 자리를 다시 본다
+				if (removeAt(i))
 				{
-					if (IsLocked())
-					{
-						_events[i].Callback.Clear();
-					}
-					else
-					{
-						std::swap(_events[i], _events[_events.size() - 1]);
-						_events.pop_back();
-					}
+					continue;
 				}
 			}
+			++i;
 		}
 	}
 
@@ -837,15 +853,7 @@ public:
 			{
 				if (_events[i].Handle == handle)
 				{
-					if (IsLocked())
-					{
-						_events[i].Callback.Clear();
-					}
-					else
-					{
-						std::swap(_events[i], _events[_events.size() - 1]);
-						_events.pop_back();
-					}
+					removeAt(i);
 					handle.Reset();
 					return true;
 				}
@@ -875,8 +883,9 @@ public:
 		{
 			for (DelegateHandlerPair& handler : _events)
 			{
-				handler.Callback.Clear();
+				handler.Handle.Reset();
 			}
+			_bHasRemovedWhileLocked = true;
 		}
 		else
 		{
@@ -932,6 +941,22 @@ private:
 	{
 		DELEGATE_ASSERT(_locks > 0);
 		--_locks;
+
+		// 가장 바깥 방송이 끝나면 방송 중에 뺀 구독(핸들 무효)을 지운다
+		if (_locks == 0 && _bHasRemovedWhileLocked)
+		{
+			_bHasRemovedWhileLocked = false;
+			for (uint64 i = 0; i < _events.size();)
+			{
+				if (_events[i].Handle.IsValid() == false)
+				{
+					std::swap(_events[i], _events[_events.size() - 1]);
+					_events.pop_back();
+					continue;
+				}
+				++i;
+			}
+		}
 	}
 
 	bool IsLocked() const
@@ -939,6 +964,23 @@ private:
 		return _locks > 0;
 	}
 
+	// i 번째 구독을 뺀다. 방송 중이면 핸들만 무효로 해 남은 방송에서 건너뛰고, 콜백(지금 실행 중일 수 있다)은 방송이 끝날 때 지운다.
+	// 방송 중이 아니면 맨 뒤 구독과 바꿔 지운다. 맨 뒤 구독이 i 자리로 왔으면 true
+	bool removeAt(uint64 i)
+	{
+		if (IsLocked())
+		{
+			_events[i].Handle.Reset();
+			_bHasRemovedWhileLocked = true;
+			return false;
+		}
+
+		std::swap(_events[i], _events[_events.size() - 1]);
+		_events.pop_back();
+		return i < _events.size();
+	}
+
 	HList<DelegateHandlerPair> _events;
 	uint32 _locks;
+	bool   _bHasRemovedWhileLocked;   // 방송 중에 뺀 구독이 있다 — Unlock 에서 지운다
 };

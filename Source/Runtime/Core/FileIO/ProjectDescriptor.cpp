@@ -86,12 +86,27 @@ bool HProjectDescriptor::ResolveEngineRoot(const PString& projectDirectory, PStr
 	return true;
 }
 
+void HProjectPackageSettings::WriteJson(PJsonData& json) const
+{
+	json.AddMember("Version", Version);
+	json.AddMember("Window", Window);
+	json.AddMember("ExcludeContent", ExcludeContent);
+}
+
+void HProjectPackageSettings::ReadJson(const PJsonData& json)
+{
+	json.GetData("Version", &Version);
+	json.GetData("Window", &Window);
+	json.GetData("ExcludeContent", &ExcludeContent);
+}
+
 void HProjectDescriptor::WriteJson(PJsonData& json) const
 {
 	json.AddMember("Name", Name);
 	json.AddMember("EngineRoot", EngineRoot);
 	json.AddMember("GameModules", GameModules);
 	json.AddMember("EditorModules", EditorModules);
+	json.AddMember("Package", Package);
 }
 
 void HProjectDescriptor::ReadJson(const PJsonData& json)
@@ -100,4 +115,6 @@ void HProjectDescriptor::ReadJson(const PJsonData& json)
 	json.GetData("EngineRoot", &EngineRoot);
 	json.GetData("GameModules", &GameModules);
 	json.GetData("EditorModules", &EditorModules);
+	// 선택 섹션. 없으면 기본값(1920×1080 창 · 버전 0.1.0 · 제외 없음).
+	json.GetData("Package", &Package);
 }

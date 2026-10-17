@@ -1,8 +1,39 @@
-# Memory TODO
+# Core TODO (Core 모듈 — 메모리 시스템 · 콘솔 명령 시스템 · Core 공용)
 
-갱신 2026-09-30. `Files/Memory_TODO.md`(2026-09-28 작성, Phase 0~7)를 코드 · git 기준으로 최신화해 통합한 목록. 항목 ID 는 구 TODO 와 같다(다른 문서가 참조). 현황은 `현황.md`.
+갱신 2026-10-11(Core 이벤트 구독 버그 완료 · 대리자 보류 3건 추가 — 첫 표. UI-1c 가 `736ddbe` 에 커밋된 것을 git 로 확인해 완료 이력으로. 14시 오디오 재생(D-37) 새 Audio 모듈 완료 — 상세는 `TODO_Audio.md`). 그 밖의 메모리 시스템 부분은 2026-09-30 그대로. `Files/Memory_TODO.md`(2026-09-28 작성, Phase 0~7)를 코드 · git 기준으로 최신화해 통합한 목록. 항목 ID 는 구 TODO 와 같다(다른 문서가 참조). 현황은 `현황.md`.
 원칙: **지금 구체적 문제가 있는 항목만 미완료로 둔다.** "나중에 필요할지도" 성격은 보류 표에 두고 재검토 트리거를 적는다. `결정 필요` 항목은 착수 전에 사용자 확인.
-검증 루프와 합격 기준은 `현황.md` §6. 커밋은 사용자가 한다.
+검증 루프와 합격 기준은 `현황.md` §6. 커밋 · 푸시는 **엔진 총괄이 묶어서** 한다(2026-10-17 사용자 결정 H-001 — 그 전에는 사용자). Core 세션은 커밋하지 않고, 일이 끝나면 아래 체크리스트에 파일을 적고 엔진 총괄에 알린다.
+
+
+## Core 공용 · 콘솔 명령 시스템 (2026-10-07~ Core 세션)
+
+2026-10-07 세션 통합으로 이 문서는 Core 모듈 전체의 TODO 다. 아래 "다음에 할 일" 부터는 메모리 시스템(옛 Memory 분야) 내용 그대로다. 2026-10-11 폴더 이름 `Memory/` → `Core/`.
+
+| 항목 | 상태 | 비고 |
+|---|---|---|
+| 델리게이트 AddLambda 가 왼값을 참조로 저장(ER-023) — 이름 있는 람다 · `std::function` 변수를 `AddLambda` · `CreateLambda` · `BindLambda` 로 걸면 참조로 저장돼, 원래 변수가 사라진 뒤 부르면 매달린 참조로 죽음 | **완료 2026-10-11 14:31 메인 반영, 미커밋** — 게임 쪽 결함 보고, 엔진 총괄 배정(사용자 결정 없이) | `CreateLambda` 가 `std::decay_t` 값 형으로 저장(왼값 복사 · 오른값 이동), `PLambdaDelegate` 생성자 복사 · 이동 둘, `operator+=` 의 `std::move` → `std::forward`(왼값을 옮겨 가 비우던 것). 부르는 쪽 모양 그대로, 게임 UI 움직임 `Call` 도 같이 사본. `delegate.selftest` 람다 저장 9 검사 추가 → 34/34(고치기 전 7 실패 + abort), 회귀 · 에디터 종료 0 · live 0. 참조 저장에 기대던 사용처 없음(엔진 · ProjectAH). 복사할 수 없는 람다를 왼값으로 넘기면 이제 컴파일 오류(사용처 없음). 증적 `Files/2026-10-11_ER-023_lambda_storage_verify.txt`, 커밋 목록은 표 아래(이벤트 구독 버그와 같은 두 파일) |
+| Core 이벤트 구독이 객체를 지워도 안 빠지는 버그 — `PSPDelegate::GetOwner` 조건이 뒤집힘(`Misc/Delegate.h:255`) | **완료 2026-10-11 00:19, 미커밋** — 사용자 대시보드 "지금 진행해줘"(00:01) | GUI 세션 발견(10-03). `GetOwner` = 살아 있는 주인 주소(죽었으면 nullptr) → AddSP 구독도 주인 기준 해제(`RemoveObject` · `IsBoundTo` · `ClearIfBoundTo`)로 빠진다. 같은 파일에서 함께 고침: `RemoveObject` 가 바꿔 온 구독을 건너뛰어 같은 주인 구독이 하나 남던 것, 방송 중 해제가 콜백만 지우고 핸들을 남겨 같은 방송에서 빈 콜백 실행 assert 가 나던 것(이제 핸들 무효 → 가장 바깥 방송이 끝날 때 지움). 새 `delegate.selftest` 25/25(고치기 전 8 실패 + assert), 회귀 7종 · 에디터 종료 0 · live 0, 메인은 `MainTree.cmd -name=Core` 로 반영 · 빌드 · 회귀. 기존 사용처(GameHost · ProjectAH 의 `RemoveObject` 는 AddRaw 1개씩, GUI 백엔드 AddSP 는 `RemoveAll`) 결과 같음. 증적 `Files/2026-10-11_delegate_unsubscribe_fix_verify.txt`, 커밋 목록은 표 아래 |
+| 방송 중 같은 이벤트에 구독을 더하면 실행 중인 콜백이 옮겨질 수 있음 — 목록 용량이 넘쳐 다시 잡히면 32B 이하 콜백(대리자 안에 저장, 이동 = 바이트 복사)이 있던 옛 목록 메모리가 풀에 반납된다. 그 콜백이 `Add` 뒤에 캡처를 읽으면 해제된 메모리 | 보류 | 위 버그 작업 중 발견(10-11), 기존 동작. 32B 초과(힙 저장)는 객체 주소가 그대로라 안전. 다시 볼 조건: 콜백 안에서 같은 이벤트에 구독을 더하는 코드가 생길 때. 고치는 길 예: 방송 중 추가는 대기 목록에 두고 `Unlock` 에서 붙이기 |
+| 주인이 죽은 SP 구독이 목록에 남음 — 주인 기준 해제로는 못 찾고 `RemoveAll`(또는 핸들 `Remove`) 전까지 남는다 | 보류 | 위 버그 작업 중 발견(10-11). 실행해도 아무 일이 없어 안전, 비용은 방송마다 한 칸. 다시 볼 조건: 짧게 사는 객체가 SP 로 구독하고 빼지 않아 목록이 자라는 사용처가 보일 때 |
+| `HMulticastDelegate::Compress()` 논리 오류 — 무효 구독을 앞으로 모은 뒤 뒤에서 잘라 유효 구독을 지운다 | 보류 | 위 버그 작업 중 발견(10-11). 호출자 0(`C:\Develop` 전체 검색). 다시 볼 조건: 부르는 코드가 생길 때 — 그때 고치거나 지운다 |
+| 오디오 재생(효과음 · 배경음) 검토(ER-022) — 엔진에 오디오 모듈이 없음, 새 런타임 모듈 `Audio` | **완료 2026-10-11 14:02 메인 반영, 미커밋** — 사용자 결정 오디오 재생(D-37) "권고대로 진행"(12:51, 엔진 총괄 전달). 할 일 · 보류 · 커밋 목록은 `TODO_Audio.md`(AU-1~4 완료, 보류 AU-H1~H10), 현황 §3-5, 기록 `Files/2026-10-11_audio_D-37_verify.txt`. 검토 01시 | 권고: miniaudio 0.11.25(퍼블릭 도메인 또는 MIT-0)를 감싼 새 Audio 모듈(의존 Core 만), 1차 = 요청서 필수 전부 약 2.5~3일, 담당 Core. 쿠킹 · 게임 UI 움직임 · 에디터 · GameHost 변경 없음, JGConsole 엔진 목록 한 줄(DevOps). 수락하면 `TODO_Audio.md`(AU-1~4)를 새로 만든다. 검토서 `Files/ER-022_검토_2026-10-11.md` |
+| 리플렉션 작은 결함 묶음 — ① `JGEnum::GetValueByEnumName` 이 순번을 값처럼 돌려줌(값이 0 부터 이어질 때만 맞음) ② `GetIndexByEnumName` 이 못 찾으면 -1 대신 항목 수 ③ `JGObject::GetClass()` 가 공유 클래스 정보에 마지막으로 부른 오브젝트의 속성 주소를 덮어씀(오브젝트마다 따로가 아님 · 스레드 안전 아님) ④ `GetChildClasses(true)` 가 자식이 있는 중간 클래스를 결과에서 빠뜨림 | 보류 | Core 아키텍처 그림 설명 문서를 쓰며 찾음(10-17, 조사 에이전트 보고 → 코드 직접 확인 `ObjectGlobals.cpp:288-308 · 331-351`, `ObjectGlobals.h:258-286`). 지금 쓰는 곳: Graphics `Texture.cpp:96-110`(열거형 값이 0 부터 이어져 맞음), GFW `DataTableView.h:171-184`(①② 를 알고 우회), `GameMaster.cpp:495`(`false` 라 ④ 무관), `DevelopUnit.cpp:95`(`GetClass`). 다시 볼 조건: 값이 띄엄띄엄인 열거형을 이름으로 읽을 때, 여러 오브젝트의 `GetClass()` 속성을 함께 쓰거나 다른 스레드에서 부를 때, 손자 클래스까지 `GetChildClasses(true)` 로 찾을 때 |
+| 잘못된 GUID 예외(DT-H16) — 손으로 고친 잘못된 `_guid` 를 읽으면 `HGuid::FromString` 이 예외 | 보류 | 쿠킹 검사(GP-A1)가 패키징 전에 잡는다. 다시 볼 조건: 에디터에서 손으로 고친 에셋을 열다 죽는 일이 실제로 생길 때 |
+| 런처 실행 인자로 명령 실행(B-1, 옛 DevConsole — `JGLauncher.exe -exec="…"` 류) | 보류 | 다시 볼 조건: Graphics 5-25 를 콘솔 명령으로 바꿔 자동 검증 루프가 리드백 PNG 를 잃을 때. 원문 `Etc/TODO_DevConsole.md` 보류 표 |
+
+콘솔 명령 시스템 구현 현황 · 함정 · 검증은 `Etc/현황.md` §1(DevConsole 창과 함께 적힘), 명령 선언 방법은 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h` 상단 주석, 자체 검사 `console.selftest`.
+
+**커밋 체크리스트 (10-17 문서만 — 코드 변경 없음, 커밋은 엔진 총괄)**
+- 사람이 듣는 확인 닫음(D-37, 10-17 14:24): `Core/{현황.md, TODO_Audio.md}` · `진행현황.md`(1절 Core 행 · 3절 D-37 행 · 7절)
+- Core 아키텍처 그림 설명(10-17 14:51): 저장소 밖 위키 `C:/obsidian/ProjectJG/02. 위키/JGEngine/모듈/Core 그림 설명.md`(새) · `모듈/Core.md`(링크 한 줄), 저장소 안 `Core/{현황.md, TODO.md}`(보류 한 줄) · `진행현황.md` 7절
+- 주의: `Document/Memory/Core/` 폴더 전체가 아직 **미추적**이다(10-11 `Memory/` → `Core/` 이름 바꾼 뒤 커밋 전) — 옛 `Document/Memory/Memory/` 지움과 한 묶음으로 넣어야 한다
+
+**커밋 체크리스트 (Core 이벤트 구독 버그 + 람다 저장(ER-023), 미커밋 — 커밋은 엔진 총괄. 두 일이 같은 두 파일을 고쳐 한 묶음)**
+- 수정 `Source/Runtime/Core/Misc/Delegate.h`(HEAD 대비 +74/−32 = 이벤트 구독 +62/−29 + ER-023 +12/−3)
+- 새 **미추적** `Source/Programs/JGConsole/DelegateSelfTest.cpp` — GenerateProjectFiles 돌림(JGConsole 은 폴더 단위라 `jgengine.lua` · `JGEngine.sln` 내용 변화 없음)
+- 재빌드 Bin(10-11 00:17) — Core 헤더라 엔진 DLL · exe 거의 전부. 다른 트랙의 미커밋 Bin 과 같은 파일이다
+- 문서 `Core/{TODO.md, 현황.md, Files/2026-10-11_delegate_unsubscribe_fix_verify.txt, Files/2026-10-11_ER-023_lambda_storage_verify.txt}` · `진행현황.md`. 재빌드 Bin 은 10-11 14:29(ER-023 — Core 헤더라 엔진 DLL · exe 거의 전부)가 마지막
+- 다른 트랙과 겹치는 소스 파일 없음. 검사가 기대는 헤더(`ConsoleCommandGlobalSystem.h` · `Core.h` · PCH)는 HEAD 그대로라 커밋 순서와 무관하다(빌드로 확인한 것은 메인 미커밋 전체 상태)
 
 ---
 
@@ -26,7 +57,7 @@
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| UI-1c | UI-1(통계 창 재디자인) 커밋 — 파일: `Source/Editor/DevStatistics/MemoryStatistics.h/.cpp`, `Source/Runtime/GUI/GUI.h/.cpp` · `GUIDefines.h` · `Backends/DX12GUIBackend.cpp`(이 넷은 다른 트랙 변경과 섞여 있어 파일 단위로 나눌 수 없다), `Files/2026-09-30_memstats_ui*`, `Files/tools/memstats_capture.ps1.txt` | 중간 | 사용자 대기 | 커밋 전 메인 트리 전체 빌드 오류 0 + 런처에서 `Windows/Statistics/Memory` 창 열어 보기 | 새 커밋에 위 파일, `grep -c "HGUI::PlotLines" Source/Runtime/GUI/GUI.cpp` 가 1 이상 | 메인 트리 `GUI.cpp` 를 다른 세션이 통째로 다시 쓰면 추가분이 빠진다 → `Files/2026-09-30_memstats_ui.patch` 로 되살린다 |
+| (없음) | UI-1c(UI-1 커밋)는 `736ddbe`("엔진 구현", 2026-10-01 12:16)에 들어간 것을 2026-10-11 git 로 확인해 완료 이력으로 옮겼다 | | | | | |
 
 미완료 코드 작업은 없다. 4-6 · 4-D · 7-1(결정)은 완료 이력으로, 커밋 뒤 회귀는 전 트랙 공통 회귀로 옮겼다(위 처리 결과). 현재 시점에 메모리 시스템에서 확인된 미해결 결함은 없다.
 
@@ -80,7 +111,8 @@
 | 4-6 | Phase 4 커밋(4-1 범위) | 2026-09-30 | **git `4c8ac73` "문서 정리"(17:30)** — `Memory.h` +44/−17 · `Memory.cpp` +28/−3(작업 트리 기록과 일치), 4-1 결과 · 빌드 로그 · 문서 포함. 다른 트랙 변경 · 문서 재편과 한 커밋 |
 | 4-D | Phase 4 나머지(4-1 잔여 · 4-2 · 4-3 · 4-4) 종결 결정 | 2026-09-30 | 사용자 완료 처리 → 하지 않음. 보류 표에 재개 트리거와 함께 유지 |
 | 7-1(결정) | 문자열 테이블 수명 정책 | 2026-09-30 | 사용자 완료 처리 → 현행(영구 인터닝) 유지, 코드 변경 없음. 항목은 보류 표에 남김 |
-| UI-1 | 통계 창 재디자인(사용자 요청): 요약 카드 · 60초 추이 그래프 · 스레드 막대 · 스레드별 탭 클래스 표 · 상태 딱지 · 풍선 도움말, `HGUI` 대시보드 함수 28개 · `EGUIColor` · `EGUIFont` · 큰 글꼴 | 2026-09-30 | `Files/2026-09-30_memstats_ui_verify.txt`(HEAD 워크트리 빌드 오류 0, 실행 7회 종료 0 · `[error]` 0 · live 0, 메인 트리 합친 상태 컴파일 0 오류), 캡처 `Files/2026-09-30_memstats_ui_{before,after,plot_tooltip,class_tooltip,thread1}.png`. **미커밋**(UI-1c) |
+| UI-1 | 통계 창 재디자인(사용자 요청): 요약 카드 · 60초 추이 그래프 · 스레드 막대 · 스레드별 탭 클래스 표 · 상태 딱지 · 풍선 도움말, `HGUI` 대시보드 함수 28개 · `EGUIColor` · `EGUIFont` · 큰 글꼴 | 2026-09-30 | `Files/2026-09-30_memstats_ui_verify.txt`(HEAD 워크트리 빌드 오류 0, 실행 7회 종료 0 · `[error]` 0 · live 0, 메인 트리 합친 상태 컴파일 0 오류), 캡처 `Files/2026-09-30_memstats_ui_{before,after,plot_tooltip,class_tooltip,thread1}.png`. 커밋 `736ddbe`(UI-1c) |
+| UI-1c | UI-1 커밋 | 2026-10-01 | **git `736ddbe` "엔진 구현"(12:16)** — `MemoryStatistics.h/.cpp` · `GUI.h/.cpp` · `GUIDefines.h` · `DX12GUIBackend.cpp` · `Files/2026-09-30_memstats_ui*` · `Files/tools/memstats_capture.ps1.txt` 포함, HEAD `GUI.cpp` 의 `HGUI::PlotLines` 1(완료 기준 충족). 사용자 일괄 커밋이라 세션 알림이 없었고 2026-10-11 git 로 확인. 그 뒤 `MemoryStatistics.cpp` 변경은 다른 트랙 것(`efba16a`, D-22 ② 미커밋) |
 | 7-5 | 문서 갱신 | 2026-09-30 | 이 폴더 `현황.md`(문제 목록 해소 상태는 §9 표) · `TODO.md`. `Graphics_TODO.md` 5-23 · 5-27 종결 확인, 5-17 · 5-18 은 4-3 · 4-4 보류에 맞춰 미종결 |
 
 ---

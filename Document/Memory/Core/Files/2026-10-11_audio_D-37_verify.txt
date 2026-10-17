@@ -1,0 +1,91 @@
+오디오 재생(효과음 · 배경음)(D-37, 요청 ER-022) — 새 Audio 모듈 구현 · 검증 기록 (2026-10-11 12:53 ~ 14:03, Core 세션)
+
+[결정 · 범위]
+- 사용자 결정 D-37 "권고대로 진행"(10-11 12:51, 엔진 총괄 전달): (가) miniaudio 를 감싼 새 Audio 모듈, (A) 담당 Core. 범위 = 검토서(Files/ER-022_검토_2026-10-11.md) 1차 = 요청서 필수 전부.
+  범위 밖: 연출 큐 "소리 단계" · 소리 에셋 · 3D 소리(TODO_Audio.md 보류 AU-H1~H8).
+- 바깥 파일 내려받기: 사용자 허락(채팅 13시 "내려받기 허락").
+    https://raw.githubusercontent.com/mackron/miniaudio/0.11.25/miniaudio.h  4,108,168 바이트 · 95,864줄 · MA_VERSION 0.11.25
+        sha256 ac7af4de748b7e26b777f37e01cee313a308a7296a3eb080e2906b320cc55c89
+    https://raw.githubusercontent.com/mackron/miniaudio/0.11.25/LICENSE      2,597 바이트(퍼블릭 도메인 Unlicense 또는 MIT-0)
+        sha256 457f1b500e0adf6bc059edddfa78a2f62012e7c3bb43476c20e0bd23b25ba0eb
+  ogg 풀기는 저장소에 있던 Source/ThirdParty/stb/stb_vorbis.c v1.22(퍼블릭 도메인 또는 MIT)를 붙였다.
+- 시험 소리(저장소에 넣지 않음): make_sounds.py 로 만든 Effect.wav · MusicA.wav · Rain.wav, 이 PC 의 Android SDK fallbackring.ogg(곡 B · audio.selftest -ogg).
+
+[만든 것 — 엔진]
+Source/Runtime/Audio/ (새 모듈, SharedLib, 의존 Core 하나, Defines _AUDIO)
+  Audio.module.json · AudioDefines.h(AUDIO_API, EAudioBus Master/Music/Effects, EAudioBackgroundMode Keep/Lower/Mute, HAudioHandle, HAudioPlayArguments)
+  Audio.h/.cpp        공개 API HAudio: Play · Stop(페이드) · Pause · Resume · IsPlaying · SetVolume · PlayMusic(교체 페이드) · StopMusic · SetBusVolume · GetBusVolume ·
+                      SetBackgroundMode · Preload · StopAll · IsDeviceActive · GetPlayingCount. 이름이 PlaySound 가 아닌 것은 Windows PlaySound 매크로 때문
+  AudioEngine.h/.cpp  miniaudio ma_engine 하나를 감싼 섞개(모듈 밖에 내보내지 않음). 묶음 = ma_sound_group(Master ← Music · Effects),
+                      효과음 = 경로별로 통째 푼 원본 + 재생마다 ma_sound_init_copy, 흘려 풀기 = MA_SOUND_FLAG_STREAM, 파일 갈고리(VFS) = 메인 스레드가 HFileHelper::ReadAllBytes 로
+                      채운 메모리에서만 읽음(패키지 읽기 검사 통과), 토큰 경로(/JGGame/ · /JGEngine/) → Content, 오류는 경로마다 한 번(Error)
+  AudioGlobalSystem.h/.cpp  전역 시스템: StartupModule 에서 시작(JGConsole 처럼 Create 뒤 연결해도 됨), 창 없음 · -nosound → 무음 장치(Null backend),
+                      실제 장치가 없어 miniaudio 가 무음 장치로 열면 Warning 1줄, 창 메시지 대리자(WndProc)로 WM_ACTIVATEAPP → 전체 크기 0.25초 페이드(Keep · Lower · Mute),
+                      시스템 Destroy(모든 ShutdownModule 보다 먼저)에서 장치 · 소리를 닫고 그 뒤 HAudio 부르기는 아무 일 없음
+  AudioModule.h/.cpp  JG_MODULE_IMPL, 시스템 등록 · 해제
+  MiniAudio.cpp       miniaudio 구현(이 파일 하나) + stb_vorbis(헤더 → miniaudio 구현 → stb_vorbis 구현), 바깥 코드 경고 끔(#pragma warning(push, 0))
+  AudioSelfTest.cpp   audio.selftest [-ogg=<경로>] — 장치 없이(Manual 출력) 섞은 결과를 직접 읽어 52 검사
+Source/ThirdParty/miniaudio/miniaudio.h · LICENSE
+Source/Programs/JGConsole/Main.cpp  CONSOLE_ENGINE_MODULES 에 "Audio"(DevOps 승인 · DevOps 가 준 주석 그대로, Core 가 메인 반영 hold 안에서 넣음)
+
+[자체 검사 audio.selftest — 52 검사(-ogg 를 주면, 안 주면 49)]
+- 엔진 시작(Manual 48000Hz 스테레오) · 메모리 파일 등록
+- 재생: 시작 · 섞임 · 끝나면 Update 가 놓음
+- 겹치기: 같은 소리 4개 동시 = 약 4배(> 3.5배), 10ms 간격 8번 → 동시 8, 모두 끝나면 0          ← 요청서 (a)
+- 크기 0.5 = 절반(±2%), 높낮이 2 = 두 배 빠름
+- 묶음: Effects 0.5 = 절반 · 0 = 무음, Music 묶음 소리는 Effects 크기와 무관, Master 0 = 전부 무음, 소리 도중 바꾼 값이 다음 읽기(10ms)에 바로 반영(0.25 ±3%)  ← (c)
+- 되풀이 0.35초(0.1초 소리) 10ms 창 RMS 최소 > 0.8 × 기준 — 빈 곳 없음, Stop(0) 즉시 놓음
+- 페이드 인 0.2초 상승, Stop 페이드 0.2초 하강 → 무음 → 놓음                                   ← (b)
+- 일시 멈춤: 멈춘 뒤 10ms 지나면 무음(멈춘 직후 10ms 안 짧은 꼬리 최대 0.034, 소리 크기 0.2), 살아 있음, Resume 이어감
+- 배경음: PlayMusic 흘려 풀기 · 되풀이, 같은 곡이면 그대로, 다른 곡 0.3초 교체 동안 두 곡 다 들림 → 앞 곡 0 · 새 곡 1, 앞 곡 놓음, 분위기 소리와 동시, StopMusic 은 음악만   ← (b)
+- 흘려 풀기 되풀이 0.8초(0.3초 파일) 이음매 빈 곳 없음
+- 경로: 토큰이 아닌 경로 거절, 없는 파일 거절(예상된 Error 2줄 — 앞에 안내 Info), Preload
+- ogg(-ogg=fallbackring.ogg): 통째 풀기 재생 · 흘려 풀기 재생
+- StopAll · Shutdown(재생 중) · Shutdown 뒤 부르기 무시
+- 무음 장치(Null backend) 시작 · 실제 출력 아님 · Play 동작 · 실시간으로 끝남                  ← (e) 장치 없는 PC 흉내
+- 모듈: 창 없는 실행에서 무음 장치로 돎
+
+[작업 폴더 Temp/wt/audio — 메인 미커밋 상태 스냅샷(복사 409 · 삭제 64)]
+- GenerateProjectFiles 종료 0: Audio.vcxproj, "Recognize CodeGenable Module : Audio", 엔진 Runtime modules 그대로(Asset, Graphics, GameFrameWorks, GameHost)
+- 전체 빌드 63초 종료 0, 경고는 LNK4098 2줄(기존)뿐. Audio 프로젝트 다시 빌드 10.4초(Debug, Audio.dll 5.2MB, MiniAudio.obj 4.9MB)
+- audio.selftest 첫 실행 51/52 — "일시 멈춤 직후 무음" 이 멈춘 직후 10ms 꼬리(0.034)에 걸림 → 검사를 10ms 뒤부터로 고침 → 52/52 × 3회, 종료 0 · live 0
+- 회귀 9종(모두 종료 0 · live 0): gmtest(GameMaster 120 · World 64 · GameViewport 31) · gameui.selftest 461/461 · input.selftest 34/34 · console.selftest 64/64 ·
+  datatable.selftest 127/127 · cookcheck.selftest 26/26 · delegate.selftest 25/25 · module.test Audio OK · net.test all 101 passed
+
+[검증 게임 Temp/Games/AudioCheck — 도구 Files/tools/audiocheck/(README.md)]
+- 출력 장치(이 PC): 기본 "DELL U4323QE(NVIDIA High Definition Audio)" (WASAPI), 그 밖에 "스피커(Realtek(R) Audio)"
+- 실제 출력 녹음(audio_loopback_rms, 50ms RMS) + analyze_audiocheck.py 판정 9가지 — 바닥값 0.000000(다른 소리 없음)
+  첫 판(작업 폴더 엔진): Windows 효과음은 너무 작고 곡 B(울림 · 쉼 번갈아)는 비율 측정에 맞지 않아 → 합성 효과음 · 일정한 곡 A 로 비율, 창 비활성 단계 추가
+  에디터 실행에서 효과음 0.5 비가 0.737(50ms 칸 평균의 흔들림, 앞선 값 0.46~0.58) → 짧은 소리는 에너지로 비교하게 판정 도구를 고쳐 다시 판정
+  | 실행 | 결과 | 겹치기 비 | 음악 0.25 비 | 전체 0 | 효과음 0.5 비 | Mute | Lower 비 / 복귀 |
+  | 작업 폴더 엔진 GameHost 1 | 9/9 | 2.14 | 0.259 | 0.000000 | 0.498 | 0.000000 | 0.293 / 0.999 |
+  | 작업 폴더 엔진 GameHost 2 | 9/9 | 2.09 | 0.259 | 0.000000 | 0.473 | 0.000000 | 0.299 / 0.979 |
+  | 작업 폴더 엔진 에디터 안   | 9/9 | 2.45 | 0.252 | 0.000000 | 0.500 | 0.000000 | 0.301 / 0.991 |
+  | 메인 엔진 GameHost        | 9/9 | 2.44 | 0.256 | 0.000000 | 0.501 | 0.000000 | 0.299 / 0.989 |
+  | ReleaseGame 패키지 exe    | 9/9 | 2.47 | 0.259 | 0.000000 | 0.506 | 0.000000 | 0.299 / 0.997 |   ← 요청서 (d)
+  모든 실행 종료 0, [error]/[critical] 0, live blocks 0. 에디터 실행 D3D12 메시지 0.
+- -nosound(장치 없는 PC 흉내): "Audio: silent mode (-nosound) - sounds play on the null device", device=0, 자동 순서 그대로(겹치기 끝 재생 수 6 · 곡 1 · 끝 0),
+  종료 0 · 오류 0 · live 0, 실제 출력 532 칸 최대 RMS 0.0                                              ← (e)
+- 소리를 안 쓰는 곳은 그대로: 프로젝트 없는 에디터(메인 30초) Audio 연결 없음 · 종료 0 · 오류 0 · live 0, 기존 회귀 그대로                       ← (e)
+
+[메인 트리 반영 — Build\BatchFiles\MainTree.cmd -name=Core]
+- status free → hold -minutes=45 (13:54:12) → 새 파일 복사(Audio 12 · miniaudio 2), JGConsole/Main.cpp(메인 = 스냅샷 + 그 세 줄만 다름을 확인하고 복사)
+- exec GenerateProjectFiles.bat 종료 0(7초) — JGEngine.sln · jgengine.lua · Source/Programs/JGBuildTool/jgengine.lua 다시 씀(Audio 프로젝트)
+- build 종료 0(7초 — Audio · JGConsole 만), 오류 0 · 경고 0
+- exec JGConsole 10종 모두 종료 0 · live 0: audio.selftest -ogg 52/52 · console.selftest 64/64(DevOps 요청) · gmtest · gameui 461 · input 34 · datatable 127 ·
+  cookcheck 26 · delegate 25 · module.test Audio · net.test all. JGConsole 에 더해진 줄은 Audio Trace 2 + Info 1("silent mode (no window)")뿐(경고 · 오류 늘지 않음)
+- exec crashwalk 에디터(프로젝트 없음) 30초: 종료 0 · 오류 0 · live 0, 메인 Bin imgui.ini 백업 → 되돌림(md5 같음)
+- 검증 게임을 메인 엔진으로: .jgproject EngineRoot · 게임 GenerateProjectFiles.bat 의 엔진 배치 경로를 메인으로 → exec 게임 배치 2(종료 0, Runtime modules ... Audio, AudioCheck)
+  → 게임 빌드 59초 종료 0 → GameHost -audiocheck 9/9
+- exec JGConsole -runCook -project=…\AudioCheck -config=ReleaseGame: OK 97.1초, 바이너리 12(Audio.dll 포함), Content 9(엔진 셰이더 5 + 게임 소리 4), 13.3MB,
+  경고 1(assimp-vc143-mt.dll 복사 — 기존 GP-H2), 스모크 300프레임 종료 0 · 오류 0 · Content 밖 읽기 0. JGPackage.json RuntimeModules 에 Audio
+- 패키지 exe -audiocheck 9/9, 패키지 로그 오류 0 · Content 밖 읽기 0 · live 0 (Saved\ 는 지움)
+- release 14:02:13, status free
+
+[알아 둘 것]
+- 메인 엔진을 쓰는 게임 프로젝트는 엔진 GenerateProjectFiles → 게임 배치 2(게임 GenerateProjectFiles)를 다시 돌려야 게임 솔루션에 Audio 프로젝트가 생긴다.
+  그 전의 게임 솔루션 JGConsole 은 Audio.dll 이 없어 실행마다 "Fail Connect Module: Audio" 오류 줄을 남긴다(명령 · 종료 코드는 그대로 — DevOps 알림).
+- 만든 엔진 경로가 바뀐 게임 프로젝트(작업 폴더 엔진으로 만든 것)는 .jgproject EngineRoot 뿐 아니라 게임 GenerateProjectFiles.bat 안의 엔진 배치 경로도 바꿔야 한다
+  (안 바꾸면 "Project … belongs to engine …, but this tool is in …" critical — 배치는 종료 0 으로 끝나 놓치기 쉽다).
+- 사람이 듣는 확인 · 실제 장치가 없는 PC 는 사용자 확인 항목(총괄). 들어 볼 방법: Temp\Games\AudioCheck\Bin\DevelopEngine\JGLauncher.exe -game (단추) 또는
+  Temp\Games\AudioCheck\Package\ReleaseGame\AudioCheck.exe, -audiocheck 를 붙이면 27초 자동 순서.

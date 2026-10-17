@@ -1,0 +1,96 @@
+Core 이벤트 구독이 객체를 지워도 안 빠지는 버그 — 수정 · 검증 기록 (2026-10-11 00:01 ~ 00:19, 문서 00:24~)
+
+[요청]
+- 사용자 대시보드 명령 "지금 진행해줘"(2026-10-11 00:01), 엔진 총괄 전달. 처음 발견: GUI 세션(10-03).
+- 할 일: ① 조건 고치기 ② 다른 델리게이트에 같은 패턴이 있는지 확인 ③ Core 자체 검사(AddSP 주인 기준 해제 · 방송 중 해제 · 주인이 죽은 뒤 GetOwner)
+         ④ 회귀(gmtest · gameui.selftest · input.selftest · console.selftest · datatable.selftest, 에디터 종료 0 · live 0) ⑤ 해제된 콜백이 이제 실제로 빠져 달라지는 곳 확인.
+- 작업 폴더 Temp/wt/delegate(메인 미커밋 상태 스냅샷) → 메인 반영은 Build\BatchFiles\MainTree.cmd -name=Core.
+
+[원인]
+1. PSPDelegate::GetOwner (옛 Delegate.h:255) 조건이 뒤집혀 있었다.
+     return _object.IsValid() ? nullptr : _object.Pin().GetRawConstPointer();
+   - 주인이 살아 있으면 nullptr → RemoveObject(owner) · IsBoundTo(owner) · ClearIfBoundTo(owner) 가 SP 구독을 못 찾는다.
+   - 주인이 죽었으면 Pin() 이 nullptr → 역시 nullptr. 결국 SP 구독은 어떤 경우에도 주인으로 찾을 수 없었다.
+2. 같은 패턴을 보다가 같은 파일(HMulticastDelegate)에서 함께 드러난 것:
+   a. RemoveObject 가 맨 뒤 구독과 바꿔 지운 뒤 ++i 로 넘어가 바꿔 온 구독을 건너뛰었다. 같은 주인 구독이 2개 이상이면 하나가 남는다([r1, r2, r1] → [r1, r2]).
+   b. 방송(BroadCast) 중의 Remove · RemoveObject · RemoveAll 은 Callback.Clear() 만 하고 핸들은 유효로 두었다.
+      - 같은 방송의 뒤 순서에서 빈 콜백을 Execute → assert(_allocator.HasAllocation(), 옛 Delegate.h:680). 릴리스에서는 빈 저장소 호출.
+      - 콜백이 자기 자신을 빼면 실행 중인 콜백의 저장소(캡처)를 그 자리에서 지웠다.
+      - 지운 자리는 핸들이 유효라 Add 가 다시 쓰지 못하고 목록에 계속 남아, 다음 방송마다 같은 assert 가 난다.
+3. 다른 델리게이트: PRawDelegate::GetOwner 는 _pObject 그대로(정상), 람다 · static 은 주인 없음(nullptr, 정상).
+   단일 HDelegate 의 GetOwner · IsBoundTo · ClearIfBoundTo 는 인스턴스의 GetOwner 를 그대로 쓰므로 1 을 고치면 함께 고쳐진다.
+
+[수정] Source/Runtime/Core/Misc/Delegate.h (+62/−29, CRLF)
+- PSPDelegate::GetOwner → return _object.Pin().GetRawConstPointer();
+  살아 있는 주인의 주소, 주인이 죽었으면 nullptr(같은 주소에 새 객체가 들어와도 맞지 않는다).
+- HMulticastDelegate
+  - 새 도우미 removeAt(i): 방송 중이면 핸들만 무효(남은 방송에서 건너뜀) + _bHasRemovedWhileLocked, 콜백은 방송이 끝날 때 지운다.
+    방송 중이 아니면 맨 뒤와 바꿔 지우고, 맨 뒤가 i 자리로 왔으면 true(그 자리를 다시 본다).
+  - RemoveObject: nullptr 이면 바로 반환, 유효 핸들 + 주인 일치만, removeAt 결과로 같은 자리 재검사.
+  - Remove(handle): removeAt 사용.
+  - RemoveAll: 방송 중이면 모든 핸들 무효 + 플래그(콜백은 지우지 않음), 아니면 clear.
+  - Unlock: 가장 바깥 방송이 끝날 때(_locks == 0) 플래그가 있으면 핸들 무효 구독을 지운다.
+  - Add: 방송 중에는 빈 자리를 다시 쓰지 않고 뒤에 붙인다(뺀 자리의 콜백이 아직 실행 중일 수 있다).
+  - 이동 생성 · 이동 대입이 플래그도 옮긴다.
+- 바꾸지 않음: BroadCast, Compress()(호출자 0 · 논리 오류 — 보류 3).
+
+[자체 검사] Source/Programs/JGConsole/DelegateSelfTest.cpp (새 파일, LF) — JGConsole.exe delegate.selftest, 25 검사
+- 주인 찾기 7: SP 의 살아 있는 주인 · IsBoundTo(주인) · 복사본도 주인 유지 · ClearIfBoundTo(주인) · Raw 주인 · 람다/static 은 주인 없음 · 다른 객체 IsBoundTo false
+- RemoveObject 4: SP [a, b, a] 에서 a 둘 다 빠짐 · b 만 남음 · Raw [r1, r2, r1] 에서 r1 둘 다 빠짐 · RemoveObject(nullptr) 는 아무것도 안 뺌
+- 방송 중 9: 앞 콜백이 뒤 구독을 뺌(같은 방송에서 건너뜀 · 다음 방송에도 없음 · 방송 끝에 목록에서 지워짐) · 콜백이 자기 자신을 뺌 ·
+             RemoveObject(SP 주인) · RemoveAll(나머지 안 부름 · 목록 비워짐 · 다음 방송 0) · 중첩 방송 안에서 뺀 구독을 바깥 방송도 건너뜀 ·
+             방송 중 추가(남아 있고 다음 방송에 불림)
+- 주인이 죽은 SP 5: GetOwner nullptr · IsBoundTo(옛 주소) false · 실행해도 아무 일 없음 · RemoveObject(옛 주소) 안 맞음 · RemoveAll 로 빠짐
+
+[검증 1 — 고치기 전: 작업 폴더, 옛 Delegate.h + 새 검사]
+- PreBuild 종료 0 → 전체 빌드 17 프로젝트 오류 0 (LNK4098 2줄 — Graphics · GameFrameWorks, 기존 경고)
+- delegate.selftest: FAILED 8줄 뒤 assert 로 멈춤(종료 못 함 — timeout 60 으로 끊음, 124)
+    delegate.selftest FAILED: owner: SP delegate reports its living owner
+    delegate.selftest FAILED: owner: IsBoundTo(owner) is true for an SP delegate
+    delegate.selftest FAILED: owner: a copied SP delegate keeps the owner
+    delegate.selftest FAILED: owner: ClearIfBoundTo(owner) clears an SP delegate
+    delegate.selftest FAILED: remove: RemoveObject(owner) removes every SP subscription of that owner
+    delegate.selftest FAILED: remove: only the other owner's SP subscription is left
+    delegate.selftest FAILED: remove: RemoveObject(owner) removes both raw subscriptions of the same object
+    delegate.selftest FAILED: remove: RemoveObject(nullptr) removes nothing
+    Assertion failed: _allocator.HasAllocation(), file ...\Temp\wt\delegate\Source\Runtime\Core\Misc\Delegate.h, line 680
+  (8번째 실패는 앞 [r1, r2, r1] 에서 하나가 남은 결과다 — nullptr 처리 자체는 옛 코드도 맞았다.
+   assert 는 방송 중 해제 첫 검사 "앞 콜백이 뒤 구독을 뺌" 에서 났다.)
+
+[검증 2 — 고친 뒤: 같은 작업 폴더]
+- 빌드 오류 0 (LNK4098 2줄 기존)
+- delegate.selftest: OK (25/25), 종료 0, live blocks 0 · large live 0
+- 회귀(모두 종료 0 · live blocks 0 · large live 0)
+    gmtest OK — GameMaster 120 · World 64 · GameViewport 31 passed, 0 failed (렌더러 절 SKIP — 헤드리스)
+    gameui.selftest OK (461/461) · input.selftest OK (34/34) · console.selftest OK (64/64)
+    datatable.selftest OK (127/127) · cookcheck.selftest OK (26/26) · net.test all 101 passed
+  (console.selftest 의 warning/error 줄은 그 검사의 의도된 실패 검사, datatable 의 "chunk committed memory passed 16/32 MB" Warning 2줄은
+   그 검사의 큰 표 — 둘 다 기존과 같다. 10-02 기록 GameFrameWorks/Files/2026-10-02_GameUI_ER010_ER011_verify.txt 59줄)
+- 에디터(JGLauncher, crashwalk 30초 → WM_CLOSE): 종료 0, [error]/[critical] 0, 청크 2개 live blocks 0 · large live 0
+
+[검증 3 — 메인 트리 반영: Build\BatchFiles\MainTree.cmd -name=Core]
+- status 비어 있음 → hold -minutes=25 (00:16:46 부터) → Delegate.h · DelegateSelfTest.cpp 두 파일만 복사
+- exec GenerateProjectFiles.bat 종료 0. 새 파일이 JGConsole 폴더 안이라 jgengine.lua · JGEngine.sln 내용은 그대로(JGConsole 은 폴더 단위로 파일을 모은다),
+  Temp/ProjectFiles/JGConsole.vcxproj 에 DelegateSelfTest.cpp 가 들어감
+- build 종료 0, 28초, 17 프로젝트 오류 0 (LNK4098 2줄 기존). Core 헤더라 엔진 DLL · exe 거의 전부 다시 빌드(00:17)
+- exec JGConsole.exe 8종: delegate 25/25 · gmtest 120/64/31 · gameui 461/461 · input 34/34 · console 64/64 · datatable 127/127 ·
+  cookcheck 26/26 · net.test all 101 — 모두 종료 0 · live 0
+- exec crashwalk 에디터 30초: 종료 0, [error]/[critical] 0, live 0 (메인 Bin imgui.ini 는 실행 전 백업 → 실행 뒤 되돌림)
+- release 00:19, status 비어 있음. 작업 폴더 Temp/wt/delegate 는 메인과 같은 내용임을 확인하고 지움.
+
+[해제된 콜백이 이제 실제로 빠져 달라지는 곳]
+- RemoveObject 호출처: GameHost/GameHostModule.cpp:176-177 · ProjectAH UI/ArkhamBoardScreen.cpp:274-287 — 둘 다 AddRaw 구독, 이벤트마다 1개
+  → 결과 같음. 방송 중에 빼도 이제 assert 가 나지 않는다.
+- AddSP 사용처: GUI/Backends/DX12GUIBackend.cpp — 주인 기준으로 빼지 않고 Shutdown 의 RemoveAll(GUIBackend.cpp) 로 놓음 → 변화 없음.
+- 옛 뒤집힌 동작(SP 가 주인 기준 해제로 안 빠짐)에 기대던 코드는 없다.
+
+[보류로 남긴 것 — 이번에 고치지 않음(Core/TODO.md 보류 표)]
+1. 방송 중 같은 이벤트에 구독을 더해 목록 용량이 넘치면 목록이 다시 잡힌다. 32B 이하 콜백은 델리게이트 안에 저장되고 이동이 바이트 복사라,
+   지금 실행 중인 콜백 객체가 있던 옛 목록 메모리가 풀에 반납된다 → 그 콜백이 Add 뒤에 캡처를 읽으면 해제된 메모리를 읽는다(기존 동작).
+   32B 초과(힙 저장)는 객체 주소가 그대로라 안전. 이번 검사의 "방송 중 추가" 는 Add 뒤 캡처를 읽지 않는 경우만 본다.
+2. 주인이 죽은 SP 구독은 RemoveAll(또는 핸들 Remove) 전까지 목록에 남는다. 실행해도 아무 일이 없어 안전하고, 비용은 방송마다 한 칸.
+3. Compress() 논리 오류(호출자 0 — C:\Develop 전체 검색): 무효 구독을 앞으로 모은 뒤 뒤에서 잘라 유효 구독을 지운다.
+
+[로그 원본]
+세션 임시 폴더(저장소 밖) scratchpad/delegate_logs/: prebuild.log · build_before.log · selftest_before.txt · build_after.log · selftest_after.txt ·
+reg_*.txt(7) · editor_crashwalk.txt · main_generate.log · main_build.log · main_*.txt(8) · main_editor_crashwalk.txt — 요약은 위가 전부다.

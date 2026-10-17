@@ -69,11 +69,26 @@ namespace
 }
 
 GLogGlobalSystem::GLogGlobalSystem()
+	: GLogGlobalSystem(HRawString())
 {
-	HFileHelper::WriteAllText("jg_log.txt", "");
+
+}
+
+GLogGlobalSystem::GLogGlobalSystem(const HRawString& logFilePath)
+{
+	const HRawString filePath = logFilePath.empty() ? HRawString("jg_log.txt") : logFilePath;
+
+	const fs::path parentDirectory = fs::path(filePath).parent_path();
+	if (parentDirectory.empty() == false)
+	{
+		std::error_code errorCode;
+		fs::create_directories(parentDirectory, errorCode);
+	}
+
+	HFileHelper::WriteAllText(filePath.c_str(), "");
 
 	spdlog::set_pattern("%^[:%t:][%l]%v%$");
-	_logger = spdlog::basic_logger_mt("JGLog", "jg_log.txt");
+	_logger = spdlog::basic_logger_mt("JGLog", filePath);
 
 
 	_logger->set_level(spdlog::level::trace);
