@@ -1,0 +1,40 @@
+# Worktree-only UI test hook used by datatable_ui_driver.ps1.txt (2026-10-01). NEVER apply to the main tree.
+# With JG_UITEST=1 ImGui treats the main viewport as hovered and ignores WM_MOUSELEAVE, so PostMessage clicks are not dropped
+# when the real cursor is elsewhere. Apply in a scratch worktree: git apply datatable_uitest_hook.patch.txt (strip these comment lines first).
+diff --git a/Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp b/Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp
+index b8f01e8..4d5bc11 100644
+--- a/Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp
++++ b/Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp
+@@ -315,11 +315,23 @@ static void ImGui_ImplWin32_UpdateKeyModifiers()
+ 
+ // This code supports multi-viewports (multiple OS Windows mapped into different Dear ImGui viewports)
+ // Because of that, it is a little more complicated than your typical single-viewport binding code!
++// [TEMP datatable uitest] 워크트리 전용 — 메인 트리에 넣지 않는다
++static bool ImGui_ImplWin32_JGUiTestMode()
++{
++    static const bool bUiTest = ::GetEnvironmentVariableA("JG_UITEST", nullptr, 0) > 0;
++    return bUiTest;
++}
++
+ static void ImGui_ImplWin32_UpdateMouseData()
+ {
+     ImGui_ImplWin32_Data* bd = ImGui_ImplWin32_GetBackendData();
+     ImGuiIO& io = ImGui::GetIO();
+     IM_ASSERT(bd->hWnd != 0);
++    if (ImGui_ImplWin32_JGUiTestMode()) // [TEMP datatable uitest]
++    {
++        io.AddMouseViewportEvent(ImGui::GetMainViewport()->ID);
++        return;
++    }
+ 
+     POINT mouse_screen_pos;
+     bool has_mouse_screen_pos = ::GetCursorPos(&mouse_screen_pos) != 0;
+@@ -694,6 +706,8 @@ IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARA
+     case WM_MOUSELEAVE:
+     case WM_NCMOUSELEAVE:
+     {
++        if (ImGui_ImplWin32_JGUiTestMode()) // [TEMP datatable uitest]
++            return 0;
+         const int area = (msg == WM_MOUSELEAVE) ? 1 : 2;
+         if (bd->MouseTrackedArea == area)
+         {

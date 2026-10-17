@@ -65,6 +65,33 @@ namespace
 		}
 	};
 
+	// 되감기 지점 (ER-027): Params[0] == 0 이면 지점을 표시하고 대상을 파괴, 1 이면 그 지점으로 되감는다.
+	class PWorldTestRewindHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("WorldTestRewind");
+		}
+
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			return true;
+		}
+
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			if (command.Param(0, 0) == 1)
+			{
+				ctx.RewindTo(PName("WorldTestPoint"), EGameplayRewindRandom::RestorePoint);
+				return;
+			}
+			ctx.MarkRewindPoint(PName("WorldTestPoint"));
+			HGameplayEffectRequest destroy(PName(HGameplayBuiltin::EffectDestroyEntity), command.Actor, command.Target());
+			ctx.Enqueue(destroy);
+		}
+	};
+
 	// 엔티티를 만들고 같은 명령 안에서 곧바로 파괴한다. 한 프레임에 EntitySpawned · EntityDestroyed 가 함께 온다 (R15).
 	class PWorldTestSpawnAndKillHandler : public JGGameplayCommandHandler
 	{
@@ -540,6 +567,7 @@ namespace
 		PSharedPtr<PGameMaster> sim = Allocate<PGameMaster>();
 		sim->RegisterZone(PName("Units"));
 		sim->RegisterHandler(Allocate<PWorldTestKillHandler>());
+		sim->RegisterHandler(Allocate<PWorldTestRewindHandler>());
 		sim->SetOrderPolicy(Allocate<PGameplayZoneOrderPolicy>(PName("Units")));
 
 		HGameplayState& initial = sim->EditInitialState();
@@ -590,6 +618,31 @@ namespace
 		sim->Undo();
 		tickFrames(world, 5);
 		check(countEntityActors(world) == before + 1, PString::Format("bindings rebuilt after undo (%d -> %d)", before, countEntityActors(world)));
+
+		// 되감기 (ER-027): 연출 중에 쌓아 둔 입력은 버리고, 상태 교체로 바인딩을 다시 만든다
+		{
+			HList<HGameplayEntityId> alive;
+			sim->GetState().Entities.CollectAlive(alive);
+			HGameplayEntityId victim = alive.back();
+			HGameplayCommand mark(PName("WorldTestRewind"), units[0]);
+			mark.Targets.push_back(victim);
+			mark.Params.push_back(0);
+			check(gameMasterActor->Submit(mark, &reason) == EGameMasterActorSubmit::Executed && gameMasterActor->IsBusy() == true,
+				"ER-027 a command that marks a rewind point and destroys an entity leaves its presentation pending");
+			const int32 turnsBefore = sim->GetState().Turn.TurnCount;
+			HGameplayCommand bufferedEndTurn(PName(HGameplayBuiltin::CommandEndTurn), sim->GetState().Turn.CurrentActor);
+			check(gameMasterActor->Submit(bufferedEndTurn, &reason) == EGameMasterActorSubmit::Buffered, "ER-027 EndTurn submitted during the presentation is buffered");
+
+			HGameplayCommand rewind(PName("WorldTestRewind"), units[0]);
+			rewind.Params.push_back(1);
+			HList<HGameplayEvent> rewindEvents;
+			sim->Submit(rewind, rewindEvents, &reason);
+			tickFrames(world, 5);
+			check(sim->GetState().IsAlive(victim) == true && sim->GetState().Turn.TurnCount == turnsBefore,
+				PString::Format("ER-027 after the rewind the entity is back and the buffered EndTurn was dropped (turns %d -> %d)", turnsBefore, sim->GetState().Turn.TurnCount));
+			check(gameMasterActor->FindActor(victim) != nullptr && countEntityActors(world) == (int32)sim->GetState().Entities.Count(),
+				PString::Format("ER-027 bindings rebuilt after the rewind (%d actors for %d entities)", countEntityActors(world), (int32)sim->GetState().Entities.Count()));
+		}
 
 		// 언로드
 		gameInstance.UnloadWorld();

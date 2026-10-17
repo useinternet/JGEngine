@@ -1,5 +1,6 @@
 #include "PCH/PCH.h"
 #include "GameMaster/Boards/GameplayBoard.h"
+#include <cmath>
 
 namespace
 {
@@ -11,6 +12,47 @@ namespace
 	int32 maxInt(int32 a, int32 b)
 	{
 		return a > b ? a : b;
+	}
+
+	// 두 칸의 정해진 순서(Y 먼저, 같으면 X). 격자 선은 늘 앞 칸에서 긋고 반대 방향이면 뒤집는다 — 어느 쪽에서 물어도 같은 칸을 지난다(대칭).
+	bool isCanonicalOrder(const HGameplayCoord& a, const HGameplayCoord& b)
+	{
+		if (a.Y != b.Y)
+		{
+			return a.Y < b.Y;
+		}
+		return a.X <= b.X;
+	}
+
+	void reverseCells(HList<HGameplayCoord>& cells)
+	{
+		for (uint64 i = 0, j = cells.size(); i + 1 < j; ++i, --j)
+		{
+			const HGameplayCoord temp = cells[i];
+			cells[i]     = cells[j - 1];
+			cells[j - 1] = temp;
+		}
+	}
+
+	// 큐브 좌표 반올림: 세 값을 각각 반올림하고, 가장 많이 바뀐 값을 나머지 둘로 다시 맞춘다(q + r + s = 0). 축 좌표(q, r)로 돌려준다.
+	HGameplayCoord roundCube(double q, double r, double s)
+	{
+		double roundedQ = std::round(q);
+		double roundedR = std::round(r);
+		const double roundedS = std::round(s);
+
+		const double diffQ = std::fabs(roundedQ - q);
+		const double diffR = std::fabs(roundedR - r);
+		const double diffS = std::fabs(roundedS - s);
+		if (diffQ > diffR && diffQ > diffS)
+		{
+			roundedQ = -roundedR - roundedS;
+		}
+		else if (diffR > diffS)
+		{
+			roundedR = -roundedQ - roundedS;
+		}
+		return HGameplayCoord((int32)roundedQ, (int32)roundedR);
 	}
 }
 
@@ -153,9 +195,31 @@ bool IGameplayBoard::FindPath(const HGameplayBoardState& board, const HGameplayC
 	return true;
 }
 
+void IGameplayBoard::TraceLine(const HGameplayCoord& from, const HGameplayCoord& to, HList<HGameplayCoord>& outCells) const
+{
+	// 격자가 아닌 보드에는 격자 선이 없다.
+	outCells.clear();
+}
+
 bool IGameplayBoard::HasLineOfSight(const HGameplayBoardState& board, const HGameplayCoord& from, const HGameplayCoord& to) const
 {
-	return board.InBounds(from) == true && board.InBounds(to) == true;
+	if (board.InBounds(from) == false || board.InBounds(to) == false)
+	{
+		return false;
+	}
+
+	HList<HGameplayCoord> line;
+	TraceLine(from, to, line);
+
+	// 사이 칸(양 끝 제외)만 본다: 막힌 칸 위에 서 있거나 막힌 칸 자체를 보는 것은 된다. 보드 밖을 지나면 막힌 것으로 친다.
+	for (uint64 i = 1; i + 1 < line.size(); ++i)
+	{
+		if (board.InBounds(line[i]) == false || board.IsBlocked(line[i]) == true)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void IGameplayBoard::CoordsInRange(const HGameplayBoardState& board, const HGameplayCoord& center, int32 range, HList<HGameplayCoord>& outCoords) const
@@ -245,6 +309,47 @@ void PGameplayBoardSquare::Neighbors(const HGameplayBoardState& board, const HGa
 	}
 }
 
+void PGameplayBoardSquare::TraceLine(const HGameplayCoord& from, const HGameplayCoord& to, HList<HGameplayCoord>& outCells) const
+{
+	outCells.clear();
+	const bool           bForward = isCanonicalOrder(from, to);
+	const HGameplayCoord start    = bForward ? from : to;
+	const HGameplayCoord end      = bForward ? to : from;
+
+	// 브레젠험(모든 방향, 정수 연산). 칸 수 = max(|dx|, |dy|) + 1.
+	int32       x  = start.X;
+	int32       y  = start.Y;
+	const int32 dx = absInt(end.X - start.X);
+	const int32 dy = -absInt(end.Y - start.Y);
+	const int32 sx = (start.X < end.X) ? 1 : -1;
+	const int32 sy = (start.Y < end.Y) ? 1 : -1;
+	int32       error = dx + dy;
+	for (;;)
+	{
+		outCells.push_back(HGameplayCoord(x, y));
+		if (x == end.X && y == end.Y)
+		{
+			break;
+		}
+		const int32 doubled = 2 * error;
+		if (doubled >= dy)
+		{
+			error += dy;
+			x     += sx;
+		}
+		if (doubled <= dx)
+		{
+			error += dx;
+			y     += sy;
+		}
+	}
+
+	if (bForward == false)
+	{
+		reverseCells(outCells);
+	}
+}
+
 // Hex -------------------------------------------------------------------------
 
 EGameplayBoardKind PGameplayBoardHex::GetKind() const
@@ -272,6 +377,41 @@ void PGameplayBoardHex::Neighbors(const HGameplayBoardState& board, const HGamep
 		{
 			outNeighbors.push_back(next);
 		}
+	}
+}
+
+void PGameplayBoardHex::TraceLine(const HGameplayCoord& from, const HGameplayCoord& to, HList<HGameplayCoord>& outCells) const
+{
+	outCells.clear();
+	const bool           bForward = isCanonicalOrder(from, to);
+	const HGameplayCoord start    = bForward ? from : to;
+	const HGameplayCoord end      = bForward ? to : from;
+
+	const int32 steps = Distance(start, end);
+	if (steps == 0)
+	{
+		outCells.push_back(start);
+		return;
+	}
+
+	// 큐브 좌표(q, r, s = -q - r) 선형 보간 → 반올림. 선이 두 칸의 경계를 정확히 지나면(칸 모서리) 한쪽으로 정하도록 아주 조금 민다.
+	// 미는 방향이 늘 같고 긋는 방향도 정해져 있어 결과가 결정론 · 대칭이다. 칸 수 = 거리 + 1, 이웃끼리 이어진다.
+	const double nudge  = 1e-6;
+	const double startQ = (double)start.X + nudge;
+	const double startR = (double)start.Y + nudge;
+	const double startS = (double)(-start.X - start.Y) - 2.0 * nudge;
+	const double endQ   = (double)end.X + nudge;
+	const double endR   = (double)end.Y + nudge;
+	const double endS   = (double)(-end.X - end.Y) - 2.0 * nudge;
+	for (int32 i = 0; i <= steps; ++i)
+	{
+		const double t = (double)i / (double)steps;
+		outCells.push_back(roundCube(startQ + (endQ - startQ) * t, startR + (endR - startR) * t, startS + (endS - startS) * t));
+	}
+
+	if (bForward == false)
+	{
+		reverseCells(outCells);
 	}
 }
 

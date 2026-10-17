@@ -1,0 +1,53 @@
+GG-21 게임 UI 휠 입력을 일반 요소도 받기(ER-021) — 구현 · 검증 · 메인 반영 기록 (2026-10-10 밤, GUI 세션)
+
+§0. 결정 · 범위
+- D-36: 사용자 2026-10-10 23:2x 채팅 "좋아 이어서 해줘" — 엔진 총괄이 D-36 권고 (가)를 보고하고 결정을 기다리던 중의 답으로 받아 전달. 검토서 `ER-021_검토_2026-10-08.md` (가) 그대로.
+- 범위: 요소 휠 받기(`SetWheelInput`) + 요소 이벤트 `OnWheel` + 파생 요소용 `onWheel`(true = 받음, false = 바깥으로), 스크롤 칸과 한 길(가장 안쪽부터 · 스크롤 칸은 끝이면 바깥), 휠을 켠 끄는 요소 먼저, 소수 칸 수 그대로.
+- 범위 밖(결정 그대로): 확대 · 이동 칸(선택지 (나)) → 보류 GG-H31.
+
+§1. 바뀐 파일 (GFW `Source/Runtime/GameFrameWorks/UI/`, 새 파일 없음 — 프로젝트 다시 생성 불필요. 전체 diff `2026-10-10_GameUI_GG21_main.diff`)
+- `GameUIElement.h/.cpp`: 이벤트 `JG_DECLARE_EVENT(HOnGameUIWheel, PGameUIElement, PGameUIElement&, float32, float32, const HVector2&)` · 멤버 `OnWheel`(인자: 받은 요소, 세로 칸 수(앞으로 +), 가로 칸 수(오른쪽 +), 포인터 자리(캔버스 논리 단위)),
+  `SetWheelInput` / `IsWheelInput`(기본 꺼짐), 가상 `onWheel(wheel, wheelHorizontal, position) → bool`(기본: OnWheel 알림 후 true). 요소 크기 +1 bool · 이벤트 하나, 가상 함수 하나 → 게임 DLL 다시 빌드.
+- `GameUIScrollBox.h/.cpp`: 생성자에서 휠 받기 켬, `onWheel` = 지금의 `handleWheel`(그 방향 끝이면 false). `friend class PGameUIManager` 뺌(관리자는 이제 요소 공통 `onWheel` 만 부른다). 스크롤 칸에는 `OnWheel` 이 오지 않는다(넘기기에 쓰고 `OnScrolled`).
+- `GameUIManager.h/.cpp`: `routeWheel(widgets, hit, wheel, wheelHorizontal, position)` — ① 끄는 중이면 휠을 켠 끄는 요소(끄는 동안 판정은 끄는 요소를 빼므로) ② 판정 요소에서 위젯 루트까지의 길(`collectPath`, 강참조)을 가장 안쪽부터, 휠을 켜고 켜진 요소마다 `onWheel` → true 면 끝.
+  받을 요소가 없으면 지금처럼 UI 위면 소비 · 빈 곳이면 통과 · Menu 위젯이면 소비. `collectScrollBoxesOnPath`(스크롤 칸만, RawDynamicCast) → `collectPath`(길 위 요소 모두), `GameUIScrollBox.h` include 뺌.
+- `GameUISelfTest.cpp`: 휠 받기 검사 4묶음(+16).
+
+§2. 엔진 자체 검사 (gameui.selftest 461/461 = 445 + 16, 기존 445 그대로)
+- testWheelInput: 기본 꺼짐 · 스크롤 칸 기본 켜짐. 휠 지도 위 → OnWheel 한 번(받은 요소 · -1 칸 · 자리 (300, 300)), 소비. 휠 안 켠 자식(버튼) 위 → 지도가 받음, 0.25 · -0.5 칸 그대로. 휠 안 켠 패널은 소비만, 빈 곳은 통과(그대로).
+  입력 받기를 안 켠 휠 요소는 빈 곳에서 못 받음(누르기와 같은 판정 길). 꺼진 휠 요소 건너뜀(소비는 됨).
+- testWheelZoom: 10° · 1.2배 판 안의 1.3배 · 옮기기 지도 — 포인터 기준 확대 식 t' = t − (s' − s)(q − P) 로 휠 2칸(1.15²) · -0.5칸 뒤 CanvasToLocal(포인터) 그대로(조상 변환은 q 에 들어 있음).
+  배율 · 옮기기 트윈 한 동시 묶음(0.2초 OutCubic)으로 1.6배 — 0.07초(중간) · 끝 모두 포인터 아래 점 그대로.
+- testWheelPriority: 휠 지도 안 스크롤 칸 → 칸이 90 까지 넘긴 뒤 지도(칸의 OnWheel 0), 칸 밖 지도 자리 → 지도. 스크롤 칸 안 휠 요소 → 요소(칸 그대로), 다른 줄 → 칸 60.
+  파생 onWheel false → 지도가 받음, true → 거기서 끝. 스크롤 칸 SetWheelInput(false) → 칸 그대로 · 지도가 받음.
+- testWheelWhileDragging: 휠 켠 끄는 지도 → 끄는 중 휠을 지도가 받음(판정은 지도를 뺌). 휠 안 켠 끄는 카드 → 그 아래 스크롤 칸 60(지금 규칙 그대로).
+
+§3. 작업 폴더 (`Temp/wt/gg21` = 10-10 23:28 메인 거울, 메인 UI 파일은 10-04 GG-20 반영 그대로)
+- PreBuild(작업 폴더 프로젝트 파일) → 빌드 42초 exit 0 · 경고 0 → gameui.selftest 461/461 첫 실행 통과 · live 0. input 34/34 · gmtest 실패 0 · console 64/64 · datatable 127/127.
+- 검증 게임 `Temp/Games/GameUIDemo_GG21`(EngineRoot = gg21): HUD 에 지도 틀(§5) + e2e 38~41단계 → **41단계 모두 기대대로**(1회 실행), error 0 · live 0.
+
+§4. 메인 반영 (MainTree)
+- 10-10 23:41:01 `MainTree.cmd -name=GUI hold -minutes=60` → 23:50:14 release(9분). 메인 UI 파일 모두 거울과 같음(cmp) → 7파일 복사(새 파일 없음 — PreBuild 생략) → build exit 0(7초, GameFrameWorks · GameHost · JGConsole · JGEditor 23:41:18).
+- 메인 Bin(exec): gameui.selftest OK (461/461), input 34/34, gmtest OK(실패 0), console 64/64, datatable 127/127, live 0.
+- 메인 엔진 데모 `Temp/Games/GameUIDemo_GUI`: 데모 소스 교체 → 빌드 exit 0(새 엔진 파일 없어 GenerateProjectFiles 생략) → e2e 4회. **38~41(지도 휠) · 28~37(스크롤 칸)은 4회 모두 기대대로**(28단계 휠 한 칸이 빠진 3회차는 뒤 값이 그만큼 어긋남).
+  보낸 입력이 회차마다 하나씩 빠짐: 1회차 2단계 Menu(그 뒤 1~10 이 밀림), 2회차 6단계 End Turn, 3회차 25단계 Menu · 28단계 휠 한 칸, 4회차 6단계 End Turn — 같은 코드의 작업 폴더 실행은 41단계 모두이고 빠진 자리가 회차마다 달라 기존 PostMessage 흔들림(실제 커서 자리가 프레임 사이에 끼어듦, README).
+  단계마다 4회 중 3회 이상 기대대로, error 0 · live blocks 0 · 종료 0.
+- dbgcount(메인 엔진 데모 40초): 실행 중 D3D12 메시지 0, 디버그 출력 15줄(종료 단순 보고 — 기준선과 같음, Live Object 12).
+- 캡처(메인 4회차): `2026-10-10_gameui_gg21_before.png`(지도 칸 16개가 틀에 꼭 맞음, 배율 0.5), `_map.png`(확대 · 옮긴 뒤), 확대 `_zoom_before.png` · `_zoom_map.png`(3배 — 틀 밖 지도는 잘림).
+
+§4.1 게임 화면 적용(게임 연출 구현 회신 10-11 0시)
+- 게임 다시 빌드 → 판 화면 장소 판(판 세계 요소)에 SetWheelInput(true) + OnWheel(람다는 화면 this 만 잡음), 배율 1.15 ^ 칸 수 · 포인터 아래 기준, 끄는 동안 굴리면 바로 바꾸고 끌기 기준 옮기기도 같이 옮김.
+- 에디터에 보낸 휠 두 칸 · 네 칸으로 확대 · 축소 확인, 판 안 카드 위에서 굴려도 판이 받음(휠이 바깥 요소로 올라옴). 지금은 이 화면 하나라 확대 · 이동 칸(GG-H31)은 필요 없음(게임 회신).
+  → 요청서 완료 기준(판 화면 장소 지도 위 휠을 지도 요소가 받음)을 게임 화면에서도 만족.
+
+§5. 검증 게임 · e2e (도구 `tools/gameui_demo_testgame/`)
+- HUD(루트 요소 14 → 15): 지도 틀 `MapFrame`(1240~1880 × 430~580, 자식 잘라내기 · 입력 받기 · 끌기 · 휠 받기) 안의 지도 `MapContent`(칸 160 × 150 을 8 × 2 = 1280 × 300, "장소 A1"~"H2", 피벗 왼쪽 위, 처음 배율 0.5 = 틀에 꼭 맞음).
+  휠: 틀의 OnWheel → 지도의 CanvasToLocal(포인터)로 목표 배율(이전 목표 × 1.15 ^ 칸 수, 0.5~2.0) · 목표 옮기기(식) → 배율 · 옮기기 트윈 한 동시 묶음(0.12초 OutCubic). 끝나면 "map zoom done … point under the pointer moved"(그 휠 때 포인터 아래 지도 점의 지금 자리와 포인터 사이 거리).
+  끌기: 틀 끌기 = 지도 옮기기(시작 옮기기 + 누른 자리에서 온 거리), 시작할 때 도는 확대는 끝값으로 건너뜀, 끄는 중 휠은 트윈 없이 바로 확대하고 끌기 기준도 같은 만큼 옮김.
+- e2e 38~41(1~37 그대로): 38 지도 휠 앞으로 2칸 (1400, 505) → 0.575 · 0.661, moved 0.00 · 0.00 / 39 뒤로 1칸 (1700, 470) → 0.575, moved 0.00 / 40 틀 끌기 (1500, 520) → (1380, 480) → pan begin (1498, 518) · end translation (-103, -54)
+  / 41 끄는 중 휠: 누름 (1600, 500) → 문턱 넘는 이동 → (1560, 500) 에서 휠 1칸(wParam MK_LBUTTON) → (1540, 500) 뗌 → "zoom wheel 1.00 -> scale 0.661 … (dragging)" · moved 0.00 · pan end translation (-232, -72). 지도 캡처.
+
+§6. 알릴 것
+- 게임: 엔진 헤더가 바뀌었다(`GameUIElement.h` 멤버 · 가상 함수, `GameUIScrollBox.h`, `GameUIManager.h`) → 게임 DLL 다시 빌드(새 엔진 파일 없음 — GenerateProjectFiles 는 필요 없음).
+- 쓰는 법(게임 연출 구현): 포인터 기준 확대 식 · 칸 수의 거듭제곱 비율 · 배율 · 옮기기 트윈 한 묶음 · 끄는 중 휠 · 입력 받기 필요 · 지도 안 스크롤 칸이 끝에 닿으면 지도로 넘어감.
+- 커밋은 사용자(GG-C2 에 GG-21 추가).

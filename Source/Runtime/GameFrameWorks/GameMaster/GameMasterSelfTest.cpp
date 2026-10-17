@@ -2,6 +2,8 @@
 #include "GameMaster/GameMasterSelfTest.h"
 #include "GameMaster/GameMaster.h"
 #include "GameMaster/Agents/GameplayAgent.h"
+#include <chrono>
+#include <cstring>
 #include <iostream>
 #include <type_traits>
 #include <utility>
@@ -673,6 +675,21 @@ namespace
 		return false;
 	}
 
+	// 저장 · 로드 검사의 파일 자리: 엔진 Temp(git 추적 안 함) 아래, 실행마다 다른 이름(여러 세션이 동시에 돌려도 서로의 파일을 지우지 않게).
+	// 예전에는 실행 폴더(Bin)에 써서 추적 파일 두 개가 실행마다 바뀌었다(리뷰 C26). 쓴 검사가 읽은 뒤 지운다.
+	PString selfTestFilePath(const char* name)
+	{
+		static const PString runToken = HGuid::New().ToString();
+
+		PString directory;
+		HFileHelper::CombinePath(HFileHelper::EngineTempDirectory(), "GameMasterSelfTest", &directory);
+		HFileHelper::CreateDirectory(directory);
+
+		PString path;
+		HFileHelper::CombinePath(directory, PString::Format("%s_%s.json", name, runToken), &path);
+		return path;
+	}
+
 	struct HCheck
 	{
 		int32 Failures = 0;
@@ -1313,6 +1330,462 @@ namespace
 				"13 a flow that never waits stops at the step limit (FlowStepLimitExceeded) instead of hanging");
 		}
 	}
+
+	// ---- 14. 규칙 효과 안 되감기 지점 (ER-027) ---------------------------------------------------
+
+	const char* TestRwPoint       = "action";
+	const char* TestRwZoneExtra   = "RwExtra";
+	const char* TestEventRwResult = "TestRwResult";
+
+	// 대상 값 -= Param(0)
+	class PTestRwHitEffect : public JGGameplayEffect
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwHit");
+		}
+		virtual void Resolve(HGameplayContext& ctx, const HGameplayEffectRequest& request) override
+		{
+			HGameplayTestValue* value = ctx.State.Find<HGameplayTestValue>(request.Target);
+			if (value != nullptr)
+			{
+				value->Value -= request.Param(0, 0);
+			}
+		}
+	};
+
+	// 대상 값 = Action 난수 [0, 999999] — 되감은 뒤 난수가 지점 것인지 이어 가는지 본다.
+	class PTestRwRollEffect : public JGGameplayEffect
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwRoll");
+		}
+		virtual void Resolve(HGameplayContext& ctx, const HGameplayEffectRequest& request) override
+		{
+			HGameplayTestValue* value = ctx.State.Find<HGameplayTestValue>(request.Target);
+			if (value != nullptr)
+			{
+				value->Value = ctx.Rng(EGameplayRandomStream::Action).Range(0, 999999);
+			}
+		}
+	};
+
+	// RwExtra 영역에 값 Param(0) 인 엔티티를 만든다 — 지점 뒤에 생긴 번호.
+	class PTestRwSpawnEffect : public JGGameplayEffect
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwSpawn");
+		}
+		virtual void Resolve(HGameplayContext& ctx, const HGameplayEffectRequest& request) override
+		{
+			HGameplayEntityId id = ctx.SpawnEntity(PName(TestRwZoneExtra));
+			HGameplayTestValue value;
+			value.Value = request.Param(0, 0);
+			ctx.State.Add<HGameplayTestValue>(id, value);
+		}
+	};
+
+	// 지점(Tag)으로 되감고, 되감았으면 주체 값 += 100 (되감은 뒤 남길 변화). 결과를 TestRwResult(Amount 1 / 0)로 낸다.
+	class PTestRwRewindEffect : public JGGameplayEffect
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwRewind");
+		}
+		virtual void Resolve(HGameplayContext& ctx, const HGameplayEffectRequest& request) override
+		{
+			const bool bRewound = ctx.RewindTo(request.Tag, (EGameplayRewindRandom)request.Param(0, 0));
+			if (bRewound == true)
+			{
+				HGameplayTestValue* value = ctx.State.Find<HGameplayTestValue>(request.Subject);
+				if (value != nullptr)
+				{
+					value->Value += 100;
+				}
+			}
+			HGameplayEvent result(PName(TestEventRwResult), request.Subject, HGameplayEntityId::None());
+			result.Amount = bRewound == true ? 1 : 0;
+			ctx.Emit(result);
+		}
+	};
+
+	// 행동: 지점을 표시하고(Params[1] == 1 이면 표시하지 않음) Targets[0] 값 -Params[0], Targets[1] 에 난수, 새 엔티티 하나.
+	class PTestRwActHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwAct");
+		}
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			return true;
+		}
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			if (command.Param(1, 0) != 1)
+			{
+				ctx.MarkRewindPoint(PName(TestRwPoint));
+			}
+
+			HGameplayEffectRequest hit(PName("TestRwHit"), command.Actor, command.Targets[0]);
+			hit.Params.push_back(command.Param(0, 0));
+			ctx.Enqueue(hit);
+			ctx.Enqueue(HGameplayEffectRequest(PName("TestRwRoll"), command.Actor, command.Targets[1]));
+			HGameplayEffectRequest spawn(PName("TestRwSpawn"), command.Actor, HGameplayEntityId::None());
+			spawn.Params.push_back(7);
+			ctx.Enqueue(spawn);
+		}
+	};
+
+	// 되감기 쪽 명령. Params[0] = EGameplayRewindRandom, Params[1] = 0 효과로 되감기 · 1 핸들러에서 바로 · 2 지점 지우기, Params[2] == 1 이면 없는 지점 이름.
+	// 효과로 할 때는 되감기 효과 뒤에 Targets[0] 값 -50 효과를 하나 더 넣는다 — 되감기가 남은 큐를 버리면 적용되지 않는다.
+	class PTestRwUndoHandler : public JGGameplayCommandHandler
+	{
+	public:
+		virtual PName GetKind() const override
+		{
+			return PName("TestRwUndo");
+		}
+		virtual bool Validate(const HGameplayState& state, const HGameplayCommand& command, PString* outReason) const override
+		{
+			return true;
+		}
+		virtual void Execute(HGameplayContext& ctx, const HGameplayCommand& command) override
+		{
+			const PName point = command.Param(2, 0) == 1 ? PName("TestRwMissing") : PName(TestRwPoint);
+			const int32 mode  = command.Param(1, 0);
+			if (mode == 1 || mode == 2)
+			{
+				bool bDone = false;
+				if (mode == 1)
+				{
+					bDone = ctx.RewindTo(point, (EGameplayRewindRandom)command.Param(0, 0));
+				}
+				else
+				{
+					bDone = ctx.ClearRewindPoint(point);
+				}
+				HGameplayEvent result(PName(TestEventRwResult), command.Actor, HGameplayEntityId::None());
+				result.Amount = bDone == true ? 1 : 0;
+				ctx.Emit(result);
+				return;
+			}
+
+			HGameplayEffectRequest rewind(PName("TestRwRewind"), command.Actor, HGameplayEntityId::None());
+			rewind.Tag = point;
+			rewind.Params.push_back(command.Param(0, 0));
+			ctx.Enqueue(rewind);
+			HGameplayEffectRequest late(PName("TestRwHit"), command.Actor, command.Target());
+			late.Params.push_back(50);
+			ctx.Enqueue(late);
+		}
+	};
+
+	class PTestRwObserver : public IGameplayObserver
+	{
+	public:
+		int32                 Replaced = 0;
+		HList<HGameplayEvent> LastEvents;
+
+		virtual void OnGameplayEvents(const HGameplayState& state, const HList<HGameplayEvent>& events) override
+		{
+			LastEvents = events;
+		}
+		virtual void OnGameplayStateReplaced(const HGameplayState& state) override
+		{
+			++Replaced;
+		}
+	};
+
+	// 유닛 3(값 10): [0] 행동자 · 남길 변화 대상, [1] 피해 대상, [2] 난수 기록.
+	HList<HGameplayEntityId> setupRewindGameMaster(PGameMaster& sim)
+	{
+		HList<HGameplayEntityId> units = setupRegressionGameMaster(sim, 3, 10);
+		sim.RegisterZone(PName(TestRwZoneExtra));
+		sim.RegisterHandler(Allocate<PTestRwActHandler>());
+		sim.RegisterHandler(Allocate<PTestRwUndoHandler>());
+		sim.RegisterEffect(Allocate<PTestRwHitEffect>());
+		sim.RegisterEffect(Allocate<PTestRwRollEffect>());
+		sim.RegisterEffect(Allocate<PTestRwSpawnEffect>());
+		sim.RegisterEffect(Allocate<PTestRwRewindEffect>());
+		return units;
+	}
+
+	HGameplayCommand rwAct(const HList<HGameplayEntityId>& units, int32 damage, bool bMark)
+	{
+		HGameplayCommand command(PName("TestRwAct"), units[0]);
+		command.Targets.push_back(units[1]);
+		command.Targets.push_back(units[2]);
+		command.Params.push_back(damage);
+		command.Params.push_back(bMark == true ? 0 : 1);
+		return command;
+	}
+
+	HGameplayCommand rwUndo(const HList<HGameplayEntityId>& units, EGameplayRewindRandom random, int32 mode = 0, bool bMissingPoint = false)
+	{
+		HGameplayCommand command(PName("TestRwUndo"), units[0]);
+		command.Targets.push_back(units[1]);
+		command.Params.push_back((int32)random);
+		command.Params.push_back(mode);
+		command.Params.push_back(bMissingPoint == true ? 1 : 0);
+		return command;
+	}
+
+	HGameplayEntityId lastSpawned(const HList<HGameplayEvent>& events)
+	{
+		HGameplayEntityId spawned;
+		for (const HGameplayEvent& event : events)
+		{
+			if (event.Kind == PName(HGameplayBuiltin::EventEntitySpawned))
+			{
+				spawned = event.Subject;
+			}
+		}
+		return spawned;
+	}
+
+	int32 rwResult(const HList<HGameplayEvent>& events)
+	{
+		const int32 at = findEventIndex(events, TestEventRwResult);
+		if (at == INDEX_NONE)
+		{
+			return INDEX_NONE;
+		}
+		return events[at].Amount;
+	}
+
+	bool containsText(const PString& text, const char* what)
+	{
+		return text.GetRawString().find(what) != HRawString::npos;
+	}
+
+	void runRewindChecks(HCheck& check, uint64 seed)
+	{
+		PSharedPtr<PGameMaster>     sim      = Allocate<PGameMaster>();
+		HList<HGameplayEntityId>    units    = setupRewindGameMaster(*sim);
+		PSharedPtr<PTestRwObserver> observer = Allocate<PTestRwObserver>();
+		sim->AddObserver(observer);
+		sim->Start(seed);
+		const HGameplayState& state = sim->GetState();
+
+		const PString plainJson = state.ToJsonString();
+		check(containsText(plainJson, "RewindPoints") == false && containsText(plainJson, "GenerationFloors") == false,
+			"14 a state without rewind points writes no RewindPoints / GenerationFloors (the same fields as schema 1)");
+
+		// 행동: 지점 표시 → 피해 3 · 난수 · 새 엔티티
+		HList<HGameplayEvent> events;
+		PString reason;
+		check(sim->Submit(rwAct(units, 3, true), events, &reason) == EGameplaySubmitResult::Executed, PString::Format("14 the action command executes (%s)", reason));
+		const HGameplayEntityId extra     = lastSpawned(events);
+		const int32             firstRoll = valueOf(*sim, units[2]);
+		check(state.RewindPoints.size() == 1 && state.FindRewindPoint(PName(TestRwPoint)) != nullptr && valueOf(*sim, units[1]) == 7 && state.IsAlive(extra) == true,
+			"14 MarkRewindPoint in a handler keeps one point; the action then hits 10 -> 7 and spawns an entity");
+		check(containsText(state.ToJsonString(), "RewindPoints") == true, "14 the point is written into the state JSON (save, document, transfer)");
+
+		// 차례 넘김 — 지점 뒤에 흐름이 나아간다
+		events.clear();
+		check(sim->Submit(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), state.Turn.CurrentActor), events, &reason) == EGameplaySubmitResult::Executed
+			&& state.Turn.CurrentActor != units[0], "14 the turn moves on after the point");
+
+		// 되감기 (효과 안, 지점 난수)
+		const uint32 sequenceBefore = state.Sequence;
+		const int32  replacedBefore = observer->Replaced;
+		events.clear();
+		check(sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint), events, &reason) == EGameplaySubmitResult::Executed && rwResult(events) == 1,
+			"14 RewindTo in an effect returns true");
+		check(valueOf(*sim, units[1]) == 10 && valueOf(*sim, units[2]) == 10 && state.IsAlive(extra) == false,
+			PString::Format("14 the rewind restores the point state: hit and roll undone, the spawned entity is gone (%d, %d)", valueOf(*sim, units[1]), valueOf(*sim, units[2])));
+		check(valueOf(*sim, units[0]) == 110, PString::Format("14 the effect applies the kept change after the rewind (actor 10 + 100, got %d)", valueOf(*sim, units[0])));
+		check(valueOf(*sim, units[1]) != 10 - 50, "14 effects queued after the rewind effect are dropped (the late hit 50 is not applied)");
+		check(state.Turn.CurrentActor == units[0] && state.Turn.Phase == EGameplayPhase::TurnMain, "14 the flow continues from the step of the point (back to the first actor)");
+		check(state.Sequence == sequenceBefore + 1, PString::Format("14 the command sequence is not rewound (%u -> %u)", sequenceBefore, state.Sequence));
+		check(state.FindRewindPoint(PName(TestRwPoint)) != nullptr, "14 the point list is not rewound (the point is still there)");
+		const int32 rewoundAt = findEventIndex(events, HGameplayBuiltin::EventRewound);
+		check(rewoundAt != INDEX_NONE && events[rewoundAt].Tag == PName(TestRwPoint) && events[rewoundAt].CauseSequence == sequenceBefore,
+			"14 the Rewound event carries the point name and the cause sequence of this command");
+		check(observer->Replaced == replacedBefore + 1 && observer->LastEvents.empty() == false && observer->LastEvents[0].Kind == PName(HGameplayBuiltin::EventRewound)
+			&& rwResult(observer->LastEvents) == 1,
+			"14 observers get a state replace, then only the events from Rewound on");
+
+		// 죽은 번호 · 지점 난수
+		events.clear();
+		sim->Submit(rwAct(units, 3, false), events, &reason);
+		const HGameplayEntityId respawned = lastSpawned(events);
+		check(respawned.Index == extra.Index && respawned.Generation > extra.Generation && state.IsAlive(extra) == false && state.IsAlive(respawned) == true,
+			PString::Format("14 an index created after the point is reused with a higher generation, the old id stays dead (%s -> %s)", extra.ToString(), respawned.ToString()));
+		check(valueOf(*sim, units[2]) == firstRoll, "14 RestorePoint: the same action after the rewind rolls the same random value");
+
+		// 이어 가는 난수 (같은 시드의 다른 판)
+		{
+			PSharedPtr<PGameMaster>  other      = Allocate<PGameMaster>();
+			HList<HGameplayEntityId> otherUnits = setupRewindGameMaster(*other);
+			other->Start(seed);
+			HList<HGameplayEvent> otherEvents;
+			other->Submit(rwAct(otherUnits, 3, true), otherEvents, &reason);
+			const int32 otherFirst = valueOf(*other, otherUnits[2]);
+			other->Submit(rwUndo(otherUnits, EGameplayRewindRandom::KeepCurrent), otherEvents, &reason);
+			const int32 restored = valueOf(*other, otherUnits[2]);
+			other->Submit(rwAct(otherUnits, 3, false), otherEvents, &reason);
+			check(otherFirst == firstRoll && restored == 10 && valueOf(*other, otherUnits[2]) != firstRoll,
+				"14 KeepCurrent: the state rewinds but the same action after the rewind rolls a new random value");
+		}
+
+		// 없는 지점 · 핸들러 안에서 되감기
+		{
+			const int32 before0 = valueOf(*sim, units[0]);
+			const int32 before1 = valueOf(*sim, units[1]);
+			events.clear();
+			sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint, 1, true), events, &reason);
+			check(rwResult(events) == 0 && findEventIndex(events, HGameplayBuiltin::EventRewound) == INDEX_NONE && valueOf(*sim, units[0]) == before0 && valueOf(*sim, units[1]) == before1
+				&& state.RewindPoints.size() == 1, "14 RewindTo with an unknown point returns false and changes nothing");
+
+			events.clear();
+			sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint, 1), events, &reason);
+			check(rwResult(events) == 1 && valueOf(*sim, units[0]) == 10 && valueOf(*sim, units[1]) == 10, "14 RewindTo works from a command handler too");
+		}
+
+		// 같은 이름 다시 표시 → 새 지점
+		events.clear();
+		sim->Submit(rwAct(units, 5, false), events, &reason);   // 10 -> 5, 지점은 그대로
+		sim->Submit(rwAct(units, 2, true), events, &reason);    // 지점 다시 표시 (5 일 때) → 3
+		sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint, 1), events, &reason);
+		check(state.RewindPoints.size() == 1 && valueOf(*sim, units[1]) == 5,
+			PString::Format("14 marking the same name again replaces the point (count 1, rewinds to the newer state, got %d)", valueOf(*sim, units[1])));
+
+		// 지점이 있는 판의 체크섬 · 재생 · 저장 · 문서 · Undo · Simulate
+		{
+			HGameplayState withPoint = state;
+			HGameplayState without   = state;
+			without.RewindPoints.clear();
+			check(withPoint.Checksum() == sim->Checksum() && without.Checksum() != withPoint.Checksum(),
+				"14 the checksum covers rewind points (a state copy keeps them; the same state without the point differs)");
+
+			PSharedPtr<PGameMaster> replayed = Allocate<PGameMaster>();
+			setupRewindGameMaster(*replayed);
+			replayed->Start(seed);
+			HList<HGameplayEvent> replayEvents;
+			check(replayed->Replay(sim->GetCommandLog().Commands, replayEvents) == true && replayed->Checksum() == sim->Checksum(),
+				"14 replaying the command log gives the same state (rewinds happen inside their commands)");
+
+			const PString savePath = selfTestFilePath("Rewind");
+			PSharedPtr<PGameMaster> loaded = Allocate<PGameMaster>();
+			setupRewindGameMaster(*loaded);
+			const bool bSaved  = sim->Save(savePath);
+			const bool bLoaded = loaded->Load(savePath);
+			HFileHelper::RemoveFileOrDirectory(savePath);
+			check(bSaved == true && bLoaded == true && loaded->Checksum() == sim->Checksum() && loaded->GetState().FindRewindPoint(PName(TestRwPoint)) != nullptr,
+				"14 save -> load keeps the point and the checksum");
+
+			PString document;
+			sim->ExportDocument(&document);
+			PSharedPtr<PGameMaster> imported = Allocate<PGameMaster>();
+			setupRewindGameMaster(*imported);
+			check(imported->ImportDocument(document) == true && imported->Checksum() == sim->Checksum(), "14 a document with a point imports to the same checksum (join, resync)");
+
+			// 같은 되감기 명령을 셋 다에 — 참가자가 같은 명령을 자기 GameMaster 로 돌리는 것과 같다
+			const uint64 beforeRewindCommand = sim->Checksum();
+			HGameplayState        simulated;
+			HList<HGameplayEvent> simulatedEvents;
+			sim->Simulate(state, rwUndo(units, EGameplayRewindRandom::RestorePoint), simulated, simulatedEvents);
+			HList<HGameplayEvent> originalEvents;
+			HList<HGameplayEvent> loadedEvents;
+			HList<HGameplayEvent> importedEvents;
+			sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint), originalEvents, &reason);
+			loaded->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint), loadedEvents, &reason);
+			imported->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint), importedEvents, &reason);
+			check(rwResult(originalEvents) == 1 && loaded->Checksum() == sim->Checksum() && imported->Checksum() == sim->Checksum(),
+				"14 rewinding after save -> load and after a document import gives the same state as the original");
+			check(simulated.Checksum() == sim->Checksum(), "14 Simulate (AI) of the rewind command on a state copy gives the same state as Submit");
+			check(sim->Undo() == true && sim->Checksum() == beforeRewindCommand, "14 tool Undo of a command that rewound goes back to before that command (point included)");
+		}
+
+		// 지점 지우기
+		events.clear();
+		sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint, 2), events, &reason);
+		const int32 cleared = rwResult(events);
+		events.clear();
+		sim->Submit(rwUndo(units, EGameplayRewindRandom::RestorePoint, 1), events, &reason);
+		check(cleared == 1 && state.RewindPoints.empty() == true && rwResult(events) == 0, "14 ClearRewindPoint removes the point; RewindTo then returns false");
+
+		// 1 판 문서는 마이그레이터 없이 읽고, 모르는 새 판은 거절한다 (의도한 [error] 1줄)
+		{
+			PSharedPtr<PGameMaster>  plain      = Allocate<PGameMaster>();
+			HList<HGameplayEntityId> plainUnits = setupRewindGameMaster(*plain);
+			plain->Start(seed);
+			HList<HGameplayEvent> plainEvents;
+			plain->Submit(HGameplayCommand(PName(HGameplayBuiltin::CommandEndTurn), plainUnits[0]), plainEvents, &reason);
+			PString document;
+			plain->ExportDocument(&document);
+
+			const char* currentVersion = "\"SchemaVersion\": 2";
+			HRawString  version1       = document.GetRawString();
+			HRawString  version3       = document.GetRawString();
+			const size_t at = version1.find(currentVersion);
+			if (at != HRawString::npos)
+			{
+				version1.replace(at, strlen(currentVersion), "\"SchemaVersion\": 1");
+				version3.replace(at, strlen(currentVersion), "\"SchemaVersion\": 3");
+			}
+			PSharedPtr<PGameMaster> old = Allocate<PGameMaster>();
+			setupRewindGameMaster(*old);
+			check(at != HRawString::npos && old->ImportDocument(PString(version1.c_str())) == true && old->Checksum() == plain->Checksum(),
+				"14 a schema 1 document (no points) still loads without a migrator");
+			PSharedPtr<PGameMaster> future = Allocate<PGameMaster>();
+			setupRewindGameMaster(*future);
+			check(future->ImportDocument(PString(version3.c_str())) == false, "14 a document from a newer schema (3) is refused without a migrator");
+		}
+
+		// 비용 (정보): 엔티티 300 을 더한 상태에서 지점 0 / 1 의 체크섬 · 상태 복사 시간, 지점 하나의 크기
+		{
+			HGameplayState big = state;
+			for (int32 i = 0; i < 300; ++i)
+			{
+				HGameplayEntityId id = big.CreateEntity();
+				HGameplayTestValue value;
+				value.Value = i;
+				big.Add<HGameplayTestValue>(id, value);
+				big.Zone(PName(TestRwZoneExtra)).PushBack(id);
+			}
+			auto measure = [](const HGameplayState& target, double* outChecksumMs, double* outCopyMs)
+			{
+				const int32 rounds = 10;
+				uint64 sink = 0;
+				auto t0 = std::chrono::steady_clock::now();
+				for (int32 i = 0; i < rounds; ++i)
+				{
+					sink ^= target.Checksum();
+				}
+				auto t1 = std::chrono::steady_clock::now();
+				for (int32 i = 0; i < rounds; ++i)
+				{
+					HGameplayState copy = target;
+					sink ^= (uint64)copy.Sequence;
+				}
+				auto t2 = std::chrono::steady_clock::now();
+				*outChecksumMs = std::chrono::duration<double, std::milli>(t1 - t0).count() / rounds;
+				*outCopyMs     = std::chrono::duration<double, std::milli>(t2 - t1).count() / rounds;
+				return sink;
+			};
+			double checksumWithout = 0.0;
+			double copyWithout     = 0.0;
+			measure(big, &checksumWithout, &copyWithout);
+			big.MarkRewindPoint(PName(TestRwPoint));
+			double checksumWith = 0.0;
+			double copyWith     = 0.0;
+			measure(big, &checksumWith, &copyWith);
+			const size_t pointBytes = big.RewindPoints.empty() == true ? 0 : big.RewindPoints[0].StateText.GetRawString().size();
+			std::cout << "  [INFO] 14 cost with " << big.Entities.Count() << " entities: checksum " << checksumWithout << " ms -> " << checksumWith
+				<< " ms with a point, state copy " << copyWithout << " ms -> " << copyWith << " ms, one point " << pointBytes << " bytes" << std::endl;
+			check(pointBytes > 0, "14 cost measured (see the [INFO] line)");
+		}
+	}
 }
 
 int32 PGameMasterSelfTest::Run()
@@ -1417,12 +1890,13 @@ int32 PGameMasterSelfTest::Run()
 			check(sim->GetCommandLog().Count() == 3, "command log restored after Undo");
 
 			// 3. 저장 / 로드 ----------------------------------------------------------
-			PString savePath = "GameMasterSelfTest_Save.json";
+			const PString savePath = selfTestFilePath("Save");
 			check(sim->Save(savePath) == true, "Save succeeds");
 
 			PSharedPtr<PGameMaster> loaded = Allocate<PGameMaster>();
 			setupGameMaster(*loaded);
 			check(loaded->Load(savePath) == true, "Load succeeds");
+			HFileHelper::RemoveFileOrDirectory(savePath);
 			check(loaded->Checksum() == before, "loaded checksum equals saved checksum");
 			check(loaded->GetCommandLog().Count() == 3, "loaded command log has 3 commands");
 
@@ -1468,11 +1942,12 @@ int32 PGameMasterSelfTest::Run()
 		check(sim->Submit(badResolve, ignored, &reason) == EGameplaySubmitResult::Rejected, PString::Format("non-candidate selection rejected (%s)", reason));
 
 		// 대기 중 저장 · 로드
-		PString savePath = "GameMasterSelfTest_Pending.json";
+		const PString savePath = selfTestFilePath("Pending");
 		check(sim->Save(savePath) == true, "Save while pending succeeds");
 		PSharedPtr<PGameMaster> loaded = Allocate<PGameMaster>();
 		setupGameMaster(*loaded);
 		check(loaded->Load(savePath) == true && loaded->GetPendingChoice() != nullptr, "loaded gameMaster keeps pending choice");
+		HFileHelper::RemoveFileOrDirectory(savePath);
 
 		HGameplayCommand resolve(PName(HGameplayBuiltin::CommandResolveChoice), units[0]);
 		resolve.Targets.push_back(units[1]);
@@ -1538,6 +2013,135 @@ int32 PGameMasterSelfTest::Run()
 		HList<HGameplayCoord> range;
 		board->CoordsInRange(square, HGameplayCoord(2, 2), 1, range);
 		check(range.size() == 5, PString::Format("square range 1 around center = 5 cells, got %d", (int32)range.size()));
+	}
+
+	// 7-2. 시야 (B-4) — 격자 선(사각 브레젠험 · 육각 큐브 보간)과 기본 시야 규칙(사이 칸이 막히면 안 보임, 점유는 막지 않음) ----
+	{
+		PSharedPtr<IGameplayBoard> square = IGameplayBoard::Create(EGameplayBoardKind::Square);
+		PSharedPtr<IGameplayBoard> hex    = IGameplayBoard::Create(EGameplayBoardKind::Hex);
+
+		auto sameCells = [](const HList<HGameplayCoord>& cells, std::initializer_list<HGameplayCoord> expected) -> bool
+		{
+			if (cells.size() != expected.size())
+			{
+				return false;
+			}
+			uint64 i = 0;
+			for (const HGameplayCoord& coord : expected)
+			{
+				if (cells[i] != coord)
+				{
+					return false;
+				}
+				++i;
+			}
+			return true;
+		};
+
+		auto absValue = [](int32 value) -> int32
+		{
+			return value < 0 ? -value : value;
+		};
+		auto maxValue = [](int32 a, int32 b) -> int32
+		{
+			return a > b ? a : b;
+		};
+
+		// 모든 칸 쌍(5x5)에서: 양 끝 · 한 걸음씩 이어짐 · 칸 수 · 양방향 같은 칸(대칭)
+		auto checkAllLines = [&](const PSharedPtr<IGameplayBoard>& grid, bool bHex) -> int32
+		{
+			int32 bad = 0;
+			HList<HGameplayCoord> forward;
+			HList<HGameplayCoord> backward;
+			for (int32 a = 0; a < 25; ++a)
+			{
+				for (int32 b = 0; b < 25; ++b)
+				{
+					const HGameplayCoord from(a % 5, a / 5);
+					const HGameplayCoord to(b % 5, b / 5);
+					grid->TraceLine(from, to, forward);
+					grid->TraceLine(to, from, backward);
+
+					const int32 expectedCount = bHex ? grid->Distance(from, to) + 1 : maxValue(absValue(to.X - from.X), absValue(to.Y - from.Y)) + 1;
+					bool bOk = (int32)forward.size() == expectedCount && forward.empty() == false && forward.front() == from && forward.back() == to
+						&& backward.size() == forward.size();
+					for (uint64 i = 0; bOk && i < forward.size(); ++i)
+					{
+						bOk = (forward[i] == backward[backward.size() - 1 - i]);
+						if (bOk && i > 0)
+						{
+							const HGameplayCoord& previous = forward[i - 1];
+							bOk = bHex ? (grid->Distance(previous, forward[i]) == 1)
+								: (absValue(forward[i].X - previous.X) <= 1 && absValue(forward[i].Y - previous.Y) <= 1 && forward[i] != previous);
+						}
+					}
+					if (bOk == false)
+					{
+						++bad;
+					}
+				}
+			}
+			return bad;
+		};
+
+		HList<HGameplayCoord> line;
+		square->TraceLine(HGameplayCoord(0, 0), HGameplayCoord(3, 0), line);
+		const bool bStraight = sameCells(line, { HGameplayCoord(0, 0), HGameplayCoord(1, 0), HGameplayCoord(2, 0), HGameplayCoord(3, 0) });
+		square->TraceLine(HGameplayCoord(0, 0), HGameplayCoord(3, 3), line);
+		const bool bDiagonal = sameCells(line, { HGameplayCoord(0, 0), HGameplayCoord(1, 1), HGameplayCoord(2, 2), HGameplayCoord(3, 3) });
+		square->TraceLine(HGameplayCoord(4, 1), HGameplayCoord(0, 0), line);
+		const bool bShallow = sameCells(line, { HGameplayCoord(4, 1), HGameplayCoord(3, 1), HGameplayCoord(2, 1), HGameplayCoord(1, 0), HGameplayCoord(0, 0) });
+		check(bStraight && bDiagonal && bShallow, "LOS square: Bresenham cells for a straight, a diagonal and a shallow line (from the given start)");
+		const int32 badSquare = checkAllLines(square, false);
+		check(badSquare == 0, PString::Format("LOS square: every line on 5x5 is end-to-end, 8-way steps, max(|dx|,|dy|)+1 cells and the same both ways (bad %d of 625)", badSquare));
+
+		hex->TraceLine(HGameplayCoord(0, 0), HGameplayCoord(3, 0), line);
+		const bool bHexStraight = sameCells(line, { HGameplayCoord(0, 0), HGameplayCoord(1, 0), HGameplayCoord(2, 0), HGameplayCoord(3, 0) });
+		check(bHexStraight, "LOS hex: a straight line along q visits each cell");
+		const int32 badHex = checkAllLines(hex, true);
+		check(badHex == 0, PString::Format("LOS hex: every line on 5x5 is end-to-end, neighbor steps, distance+1 cells and the same both ways (bad %d of 625)", badHex));
+
+		// 시야 규칙 — 사각 7x7
+		HGameplayBoardState squareState;
+		squareState.Reset(EGameplayBoardKind::Square, 7, 7);
+		const bool bOpen = square->HasLineOfSight(squareState, HGameplayCoord(0, 0), HGameplayCoord(4, 0));
+		squareState.SetBlocked(HGameplayCoord(2, 0), true);
+		const bool bBlockedForward  = square->HasLineOfSight(squareState, HGameplayCoord(0, 0), HGameplayCoord(4, 0));
+		const bool bBlockedBackward = square->HasLineOfSight(squareState, HGameplayCoord(4, 0), HGameplayCoord(0, 0));
+		const bool bAround          = square->HasLineOfSight(squareState, HGameplayCoord(0, 0), HGameplayCoord(4, 1));
+		check(bOpen == true && bBlockedForward == false && bBlockedBackward == false && bAround == true,
+			"LOS square: a blocked cell between the ends hides the target both ways; a line that misses it still sees");
+
+		squareState.SetBlocked(HGameplayCoord(0, 2), true);
+		squareState.SetBlocked(HGameplayCoord(4, 2), true);
+		const bool bEnds = square->HasLineOfSight(squareState, HGameplayCoord(0, 2), HGameplayCoord(4, 2));
+		check(bEnds == true, "LOS square: blocked cells at the ends do not block (stand on or look at a wall)");
+
+		HGameplayEntityRegistry registry;
+		const HGameplayEntityId unit = registry.Create();
+		squareState.SetPosition(unit, HGameplayCoord(2, 4));
+		const bool bPastUnit = square->HasLineOfSight(squareState, HGameplayCoord(0, 4), HGameplayCoord(4, 4));
+		check(bPastUnit == true, "LOS square: an occupant does not block the default line of sight");
+
+		const bool bOutside = square->HasLineOfSight(squareState, HGameplayCoord(0, 0), HGameplayCoord(7, 0));
+		const bool bSelf    = square->HasLineOfSight(squareState, HGameplayCoord(3, 3), HGameplayCoord(3, 3));
+		check(bOutside == false && bSelf == true, "LOS square: an end outside the board has no sight; a cell sees itself");
+
+		// 시야 규칙 — 육각 7x7 (축 좌표)
+		HGameplayBoardState hexState;
+		hexState.Reset(EGameplayBoardKind::Hex, 7, 7);
+		hexState.SetBlocked(HGameplayCoord(1, 0), true);
+		const bool bHexBlocked = hex->HasLineOfSight(hexState, HGameplayCoord(0, 0), HGameplayCoord(2, 0));
+		const bool bHexOpen    = hex->HasLineOfSight(hexState, HGameplayCoord(0, 0), HGameplayCoord(0, 2));
+		check(bHexBlocked == false && bHexOpen == true, "LOS hex: a blocked cell on the line hides the target; another direction sees");
+
+		// 자유 공간: 격자 선이 없고 경계만 본다(예전과 같음)
+		PSharedPtr<IGameplayBoard> free = IGameplayBoard::Create(EGameplayBoardKind::Free);
+		HGameplayBoardState freeState;
+		freeState.Reset(EGameplayBoardKind::Free, 0, 0);
+		free->TraceLine(HGameplayCoord(0, 0), HGameplayCoord(5, 5), line);
+		const bool bFreeSight = free->HasLineOfSight(freeState, HGameplayCoord(0, 0), HGameplayCoord(5, 5));
+		check(line.empty() == true && bFreeSight == true, "LOS free: no grid line, sight only checks the bounds");
 	}
 
 	// 8. 난수 · 영역 ---------------------------------------------------------------------
@@ -1733,6 +2337,9 @@ int32 PGameMasterSelfTest::Run()
 
 	// 13. 게임 흐름 (ER-009): 흐름 교체 · 공용 칸 · 대기 지점 · 단계 수 한도 ----------------------
 	runFlowChecks(check, seed);
+
+	// 14. 규칙 효과 안 되감기 지점 (ER-027): 표시 · 되감기 · 죽은 번호 · 난수 두 방식 · 재생 · 저장 · 문서 · Undo · Simulate · 버전 ------
+	runRewindChecks(check, seed);
 
 	std::cout << "== GameMaster self test: " << check.Passed << " passed, " << check.Failures << " failed ==" << std::endl;
 	JG_LOG(GameMasterSelfTest, ELogLevel::Info, "GameMaster self test: %d passed, %d failed", check.Passed, check.Failures);

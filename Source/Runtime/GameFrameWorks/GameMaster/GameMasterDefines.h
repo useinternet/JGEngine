@@ -80,6 +80,14 @@ enum class EGameplayRandomStream : int32
 	Count,
 };
 
+// 되감기 지점으로 되돌릴 때(HGameplayContext::RewindTo, ER-027) 앞으로 뽑을 난수 스트림을 어떻게 할지. 게임이 효과마다 고른다.
+// 덱 순서처럼 이미 섞어 상태에 들어간 것은 어느 쪽이든 지점 때로 돌아간다. 어느 쪽이든 결정론 · 재생은 같다.
+enum class EGameplayRewindRandom : int32
+{
+	RestorePoint = 0,   // 지점 때 난수로 되돌린다. 같은 행동을 다시 하면 같은 무작위 결과 (규칙 위반 되감기 · 연습 "다시 두기")
+	KeepCurrent,        // 되감기 직전 난수를 이어 간다. 다시 하면 새로 뽑는다 (시간 되돌리기 효과)
+};
+
 // 엔진 내장 명령 · 효과 · 이벤트 이름. 게임은 같은 이름을 쓰지 않는다.
 namespace HGameplayBuiltin
 {
@@ -112,6 +120,7 @@ namespace HGameplayBuiltin
 	constexpr const char* EventEffectUnknown     = "EffectUnknown";
 	constexpr const char* EventStepChanged       = "StepChanged";             // 게임 흐름의 단계 전환. Tag = 새 단계, Tag2 = 이전 단계, Amount = Round
 	constexpr const char* EventFlowStepLimitExceeded = "FlowStepLimitExceeded";  // 흐름이 대기 없이 단계를 계속 이어 한도에서 멈춤. Amount = 단계 수
+	constexpr const char* EventRewound           = "Rewound";                 // 되감기 지점으로 되돌림 (ER-027). Tag = 지점 이름, Amount = EGameplayRewindRandom. 이 이벤트부터가 되감은 뒤의 일이다
 }
 
 namespace HGameplayLimits

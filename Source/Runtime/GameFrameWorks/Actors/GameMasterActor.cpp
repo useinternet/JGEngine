@@ -376,8 +376,16 @@ void JGGameMasterActor::DestroyActorForEntity(const HGameplayEntityId& id, PShar
 
 void JGGameMasterActor::onGameplayEvents(const HList<HGameplayEvent>& events)
 {
+	PName rewound(HGameplayBuiltin::EventRewound);
 	for (const HGameplayEvent& event : events)
 	{
+		// 되감기(ER-027): 되감기 전 화면을 보고 쌓아 둔 입력은 되감은 상태에서 다른 뜻이 될 수 있어 버린다.
+		// 아직 보내지 않은 입력이라 다른 기계와는 상관없다.
+		if (event.Kind == rewound && _bufferedCommands.empty() == false)
+		{
+			JG_LOG(GameFrameWorks, ELogLevel::Info, "GameMasterActor: dropped %d buffered commands after rewind to %s", (int32)_bufferedCommands.size(), event.Tag.ToString());
+			_bufferedCommands.clear();
+		}
 		_pendingEvents.push_back(event);
 	}
 }

@@ -48,6 +48,20 @@ struct GAMEFRAMEWORKS_API HGameplayContext
 	// 지금 명령을 낼 수 있는 행동자. 죽은 엔티티 · 중복은 넣지 않는다. 빈 목록 = 아무도 못 낸다.
 	void SetActors(const HList<HGameplayEntityId>& actors);
 
+	// 되감기 지점 (ER-027). 지점 = 그 순간의 상태 사본에 붙인 이름. 상태 안이라 저장 · 문서 · 체크섬 · Undo · Simulate · 같이 하기에 함께 간다.
+	// 핸들러 · 효과에서 부른다 (트리거는 그것을 하는 효과를 넣는다). 같은 이름으로 다시 표시하면 새 것으로 바꾼다.
+	// 다 쓴 지점은 지운다 — 남기면 저장 · 문서 · 명령마다 남기는 되돌리기 사본이 지점 수만큼 커진다.
+	void MarkRewindPoint(const PName& name);
+	bool ClearRewindPoint(const PName& name);
+	bool HasRewindPoint(const PName& name) const;
+	// 지점의 상태로 되돌린다. 지점이 없으면 false 이고 아무것도 바꾸지 않는다.
+	// 되돌리지 않는 것: 명령 순번 · 시드 · 지점 목록 · 지금까지 낸 엔티티 세대(지점 뒤에 생긴 엔티티 번호는 죽은 번호가 된다).
+	// random: 앞으로 뽑을 난수를 지점 것으로 되돌릴지(RestorePoint) 지금 것을 이어 갈지(KeepCurrent). 덱 순서처럼 상태에 든 것은 늘 지점 것.
+	// 남은 효과 큐 · 대기 반응 · 이 효과의 선택 요청은 버리고, 흐름은 지점의 단계에서 이어 간다. Rewound 이벤트(Tag = 지점 이름)를 낸 뒤 돌아온다 —
+	// 부른 쪽은 이어서 남길 변화(낸 카드 옮기기 · 비용 다시 빼기)를 평소처럼 적용한다. 되감기 전 값이 필요하면 부르기 전에 지역 변수로 복사하고,
+	// 그 전에 받은 상태 포인터(Find 결과 등)는 쓰지 않는다.
+	bool RewindTo(const PName& name, EGameplayRewindRandom random);
+
 	// 보드 질의 객체. 보드 상태는 State.Board, 규칙(거리 · 이웃 · 경로)은 이것.
 	const IGameplayBoard* Board() const;
 

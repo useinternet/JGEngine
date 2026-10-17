@@ -1,0 +1,75 @@
+GG-20 게임 UI 스크롤 영역(ER-020) — 구현 · 검증 · 메인 반영 기록 (2026-10-04 오전, GUI 세션)
+
+§0. 결정 · 범위
+- D-35: 사용자 2026-10-04 09:59 대시보드 "가 + 나"(엔진 총괄 전달) → 검토서 `ER-020_검토_2026-10-04.md` (가) 스크롤 칸 + 세로 막대 + 휠 + 코드 API, (나) 부드럽게 넘기기(움직임 GG-16 의 트윈) + 가로 막대. 보류 GG-H17(스크롤 영역) 닫음.
+- 범위 밖(결정 그대로): 수천 줄 가상 목록, 끄는 동안 가장자리 자동 넘기기, Tab 포커스 따라 넘기기 → 보류 GG-H30.
+
+§1. 바뀐 파일 (전체 diff `2026-10-04_GameUI_GG20_main.diff`)
+- 새 파일 `UI/GameUIScrollBox.h/.cpp` — `PGameUIScrollBox`(새 파일이라 프로젝트 다시 생성):
+  구조 = 칸(자기, 입력 받기 · 자식 잘라내기 켬) → 보이는 칸(자식 잘라내기) → 내용(`GetContent()`, 위치 = −넘긴 양) + 세로 · 가로 막대(바탕 → 손잡이, 내부 요소).
+  내용 크기 `SetContentSize`(축마다 0 = 보이는 자식의 배치 사각형을 감싸는 크기, 앵커는 위 · 왼쪽으로 봄), 방향 `SetScrollDirection(Vertical | Horizontal | Both)`(기본 세로, 넘기지 않는 방향의 내용 폭 = 보이는 칸).
+  막대 보이기는 두 번 본다(한쪽 막대가 보이는 칸을 줄여 다른 쪽이 넘칠 수 있음). 넘긴 양은 늘 0 ~ 최대로 잘림(배치 때 · 코드 · 입력).
+  API: `ScrollTo` · `ScrollBy` · `ScrollIntoView(자손, 여백)`(배치 값으로 계산 — 방금 붙인 요소도 됨) · `GetScrollOffset` · `GetMaxScroll` · `GetViewportSize` · `GetResolvedContentSize` · `IsScrollBarVisible` · `OnScrolled(넘긴 양)`(JG_DECLARE_EVENT) ·
+  `SetScrollKey(PName)`(위젯이 열쇠별로 넘긴 양을 기억 → 같은 위젯 안 같은 열쇠의 새 칸은 첫 배치 때 그 자리에서. 첫 배치 전에 코드로 넘기면 그쪽이 앞섬. OnShutdown 때 잊음) · 스타일 `SetStyle/ClearStyle/ResolveStyle`.
+  휠 한 칸 = 스타일 WheelStep(60). 세로로 넘길 것이 없고 가로로만 넘길 수 있으면 세로 휠도 가로로. 막대 빈 곳 누르기 = 보이는 칸의 7/8. 손잡이 끌기는 문턱 없이 바로(누른 자리 − 손잡이 시작을 잡고 따라감).
+  부드럽게 넘기기: 스타일 SmoothSeconds > 0 이면 휠 · 막대 빈 곳이 넘긴 양 트윈(OutCubic)을 그 칸을 가진 위젯에서 재생, 연달아 굴리면 목표가 이어 쌓임. 손잡이 누르기 · ScrollTo · ScrollBy · ScrollIntoView 는 넘긴 양 트윈(그 묶음)을 취소하고 바로 넘김.
+- `GameUIElement.h/.cpp`: `SetClipChildren(bool)`(그리기 = 받은 클립 ∩ 자기 사각형(변환이 있으면 감싸는 축 정렬 사각형), 판정 = 포인터가 자기 사각형(돌린 모양) 밖이면 자손을 보지 않음),
+  `CalculateLayoutRect(parentRect)`(배치 식 그대로 — layout 도 이것을 씀), 훅 `onPointerHeldBegin(button, 위치)`(true = 뗄 때까지 이동을 받고 조상 끌기 후보를 버림) · `onPointerHeldMove(위치)` · `onLayout(ownerWidget)`(사각형을 정한 직후 · 자식 배치 전), `layout` 에 위젯 인자.
+- `GameUIManager.h/.cpp`: 휠 전달 `routeWheel` — 판정한 요소에서 위젯 루트까지의 길에 있는 스크롤 칸을 모아 가장 안쪽부터, 그 방향으로 넘어갈 수 있는 첫 칸(꺼진 칸 제외), 없으면 지금처럼 UI 위에서 소비만.
+  누른 요소 이동 훅 연결(`_bCapturedHeld` — 누르는 동안 이동을 받는 동안은 호버를 바꾸지 않음), 기본 스크롤 스타일 Set/Get, 배치에 위젯 넘김, retire 때 열쇠 기억 비움.
+- `GameWidget.h`: `_scrollMemory`(열쇠 → 넘긴 양) · friend `PGameUIScrollBox`. `GameUIStyle.h`: `HGameUIScrollStyle`(바탕 · 손잡이 텍스처, 바탕 색, 손잡이 보통 · 호버 · 누름 색, 굵기 12, 여백 2, 최소 손잡이 24, 휠 60, SmoothSeconds 0, Visibility Auto | Always | Never).
+- `GameUIDefines.h`: `HGameUIPointerEvent::WheelHorizontal`(오른쪽 +), `EGameUITweenProperty::ScrollOffset`. `GameUITween.h/.cpp`: 넘긴 양 읽기 · 쓰기(쓰기는 `PGameUITimeline::writeProperty` 로 옮김 — 트윈 쓰기가 자기 트윈을 취소하지 않게). `GameUI.h`: 새 헤더 포함.
+- 호스트: `Viewport/GameViewport.cpp`(가로 휠 `WheelDelta.x` 도 넘김), GUI `GUI.h/.cpp`(`HGUIImageInput::WheelHorizontal` = −ImGui MouseWheelH, `InteractiveImage` 가 이미지 위 휠을 가짐 — §4 ①), JGEditor `SceneViewport.cpp`(휠 두 축을 게임 뷰포트에 넘김, 카메라 줌은 세로 그대로).
+- `GameUISelfTest.cpp`: 스크롤 검사 8묶음(+56).
+
+§2. 엔진 자체 검사 (gameui.selftest 445/445 = 389 + 56, 기존 389 그대로)
+- (a) testScrollBoxText: 6줄(줄 간격 30 · 180) 칸에 20줄 글 → 세로 막대만, 보이는 칸 384 x 180. 그리기 목록의 글자 배치 클립 = 보이는 칸, 칸 밖 줄의 사각형은 목록에 없음(위 · 끝 모두 글자 사각형 < 전체 111 의 절반).
+  휠 60씩 올림(넘길 양 / 60)번에 끝, OnScrolled 같은 수. 끝에서 휠은 소비만. 손잡이를 반만 끌면 넘긴 양 반, 칸 밖 멀리 끌면 끝. 막대 손잡이 아래 누르기 157.5(7/8)씩 끝까지, 위 누르기는 거꾸로. 막대 자리 486~498 × 102~278, 손잡이 길이 = 막대 × 보이는 칸 / 내용.
+- (b) testScrollBoxRows: 버튼 40개(간격 50) → 내용 1990 · 넘길 양 1790. 칸 밖 버튼 자리는 호버 · 클릭 없음(클릭은 아래로 — 소비 안 함), 칸 안 버튼 클릭, ScrollTo 뒤 들어온 버튼은 클릭 · 나간 버튼 자리는 그 자리의 새 버튼, 가장자리에 걸친 버튼은 보이는 부분만.
+  ScrollIntoView(여백 5) 아래 · 위 · 그대로, 이번 프레임에 붙인 줄(배치 전), 내용 밖 요소는 false, 숨긴 줄은 내용 크기에서 빠져 넘긴 양이 따라 줄어듦.
+- (c) testScrollBoxRouting: 다 들어가는 칸은 막대를 그리지도 판정하지도 않음(칸이 받음), 그 위 휠은 소비만. 빈 곳 휠은 소비 안 함 · 다른 UI 위 휠은 소비만(넘김 없음) · 칸 안 줄 위 휠은 넘김.
+  겹친 칸: 안쪽 340 까지 6번 → 7번째는 바깥 60 → 거꾸로 굴리면 다시 안쪽(280). 일반 판 SetClipChildren: 자식 클립 = 판, 판 밖 자식 부분은 안 맞음.
+- (d) testScrollBoxTransform: 15° · 1.3배 부모 아래 칸 — 내용 클립 = 돌린 보이는 칸을 감싸는 축 정렬 사각형, 판정은 돌린 칸 안만(감싸는 사각형 모서리 · 칸 아래 잘린 버튼 자리는 안 맞음).
+- (e) testScrollBoxMemory: 같은 열쇠로 칸째 다시 만들면 300 에서 시작(그 자리 줄 클릭), 내용만 다시 만들면 넘긴 양 유지 · 새 내용으로 잘림(290), 다른 열쇠 · 열쇠 없음 0, 첫 배치 전 ScrollTo(50)가 기억보다 앞섬, 위젯을 내렸다 다시 올리면 잊음(0). 기존 검사 389 그대로.
+- (나) testScrollBoxSmooth: SmoothSeconds 0.2 — 휠 직후 그대로, 0.1초 52.5(OutCubic 0.875), 끝 60, OnScrolled 프레임마다. 빠른 휠 두 번 + 한 번 = 180(움직이는 목표에서 이어 쌓임). 손잡이 누르면 그 자리에서 멈춤, ScrollTo 도 멈춤.
+  게임 PlayTween(ScrollOffset, 500, 0.2 Linear) 0.1초 255 · 끝 500(취소 없음), 끝을 넘는 목표는 1790 에서 멈춤, 게임 트윈 중 휠 → 게임 묶음 취소 · 휠 목표로.
+- (나) testScrollBoxHorizontal: 내용 600 x 600 · 칸 300 x 200 → 두 막대, 보이는 칸 284 x 184, 최대 316 x 416, 가로 막대 102~382 × 686~698(모서리 비움). 가로 휠 +60, 가로 손잡이 끝 316, 가로 막대 빈 곳 248.5. 가로만 칸은 세로 휠로 가로 60. 세로 칸은 가로 휠 무시 · 넓은 줄에 가로 막대 없음.
+- testScrollBoxHeld: 끌 수 있는 판 안 칸의 손잡이 끌기 → 판 끌기 없음(OnDragBegin 0) · 넘김 · 끄는 동안 호버 그대로(손잡이) · 뗀 뒤 아래 줄로. 줄을 누르고 끌면 판 끌기(지금 규칙). 꺼진 칸은 휠 · 손잡이 받지 않음(입력은 막음).
+
+§3. 작업 폴더 (`Temp/wt/gg20` = 10:03 메인 거울)
+- PreBuild(새 파일) → 빌드 41초 exit 0 · 경고 0 → 기존 389/389 · input 34/34 · gmtest 실패 0 그대로 → 스크롤 검사 넣고 444/445(첫 배치를 "다른 위젯으로 옮김"으로 보아 열쇠 기억을 다시 읽음 → 이전 위젯이 있을 때만) → 445/445.
+  console 64/64 · datatable 127/127.
+- 검증 게임 `Temp/Games/GameUIDemo_GG20`(EngineRoot = gg20): HUD 에 목록 칸 · 이야기 칸(§5), e2e 28~37단계 추가.
+  1회차: 28단계 휠이 게임 목록과 함께 **에디터 Scene Viewport 창(ImGui)도 스크롤** — 클릭 뒤 상태 줄이 늘어 창 내용이 넘치면 휠마다 창이 밀려 그림 전체가 위로 감(캡처 오른쪽 ImGui 스크롤바) → 29단계부터 클릭이 기준 y +48 에 찍힘(행 6, 30단계는 이미지 밖).
+  카메라 줌 휠에도 있던 호스트 문제 → §4 ① 로 고침. 2회차 37단계 모두 기대대로, error 0. dbgcount 40초: 실행 중 D3D12 0, 디버그 출력 15줄(종료 단순 보고 = 기준선).
+
+§4. 호스트 수정
+- ① GUI `HGUI::InteractiveImage`: 보이지 않는 버튼 뒤 `ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY / X)` — 이미지 위 휠을 그 항목이 가져 창 스크롤에 쓰이지 않음(ImGui 1.91 공개 API, imgui.h 의 "Button(...); SetItemKeyOwner(ImGuiKey_MouseWheelY)" 예 그대로). 휠 값은 그대로 IO 에서 읽음. 쓰는 곳은 Scene Viewport 하나.
+- ② 가로 휠: ImGui 백엔드는 WM_MOUSEHWHEEL 을 뒤집어 MouseWheelH(왼쪽 +)에 넣는다 → GUI 가 다시 뒤집어 오른쪽 + 로(엔진 입력 `WheelDelta.x` 와 같은 뜻). 게임 호스트(GameHost)는 엔진 입력이 `WheelDelta.x` 를 이미 줌 → GameViewport 가 넘김.
+
+§5. 검증 게임 · e2e (도구 `tools/gameui_demo_testgame/`)
+- HUD(루트 요소 12 → 14): 목록 칸 `ListPanel/ListScroll`(450~680 × 789~1040, 방향 Both, 열쇠 DemoList, 줄 40 · 간격 40 · 320 x 36 버튼 → 보이는 칸 214 x 235, 최대 106 x 1361, 바로 넘김)와
+  이야기 칸 `StoryPanel/StoryScroll`(680~1220 × 640~780, 20줄 · 18px · 줄 간격 22 → 최대 300, SmoothSeconds 0.15). 카드보다 먼저 붙여 끄는 카드가 위에. OnScrolled · 줄 클릭 로그.
+- e2e 28~37(1~27단계는 그대로): 28 목록 휠 3칸 → 60 · 120 · 180 / 29 줄 클릭 → "list row 5 clicked" / 30 칸 아래 잘린 줄 자리(565, 1060) → 월드 "nothing" / 31 세로 손잡이를 아래 밖까지 → 끝 1361(중간 0 은 보낸 메시지 사이 쓰레기 자리)
+  / 32 세로 막대 위 빈 곳 → 1155.4 / 33 위 띠 위 휠 → 넘김 줄 없음 / 34 가로 손잡이를 오른쪽 밖까지 → (106, 1155.4) / 35 가로 휠(WM_MOUSEHWHEEL) 왼쪽 → (46, 1155.4) / 36 이야기 휠 2칸 → 16.8 · 30.4 … 60 … 120(OutCubic 프레임마다) / 37 이야기 막대 손잡이 아래 → … 242.5 → 스크롤 캡처.
+
+§6. 메인 반영 (MainTree)
+- 10:48:47 `MainTree.cmd -name=GUI hold -minutes=60` → 10:56:51 release(8분). 바꾼 메인 파일 모두 거울(10:03) 뒤 그대로(cmp 같음) → 17파일 복사(새 파일 2) → `exec PreBuild.bat`(Build/BatchFiles 에서 — 상대 경로) exit 0, GameFrameWorks 프로젝트에 새 파일 → build exit 0(9초).
+- 메인 Bin(exec): gameui.selftest OK (445/445), input 34/34, gmtest OK(실패 0), console 64/64, datatable 127/127.
+- 메인 엔진 데모 `Temp/Games/GameUIDemo_GUI`: 데모 소스 교체 → 게임 폴더 GenerateProjectFiles(새 엔진 파일) → 빌드 exit 0 → e2e 3회: 1회차 28단계 휠 한 칸이 에디터에 닿지 않음(60 · 120 → 29단계가 행 3, 나머지 기대대로), 2회차 32단계 클릭 하나가 닿지 않음(나머지 기대대로),
+  3회차 37단계 모두 기대대로(1~27 이전과 같음 — 턴 2 · 3, Resume 2, reopened 1, 24단계 월드 클릭), error 0 · live blocks 0 · 종료 0. 빠짐은 보낸 메시지 방식의 기존 흔들림(실제 커서 자리가 프레임 사이에 끼어듦 — README 알아둘 것).
+- dbgcount(메인 엔진 데모 40초): 실행 중 D3D12 메시지 0, 디버그 출력 15줄(종료 단순 보고, 기준선과 같음).
+- 캡처: `2026-10-04_gameui_gg20_before.png`(목록 00~05 · 이야기 1~6줄, 두 막대 · 세로 막대), `_scroll.png`(목록 29~34 · 가로 46 만큼 밀림, 이야기 12~17줄 — 칸 밖 글 없음, 에디터 창 그대로), `_after.png`, 확대 `_zoom_before.png` · `_zoom_scroll.png`(3배).
+
+§6.1 게임 화면 적용(게임 연출 구현 회신 10-04 11:1x)
+- 게임 두 화면에 넣음: 조사자 이야기(내용에 글 하나 + MeasureContent 로 높이, 열쇠, 다른 조사자를 고르면 첫 배치 전 ScrollTo(0, 0)) · 덱 편집 덱 칸(줄 버튼 목록, 열쇠 — 카드를 넣고 빼 다시 그려도 넘긴 자리 이어짐).
+  스타일 굵기 8 · 여백 2(막대 자리 12 — 글 · 줄 폭은 늘 12 를 비움) · SmoothSeconds 0.15.
+- 게임 GenerateProjectFiles → 전체 빌드 오류 0, 게임 자체 테스트 실패 0. 에디터에 WM_MOUSEWHEEL 을 보내 휠로 넘어가는 것과 막대 손잡이가 따라 움직이는 것을 화면에서 확인.
+- 정정(같은 세션 다음 회신): 칸 안 줄 버튼의 포인터 확대 위치는 화면에서 본 것이 아니다 — 헤더 설명(내용 위치 = −넘긴 양)으로 미루어 본 것(포인터 올리기는 실제 커서를 따라 자동 조작으로 못 봄).
+  엔진 쪽 근거: 줄의 GetLayoutRect 는 다음 배치(그리기 · 포인터 이벤트 앞 UpdateLayout)부터 넘긴 자리를 따른다 — 자체 검사 testScrollBoxRows 의 ScrollTo 뒤 클릭이 같은 사각형으로 판정. 같은 프레임에서 ScrollTo 바로 뒤에 읽으면 넘기기 전 사각형이다.
+
+§7. 알릴 것
+- 게임: 엔진 헤더가 바뀌었다(`GameUIElement.h` 멤버 · 가상 함수 추가 — 파생 요소 다시 컴파일, `GameUIDefines.h` · `GameWidget.h` · `GameUIManager.h`) + 새 엔진 파일 → 게임 폴더 GenerateProjectFiles 부터 다시 빌드.
+- 끌어다 놓기와 함께 쓸 때: 칸 안에서 끄는 요소도 칸 밖에서는 잘려 안 보인다(그리기 변환으로 따라가도) — 칸 밖으로 끌어 놓는 화면은 끄는 동안 다른 층에 대신 그린다(검토서 §3.1, 보류 GG-H28 과 같은 문제).
+- JGEditor `SceneViewport.cpp` 한 곳(휠 두 축 넘김)을 이 작업에서 고쳤다(JGEditor 세션 알림은 엔진 총괄 보고에 넣음).
+- 커밋은 사용자(GG-C2 에 GG-20 추가).

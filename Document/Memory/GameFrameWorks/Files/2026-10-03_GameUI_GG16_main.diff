@@ -1,0 +1,2279 @@
+--- main/GameUIDefines.h
++++ gg16/GameUIDefines.h
+@@ -96,6 +96,19 @@
+ 	HVector2 Translation;                      // 배치 뒤 옮기기(논리 단위)
+ };
+ 
++// 트윈이 움직이는 요소 속성(GG-16, UI/GameUITween.h). 값: 위치 · 크기 · 배율 · 옮기기 = HVector2, 각도 · 불투명도 = 실수, 색 = HLinearColor.
++enum class EGameUITweenProperty : int32
++{
++	Position,      // SetPosition(배치 — 자식도 따라 다시 배치된다)
++	Size,          // SetSize
++	Angle,         // 그리기 변환 각도(도)
++	Scale,         // 그리기 변환 배율
++	Translation,   // 그리기 변환 옮기기(논리 단위)
++	Opacity,       // SetOpacity
++	Color,         // 그림 · 글 요소의 색(그 밖의 요소는 움직이지 않는다)
++	Count,
++};
++
+ // 2D 아핀 변환 p' = (A·x + C·y + X, B·x + D·y + Y). 게임 UI 그리기 · 판정용(기본값 = 단위 변환).
+ struct GAMEFRAMEWORKS_API HGameUIAffine
+ {
+--- main/GameUIElement.h
++++ gg16/GameUIElement.h
+@@ -26,6 +26,7 @@
+ {
+ 	friend class PGameUIManager;
+ 	friend class JGGameWidget;
++	friend class PGameUITimeline;
+ 
+ protected:
+ 	PName    _name;
+@@ -49,6 +50,9 @@
+ 	bool          _bWorldTransformed = false;
+ 	float32       _worldOpacity      = 1.0f;      // 조상 · 자기 불투명도의 곱
+ 
++	// 속성마다 지금 값을 쓰는 묶음의 번호(GG-16, 0 = 없음). 다른 묶음이 같은 속성에 트윈을 시작하면 번호가 바뀌어 옛 묶음이 취소로 끝난다.
++	uint64        _tweenWriters[(int32)EGameUITweenProperty::Count] = {};
++
+ public:
+ 	PGameUIElement() = default;
+ 	virtual ~PGameUIElement() = default;
+--- main/GameUIText.h
++++ gg16/GameUIText.h
+@@ -51,6 +51,8 @@
+ 	void SetFont(const PSharedPtr<PGameUIFont>& font);
+ 	void SetFontSize(float32 fontSize);
+ 	void SetColor(const HLinearColor& color);
++	// 지금 글 색: 덮어쓴 색, 없으면 관리자 기본 글자 스타일 색(manager 가 없으면 흰색). 트윈이 지금 값에서 시작할 때 읽는다.
++	HLinearColor GetColor(const PGameUIManager* manager = nullptr) const;
+ 	// 덮어쓴 필드를 모두 지운다(관리자 기본을 따른다).
+ 	void ClearStyle();
+ 	// 문단 서식(줄 간격 · 자간 · 장평 · 문단 간격 · 요소 전체 굵게/기울임). 기본값이면 서식 없음.
+--- main/GameUIText.cpp
++++ gg16/GameUIText.cpp
+@@ -367,6 +367,11 @@
+ 	_overrides |= OverrideColor;
+ }
+ 
++HLinearColor PGameUIText::GetColor(const PGameUIManager* manager) const
++{
++	return ResolveStyle(manager).Color;
++}
++
+ void PGameUIText::ClearStyle()
+ {
+ 	_style     = HGameUITextStyle();
+--- main/GameWidget.h
++++ gg16/GameWidget.h
+@@ -1,5 +1,6 @@
+ #pragma once
+ #include "UI/GameUIElement.h"
++#include "UI/GameUITween.h"
+ #include "GameWidget.generation.h"
+ 
+ class PGameUIManager;
+@@ -11,8 +12,13 @@
+ //   OnDeactivated   위에 다른 위젯이 올라오거나 자기가 빠질 때
+ //   OnUpdate(dt)    활성인 동안 매 프레임(게임 인스턴스 틱, 월드 틱 뒤). 값을 끌어와 갱신할 때만 쓴다
+ //   OnBackAction    뒤로가기(Esc). 뒤로가기 처리 위젯(SetBackHandler(true))만 받는다. 기본은 자기를 닫고 true
+-//   OnShutdown      스택에서 빠진 뒤. 그다음 트리를 비운다 — 같은 객체를 다시 Push 하면 OnInitialize 부터 다시
++//   OnShutdown      화면에서 완전히 빠진 뒤(닫힘 전환이 있으면 그것이 끝난 뒤). 그다음 트리를 비운다 — 같은 객체를 다시 Push 하면 OnInitialize 부터 다시
+ // 루트 요소가 논리 화면 전체(관리자 기준 해상도)를 덮는다. 입력 모드 Menu 면 활성인 동안 아래 레이어 · 월드가 입력을 받지 못한다.
++// 움직임(GG-16): PlayTimeline · PlayTween 으로 이 위젯이 가진 묶음을 재생한다 — 활성 · 닫히는 동안 돌고, 덮이면 멈추고, OnShutdown 전에 취소된다.
++// 열림 · 닫힘 전환(GG-16): SetOpenTransition · SetCloseTransition. 전환은 루트 요소의 불투명도 · 그리기 변환(배율 · 옮기기)을 쓴다 — 게임은 루트 말고 자식에 쓴다.
++//   닫힘 전환이 있으면 DeactivateWidget 때 스택에서는 바로 빠지고(OnDeactivated, 입력 · 뒤로가기를 받지 않음) 전환이 끝날 때까지 그 레이어 맨 위에 그려진 뒤 OnShutdown.
++//   그 OnDeactivated 안에서 IsClosing() 이 true 다 — 자식 요소의 닫는 모습 트윈을 여기서 걸면 닫히는 동안 돈다(덮여서 비활성이 될 때는 false).
++//   닫히는 중에 다시 Push 하면 지금 모습에서 다시 열린다(OnInitialize · OnShutdown 없음).
+ JGCLASS()
+ class GAMEFRAMEWORKS_API JGGameWidget : public JGObject
+ {
+@@ -22,12 +28,18 @@
+ 
+ private:
+ 	PSharedPtr<PGameUIElement> _root;
+-	PGameUIManager*            _manager      = nullptr;   // 스택에 있는 동안만. 관리자는 스택의 위젯보다 오래 산다
++	PGameUIManager*            _manager      = nullptr;   // 스택에 있는 동안 · 닫히는 동안. 관리자는 스택의 위젯보다 오래 산다
+ 	EGameUILayer               _layer        = EGameUILayer::Game;
+ 	EGameWidgetInputMode       _inputMode    = EGameWidgetInputMode::Game;
+ 	bool                       _bBackHandler = false;
+ 	bool                       _bInitialized = false;
+ 	bool                       _bActive      = false;
++	bool                       _bClosing     = false;   // 스택에서 빠져 닫힘 전환 중
++
++	HList<PSharedPtr<PGameUITimeline>> _timelines;     // 재생 중인 묶음(끝나면 다음 진행에서 뺀다)
++	HGameUITransition                  _openTransition;
++	HGameUITransition                  _closeTransition;
++	PSharedPtr<PGameUITimeline>        _transition;    // 지금 도는 열림 · 닫힘 전환
+ 
+ public:
+ 	JGGameWidget();
+@@ -55,6 +67,19 @@
+ 	void                 SetBackHandler(bool bBackHandler);
+ 	bool                 IsBackHandler() const;
+ 
++	// ---- 움직임(GG-16)
++	// 묶음을 재생한다(이미 재생 중이면 그대로). 재생을 건 자리에서 첫 트윈의 시작값을 바로 쓴다. 돌려준 묶음으로 Stop · Skip · OnFinished.
++	PSharedPtr<PGameUITimeline> PlayTimeline(const PSharedPtr<PGameUITimeline>& timeline);
++	// 트윈 하나짜리 묶음을 만들어 재생한다.
++	PSharedPtr<PGameUITimeline> PlayTween(const HGameUITween& tween);
++	// 열림 · 닫힘 전환(길이 0 = 없음 — 지금까지처럼 바로). Push · DeactivateWidget 때 쓴다.
++	void                     SetOpenTransition(const HGameUITransition& transition);
++	void                     SetCloseTransition(const HGameUITransition& transition);
++	const HGameUITransition& GetOpenTransition() const;
++	const HGameUITransition& GetCloseTransition() const;
++	// 스택에서 빠져 닫힘 전환 중인가(IsInStack 은 false).
++	bool                     IsClosing() const;
++
+ protected:
+ 	virtual void OnInitialize() {}
+ 	virtual void OnShutdown() {}
+@@ -63,4 +88,13 @@
+ 	virtual void OnUpdate(float32 deltaSeconds) {}
+ 	// 처리했으면 true(관리자가 아래 위젯으로 넘기지 않는다).
+ 	virtual bool OnBackAction();
++
++private:
++	// 관리자가 부른다: 재생 중인 묶음을 dt 만큼 진행하고 끝난 것을 뺀다.
++	void tickTimelines(float32 deltaSeconds);
++	// 모든 묶음(전환 포함)을 취소한다 — 화면에서 완전히 빠질 때 OnShutdown 전에.
++	void cancelTimelines();
++	// 열림(bOpen) · 닫힘 전환을 시작한다. bFromCurrent 면 열림도 지금 모습에서(닫히다 다시 열기). 전환이 없으면 아무것도 하지 않는다.
++	void beginTransition(bool bOpen, bool bFromCurrent);
++	bool isTransitionPlaying() const;
+ };
+--- main/GameWidget.cpp
++++ gg16/GameWidget.cpp
+@@ -20,7 +20,7 @@
+ 
+ bool JGGameWidget::IsInStack() const
+ {
+-	return _manager != nullptr;
++	return _manager != nullptr && _bClosing == false;
+ }
+ 
+ bool JGGameWidget::IsActive() const
+@@ -73,3 +73,155 @@
+ 	DeactivateWidget();
+ 	return true;
+ }
++
++PSharedPtr<PGameUITimeline> JGGameWidget::PlayTimeline(const PSharedPtr<PGameUITimeline>& timeline)
++{
++	if (timeline.IsValid() == false)
++	{
++		return nullptr;
++	}
++	// PSharedPtr 는 const 를 전파하므로 비 const 사본으로 재생한다.
++	PSharedPtr<PGameUITimeline> playing = timeline;
++	if (playing->IsPlaying())
++	{
++		return playing;
++	}
++	_timelines.push_back(playing);
++	playing->play(_manager);
++	return playing;
++}
++
++PSharedPtr<PGameUITimeline> JGGameWidget::PlayTween(const HGameUITween& tween)
++{
++	PSharedPtr<PGameUITimeline> timeline = PGameUITimeline::Sequence();
++	timeline->Add(tween);
++	return PlayTimeline(timeline);
++}
++
++void JGGameWidget::SetOpenTransition(const HGameUITransition& transition)
++{
++	_openTransition = transition;
++}
++
++void JGGameWidget::SetCloseTransition(const HGameUITransition& transition)
++{
++	_closeTransition = transition;
++}
++
++const HGameUITransition& JGGameWidget::GetOpenTransition() const
++{
++	return _openTransition;
++}
++
++const HGameUITransition& JGGameWidget::GetCloseTransition() const
++{
++	return _closeTransition;
++}
++
++bool JGGameWidget::IsClosing() const
++{
++	return _bClosing;
++}
++
++void JGGameWidget::tickTimelines(float32 deltaSeconds)
++{
++	// 진행 중에 함수 · 끝 알림이 새 묶음을 재생할 수 있으므로 사본으로 돈다(새 묶음은 이미 0초만큼 진행했다 — 다음 진행부터).
++	const HList<PSharedPtr<PGameUITimeline>> timelines = _timelines;
++	for (const PSharedPtr<PGameUITimeline>& candidate : timelines)
++	{
++		PSharedPtr<PGameUITimeline> timeline = candidate;
++		if (timeline->IsPlaying())
++		{
++			// 스택에 올리기 전에 재생을 건 묶음도 지금 관리자를 본다.
++			timeline->_manager = _manager;
++			timeline->tick(deltaSeconds);
++		}
++	}
++
++	for (auto it = _timelines.begin(); it != _timelines.end();)
++	{
++		if ((*it)->IsPlaying() == false)
++		{
++			it = _timelines.erase(it);
++		}
++		else
++		{
++			++it;
++		}
++	}
++}
++
++void JGGameWidget::cancelTimelines()
++{
++	// 취소 알림 처리기가 묶음을 더 걸 수 있으므로 비울 때까지 돈다(한 번 더 걸린 것도 취소).
++	for (int32 guard = 0; guard < 8 && _timelines.empty() == false; ++guard)
++	{
++		const HList<PSharedPtr<PGameUITimeline>> timelines = _timelines;
++		_timelines.clear();
++		for (const PSharedPtr<PGameUITimeline>& candidate : timelines)
++		{
++			PSharedPtr<PGameUITimeline> timeline = candidate;
++			timeline->Stop();
++		}
++	}
++	_timelines.clear();
++	_transition = nullptr;
++}
++
++void JGGameWidget::beginTransition(bool bOpen, bool bFromCurrent)
++{
++	// 도는 전환은 멈춘다(열림 중 닫기 · 닫힘 중 다시 열기 — 새 전환은 지금 모습에서 이어 간다).
++	if (_transition.IsValid())
++	{
++		PSharedPtr<PGameUITimeline> previous = _transition;
++		_transition = nullptr;
++		previous->Stop();
++	}
++
++	const HGameUITransition& transition = bOpen ? _openTransition : _closeTransition;
++	if (transition.IsEnabled() == false)
++	{
++		if (bOpen && bFromCurrent)
++		{
++			// 닫히다 다시 여는데 열림 전환이 없다: 바로 열린 모습으로.
++			HGameUIRenderTransform look = _root->GetRenderTransform();
++			look.Scale       = HVector2(1.0f, 1.0f);
++			look.Translation = HVector2(0.0f, 0.0f);
++			_root->SetRenderTransform(look);
++			_root->SetOpacity(1.0f);
++		}
++		return;
++	}
++
++	// 루트의 닫힌 모습 ↔ 열린 모습. 바뀌는 속성만 움직인다.
++	PSharedPtr<PGameUITimeline> timeline = PGameUITimeline::Parallel();
++	auto addTrack = [&](EGameUITweenProperty property, const HGameUITweenValue& closedValue, const HGameUITweenValue& openValue)
++	{
++		if (bOpen && bFromCurrent == false)
++		{
++			timeline->Add(HGameUITween::FromTo(_root, property, closedValue, openValue, transition.Duration, transition.Ease));
++		}
++		else
++		{
++			timeline->Add(HGameUITween::To(_root, property, bOpen ? openValue : closedValue, transition.Duration, transition.Ease));
++		}
++	};
++	if (transition.Opacity != 1.0f)
++	{
++		addTrack(EGameUITweenProperty::Opacity, HGameUITweenValue(transition.Opacity), HGameUITweenValue(1.0f));
++	}
++	if (transition.Scale.x != 1.0f || transition.Scale.y != 1.0f)
++	{
++		addTrack(EGameUITweenProperty::Scale, HGameUITweenValue(transition.Scale), HGameUITweenValue(HVector2(1.0f, 1.0f)));
++	}
++	if (transition.Offset.x != 0.0f || transition.Offset.y != 0.0f)
++	{
++		addTrack(EGameUITweenProperty::Translation, HGameUITweenValue(transition.Offset), HGameUITweenValue(HVector2(0.0f, 0.0f)));
++	}
++	_transition = PlayTimeline(timeline);
++}
++
++bool JGGameWidget::isTransitionPlaying() const
++{
++	return _transition.IsValid() && _transition->IsPlaying();
++}
+--- main/GameUIManager.h
++++ gg16/GameUIManager.h
+@@ -23,6 +23,8 @@
+ 
+ // 게임 UI 관리자(Lyra 의 PrimaryGameLayout + CommonUI 입력 라우팅 자리). JGGameInstance 가 하나를 가진다(JGGameInstance::Get().GetUI()).
+ // 레이어 4개(Game < GameMenu < Menu < Modal), 레이어마다 위젯 스택. 각 스택의 맨 위 위젯만 보이고 활성이다.
++// 열림 · 닫힘 전환(GG-16, JGGameWidget::SetOpenTransition): 맨 위가 열림 전환 중이면 바로 아래 위젯도 그린다(새 화면이 그 위로 나타난다).
++// 닫힘 전환 중인 위젯은 스택에서 빠진 채 그 레이어 맨 위에 그린다(입력 · 뒤로가기는 받지 않는다). 전환이 끝나면 OnShutdown.
+ // 입력은 위 레이어부터 각 레이어 맨 위 위젯이 받고, 입력 모드 Menu 위젯에서 멈춘다(그 아래 레이어 · 월드는 못 받는다).
+ // 호스트가 하는 일: 월드를 그린 렌더 타깃 위에 Render, 포인터를 먼저 HandlePointer(true 면 월드 입력을 건너뜀), 뒤로가기(Esc)를 HandleBackAction.
+ // 글자 입력 포커스(입력란)가 있으면(WantsTextInput) 확정 글자를 HandleTextInput, 편집 키(Esc 포함)를 HandleKey 로 먼저 넘긴다.
+@@ -33,6 +35,8 @@
+ 	friend class PGameUITextInput;
+ 
+ 	HList<PSharedPtr<JGGameWidget>> _layers[(int32)EGameUILayer::Count];
++	HList<PSharedPtr<JGGameWidget>> _closing[(int32)EGameUILayer::Count];   // 스택에서 빠져 닫힘 전환 중(그 레이어 맨 위에 그린다)
++	float32                         _tweenTimeScale = 1.0f;
+ 
+ 	HVector2 _referenceSize = HVector2(1920.0f, 1080.0f);
+ 	HVector2 _targetSize;
+@@ -93,14 +97,17 @@
+ 	}
+ 	// 리플렉션 클래스로 만든다. JGGameWidget 파생이 아니면 nullptr.
+ 	PSharedPtr<JGGameWidget> PushWidgetByClass(PSharedPtr<JGClass> widgetClass, EGameUILayer layer);
+-	// 이미 만든 위젯을 올린다. 다른 스택에 있으면 false.
++	// 이미 만든 위젯을 올린다. 다른 스택에 있으면 false. 닫힘 전환 중인 위젯이면 지금 모습에서 다시 연다(OnInitialize · OnShutdown 없음).
+ 	bool PushWidgetInstance(PSharedPtr<JGGameWidget> widget, EGameUILayer layer);
+ 	// 스택에서 뺀다(= widget->DeactivateWidget()). 맨 위였으면 아래 위젯이 다시 활성.
++	// 맨 위였고 닫힘 전환이 있으면 전환이 끝날 때까지 그린 뒤 OnShutdown, 아니면 바로 OnShutdown.
+ 	bool RemoveWidget(PSharedPtr<JGGameWidget> widget);
++	// 비운다. 닫힘 전환 중인 위젯도 바로 내린다(전환 없이).
+ 	void ClearLayer(EGameUILayer layer);
+ 	void ClearAllWidgets();
+ 	PSharedPtr<JGGameWidget> GetTopWidget(EGameUILayer layer) const;
+ 	const HList<PSharedPtr<JGGameWidget>>& GetLayerStack(EGameUILayer layer) const;
++	// 스택에 있는 위젯 수(닫힘 전환 중인 위젯은 세지 않는다).
+ 	uint64 GetWidgetCount() const;
+ 	// 스택에 있는 첫 T(위 레이어 · 맨 위부터). 없으면 nullptr.
+ 	template<class T>
+@@ -131,8 +138,13 @@
+ 	// targetSize(렌더 타깃 픽셀) 기준으로 배율과 보이는 위젯의 사각형을 다시 계산한다.
+ 	void UpdateLayout(const HVector2& targetSize);
+ 
++	// ---- 움직임(GG-16, UI/GameUITween.h)
++	// 위젯 묶음(트윈 · 열림 · 닫힘 전환)의 시간 배율. 기본 1, 0 = 멈춤, 음수는 0. 위젯 OnUpdate 의 dt 는 그대로다.
++	void    SetTweenTimeScale(float32 timeScale);
++	float32 GetTweenTimeScale() const;
++
+ 	// ---- 호스트 · 게임 인스턴스
+-	// 활성 위젯의 OnUpdate (JGGameInstance::Tick, 월드 틱 뒤).
++	// 활성 위젯의 묶음을 진행하고 OnUpdate, 닫힘 전환 중인 위젯의 묶음을 진행하고 전환이 끝났으면 내린다(JGGameInstance::Tick, 월드 틱 뒤).
+ 	void Update(float32 deltaSeconds);
+ 	// 보이는 위젯을 레이어 아래부터 target(Allow_RenderTarget) 위에 그린다.
+ 	void Render(const PSharedPtr<IRawTexture>& target);
+@@ -213,8 +225,13 @@
+ 	PSharedPtr<PGameUIElement> hitTestWidgets(const HList<PSharedPtr<JGGameWidget>>& widgets, const HVector2& point, const PGameUIElement* excluded = nullptr) const;
+ 	void activate(PSharedPtr<JGGameWidget> widget);
+ 	void deactivate(PSharedPtr<JGGameWidget> widget);
+-	// 스택에서 빠진 위젯: 관리자를 끊고 OnShutdown, 트리를 비운다(다시 Push 하면 OnInitialize 부터).
++	// 스택에서 빠진 위젯: 묶음을 취소하고 관리자를 끊고 OnShutdown, 트리를 비운다(다시 Push 하면 OnInitialize 부터).
+ 	void retire(PSharedPtr<JGGameWidget> widget);
++	// 그 레이어에서 그릴 위젯을 아래부터 덧붙인다: (맨 위가 열림 전환 중이면 그 바로 아래), 맨 위, 닫힘 전환 중인 위젯.
++	void getVisibleWidgets(EGameUILayer layer, HList<PSharedPtr<JGGameWidget>>& outWidgets) const;
++	// 닫힘 전환 목록에서 뺀다(없으면 아무것도 하지 않는다).
++	void removeClosing(const JGGameWidget* widget);
++	bool hasClosingWidgets() const;
+ 	void setHovered(const PSharedPtr<PGameUIElement>& element);
+ 	// 호버 · 누름(캡처) · 끌기 후보를 풀고 끌기를 취소한다. 스택을 바꾸는 일은 맨 먼저 부른다(취소 처리기가 스택을 바꿀 수 있다).
+ 	void resetPointerState();
+--- main/GameUIManager.cpp
++++ gg16/GameUIManager.cpp
+@@ -136,13 +136,26 @@
+ 
+ PGameUIManager::~PGameUIManager()
+ {
+-	// 훅은 부르지 않는다(종료 중일 수 있다). 남은 위젯이 사라진 관리자를 가리키지 않게만 끊는다. 정상 경로는 Shutdown 이 먼저 돈다.
+-	for (HList<PSharedPtr<JGGameWidget>>& stack : _layers)
++	// 훅은 부르지 않는다(종료 중일 수 있다). 남은 위젯 · 묶음이 사라진 관리자를 가리키지 않게만 끊는다. 정상 경로는 Shutdown 이 먼저 돈다.
++	auto detach = [](PSharedPtr<JGGameWidget>& widget)
++	{
++		widget->_manager  = nullptr;
++		widget->_bActive  = false;
++		widget->_bClosing = false;
++		for (PSharedPtr<PGameUITimeline>& timeline : widget->_timelines)
++		{
++			timeline->_manager = nullptr;
++		}
++	};
++	for (int32 layerIndex = 0; layerIndex < (int32)EGameUILayer::Count; ++layerIndex)
+ 	{
+-		for (PSharedPtr<JGGameWidget>& widget : stack)
++		for (PSharedPtr<JGGameWidget>& widget : _layers[layerIndex])
++		{
++			detach(widget);
++		}
++		for (PSharedPtr<JGGameWidget>& widget : _closing[layerIndex])
+ 		{
+-			widget->_manager = nullptr;
+-			widget->_bActive = false;
++			detach(widget);
+ 		}
+ 	}
+ }
+@@ -177,7 +190,8 @@
+ 		JG_LOG(GameUI, ELogLevel::Error, "PushWidget: bad layer %d", (int32)layer);
+ 		return false;
+ 	}
+-	if (widget->_manager != nullptr)
++	// 스택에 있으면 올리지 않는다. 이 관리자에서 닫힘 전환 중이면 다시 연다.
++	if (widget->_manager != nullptr && (widget->_bClosing == false || widget->_manager != this))
+ 	{
+ 		JG_LOG(GameUI, ELogLevel::Warning, "PushWidget: %s is already in the %s stack", widget->GetType().GetName().ToString(), PString(GetLayerName(widget->_layer)));
+ 		return false;
+@@ -185,12 +199,20 @@
+ 
+ 	// 끌기 취소 처리기가 스택을 바꿀 수 있으므로 포인터 상태를 먼저 풀고 다시 본다.
+ 	resetPointerState();
+-	if (widget->_manager != nullptr)
++	if (widget->_manager != nullptr && (widget->_bClosing == false || widget->_manager != this))
+ 	{
+ 		return false;
+ 	}
+ 	++_stackVersion;
+ 
++	// 닫힘 전환 중이었다: 목록에서 빼고 지금 모습에서 다시 연다(초기화된 그대로라 OnInitialize · OnShutdown 없음).
++	const bool bReopen = widget->_bClosing;
++	if (bReopen)
++	{
++		removeClosing(widget.GetRawPointer());
++		widget->_bClosing = false;
++	}
++
+ 	widget->_manager = this;
+ 	widget->_layer   = layer;
+ 	if (widget->_bInitialized == false)
+@@ -205,7 +227,10 @@
+ 		deactivate(stack.back());
+ 	}
+ 	stack.push_back(widget);
+-	JG_LOG(GameUI, ELogLevel::Info, "GameUI push %s on %s (stack %d)", widget->GetType().GetName().ToString(), PString(GetLayerName(layer)), (int32)stack.size());
++	JG_LOG(GameUI, ELogLevel::Info, "GameUI push %s on %s (stack %d)%s", widget->GetType().GetName().ToString(), PString(GetLayerName(layer)), (int32)stack.size(),
++		PString(bReopen ? " - reopened while closing" : ""));
++	// 열림 전환은 OnActivated 전에 건다(첫 그리기가 닫힌 모습에서 시작한다).
++	widget->beginTransition(true, bReopen);
+ 	activate(widget);
+ 	return true;
+ }
+@@ -244,8 +269,32 @@
+ 
+ 	stack.erase(found);
+ 	JG_LOG(GameUI, ELogLevel::Info, "GameUI remove %s from %s (stack %d)", widget->GetType().GetName().ToString(), PString(GetLayerName(widget->_layer)), (int32)stack.size());
++
++	// 보이던 위젯(맨 위)이고 닫힘 전환이 있으면: 전환이 끝날 때까지 그 레이어 맨 위에 그린 뒤 내린다(입력 · 뒤로가기는 이미 받지 않는다).
++	// 닫히는 중 표시는 OnDeactivated 전에 한다 — 훅 안에서 IsClosing() 이 true(닫는 모습 트윈을 걸면 닫히는 동안 돈다).
++	const bool bCloseWithTransition = bWasTop && widget->_closeTransition.IsEnabled();
++	if (bCloseWithTransition)
++	{
++		widget->_bClosing = true;
++		_closing[(int32)widget->_layer].push_back(widget);
++	}
+ 	deactivate(widget);
+-	retire(widget);
++
++	if (bCloseWithTransition == false)
++	{
++		retire(widget);
++	}
++	else if (widget->_bClosing && widget->_manager == this)
++	{
++		// 훅이 다시 열었거나(PushWidget) 비웠으면(ClearLayer) 여기서 할 일이 없다.
++		widget->beginTransition(false, true);
++		if (widget->_bClosing && widget->isTransitionPlaying() == false)
++		{
++			// 움직일 것이 없는 전환(닫힌 모습 = 열린 모습)은 바로 끝난다.
++			removeClosing(widget.GetRawPointer());
++			retire(widget);
++		}
++	}
+ 
+ 	if (bWasTop && stack.empty() == false)
+ 	{
+@@ -261,8 +310,9 @@
+ 		return;
+ 	}
+ 
+-	HList<PSharedPtr<JGGameWidget>>& stack = _layers[(int32)layer];
+-	if (stack.empty())
++	HList<PSharedPtr<JGGameWidget>>& stack   = _layers[(int32)layer];
++	HList<PSharedPtr<JGGameWidget>>& closing = _closing[(int32)layer];
++	if (stack.empty() && closing.empty())
+ 	{
+ 		return;
+ 	}
+@@ -270,11 +320,17 @@
+ 	// 끌기 취소 처리기가 스택을 바꿀 수 있으므로 포인터 상태를 먼저 푼다.
+ 	resetPointerState();
+ 
+-	// 아래 위젯이 잠깐 활성이 되지 않도록 한 번에 비우고 위에서부터 내린다.
++	// 아래 위젯이 잠깐 활성이 되지 않도록 한 번에 비우고 위에서부터 내린다. 닫힘 전환 중인 위젯(맨 위에 그려지던)은 전환 없이 먼저 내린다.
++	HList<PSharedPtr<JGGameWidget>> closingWidgets = closing;
++	closing.clear();
+ 	HList<PSharedPtr<JGGameWidget>> widgets = stack;
+ 	stack.clear();
+ 	++_stackVersion;
+ 
++	for (auto it = closingWidgets.rbegin(); it != closingWidgets.rend(); ++it)
++	{
++		retire(*it);
++	}
+ 	for (auto it = widgets.rbegin(); it != widgets.rend(); ++it)
+ 	{
+ 		deactivate(*it);
+@@ -357,23 +413,35 @@
+ 		_scale = HMath::Min(targetSize.x / _referenceSize.x, targetSize.y / _referenceSize.y);
+ 	}
+ 
+-	// 보이는 위젯(각 스택 맨 위)만 배치한다. 가려진 위젯은 맨 위가 될 때 다시 배치된다.
++	// 보이는 위젯(각 스택 맨 위 · 전환 중에 함께 그리는 위젯)만 배치한다. 가려진 위젯은 맨 위가 될 때 다시 배치된다.
++	// 루트는 화면 전체이고 피벗은 가운데다(전환 배율이 화면 가운데를 기준으로 한다).
+ 	const HVector2 logicalSize = GetLogicalSize();
+-	for (HList<PSharedPtr<JGGameWidget>>& stack : _layers)
++	HList<PSharedPtr<JGGameWidget>> visibleWidgets;
++	for (int32 layerIndex = 0; layerIndex < (int32)EGameUILayer::Count; ++layerIndex)
+ 	{
+-		if (stack.empty())
+-		{
+-			continue;
+-		}
+-		PSharedPtr<PGameUIElement> root = stack.back()->_root;
+-		root->_anchor   = HVector2(0.0f, 0.0f);
+-		root->_pivot    = HVector2(0.0f, 0.0f);
++		getVisibleWidgets((EGameUILayer)layerIndex, visibleWidgets);
++	}
++	for (PSharedPtr<JGGameWidget>& widget : visibleWidgets)
++	{
++		PSharedPtr<PGameUIElement> root = widget->_root;
++		root->_anchor   = HVector2(0.5f, 0.5f);
++		root->_pivot    = HVector2(0.5f, 0.5f);
+ 		root->_position = HVector2(0.0f, 0.0f);
+ 		root->_size     = logicalSize;
+ 		root->layout(HRect(0.0f, 0.0f, logicalSize.x, logicalSize.y));
+ 	}
+ }
+ 
++void PGameUIManager::SetTweenTimeScale(float32 timeScale)
++{
++	_tweenTimeScale = HMath::Max(timeScale, 0.0f);
++}
++
++float32 PGameUIManager::GetTweenTimeScale() const
++{
++	return _tweenTimeScale;
++}
++
+ void PGameUIManager::Update(float32 deltaSeconds)
+ {
+ 	// 입력을 받지 못하게 된 입력란(위젯이 빠지거나 덮임 · 안 보임 · 꺼짐)은 포커스를 푼다.
+@@ -383,7 +451,7 @@
+ 		ClearTextInputFocus();
+ 	}
+ 
+-	// 훅 안에서 스택이 바뀔 수 있으므로 사본으로 돈다. 그사이 빠지거나 덮인 위젯은 건너뛴다.
++	// 훅 · 묶음 함수 안에서 스택이 바뀔 수 있으므로 사본으로 돈다. 그사이 빠지거나 덮인 위젯은 건너뛴다.
+ 	HList<PSharedPtr<JGGameWidget>> activeWidgets;
+ 	for (HList<PSharedPtr<JGGameWidget>>& stack : _layers)
+ 	{
+@@ -393,18 +461,48 @@
+ 		}
+ 	}
+ 
++	// 묶음(트윈 · 전환)은 시간 배율을 곱한 dt 로 먼저 진행한다(OnUpdate 가 이번 프레임 값을 본다). OnUpdate 는 그대로의 dt.
++	const float32 tweenSeconds = deltaSeconds * _tweenTimeScale;
+ 	for (PSharedPtr<JGGameWidget>& widget : activeWidgets)
+ 	{
+ 		if (widget->_bActive && widget->_manager == this)
+ 		{
++			widget->tickTimelines(tweenSeconds);
++		}
++		if (widget->_bActive && widget->_manager == this)
++		{
+ 			widget->OnUpdate(deltaSeconds);
+ 		}
+ 	}
++
++	// 닫힘 전환 중인 위젯: 묶음을 진행하고, 전환이 끝났으면 내린다(OnShutdown). 그사이 다시 열린 위젯은 건너뛴다.
++	HList<PSharedPtr<JGGameWidget>> closingWidgets;
++	for (HList<PSharedPtr<JGGameWidget>>& closing : _closing)
++	{
++		for (PSharedPtr<JGGameWidget>& widget : closing)
++		{
++			closingWidgets.push_back(widget);
++		}
++	}
++	for (PSharedPtr<JGGameWidget>& widget : closingWidgets)
++	{
++		if (widget->_bClosing == false || widget->_manager != this)
++		{
++			continue;
++		}
++		widget->tickTimelines(tweenSeconds);
++		if (widget->_bClosing && widget->_manager == this && widget->isTransitionPlaying() == false)
++		{
++			removeClosing(widget.GetRawPointer());
++			JG_LOG(GameUI, ELogLevel::Info, "GameUI closed %s on %s", widget->GetType().GetName().ToString(), PString(GetLayerName(widget->_layer)));
++			retire(widget);
++		}
++	}
+ }
+ 
+ void PGameUIManager::Render(const PSharedPtr<IRawTexture>& target)
+ {
+-	if (GetWidgetCount() == 0 || target.IsValid() == false || target->IsValid() == false)
++	if ((GetWidgetCount() == 0 && hasClosingWidgets() == false) || target.IsValid() == false || target->IsValid() == false)
+ 	{
+ 		return;
+ 	}
+@@ -436,13 +534,15 @@
+ 	context.Clip     = HRect(0.0f, 0.0f, targetSize.x, targetSize.y);
+ 	context.Manager  = this;
+ 
+-	// 레이어 아래부터, 각 스택의 맨 위 위젯만(스택 아래 위젯은 가려져 보이지 않는다).
+-	for (HList<PSharedPtr<JGGameWidget>>& stack : _layers)
++	// 레이어 아래부터, 각 스택의 맨 위 위젯만(스택 아래 위젯은 가려져 보이지 않는다 — 맨 위가 열림 전환 중이면 그 바로 아래도), 그 위에 닫힘 전환 중인 위젯.
++	HList<PSharedPtr<JGGameWidget>> visibleWidgets;
++	for (int32 layerIndex = 0; layerIndex < (int32)EGameUILayer::Count; ++layerIndex)
+ 	{
+-		if (stack.empty() == false)
+-		{
+-			stack.back()->_root->buildDraw(context);
+-		}
++		getVisibleWidgets((EGameUILayer)layerIndex, visibleWidgets);
++	}
++	for (PSharedPtr<JGGameWidget>& widget : visibleWidgets)
++	{
++		widget->_root->buildDraw(context);
+ 	}
+ }
+ 
+@@ -930,6 +1030,7 @@
+ 	_defaultTextStyle      = HGameUITextStyle();
+ 	_defaultButtonStyle    = HGameUIButtonStyle();
+ 	_defaultTextInputStyle = HGameUITextInputStyle();
++	_tweenTimeScale        = 1.0f;
+ 	_fonts.clear();
+ 	_textures.clear();
+ }
+@@ -1006,12 +1107,63 @@
+ 
+ void PGameUIManager::retire(PSharedPtr<JGGameWidget> widget)
+ {
++	// 묶음(전환 포함)은 OnShutdown 전에 취소한다(취소 알림 처리기가 아직 관리자를 쓸 수 있다). 닫힘 표시는 먼저 지운다 —
++	// 처리기가 이 위젯을 다시 Push 해도 "닫히는 중 다시 열기"로 받지 않는다.
++	widget->_bClosing = false;
++	widget->cancelTimelines();
+ 	widget->_manager = nullptr;
+ 	widget->OnShutdown();
+ 	widget->_root->ClearChildren();
++	// 전환이 남긴 루트 모습을 처음으로(다시 Push 하면 처음부터).
++	widget->_root->SetOpacity(1.0f);
++	widget->_root->ClearRenderTransform();
+ 	widget->_bInitialized = false;
+ }
+ 
++void PGameUIManager::getVisibleWidgets(EGameUILayer layer, HList<PSharedPtr<JGGameWidget>>& outWidgets) const
++{
++	const HList<PSharedPtr<JGGameWidget>>& stack = _layers[(int32)layer];
++	if (stack.empty() == false)
++	{
++		// 맨 위가 열림 전환 중이면 바로 아래 위젯도 그린다(새 화면이 그 위로 나타난다. 아래 위젯은 덮여 멈춘 모습).
++		const PSharedPtr<JGGameWidget>& top = stack.back();
++		if (stack.size() >= 2 && top->isTransitionPlaying())
++		{
++			outWidgets.push_back(stack[stack.size() - 2]);
++		}
++		outWidgets.push_back(top);
++	}
++	for (const PSharedPtr<JGGameWidget>& widget : _closing[(int32)layer])
++	{
++		outWidgets.push_back(widget);
++	}
++}
++
++void PGameUIManager::removeClosing(const JGGameWidget* widget)
++{
++	HList<PSharedPtr<JGGameWidget>>& closing = _closing[(int32)widget->_layer];
++	for (auto it = closing.begin(); it != closing.end(); ++it)
++	{
++		if (it->GetRawPointer() == widget)
++		{
++			closing.erase(it);
++			return;
++		}
++	}
++}
++
++bool PGameUIManager::hasClosingWidgets() const
++{
++	for (const HList<PSharedPtr<JGGameWidget>>& closing : _closing)
++	{
++		if (closing.empty() == false)
++		{
++			return true;
++		}
++	}
++	return false;
++}
++
+ void PGameUIManager::setHovered(const PSharedPtr<PGameUIElement>& element)
+ {
+ 	PSharedPtr<PGameUIElement> previous = _hovered.Pin();
+--- main/GameUI.h
++++ gg16/GameUI.h
+@@ -22,6 +22,7 @@
+ #include "UI/GameUIStyle.h"
+ #include "UI/GameUIManager.h"
+ #include "UI/GameWidget.h"
++#include "UI/GameUITween.h"
+ #include "UI/GameUIElement.h"
+ #include "UI/GameUIImage.h"
+ #include "UI/GameUIText.h"
+--- main/GameUISelfTest.cpp
++++ gg16/GameUISelfTest.cpp
+@@ -94,6 +94,7 @@
+ 		int32           Updates     = 0;
+ 		bool            bCustomBack = false;     // true 면 기본(닫기) 대신 bBackResult 만 돌려준다
+ 		bool            bBackResult = false;
++		bool            bClosingAtDeactivate = false;   // 마지막 OnDeactivated 때 IsClosing()
+ 
+ 	protected:
+ 		virtual void OnInitialize() override
+@@ -110,6 +111,7 @@
+ 		}
+ 		virtual void OnDeactivated() override
+ 		{
++			bClosingAtDeactivate = IsClosing();
+ 			record("deactivate");
+ 		}
+ 		virtual void OnUpdate(float32 deltaSeconds) override
+@@ -185,6 +187,67 @@
+ 		return manager;
+ 	}
+ 
++	// 묶음 끝 알림 기록(GG-16).
++	struct HTimelineLog
++	{
++		int32 Finished = 0;
++		int32 Canceled = 0;
++	};
++
++	void watch(PSharedPtr<PGameUITimeline> timeline, HTimelineLog& log)
++	{
++		timeline->OnFinished.AddLambda([&log](bool bCanceled)
++			{
++				++log.Finished;
++				if (bCanceled)
++				{
++					++log.Canceled;
++				}
++			});
++	}
++
++	// 위젯 루트에 색 사각형을 붙인다(그리기 목록에서 색으로 찾는다).
++	PSharedPtr<PGameUIImage> addPanel(PSharedPtr<JGGameWidget> widget, const char* name, const HLinearColor& color, const HRect& rect)
++	{
++		PSharedPtr<PGameUIImage> panel = widget->AddChild<PGameUIImage>(PName(name));
++		panel->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(rect.left, rect.top), HVector2(rect.right - rect.left, rect.bottom - rect.top));
++		panel->SetColor(color);
++		return panel;
++	}
++
++	// 그 색(RGB)으로 그린 첫 사각형의 첫 정점 번호. 없으면 -1.
++	int32 findQuad(const HGameUIDrawList& list, const HLinearColor& color)
++	{
++		for (size_t index = 0; index + 3 < list.Vertices.size(); index += 4)
++		{
++			const HLinearColor& vertexColor = list.Vertices[index].Color;
++			if (nearlyEqual(vertexColor.R, color.R, 0.001f) && nearlyEqual(vertexColor.G, color.G, 0.001f) && nearlyEqual(vertexColor.B, color.B, 0.001f))
++			{
++				return (int32)index;
++			}
++		}
++		return -1;
++	}
++
++	// 지금 그리면 그 색 사각형의 알파(불투명도가 곱해진 값). 그리지 않으면 -1.
++	float32 drawnAlpha(PSharedPtr<PGameUIManager>& manager, const HLinearColor& color)
++	{
++		HGameUIDrawList list;
++		manager->BuildDrawList(GTarget, list);
++		const int32 index = findQuad(list, color);
++		if (index < 0)
++		{
++			return -1.0f;
++		}
++		return list.Vertices[(size_t)index].Color.A;
++	}
++
++	// 검사용 게임 곡선: 끝값을 넘었다가 돌아온다(0 → 0, 0.5 → 1, 0.75 → 1.125, 1 → 1).
++	float32 overshootCurve(float32 t)
++	{
++		return 3.0f * t - 2.0f * t * t;
++	}
++
+ 	void testUtf8()
+ 	{
+ 		// A 한 € 😀
+@@ -2068,6 +2131,494 @@
+ 		manager->Shutdown();
+ 	}
+ 
++	// 요청서(ER-017) 완료 기준 (a)~(d) + 이징 · 되풀이 · 왕복 · 지연 · 시간 배율 · 겹치기 · 덮인 위젯 멈춤 · 빠질 때 취소 · 게임 곡선(GG-16)
++	void testTween()
++	{
++		// 이징: 모든 곡선이 0 에서 0, 1 에서 1. Back · Elastic 은 넘친다. 범위 밖 t 는 자른다
++		bool bEndpoints = true;
++		for (int32 ease = 0; ease < (int32)EGameUIEase::Count; ++ease)
++		{
++			const float32 start = HGameUIEase::Evaluate((EGameUIEase)ease, 0.0f);
++			const float32 end   = HGameUIEase::Evaluate((EGameUIEase)ease, 1.0f);
++			if (nearlyEqual(start, 0.0f, 0.0001f) == false || nearlyEqual(end, 1.0f, 0.0001f) == false)
++			{
++				bEndpoints = false;
++			}
++		}
++		check(bEndpoints, "tween: every ease starts at 0 and ends at 1");
++		float32 outBackMax    = 0.0f;
++		float32 inBackMin     = 0.0f;
++		float32 outElasticMax = 0.0f;
++		for (int32 i = 1; i < 100; ++i)
++		{
++			const float32 t = (float32)i / 100.0f;
++			outBackMax    = HMath::Max(outBackMax, HGameUIEase::Evaluate(EGameUIEase::OutBack, t));
++			inBackMin     = HMath::Min(inBackMin, HGameUIEase::Evaluate(EGameUIEase::InBack, t));
++			outElasticMax = HMath::Max(outElasticMax, HGameUIEase::Evaluate(EGameUIEase::OutElastic, t));
++		}
++		check(outBackMax > 1.05f && inBackMin < -0.05f && outElasticMax > 1.05f, "tween: Back and Elastic overshoot");
++		check(nearlyEqual(HGameUIEase::Evaluate(EGameUIEase::InOutQuad, 0.5f), 0.5f) && nearlyEqual(HGameUIEase::Evaluate(EGameUIEase::InQuad, 0.5f), 0.25f)
++			&& nearlyEqual(HGameUIEase::Evaluate(EGameUIEase::Linear, 2.0f), 1.0f) && nearlyEqual(HGameUIEase::Evaluate(EGameUIEase::Linear, -1.0f), 0.0f),
++			"tween: ease values and clamping");
++
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		PSharedPtr<PGameUIImage>   card    = widget->AddChild<PGameUIImage>(PName("Card"));
++		card->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.5f, 0.5f), HVector2(400.0f, 400.0f), HVector2(200.0f, 300.0f));
++
++		// (a) 0.3초 · 배율 1 → 1.3 · 불투명도 1 → 0 · InOutQuad: 0.15초에 1.15 · 0.5, 0.3초에 끝값 · 끝 알림 한 번
++		HTimelineLog logA;
++		PSharedPtr<PGameUITimeline> pop = PGameUITimeline::Parallel();
++		pop->Add(HGameUITween::To(card, EGameUITweenProperty::Scale, HVector2(1.3f, 1.3f), 0.3f, EGameUIEase::InOutQuad))
++			.Add(HGameUITween::To(card, EGameUITweenProperty::Opacity, 0.0f, 0.3f, EGameUIEase::InOutQuad));
++		watch(pop, logA);
++		widget->PlayTimeline(pop);
++		manager->Update(0.15f);
++		check(nearlyEqual(card->GetRenderTransform().Scale.x, 1.15f) && nearlyEqual(card->GetOpacity(), 0.5f) && pop->IsPlaying() && logA.Finished == 0,
++			"accept ER-017 (a): halfway values at 0.15 s");
++		manager->Update(0.15f);
++		check(nearlyEqual(card->GetRenderTransform().Scale.x, 1.3f) && nearlyEqual(card->GetOpacity(), 0.0f) && pop->IsFinished() && logA.Finished == 1 && logA.Canceled == 0,
++			"accept ER-017 (a): end values and one finished event at 0.3 s");
++		manager->Update(0.1f);
++		check(logA.Finished == 1, "accept ER-017 (a): the finished event comes once");
++
++		// (b) 차례(A 0.2 → 기다리기 0.1 → B 0.2)는 0.5초에 끝나고 함수는 순서대로 불린다
++		HList<PString> calls;
++		HTimelineLog   logB;
++		PSharedPtr<PGameUITimeline> flight = PGameUITimeline::Sequence();
++		flight->Call([&calls]()
++				{
++					calls.push_back(PString("start"));
++				})
++			.Add(HGameUITween::FromTo(card, EGameUITweenProperty::Translation, HVector2(-100.0f, 0.0f), HVector2(0.0f, 0.0f), 0.2f, EGameUIEase::Linear))
++			.Call([&calls]()
++				{
++					calls.push_back(PString("A"));
++				})
++			.Wait(0.1f)
++			.Call([&calls]()
++				{
++					calls.push_back(PString("wait"));
++				})
++			.Add(HGameUITween::FromTo(card, EGameUITweenProperty::Angle, 0.0f, 90.0f, 0.2f, EGameUIEase::Linear))
++			.Call([&calls]()
++				{
++					calls.push_back(PString("B"));
++				});
++		watch(flight, logB);
++		check(nearlyEqual(flight->GetDuration(), 0.5f), "tween: a sequence lasts as long as its steps together");
++		widget->PlayTimeline(flight);
++		check(joinEvents(calls) == PString("start") && nearlyEqual(card->GetRenderTransform().Translation.x, -100.0f), "tween: playing applies the first step at once");
++		manager->Update(0.1f);
++		check(nearlyEqual(card->GetRenderTransform().Translation.x, -50.0f), "tween: translation moves in a sequence");
++		manager->Update(0.1f);
++		check(joinEvents(calls) == PString("start A"), "accept ER-017 (b): the call after A comes when A ends (0.2 s)");
++		manager->Update(0.1f);
++		check(joinEvents(calls) == PString("start A wait"), "accept ER-017 (b): the wait ends at 0.3 s");
++		manager->Update(0.1f);
++		check(nearlyEqual(card->GetRenderTransform().Angle, 45.0f) && flight->IsPlaying(), "accept ER-017 (b): B runs after the wait");
++		manager->Update(0.1f);
++		check(joinEvents(calls) == PString("start A wait B") && flight->IsFinished() && logB.Finished == 1 && logB.Canceled == 0 && nearlyEqual(card->GetRenderTransform().Angle, 90.0f),
++			"accept ER-017 (b): the sequence ends at 0.5 s with the calls in order");
++
++		// (b) 동시 묶음은 가장 긴 단계와 함께 끝난다
++		HTimelineLog logP;
++		PSharedPtr<PGameUITimeline> together = PGameUITimeline::Parallel();
++		together->Add(HGameUITween::To(card, EGameUITweenProperty::Position, HVector2(400.0f, 300.0f), 0.2f, EGameUIEase::Linear))
++			.Add(HGameUITween::To(card, EGameUITweenProperty::Size, HVector2(100.0f, 150.0f), 0.5f, EGameUIEase::Linear))
++			.Wait(0.3f);
++		watch(together, logP);
++		check(nearlyEqual(together->GetDuration(), 0.5f), "tween: a parallel timeline lasts as long as its longest step");
++		widget->PlayTimeline(together);
++		manager->Update(0.25f);
++		check(nearlyEqual(card->GetPosition().y, 300.0f) && nearlyEqual(card->GetSize().x, 150.0f) && together->IsPlaying(), "tween: parallel steps run together");
++		manager->Update(0.2f);
++		check(together->IsPlaying() && logP.Finished == 0, "accept ER-017 (b): a parallel timeline waits for its longest step");
++		manager->Update(0.1f);
++		check(together->IsFinished() && logP.Finished == 1 && nearlyEqual(card->GetSize().y, 150.0f), "accept ER-017 (b): a parallel timeline ends with its longest step");
++
++		// (c) 도중에 대상 요소를 지우면 오류 없이 취소로 끝난다
++		PSharedPtr<PGameUIImage> doomed = widget->AddChild<PGameUIImage>(PName("Doomed"));
++		HTimelineLog logC;
++		PSharedPtr<PGameUITimeline> doomedFade = widget->PlayTween(HGameUITween::To(doomed, EGameUITweenProperty::Opacity, 0.0f, 1.0f));
++		watch(doomedFade, logC);
++		manager->Update(0.3f);
++		widget->GetRoot()->RemoveChild(doomed);
++		doomed = nullptr;
++		manager->Update(0.1f);
++		check(doomedFade->IsFinished() && logC.Finished == 1 && logC.Canceled == 1, "accept ER-017 (c): a vanished target ends the timeline as canceled");
++
++		// (c) 같은 속성에 다른 묶음의 트윈이 시작되면 옛 묶음은 취소로 끝나고, 새 트윈은 지금 값에서 시작한다
++		card->SetOpacity(1.0f);
++		HTimelineLog logOld;
++		HTimelineLog logNew;
++		PSharedPtr<PGameUITimeline> oldFade = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Opacity, 0.0f, 1.0f, EGameUIEase::Linear));
++		watch(oldFade, logOld);
++		manager->Update(0.5f);
++		PSharedPtr<PGameUITimeline> newFade = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Opacity, 1.0f, 0.5f, EGameUIEase::Linear));
++		watch(newFade, logNew);
++		manager->Update(0.25f);
++		check(logOld.Finished == 1 && logOld.Canceled == 1 && nearlyEqual(card->GetOpacity(), 0.75f) && newFade->IsPlaying(),
++			"accept ER-017 (c): a new tween on the same property replaces the old timeline and starts from the current value");
++		manager->Update(0.25f);
++		check(logNew.Finished == 1 && logNew.Canceled == 0 && nearlyEqual(card->GetOpacity(), 1.0f), "tween: the replacing tween finishes normally");
++
++		// 같은 묶음 안의 단계끼리는 막지 않는다(되풀이 · 자식 묶음)
++		HTimelineLog logBlink;
++		PSharedPtr<PGameUITimeline> blink = PGameUITimeline::Sequence();
++		blink->Add(HGameUITween::To(card, EGameUITweenProperty::Opacity, 0.0f, 0.1f, EGameUIEase::Linear))
++			.Add(HGameUITween::To(card, EGameUITweenProperty::Opacity, 1.0f, 0.1f, EGameUIEase::Linear))
++			.SetLoops(3);
++		watch(blink, logBlink);
++		widget->PlayTimeline(blink);
++		for (int32 frame = 0; frame < 7; ++frame)
++		{
++			manager->Update(0.1f);
++		}
++		check(logBlink.Finished == 1 && logBlink.Canceled == 0 && nearlyEqual(card->GetOpacity(), 1.0f), "tween: steps of one timeline on the same property do not cancel each other");
++		HTimelineLog logShared;
++		PSharedPtr<PGameUITimeline> inner = PGameUITimeline::Sequence();
++		inner->Add(HGameUITween::FromTo(card, EGameUITweenProperty::Opacity, 1.0f, 0.0f, 0.1f, EGameUIEase::Linear));
++		PSharedPtr<PGameUITimeline> outer = PGameUITimeline::Parallel();
++		outer->Add(inner).Add(HGameUITween::FromTo(card, EGameUITweenProperty::Opacity, 0.0f, 1.0f, 0.3f, EGameUIEase::Linear));
++		watch(outer, logShared);
++		widget->PlayTimeline(outer);
++		for (int32 frame = 0; frame < 4; ++frame)
++		{
++			manager->Update(0.1f);
++		}
++		check(logShared.Finished == 1 && logShared.Canceled == 0 && nearlyEqual(card->GetOpacity(), 1.0f), "tween: a finished child timeline does not take a property from its parent");
++
++		// (d) 끝으로 건너뛰기: 남은 트윈은 끝값, 남은 함수는 순서대로, 끝 알림 한 번(취소 아님)
++		calls.clear();
++		HTimelineLog logSkip;
++		PSharedPtr<PGameUITimeline> intro = PGameUITimeline::Sequence();
++		intro->Add(HGameUITween::FromTo(card, EGameUITweenProperty::Position, HVector2(0.0f, 0.0f), HVector2(200.0f, 0.0f), 1.0f, EGameUIEase::Linear))
++			.Call([&calls]()
++				{
++					calls.push_back(PString("x"));
++				})
++			.Wait(1.0f)
++			.Add(HGameUITween::To(card, EGameUITweenProperty::Angle, 30.0f, 1.0f))
++			.Call([&calls]()
++				{
++					calls.push_back(PString("y"));
++				});
++		watch(intro, logSkip);
++		widget->PlayTimeline(intro);
++		manager->Update(0.2f);
++		intro->Skip();
++		check(nearlyEqual(card->GetPosition().x, 200.0f) && nearlyEqual(card->GetRenderTransform().Angle, 30.0f) && joinEvents(calls) == PString("x y")
++			&& intro->IsFinished() && logSkip.Finished == 1 && logSkip.Canceled == 0,
++			"accept ER-017 (d): Skip jumps to the end values, runs the remaining calls in order and finishes once");
++		intro->Skip();
++		manager->Update(0.1f);
++		check(logSkip.Finished == 1, "accept ER-017 (d): Skip after the end does nothing");
++
++		// 멈추기: 값은 그 자리, 남은 단계 · 함수는 하지 않고 취소로 끝
++		calls.clear();
++		HTimelineLog logStop;
++		PSharedPtr<PGameUITimeline> slide = PGameUITimeline::Sequence();
++		slide->Add(HGameUITween::FromTo(card, EGameUITweenProperty::Position, HVector2(0.0f, 0.0f), HVector2(100.0f, 0.0f), 1.0f, EGameUIEase::Linear))
++			.Call([&calls]()
++				{
++					calls.push_back(PString("never"));
++				});
++		watch(slide, logStop);
++		widget->PlayTimeline(slide);
++		manager->Update(0.5f);
++		slide->Stop();
++		manager->Update(0.5f);
++		check(nearlyEqual(card->GetPosition().x, 50.0f) && calls.empty() && logStop.Finished == 1 && logStop.Canceled == 1, "tween: Stop leaves the value in place, skips the rest and finishes as canceled");
++
++		// 되풀이 · 왕복 · 끝없는 되풀이의 건너뛰기
++		int32 laps = 0;
++		HTimelineLog logLoop;
++		PSharedPtr<PGameUITimeline> loop = PGameUITimeline::Sequence();
++		loop->Add(HGameUITween::FromTo(card, EGameUITweenProperty::Opacity, 0.0f, 1.0f, 0.1f, EGameUIEase::Linear))
++			.Call([&laps]()
++				{
++					++laps;
++				})
++			.SetLoops(3);
++		watch(loop, logLoop);
++		widget->PlayTimeline(loop);
++		manager->Update(0.25f);
++		check(laps == 2 && loop->IsPlaying() && nearlyEqual(card->GetOpacity(), 0.5f), "tween: loops repeat the steps");
++		manager->Update(0.1f);
++		check(laps == 3 && loop->IsFinished() && logLoop.Finished == 1, "tween: a timeline with 3 loops ends after the third pass");
++		HTimelineLog logPulse;
++		PSharedPtr<PGameUITimeline> pulse = PGameUITimeline::Sequence();
++		pulse->Add(HGameUITween::FromTo(card, EGameUITweenProperty::Scale, HVector2(1.0f, 1.0f), HVector2(2.0f, 2.0f), 1.0f, EGameUIEase::Linear)).SetLoops(0, true);
++		watch(pulse, logPulse);
++		widget->PlayTimeline(pulse);
++		manager->Update(1.25f);
++		check(pulse->IsPlaying() && nearlyEqual(card->GetRenderTransform().Scale.x, 1.75f), "tween: a yoyo loop plays backwards on the second pass");
++		manager->Update(1.25f);
++		check(pulse->IsPlaying() && nearlyEqual(card->GetRenderTransform().Scale.x, 1.5f), "tween: an endless yoyo keeps going");
++		pulse->Skip();
++		check(pulse->IsFinished() && logPulse.Finished == 1 && logPulse.Canceled == 0 && nearlyEqual(card->GetRenderTransform().Scale.x, 2.0f),
++			"tween: Skip ends an endless loop at the end of the current pass");
++
++		// 지연: 그동안 움직이지 않고, 시작값이 없으면 실제로 시작하는 순간의 값에서 시작한다
++		card->SetOpacity(1.0f);
++		PSharedPtr<PGameUITimeline> late = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Opacity, 0.0f, 0.2f, EGameUIEase::Linear).SetDelay(0.1f));
++		manager->Update(0.05f);
++		check(nearlyEqual(card->GetOpacity(), 1.0f), "tween: nothing moves during the delay");
++		card->SetOpacity(0.6f);
++		manager->Update(0.15f);
++		check(nearlyEqual(card->GetOpacity(), 0.3f), "tween: without a From value a tween starts from the value when it really starts");
++		late->Skip();
++
++		// 시간 배율(관리자): 묶음만 느려지거나 멈춘다
++		manager->SetTweenTimeScale(0.5f);
++		PSharedPtr<PGameUITimeline> slow = widget->PlayTween(HGameUITween::FromTo(card, EGameUITweenProperty::Position, HVector2(0.0f, 0.0f), HVector2(100.0f, 0.0f), 1.0f, EGameUIEase::Linear));
++		manager->Update(0.5f);
++		check(nearlyEqual(card->GetPosition().x, 25.0f), "tween: the manager time scale slows timelines");
++		manager->SetTweenTimeScale(0.0f);
++		manager->Update(0.5f);
++		check(nearlyEqual(card->GetPosition().x, 25.0f) && slow->IsPlaying(), "tween: time scale 0 freezes timelines");
++		manager->SetTweenTimeScale(-1.0f);
++		check(manager->GetTweenTimeScale() == 0.0f, "tween: a negative time scale is 0");
++		manager->SetTweenTimeScale(1.0f);
++		slow->Skip();
++
++		// 게임 곡선: 끝값을 넘었다가 돌아와도 된다
++		PSharedPtr<PGameUITimeline> bounce = widget->PlayTween(HGameUITween::FromTo(card, EGameUITweenProperty::Position, HVector2(0.0f, 0.0f), HVector2(100.0f, 0.0f), 1.0f)
++			.SetCurve(&overshootCurve));
++		manager->Update(0.75f);
++		check(nearlyEqual(card->GetPosition().x, 112.5f), "tween: a game curve can overshoot");
++		manager->Update(0.25f);
++		check(nearlyEqual(card->GetPosition().x, 100.0f) && bounce->IsFinished(), "tween: a game curve ends at its end value");
++
++		// 색: 그림은 자기 색, 정하지 않은 글은 관리자 기본 글자 색에서 시작한다. 색이 없는 요소(버튼)는 그대로
++		HGameUITextStyle textStyle;
++		textStyle.Color = HLinearColor(0.2f, 0.4f, 0.6f, 1.0f);
++		manager->SetDefaultTextStyle(textStyle);
++		PSharedPtr<PGameUIText> label = widget->AddChild<PGameUIText>(PName("Label"));
++		check(isColor(label->GetColor(manager.GetRawPointer()), textStyle.Color), "tween: a text element reads its color (the manager default when it has none)");
++		widget->PlayTween(HGameUITween::To(label, EGameUITweenProperty::Color, HLinearColor(1.0f, 0.0f, 0.0f, 1.0f), 1.0f, EGameUIEase::Linear));
++		card->SetColor(HLinearColor(0.0f, 0.0f, 1.0f, 1.0f));
++		widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Color, HLinearColor(1.0f, 0.0f, 0.0f, 0.0f), 1.0f, EGameUIEase::Linear));
++		manager->Update(0.5f);
++		check(isColor(label->GetColor(), HLinearColor(0.6f, 0.2f, 0.3f, 1.0f)) && isColor(card->GetColor(), HLinearColor(0.5f, 0.0f, 0.5f, 0.5f)), "tween: color tweens on text and images");
++		PSharedPtr<PGameUIButton> plainButton = widget->AddChild<PGameUIButton>(PName("PlainButton"));
++		PSharedPtr<PGameUITimeline> tint = widget->PlayTween(HGameUITween::To(plainButton, EGameUITweenProperty::Color, HLinearColor(1.0f, 0.0f, 0.0f, 1.0f), 0.1f));
++		manager->Update(0.6f);
++		check(tint->IsFinished() && plainButton->HasStyle() == false, "tween: a color tween on an element without a color does nothing");
++
++		// 끝 알림 처리기에서 다음 묶음을 시작해도 된다(다음 진행부터 돈다). 재생 중에는 단계를 더하지 않는다
++		PSharedPtr<PGameUITimeline> first = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Angle, 10.0f, 0.1f));
++		PSharedPtr<PGameUITimeline> second;
++		first->OnFinished.AddLambda([&second, &widget, &card](bool)
++			{
++				second = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Angle, 20.0f, 0.1f));
++			});
++		manager->Update(0.15f);
++		check(first->IsFinished() && second.IsValid() && second->IsPlaying(), "tween: a finished handler can start another timeline");
++		manager->Update(0.1f);
++		check(second->IsFinished() && nearlyEqual(card->GetRenderTransform().Angle, 20.0f), "tween: the chained timeline runs from the next update");
++		PSharedPtr<PGameUITimeline> running = widget->PlayTween(HGameUITween::To(card, EGameUITweenProperty::Angle, 0.0f, 1.0f));
++		running->Wait(5.0f);
++		check(nearlyEqual(running->GetDuration(), 1.0f) && widget->PlayTimeline(running).GetRawPointer() == running.GetRawPointer() && running->IsPlaying(),
++			"tween: steps are not added while playing, playing again keeps it going");
++		running->Stop();
++
++		// 덮인 위젯의 묶음은 멈추고, 위젯이 빠지면 OnShutdown 전에 취소된다
++		HList<PString> events;
++		PSharedPtr<PUITestWidget> owner = makeTestWidget(events, "W");
++		manager->PushWidgetInstance(owner, EGameUILayer::Menu);
++		PSharedPtr<PGameUIImage> badge = owner->AddChild<PGameUIImage>(PName("Badge"));
++		PSharedPtr<PGameUITimeline> spin = owner->PlayTween(HGameUITween::FromTo(badge, EGameUITweenProperty::Angle, 0.0f, 100.0f, 1.0f, EGameUIEase::Linear));
++		spin->OnFinished.AddLambda([&events](bool bCanceled)
++			{
++				events.push_back(PString(bCanceled ? "spin:canceled" : "spin:done"));
++			});
++		manager->Update(0.25f);
++		PSharedPtr<PUITestWidget> cover = makeTestWidget(events, "C");
++		manager->PushWidgetInstance(cover, EGameUILayer::Menu);
++		manager->Update(0.5f);
++		check(nearlyEqual(badge->GetRenderTransform().Angle, 25.0f), "tween: a covered widget's timelines pause");
++		cover->DeactivateWidget();
++		manager->Update(0.25f);
++		check(nearlyEqual(badge->GetRenderTransform().Angle, 50.0f), "tween: they resume when the widget is on top again");
++		events.clear();
++		owner->DeactivateWidget();
++		check(joinEvents(events) == PString("W:deactivate spin:canceled W:shutdown") && spin->IsFinished(), "tween: removing the widget cancels its timelines before OnShutdown");
++
++		manager->Shutdown();
++	}
++
++	// GG-16(ER-017 나): 위젯 열림 · 닫힘 전환. 닫히는 위젯은 스택에서 바로 빠지고(입력 · 뒤로가기 없음) 전환이 끝날 때까지 그 레이어 맨 위에 그려진다
++	void testTransition()
++	{
++		HList<PString> events;
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		const HLinearColor hudColor(0.1f, 0.9f, 0.1f, 1.0f);
++		const HLinearColor hud2Color(0.1f, 0.9f, 0.9f, 1.0f);
++		const HLinearColor menuColor(0.9f, 0.1f, 0.1f, 1.0f);
++		const HLinearColor dialogColor(0.1f, 0.1f, 0.9f, 1.0f);
++		const HLinearColor dialog2Color(0.9f, 0.9f, 0.1f, 1.0f);
++		const HRect        menuRect(300.0f, 300.0f, 700.0f, 700.0f);
++
++		// (e) 전환이 없는 위젯은 지금까지와 같다: 바로 나타나고, 빼면 바로 OnShutdown
++		PSharedPtr<PUITestWidget> hud = makeTestWidget(events, "H");
++		manager->PushWidgetInstance(hud, EGameUILayer::Game);
++		addPanel(hud, "HudPanel", hudColor, HRect(0.0f, 0.0f, 100.0f, 100.0f));
++		check(nearlyEqual(drawnAlpha(manager, hudColor), 1.0f) && hud->GetOpenTransition().IsEnabled() == false, "transition: a widget without transitions appears at once");
++		PSharedPtr<PUITestWidget> plain = makeTestWidget(events, "P");
++		manager->PushWidgetInstance(plain, EGameUILayer::Menu);
++		events.clear();
++		plain->DeactivateWidget();
++		check(joinEvents(events) == PString("P:deactivate P:shutdown") && plain->IsClosing() == false && plain->IsInStack() == false && plain->bClosingAtDeactivate == false,
++			"accept ER-017 (e): without a close transition a widget shuts down at once");
++
++		// 열림: 첫 그리기부터 닫힌 모습(불투명도 0 · 배율 0.8)에서 시작해 열린 모습으로. 배율은 화면 가운데 기준. 열리는 동안 입력은 받는다
++		PSharedPtr<PUITestButtonWidget> menu = makeButtonWidget(HRect(400.0f, 400.0f, 600.0f, 500.0f));
++		menu->Events = &events;
++		menu->Tag    = PString("M");
++		menu->SetInputMode(EGameWidgetInputMode::Menu);
++		menu->SetBackHandler(true);
++		menu->SetOpenTransition(HGameUITransition::FadeScale(0.2f, 0.8f, EGameUIEase::Linear));
++		menu->SetCloseTransition(HGameUITransition::Fade(0.2f, EGameUIEase::Linear));
++		events.clear();
++		manager->PushWidgetInstance(menu, EGameUILayer::Menu);
++		addPanel(menu, "MenuPanel", menuColor, menuRect);
++		check(joinEvents(events) == PString("M:init M:activate") && nearlyEqual(menu->GetRoot()->GetOpacity(), 0.0f) && nearlyEqual(menu->GetRoot()->GetRenderTransform().Scale.x, 0.8f)
++			&& nearlyEqual(drawnAlpha(manager, menuColor), 0.0f), "accept transition: open starts from the closed look on the first draw");
++		manager->Update(0.1f);
++		HGameUIDrawList halfOpen;
++		manager->BuildDrawList(GTarget, halfOpen);
++		const int32 halfOpenQuad = findQuad(halfOpen, menuColor);
++		check(halfOpenQuad >= 0 && nearlyEqual(halfOpen.Vertices[(size_t)halfOpenQuad].Color.A, 0.5f) && nearlyEqual(halfOpen.Vertices[(size_t)halfOpenQuad].Position.x, 320.0f)
++			&& nearlyEqual(halfOpen.Vertices[(size_t)halfOpenQuad].Position.y, 320.0f), "transition: halfway open (alpha 0.5, scale 0.9 around the screen center)");
++		check(click(manager, 450.0f, 450.0f) && menu->Clicks == 1, "transition: an opening widget takes input");
++		manager->Update(0.1f);
++		check(nearlyEqual(menu->GetRoot()->GetOpacity(), 1.0f) && nearlyEqual(menu->GetRoot()->GetRenderTransform().Scale.x, 1.0f) && nearlyEqual(drawnAlpha(manager, menuColor), 1.0f),
++			"accept transition: open ends at the open look");
++
++		// 같은 스택: 맨 위가 열리는 동안 바로 아래 위젯도 그린다(덮여 멈춘 채). 끝나면 맨 위만
++		PSharedPtr<PUITestWidget> hud2 = makeTestWidget(events, "H2");
++		hud2->SetOpenTransition(HGameUITransition::Fade(0.2f, EGameUIEase::Linear));
++		manager->PushWidgetInstance(hud2, EGameUILayer::Game);
++		addPanel(hud2, "Hud2Panel", hud2Color, HRect(0.0f, 0.0f, 100.0f, 100.0f));
++		manager->Update(0.1f);
++		check(nearlyEqual(drawnAlpha(manager, hudColor), 1.0f) && nearlyEqual(drawnAlpha(manager, hud2Color), 0.5f) && hud->IsActive() == false,
++			"accept transition: while the top opens the widget below it is still drawn (inactive)");
++		manager->Update(0.1f);
++		check(drawnAlpha(manager, hudColor) < 0.0f && nearlyEqual(drawnAlpha(manager, hud2Color), 1.0f), "transition: after the open transition only the top is drawn");
++		hud2->DeactivateWidget();
++
++		// 닫힘: 스택에서 바로 빠지고(OnDeactivated, 아래 위젯이 활성) 전환이 끝날 때까지 그린 뒤 OnShutdown. 입력 · 뒤로가기는 받지 않는다
++		events.clear();
++		menu->DeactivateWidget();
++		check(joinEvents(events) == PString("M:deactivate") && menu->IsClosing() && menu->IsInStack() == false && menu->IsActive() == false
++			&& manager->GetTopWidget(EGameUILayer::Menu) == nullptr && manager->FindWidget<PUITestButtonWidget>() == nullptr && manager->GetWidgetCount() == 1,
++			"accept transition: a closing widget leaves the stack at once (OnDeactivated, OnShutdown later)");
++		check(menu->bClosingAtDeactivate && hud->bClosingAtDeactivate == false, "transition: IsClosing() is already true in OnDeactivated of a closing widget (false when covered)");
++		check(nearlyEqual(drawnAlpha(manager, menuColor), 1.0f), "accept transition: a closing widget is still drawn");
++		check(click(manager, 450.0f, 450.0f) == false && menu->Clicks == 1 && manager->IsWorldInputBlocked() == false, "accept transition: a closing widget takes no input (it goes to the world)");
++		check(manager->HandleBackAction() == false, "accept transition: a closing widget takes no back action");
++		manager->Update(0.1f);
++		check(nearlyEqual(drawnAlpha(manager, menuColor), 0.5f) && menu->IsClosing(), "transition: halfway closed");
++		events.clear();
++		manager->Update(0.1f);
++		check(joinEvents(events) == PString("M:shutdown") && menu->IsClosing() == false && drawnAlpha(manager, menuColor) < 0.0f, "accept transition: OnShutdown when the close transition ends");
++		check(nearlyEqual(menu->GetRoot()->GetOpacity(), 1.0f) && menu->GetRoot()->GetChildren().empty() && menu->GetManager() == nullptr, "transition: a closed widget's root look and tree are reset");
++
++		// 닫히는 중에 다시 Push: 지금 모습에서 다시 열린다(OnInitialize · OnShutdown 없음)
++		manager->PushWidgetInstance(menu, EGameUILayer::Menu);
++		addPanel(menu, "MenuPanel", menuColor, menuRect);
++		manager->Update(0.2f);
++		menu->DeactivateWidget();
++		manager->Update(0.1f);
++		events.clear();
++		check(manager->PushWidgetInstance(menu, EGameUILayer::Menu) && joinEvents(events) == PString("M:activate") && menu->IsClosing() == false && menu->IsInStack()
++			&& nearlyEqual(menu->GetRoot()->GetOpacity(), 0.5f), "accept transition: pushing a closing widget reopens it from its current look without OnInitialize");
++		manager->Update(0.1f);
++		check(nearlyEqual(menu->GetRoot()->GetOpacity(), 0.75f), "transition: the reopen transition runs from the current look");
++		events.clear();
++		manager->Update(1.0f);
++		check(events.empty() && nearlyEqual(menu->GetRoot()->GetOpacity(), 1.0f) && menu->IsActive() && nearlyEqual(drawnAlpha(manager, menuColor), 1.0f),
++			"accept transition: a reopened widget is not shut down by its old close transition");
++
++		// 열리는 중에 닫기: 지금 모습에서 닫힌다
++		menu->DeactivateWidget();
++		manager->Update(0.5f);
++		manager->PushWidgetInstance(menu, EGameUILayer::Menu);
++		addPanel(menu, "MenuPanel", menuColor, menuRect);
++		manager->Update(0.1f);
++		menu->DeactivateWidget();
++		check(menu->IsClosing() && nearlyEqual(menu->GetRoot()->GetOpacity(), 0.5f), "accept transition: closing during the open transition starts from the current look");
++		manager->Update(0.1f);
++		check(nearlyEqual(menu->GetRoot()->GetOpacity(), 0.25f) && menu->IsClosing(), "transition: closing from the current look");
++		events.clear();
++		manager->Update(0.1f);
++		check(joinEvents(events) == PString("M:shutdown"), "transition: a widget closed while opening shuts down after the close transition");
++
++		// 닫히는 위젯의 묶음은 계속 돈다. 시간 배율도 전환에 든다
++		manager->PushWidgetInstance(menu, EGameUILayer::Menu);
++		PSharedPtr<PGameUIImage> menuPanel = addPanel(menu, "MenuPanel", menuColor, menuRect);
++		manager->Update(0.2f);
++		menu->PlayTween(HGameUITween::FromTo(menuPanel, EGameUITweenProperty::Angle, 0.0f, 100.0f, 1.0f, EGameUIEase::Linear));
++		menu->DeactivateWidget();
++		manager->SetTweenTimeScale(0.5f);
++		manager->Update(0.2f);
++		check(nearlyEqual(menuPanel->GetRenderTransform().Angle, 10.0f) && nearlyEqual(menu->GetRoot()->GetOpacity(), 0.5f), "transition: timelines run while closing, with the time scale");
++		manager->SetTweenTimeScale(1.0f);
++
++		// 닫히는 중에 비우기 · 종료: 전환 없이 바로 OnShutdown
++		events.clear();
++		manager->ClearLayer(EGameUILayer::Menu);
++		check(joinEvents(events) == PString("M:shutdown") && menu->IsClosing() == false && drawnAlpha(manager, menuColor) < 0.0f, "accept transition: ClearLayer shuts a closing widget down at once");
++
++		// 맨 위가 닫히면 아래 위젯 위에 닫히는 위젯을 그린다. 덮인 위젯을 빼면 전환 없이 바로 OnShutdown
++		PSharedPtr<PUITestWidget> dialog = makeTestWidget(events, "D");
++		PSharedPtr<PUITestWidget> dialog2 = makeTestWidget(events, "D2");
++		dialog->SetCloseTransition(HGameUITransition::Fade(0.2f));
++		dialog2->SetCloseTransition(HGameUITransition::FadeSlide(0.2f, HVector2(0.0f, 60.0f)));
++		manager->PushWidgetInstance(dialog, EGameUILayer::Modal);
++		addPanel(dialog, "DialogPanel", dialogColor, menuRect);
++		manager->PushWidgetInstance(dialog2, EGameUILayer::Modal);
++		addPanel(dialog2, "Dialog2Panel", dialog2Color, menuRect);
++		dialog2->DeactivateWidget();
++		HGameUIDrawList closingOver;
++		manager->BuildDrawList(GTarget, closingOver);
++		check(dialog->IsActive() && dialog2->IsClosing() && findQuad(closingOver, dialogColor) >= 0 && findQuad(closingOver, dialogColor) < findQuad(closingOver, dialog2Color),
++			"accept transition: a closing widget is drawn over the widget that is now on top");
++		manager->Update(0.1f);
++		check(dialog2->GetRoot()->GetRenderTransform().Translation.y > 10.0f, "transition: a slide transition moves the root");
++		manager->Update(0.2f);
++		PSharedPtr<PUITestWidget> dialog3 = makeTestWidget(events, "D3");
++		manager->PushWidgetInstance(dialog3, EGameUILayer::Modal);
++		events.clear();
++		manager->RemoveWidget(dialog);
++		check(joinEvents(events) == PString("D:shutdown") && dialog->IsClosing() == false, "transition: removing a covered widget shuts it down without a transition");
++
++		// 움직일 것이 없는 닫힘 전환은 바로 끝난다. 열림 전환 없이 다시 열면 바로 열린 모습
++		HGameUITransition still;
++		still.Duration = 0.2f;
++		still.Opacity  = 1.0f;
++		dialog3->SetCloseTransition(still);
++		events.clear();
++		dialog3->DeactivateWidget();
++		check(joinEvents(events) == PString("D3:deactivate D3:shutdown"), "transition: a close transition that moves nothing ends at once");
++		manager->PushWidgetInstance(dialog2, EGameUILayer::Modal);
++		manager->Update(0.1f);
++		dialog2->DeactivateWidget();
++		manager->Update(0.1f);
++		check(dialog2->IsClosing() && dialog2->GetRoot()->GetOpacity() < 1.0f, "transition: dialog closing");
++		manager->PushWidgetInstance(dialog2, EGameUILayer::Modal);
++		check(nearlyEqual(dialog2->GetRoot()->GetOpacity(), 1.0f) && nearlyEqual(dialog2->GetRoot()->GetRenderTransform().Translation.y, 0.0f),
++			"transition: reopening without an open transition snaps to the open look");
++
++		// 종료 중에 닫히는 위젯도 OnShutdown
++		dialog2->DeactivateWidget();
++		events.clear();
++		manager->Shutdown();
++		check(joinEvents(events) == PString("D2:shutdown H:deactivate H:shutdown") && dialog2->IsClosing() == false, "accept transition: Shutdown shuts a closing widget down (top layer first)");
++	}
++
+ 	void testGameInstanceUI()
+ 	{
+ 		if (JGGameInstance::HasInstance() == false)
+@@ -2103,6 +2654,8 @@
+ 		testRouting();
+ 		testBackAction();
+ 		testDisabledAndStyle();
++		testTween();
++		testTransition();
+ 		testGameInstanceUI();
+ 
+ 		if (GFailureCount == 0)
+@@ -2117,6 +2670,6 @@
+ 	HAutoConsoleCommand GameUISelfTestCommand(
+ 		"gameui.selftest",
+ 		"gameui.selftest",
+-		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop). No GPU needed",
++		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop, tweens, transitions). No GPU needed",
+ 		&executeSelfTest);
+ }
+--- /dev/null
++++ gg16/GameUITween.h (new)
+@@ -0,0 +1,234 @@
++#pragma once
++#include "UI/GameUIDefines.h"
++
++class PGameUIElement;
++class PGameUIManager;
++class PGameUITimeline;
++
++// 게임 UI 움직임(GG-16, ProjectAH ER-017): 트윈 · 이징 · 순서 묶음(타임라인) · 위젯 열림 · 닫힘 전환.
++// 이징과 묶음 진행(차례 · 동시 · 기다리기 · 함수 부르기 · 되풀이 · 건너뛰기)은 UI 타입에 기대지 않는다 — 요소 속성을 읽고 쓰는 곳만 UI 요소에 붙는다.
++// 묶음은 위젯이 가진다(JGGameWidget::PlayTimeline · PlayTween). 관리자 Update 가 활성 위젯 · 닫히는 위젯의 묶음만 돌린다 —
++// 다른 위젯에 덮이면 멈추고, 위젯이 화면에서 완전히 빠지면(OnShutdown 전에) 취소된다. 메인 스레드 전용.
++
++// ---- 이징 (빠르기 곡선)
++enum class EGameUIEase : int32
++{
++	Linear,
++	InQuad,
++	OutQuad,
++	InOutQuad,
++	InCubic,
++	OutCubic,
++	InOutCubic,
++	InBack,       // 처음에 살짝 뒤로
++	OutBack,      // 끝에서 살짝 넘었다가 돌아옴
++	InOutBack,
++	InElastic,    // 처음에 출렁임
++	OutElastic,   // 끝에서 출렁임(튕기기)
++	InOutElastic,
++	Count,
++};
++
++// 게임이 주는 곡선: 진행 0~1 → 값. 0 에서 0, 1 에서 1 이 보통이고 사이에서 0~1 을 넘어도 된다(넘친 값만큼 끝값을 지나간다).
++using FGameUIEaseCurve = float32 (*)(float32 t);
++
++struct GAMEFRAMEWORKS_API HGameUIEase
++{
++	// t 는 0~1 로 자른다. Back · Elastic 은 결과가 0~1 을 넘는다.
++	static float32 Evaluate(EGameUIEase ease, float32 t);
++};
++
++// ---- 트윈 값: 위치 · 크기 · 배율 · 옮기기 = X · Y, 각도 · 불투명도 = X, 색 = X · Y · Z · W(R · G · B · A).
++struct HGameUITweenValue
++{
++	float32 X = 0.0f;
++	float32 Y = 0.0f;
++	float32 Z = 0.0f;
++	float32 W = 0.0f;
++
++	HGameUITweenValue() = default;
++	HGameUITweenValue(float32 value) : X(value) {}
++	HGameUITweenValue(const HVector2& value) : X(value.x), Y(value.y) {}
++	HGameUITweenValue(const HLinearColor& value) : X(value.R), Y(value.G), Z(value.B), W(value.A) {}
++
++	static HGameUITweenValue Lerp(const HGameUITweenValue& a, const HGameUITweenValue& b, float32 t)
++	{
++		HGameUITweenValue result;
++		result.X = a.X + (b.X - a.X) * t;
++		result.Y = a.Y + (b.Y - a.Y) * t;
++		result.Z = a.Z + (b.Z - a.Z) * t;
++		result.W = a.W + (b.W - a.W) * t;
++		return result;
++	}
++};
++
++// ---- 트윈 하나: 대상 요소(약참조)의 속성 하나를 시작값 → 끝값으로, 길이(초) · 지연 · 이징.
++// 시작값을 주지 않으면 이 트윈이 실제로 시작하는 순간(지연 · 앞 단계가 끝난 뒤)의 지금 값에서 시작한다(되풀이 · 왕복은 처음 읽은 값을 그대로 쓴다).
++// 같은 요소 · 같은 속성에 다른 묶음의 트윈이 시작되면 그 속성을 쓰던 옛 묶음은 거기서 취소로 끝난다(Stop 과 같다 — 값은 그 자리).
++// 같은 묶음 안의 단계끼리는 서로 막지 않는다(같은 프레임에 둘이 쓰면 뒤 단계 값).
++// 대상이 사라지면(트리를 다시 짜기 · 위젯 닫힘) 그 묶음은 오류 없이 취소로 끝난다.
++struct GAMEFRAMEWORKS_API HGameUITween
++{
++	PWeakPtr<PGameUIElement> Target;
++	EGameUITweenProperty     Property = EGameUITweenProperty::Opacity;
++	HGameUITweenValue        FromValue;
++	HGameUITweenValue        ToValue;
++	bool                     bHasFromValue = false;
++	float32                  Duration = 0.0f;
++	float32                  Delay    = 0.0f;
++	EGameUIEase              Ease     = EGameUIEase::OutQuad;
++	FGameUIEaseCurve         Curve    = nullptr;   // 있으면 Ease 대신
++
++	static HGameUITween To(const PSharedPtr<PGameUIElement>& target, EGameUITweenProperty property, const HGameUITweenValue& to,
++		float32 duration, EGameUIEase ease = EGameUIEase::OutQuad);
++	static HGameUITween FromTo(const PSharedPtr<PGameUIElement>& target, EGameUITweenProperty property, const HGameUITweenValue& from,
++		const HGameUITweenValue& to, float32 duration, EGameUIEase ease = EGameUIEase::OutQuad);
++	HGameUITween& SetDelay(float32 delay);
++	HGameUITween& SetCurve(FGameUIEaseCurve curve);
++};
++
++// 묶음 안에서 부르는 함수(차례 묶음이 그 자리에 오면 한 번).
++JG_DECLARE_DELEGATE(HGameUITimelineCall);
++// 묶음이 끝났다. 인자 = 취소됐나(Stop · 대상이 사라짐 · 같은 속성을 다른 묶음이 가져감 · 위젯이 빠짐 · 안의 자식 묶음을 밖에서 Stop). 끝까지 갔거나 Skip 이면 false. 한 번만 온다.
++JG_DECLARE_EVENT(HOnGameUITimelineFinished, PGameUITimeline, bool);
++
++// ---- 순서 묶음(타임라인). 차례(Sequence) 또는 동시(Parallel)로 트윈 · 기다리기 · 함수 · 다른 묶음을 담는다.
++// 만든 뒤 위젯에서 재생한다: widget->PlayTimeline(timeline). 단계는 재생 전에만 넣는다.
++//   PSharedPtr<PGameUITimeline> flight = PGameUITimeline::Sequence();
++//   flight->Add(HGameUITween::To(card, EGameUITweenProperty::Translation, HVector2(0.0f, 0.0f), 0.3f, EGameUIEase::OutCubic))
++//         .Call([this]() { onLanded(); })
++//         .Add(HGameUITween::To(card, EGameUITweenProperty::Scale, HVector2(1.0f, 1.0f), 0.2f, EGameUIEase::OutBack));
++//   PlayTimeline(flight);
++class GAMEFRAMEWORKS_API PGameUITimeline : public IMemoryObject
++{
++	friend class JGGameWidget;
++	friend class PGameUIManager;
++
++public:
++	HOnGameUITimelineFinished OnFinished;
++
++	enum class EKind : uint8
++	{
++		Sequence,
++		Parallel,
++	};
++
++private:
++	enum class EStepType : uint8
++	{
++		Tween,
++		Wait,
++		Call,
++		Child,
++	};
++	enum class EState : uint8
++	{
++		Idle,
++		Playing,
++		Finished,
++	};
++	struct HStep
++	{
++		EStepType                   Type = EStepType::Wait;
++		HGameUITween                Tween;
++		float32                     Seconds = 0.0f;
++		HGameUITimelineCall         Callback;
++		PSharedPtr<PGameUITimeline> Child;
++
++		// 재생 상태(바퀴마다 처음으로)
++		float32           Elapsed   = 0.0f;
++		bool              bStarted  = false;
++		bool              bDone     = false;
++		bool              bCaptured = false;   // 시작값을 읽었나(재생 동안 — 되풀이 · 왕복에서 그대로 쓴다)
++		HGameUITweenValue CapturedFrom;
++	};
++
++	EKind         _kind  = EKind::Sequence;
++	HList<HStep>  _steps;
++	int32         _loops = 1;        // 0 이하 = 끝없이
++	bool          _bYoyo = false;
++
++	EState          _state     = EState::Idle;
++	int32           _iteration = 0;
++	bool            _bReverse  = false;   // 이번 바퀴가 거꾸로(왕복)
++	uint64          _cursor    = 0;       // 차례 묶음의 지금 단계(거꾸로면 뒤에서부터 센다)
++	bool            _bCanceled = false;   // 끝 알림에 취소로
++	bool            _bSkipping = false;   // Skip 중: 끝없는 되풀이도 이번 바퀴에서 멈춘다
++	bool            _bChild    = false;   // 다른 묶음 안에서 돈다(쓰기 번호는 맨 위 묶음이 놓는다)
++	uint64          _writerId  = 0;       // 이 재생이 요소 속성에 쓰는 번호(자식 묶음은 맨 위 묶음과 같다)
++	PGameUIManager* _manager   = nullptr; // 재생하는 위젯의 관리자(글 색의 기본값을 읽을 때). 없어도 된다
++
++public:
++	PGameUITimeline() = default;
++	virtual ~PGameUITimeline() = default;
++
++	static PSharedPtr<PGameUITimeline> Sequence();
++	static PSharedPtr<PGameUITimeline> Parallel();
++	EKind GetKind() const;
++
++	// ---- 단계(재생 전에만 — 재생 중이면 무시하고 경고)
++	PGameUITimeline& Add(const HGameUITween& tween);
++	PGameUITimeline& Add(const PSharedPtr<PGameUITimeline>& child);
++	PGameUITimeline& Wait(float32 seconds);
++	PGameUITimeline& Call(const HGameUITimelineCall& callback);
++	// 람다를 바로 받는다(대리자 자체는 위 함수로).
++	template<class TFunction, class = std::enable_if_t<std::is_same_v<std::decay_t<TFunction>, HGameUITimelineCall> == false>>
++	PGameUITimeline& Call(TFunction&& function)
++	{
++		const HGameUITimelineCall callback = HGameUITimelineCall::CreateLambda(std::forward<TFunction>(function));
++		return Call(callback);
++	}
++	// 되풀이: count = 모두 몇 바퀴(1 = 한 번, 0 이하 = 끝없이). bYoyo 면 짝수 번째 바퀴는 거꾸로(끝값 → 시작값, 단계도 뒤에서부터).
++	PGameUITimeline& SetLoops(int32 count, bool bYoyo = false);
++
++	// ---- 제어
++	// 취소로 끝낸다(OnFinished(true)). 값은 지금 자리에 두고, 남은 단계 · 함수는 하지 않는다.
++	void Stop();
++	// 끝으로 건너뛴다: 남은 트윈은 끝값, 남은 기다리기는 넘기고, 남은 함수는 차례대로 부른다. OnFinished(false) 한 번(앞서 취소가 정해졌으면 true).
++	// 끝없이 되풀이하는 묶음은 이번 바퀴 끝에서 멈춘다.
++	void Skip();
++	bool IsPlaying() const;
++	bool IsFinished() const;
++	// 한 바퀴 길이(초, 되풀이 제외). 동시 묶음은 가장 긴 단계.
++	float32 GetDuration() const;
++
++private:
++	// 위젯이 재생을 시작한다: 처음 상태로 돌리고 0초만큼 진행(첫 트윈의 시작값을 바로 쓴다 — 첫 그리기가 시작값으로 나온다).
++	void play(PGameUIManager* manager);
++	// 부모 묶음이 이 묶음(자식 단계)에 들어올 때마다: 바퀴 상태만 처음으로(시작값은 맨 위 묶음의 play 가 지운다).
++	void beginAsChild(PGameUIManager* manager, bool bSkipping, uint64 writerId);
++	// 시작값 · 취소 표시를 지운다(자식 묶음까지).
++	void resetCapture();
++	// dt 만큼 진행. 끝났으면 true(끝 알림까지 보냄).
++	bool tick(float32 deltaSeconds);
++	// 남은 시간을 돌려준다: 0 이상 = 이 바퀴 · 묶음이 끝남, Running = 아직, Lost = 대상이 사라졌거나 같은 속성을 다른 묶음이 가져가 취소.
++	float32 advance(float32 deltaSeconds);
++	float32 advanceIteration(float32 deltaSeconds);
++	float32 advanceStep(HStep& step, float32 deltaSeconds);
++	void    resetIteration();
++	void    finish(bool bCanceled);
++	// 이 번호로 가져간 요소 속성을 놓는다(자식 묶음까지. 다른 묶음이 가져간 것은 그대로).
++	void    releaseWriters(uint64 writerId);
++	bool    isInfinite() const;
++
++	static constexpr float32 Running = -1.0f;
++	static constexpr float32 Lost    = -2.0f;
++};
++
++// ---- 위젯 열림 · 닫힘 전환. 닫혀 있는 모습(불투명도 · 배율 · 옮기기)과 열린 모습(1 · 1 · 0) 사이를 위젯 루트 요소에서 움직인다.
++// 길이 0 = 전환 없음(바로 나타나고 바로 사라진다 — 지금까지와 같음). 배율은 화면 가운데를 기준으로 한다.
++struct GAMEFRAMEWORKS_API HGameUITransition
++{
++	float32     Duration = 0.0f;
++	EGameUIEase Ease     = EGameUIEase::OutCubic;
++	float32     Opacity  = 0.0f;                    // 닫혀 있는 모습
++	HVector2    Scale    = HVector2(1.0f, 1.0f);
++	HVector2    Offset;                             // 논리 단위
++
++	static HGameUITransition Fade(float32 duration, EGameUIEase ease = EGameUIEase::OutCubic);
++	// 흐려지며 + 배율(예: 0.92 에서 1 로 커지며 나타나기)
++	static HGameUITransition FadeScale(float32 duration, float32 scale, EGameUIEase ease = EGameUIEase::OutCubic);
++	// 흐려지며 + 옮기기(예: 아래 60 에서 올라오며 나타나기)
++	static HGameUITransition FadeSlide(float32 duration, const HVector2& offset, EGameUIEase ease = EGameUIEase::OutCubic);
++	bool IsEnabled() const;
++};
+--- /dev/null
++++ gg16/GameUITween.cpp (new)
+@@ -0,0 +1,709 @@
++#include "PCH/PCH.h"
++#include "UI/GameUITween.h"
++#include "UI/GameUIElement.h"
++#include "UI/GameUIImage.h"
++#include "UI/GameUIText.h"
++#include "UI/GameUIManager.h"
++#include <cmath>
++
++namespace
++{
++	constexpr float32 Pi          = 3.14159265358979f;
++	constexpr float32 BackC1      = 1.70158f;
++	constexpr float32 BackC2      = BackC1 * 1.525f;
++	constexpr float32 BackC3      = BackC1 + 1.0f;
++	constexpr float32 ElasticC4   = (2.0f * Pi) / 3.0f;
++	constexpr float32 ElasticC5   = (2.0f * Pi) / 4.5f;
++	constexpr float32 SkipSeconds = 1.0e6f;   // Skip: 남은 시간을 한꺼번에
++
++	// 같은 요소 · 같은 속성을 쓰는 묶음(재생 한 번)을 가르는 번호(메인 스레드 전용).
++	uint64 GNextTweenWriterId = 0;
++
++	// ---- 요소 속성 읽기 · 쓰기(UI 요소에 붙는 부분. 묶음 진행은 이 둘만 거친다)
++	HGameUITweenValue readProperty(const PSharedPtr<PGameUIElement>& element, EGameUITweenProperty property, const PGameUIManager* manager)
++	{
++		switch (property)
++		{
++		case EGameUITweenProperty::Position:
++			return HGameUITweenValue(element->GetPosition());
++		case EGameUITweenProperty::Size:
++			return HGameUITweenValue(element->GetSize());
++		case EGameUITweenProperty::Angle:
++			return HGameUITweenValue(element->GetRenderTransform().Angle);
++		case EGameUITweenProperty::Scale:
++			return HGameUITweenValue(element->GetRenderTransform().Scale);
++		case EGameUITweenProperty::Translation:
++			return HGameUITweenValue(element->GetRenderTransform().Translation);
++		case EGameUITweenProperty::Opacity:
++			return HGameUITweenValue(element->GetOpacity());
++		case EGameUITweenProperty::Color:
++		{
++			// PSharedPtr 는 const 를 전파하므로 비 const 사본으로 바꾼다.
++			PSharedPtr<PGameUIElement> candidate = element;
++			PSharedPtr<PGameUIImage> image = RawDynamicCast<PGameUIImage>(candidate);
++			if (image.IsValid())
++			{
++				return HGameUITweenValue(image->GetColor());
++			}
++			PSharedPtr<PGameUIText> text = RawDynamicCast<PGameUIText>(candidate);
++			if (text.IsValid())
++			{
++				return HGameUITweenValue(text->GetColor(manager));
++			}
++			return HGameUITweenValue(HLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
++		}
++		default:
++			break;
++		}
++		return HGameUITweenValue();
++	}
++
++	void writeProperty(PSharedPtr<PGameUIElement> element, EGameUITweenProperty property, const HGameUITweenValue& value)
++	{
++		switch (property)
++		{
++		case EGameUITweenProperty::Position:
++			element->SetPosition(HVector2(value.X, value.Y));
++			break;
++		case EGameUITweenProperty::Size:
++			element->SetSize(HVector2(value.X, value.Y));
++			break;
++		case EGameUITweenProperty::Angle:
++		{
++			HGameUIRenderTransform transform = element->GetRenderTransform();
++			transform.Angle = value.X;
++			element->SetRenderTransform(transform);
++			break;
++		}
++		case EGameUITweenProperty::Scale:
++		{
++			HGameUIRenderTransform transform = element->GetRenderTransform();
++			transform.Scale = HVector2(value.X, value.Y);
++			element->SetRenderTransform(transform);
++			break;
++		}
++		case EGameUITweenProperty::Translation:
++		{
++			HGameUIRenderTransform transform = element->GetRenderTransform();
++			transform.Translation = HVector2(value.X, value.Y);
++			element->SetRenderTransform(transform);
++			break;
++		}
++		case EGameUITweenProperty::Opacity:
++			element->SetOpacity(value.X);
++			break;
++		case EGameUITweenProperty::Color:
++		{
++			const HLinearColor color(value.X, value.Y, value.Z, value.W);
++			PSharedPtr<PGameUIImage> image = RawDynamicCast<PGameUIImage>(element);
++			if (image.IsValid())
++			{
++				image->SetColor(color);
++				break;
++			}
++			PSharedPtr<PGameUIText> text = RawDynamicCast<PGameUIText>(element);
++			if (text.IsValid())
++			{
++				text->SetColor(color);
++			}
++			// 그 밖의 요소(버튼 · 입력란 — 색이 스타일에 있다)는 움직이지 않는다.
++			break;
++		}
++		default:
++			break;
++		}
++	}
++}
++
++// ---- 이징 (식은 easings.net 의 Robert Penner 식)
++float32 HGameUIEase::Evaluate(EGameUIEase ease, float32 t)
++{
++	t = HMath::Clamp(t, 0.0f, 1.0f);
++	switch (ease)
++	{
++	case EGameUIEase::Linear:
++		return t;
++	case EGameUIEase::InQuad:
++		return t * t;
++	case EGameUIEase::OutQuad:
++		return 1.0f - (1.0f - t) * (1.0f - t);
++	case EGameUIEase::InOutQuad:
++		return (t < 0.5f) ? 2.0f * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 2.0f) * 0.5f;
++	case EGameUIEase::InCubic:
++		return t * t * t;
++	case EGameUIEase::OutCubic:
++		return 1.0f - std::pow(1.0f - t, 3.0f);
++	case EGameUIEase::InOutCubic:
++		return (t < 0.5f) ? 4.0f * t * t * t : 1.0f - std::pow(-2.0f * t + 2.0f, 3.0f) * 0.5f;
++	case EGameUIEase::InBack:
++		return BackC3 * t * t * t - BackC1 * t * t;
++	case EGameUIEase::OutBack:
++		return 1.0f + BackC3 * std::pow(t - 1.0f, 3.0f) + BackC1 * std::pow(t - 1.0f, 2.0f);
++	case EGameUIEase::InOutBack:
++		if (t < 0.5f)
++		{
++			return (std::pow(2.0f * t, 2.0f) * ((BackC2 + 1.0f) * 2.0f * t - BackC2)) * 0.5f;
++		}
++		return (std::pow(2.0f * t - 2.0f, 2.0f) * ((BackC2 + 1.0f) * (t * 2.0f - 2.0f) + BackC2) + 2.0f) * 0.5f;
++	case EGameUIEase::InElastic:
++		if (t <= 0.0f || t >= 1.0f)
++		{
++			return t;
++		}
++		return -std::pow(2.0f, 10.0f * t - 10.0f) * std::sin((t * 10.0f - 10.75f) * ElasticC4);
++	case EGameUIEase::OutElastic:
++		if (t <= 0.0f || t >= 1.0f)
++		{
++			return t;
++		}
++		return std::pow(2.0f, -10.0f * t) * std::sin((t * 10.0f - 0.75f) * ElasticC4) + 1.0f;
++	case EGameUIEase::InOutElastic:
++		if (t <= 0.0f || t >= 1.0f)
++		{
++			return t;
++		}
++		if (t < 0.5f)
++		{
++			return -(std::pow(2.0f, 20.0f * t - 10.0f) * std::sin((20.0f * t - 11.125f) * ElasticC5)) * 0.5f;
++		}
++		return (std::pow(2.0f, -20.0f * t + 10.0f) * std::sin((20.0f * t - 11.125f) * ElasticC5)) * 0.5f + 1.0f;
++	default:
++		break;
++	}
++	return t;
++}
++
++// ---- 트윈 하나
++HGameUITween HGameUITween::To(const PSharedPtr<PGameUIElement>& target, EGameUITweenProperty property, const HGameUITweenValue& to, float32 duration, EGameUIEase ease)
++{
++	HGameUITween tween;
++	tween.Target   = target;
++	tween.Property = property;
++	tween.ToValue  = to;
++	tween.Duration = duration;
++	tween.Ease     = ease;
++	return tween;
++}
++
++HGameUITween HGameUITween::FromTo(const PSharedPtr<PGameUIElement>& target, EGameUITweenProperty property, const HGameUITweenValue& from, const HGameUITweenValue& to,
++	float32 duration, EGameUIEase ease)
++{
++	HGameUITween tween = To(target, property, to, duration, ease);
++	tween.FromValue     = from;
++	tween.bHasFromValue = true;
++	return tween;
++}
++
++HGameUITween& HGameUITween::SetDelay(float32 delay)
++{
++	Delay = delay;
++	return *this;
++}
++
++HGameUITween& HGameUITween::SetCurve(FGameUIEaseCurve curve)
++{
++	Curve = curve;
++	return *this;
++}
++
++// ---- 순서 묶음
++PSharedPtr<PGameUITimeline> PGameUITimeline::Sequence()
++{
++	PSharedPtr<PGameUITimeline> timeline = Allocate<PGameUITimeline>();
++	timeline->_kind = EKind::Sequence;
++	return timeline;
++}
++
++PSharedPtr<PGameUITimeline> PGameUITimeline::Parallel()
++{
++	PSharedPtr<PGameUITimeline> timeline = Allocate<PGameUITimeline>();
++	timeline->_kind = EKind::Parallel;
++	return timeline;
++}
++
++PGameUITimeline::EKind PGameUITimeline::GetKind() const
++{
++	return _kind;
++}
++
++PGameUITimeline& PGameUITimeline::Add(const HGameUITween& tween)
++{
++	if (_state == EState::Playing)
++	{
++		JG_LOG(GameUI, ELogLevel::Warning, "Timeline: steps can be added only before it plays");
++		return *this;
++	}
++	HStep step;
++	step.Type           = EStepType::Tween;
++	step.Tween          = tween;
++	step.Tween.Duration = HMath::Max(tween.Duration, 0.0f);
++	step.Tween.Delay    = HMath::Max(tween.Delay, 0.0f);
++	_steps.push_back(step);
++	return *this;
++}
++
++PGameUITimeline& PGameUITimeline::Add(const PSharedPtr<PGameUITimeline>& child)
++{
++	if (_state == EState::Playing)
++	{
++		JG_LOG(GameUI, ELogLevel::Warning, "Timeline: steps can be added only before it plays");
++		return *this;
++	}
++	if (child.IsValid() == false || child.GetRawPointer() == this)
++	{
++		return *this;
++	}
++	HStep step;
++	step.Type  = EStepType::Child;
++	step.Child = child;
++	_steps.push_back(step);
++	return *this;
++}
++
++PGameUITimeline& PGameUITimeline::Wait(float32 seconds)
++{
++	if (_state == EState::Playing)
++	{
++		JG_LOG(GameUI, ELogLevel::Warning, "Timeline: steps can be added only before it plays");
++		return *this;
++	}
++	HStep step;
++	step.Type    = EStepType::Wait;
++	step.Seconds = HMath::Max(seconds, 0.0f);
++	_steps.push_back(step);
++	return *this;
++}
++
++PGameUITimeline& PGameUITimeline::Call(const HGameUITimelineCall& callback)
++{
++	if (_state == EState::Playing)
++	{
++		JG_LOG(GameUI, ELogLevel::Warning, "Timeline: steps can be added only before it plays");
++		return *this;
++	}
++	HStep step;
++	step.Type     = EStepType::Call;
++	step.Callback = callback;
++	_steps.push_back(step);
++	return *this;
++}
++
++PGameUITimeline& PGameUITimeline::SetLoops(int32 count, bool bYoyo)
++{
++	_loops = count;
++	_bYoyo = bYoyo;
++	return *this;
++}
++
++void PGameUITimeline::Stop()
++{
++	if (_state != EState::Playing)
++	{
++		return;
++	}
++	_bCanceled = true;
++	finish(true);
++}
++
++void PGameUITimeline::Skip()
++{
++	if (_state != EState::Playing)
++	{
++		return;
++	}
++	// 남은 시간을 한꺼번에 준다: 트윈은 끝값, 기다리기는 넘기고, 함수는 차례대로. 끝없는 되풀이는 이번 바퀴 끝에서 멈춘다.
++	_bSkipping = true;
++	for (int32 guard = 0; guard < 100000 && _state == EState::Playing; ++guard)
++	{
++		tick(SkipSeconds);
++	}
++}
++
++bool PGameUITimeline::IsPlaying() const
++{
++	return _state == EState::Playing;
++}
++
++bool PGameUITimeline::IsFinished() const
++{
++	return _state == EState::Finished;
++}
++
++float32 PGameUITimeline::GetDuration() const
++{
++	float32 total = 0.0f;
++	for (const HStep& step : _steps)
++	{
++		float32 length = 0.0f;
++		switch (step.Type)
++		{
++		case EStepType::Tween:
++			length = step.Tween.Delay + step.Tween.Duration;
++			break;
++		case EStepType::Wait:
++			length = step.Seconds;
++			break;
++		case EStepType::Child:
++			length = step.Child->GetDuration() * (float32)HMath::Max(step.Child->_loops, 1);
++			break;
++		default:
++			break;
++		}
++		total = (_kind == EKind::Sequence) ? total + length : HMath::Max(total, length);
++	}
++	return total;
++}
++
++void PGameUITimeline::play(PGameUIManager* manager)
++{
++	if (_state == EState::Playing)
++	{
++		return;
++	}
++	resetCapture();
++	_manager   = manager;
++	_writerId  = ++GNextTweenWriterId;
++	_bChild    = false;
++	_state     = EState::Playing;
++	_iteration = 0;
++	_bReverse  = false;
++	_bSkipping = false;
++	resetIteration();
++	// 0초만큼 진행해 첫 트윈의 시작값을 바로 쓴다(재생을 건 프레임의 그리기가 시작값으로 나온다).
++	tick(0.0f);
++}
++
++void PGameUITimeline::beginAsChild(PGameUIManager* manager, bool bSkipping, uint64 writerId)
++{
++	_manager   = manager;
++	_writerId  = writerId;
++	_bChild    = true;
++	_state     = EState::Playing;
++	_iteration = 0;
++	_bReverse  = false;
++	_bSkipping = bSkipping;
++	resetIteration();
++}
++
++void PGameUITimeline::resetCapture()
++{
++	_bCanceled = false;
++	for (HStep& step : _steps)
++	{
++		step.bCaptured = false;
++		if (step.Type == EStepType::Child && step.Child.IsValid())
++		{
++			step.Child->resetCapture();
++		}
++	}
++}
++
++bool PGameUITimeline::tick(float32 deltaSeconds)
++{
++	if (_state != EState::Playing)
++	{
++		return _state == EState::Finished;
++	}
++
++	const float32 left = advance(deltaSeconds);
++	if (_state != EState::Playing)
++	{
++		// 진행 중에 함수 · 알림이 Stop 등으로 이미 끝냈다.
++		return true;
++	}
++	if (left == Lost)
++	{
++		finish(true);
++		return true;
++	}
++	if (left >= 0.0f)
++	{
++		finish(_bCanceled);
++		return true;
++	}
++	return false;
++}
++
++float32 PGameUITimeline::advance(float32 deltaSeconds)
++{
++	float32 remaining = deltaSeconds;
++	while (true)
++	{
++		const float32 left = advanceIteration(remaining);
++		if (left < 0.0f || _state != EState::Playing)
++		{
++			return (_state != EState::Playing) ? Running : left;
++		}
++
++		++_iteration;
++		if ((isInfinite() == false && _iteration >= _loops) || (isInfinite() && _bSkipping))
++		{
++			return left;
++		}
++
++		// 다음 바퀴. 이번 바퀴가 시간을 쓰지 않았으면(길이 0) 다음 진행에서 이어 간다 — 길이 0 묶음을 끝없이 되풀이해도 한 진행에 멈추지 않게.
++		const bool bConsumedTime = left < remaining;
++		if (_bYoyo)
++		{
++			_bReverse = !_bReverse;
++		}
++		resetIteration();
++		remaining = left;
++		if (bConsumedTime == false && _bSkipping == false)
++		{
++			return Running;
++		}
++	}
++}
++
++float32 PGameUITimeline::advanceIteration(float32 deltaSeconds)
++{
++	if (_kind == EKind::Sequence)
++	{
++		float32 remaining = deltaSeconds;
++		while (_cursor < (uint64)_steps.size())
++		{
++			const uint64 index = _bReverse ? ((uint64)_steps.size() - 1 - _cursor) : _cursor;
++			const float32 left = advanceStep(_steps[(size_t)index], remaining);
++			if (left < 0.0f || _state != EState::Playing)
++			{
++				return left;
++			}
++			remaining = left;
++			++_cursor;
++		}
++		return remaining;
++	}
++
++	// 동시: 모든 단계가 같은 시간을 받고, 가장 늦게 끝나는 단계와 함께 끝난다.
++	float32 smallestLeft = deltaSeconds;
++	bool    bAllDone     = true;
++	for (size_t index = 0; index < _steps.size(); ++index)
++	{
++		HStep& step = _steps[index];
++		if (step.bDone)
++		{
++			continue;
++		}
++		const float32 left = advanceStep(step, deltaSeconds);
++		if (left == Lost || _state != EState::Playing)
++		{
++			return left;
++		}
++		if (left < 0.0f)
++		{
++			bAllDone = false;
++			continue;
++		}
++		smallestLeft = HMath::Min(smallestLeft, left);
++	}
++	return bAllDone ? smallestLeft : Running;
++}
++
++float32 PGameUITimeline::advanceStep(HStep& step, float32 deltaSeconds)
++{
++	if (step.bDone)
++	{
++		return deltaSeconds;
++	}
++
++	switch (step.Type)
++	{
++	case EStepType::Wait:
++	{
++		step.Elapsed += deltaSeconds;
++		if (step.Elapsed < step.Seconds)
++		{
++			return Running;
++		}
++		step.bDone = true;
++		return step.Elapsed - step.Seconds;
++	}
++	case EStepType::Call:
++	{
++		step.bDone = true;
++		step.Callback.ExecuteIfBound();
++		return deltaSeconds;
++	}
++	case EStepType::Child:
++	{
++		PSharedPtr<PGameUITimeline> child = step.Child;
++		if (step.bStarted == false)
++		{
++			step.bStarted = true;
++			child->beginAsChild(_manager, _bSkipping, _writerId);
++		}
++		else if (child->_state == EState::Finished)
++		{
++			// 자식이 밖에서 멈췄다(Stop): 이 단계는 끝, 묶음 끝 알림은 취소로.
++			step.bDone = true;
++			_bCanceled = true;
++			return deltaSeconds;
++		}
++		child->_manager   = _manager;
++		child->_bSkipping = _bSkipping;
++		const float32 left = child->advance(deltaSeconds);
++		if (left == Lost)
++		{
++			return Lost;
++		}
++		if (left < 0.0f)
++		{
++			return Running;
++		}
++		step.bDone = true;
++		if (child->_bCanceled)
++		{
++			_bCanceled = true;
++		}
++		child->finish(child->_bCanceled);
++		return left;
++	}
++	case EStepType::Tween:
++		break;
++	default:
++		return deltaSeconds;
++	}
++
++	HGameUITween& tween = step.Tween;
++	step.Elapsed += deltaSeconds;
++	if (step.Elapsed < tween.Delay)
++	{
++		return Running;
++	}
++
++	PSharedPtr<PGameUIElement> target = tween.Target.Pin();
++	if (target.IsValid() == false)
++	{
++		// 대상이 사라졌다(트리를 다시 짬 · 위젯이 닫힘): 묶음을 오류 없이 취소로 끝낸다.
++		return Lost;
++	}
++
++	uint64& writer = target->_tweenWriters[(int32)tween.Property];
++	if (step.bStarted == false)
++	{
++		// 시작: 이 속성을 가져온다(앞서 쓰던 다른 묶음은 다음 진행에서 취소로 끝난다). 처음 시작이면 시작값을 읽는다(없으면 지금 값).
++		step.bStarted = true;
++		writer        = _writerId;
++		if (step.bCaptured == false)
++		{
++			step.bCaptured    = true;
++			step.CapturedFrom = tween.bHasFromValue ? tween.FromValue : readProperty(target, tween.Property, _manager);
++		}
++	}
++	else if (writer != _writerId)
++	{
++		// 같은 속성을 다른 묶음이 가져갔다: 이 묶음은 여기서 취소로 끝난다(값은 그 자리, 남은 단계 · 함수는 하지 않는다).
++		return Lost;
++	}
++
++	const float32 active   = step.Elapsed - tween.Delay;
++	const float32 progress = (tween.Duration > 0.0f) ? HMath::Min(active / tween.Duration, 1.0f) : 1.0f;
++	const float32 t        = _bReverse ? 1.0f - progress : progress;
++	const float32 eased    = (tween.Curve != nullptr) ? tween.Curve(t) : HGameUIEase::Evaluate(tween.Ease, t);
++	writeProperty(target, tween.Property, HGameUITweenValue::Lerp(step.CapturedFrom, tween.ToValue, eased));
++	if (progress < 1.0f)
++	{
++		return Running;
++	}
++
++	step.bDone = true;
++	return HMath::Max(active - tween.Duration, 0.0f);
++}
++
++void PGameUITimeline::resetIteration()
++{
++	_cursor = 0;
++	for (HStep& step : _steps)
++	{
++		step.Elapsed  = 0.0f;
++		step.bStarted = false;
++		step.bDone    = false;
++	}
++}
++
++void PGameUITimeline::finish(bool bCanceled)
++{
++	if (_state == EState::Finished)
++	{
++		return;
++	}
++	_state = EState::Finished;
++
++	// 재생 중인 자식도 함께 끝낸다(취소).
++	for (HStep& step : _steps)
++	{
++		if (step.Type == EStepType::Child && step.Child.IsValid() && step.Child->IsPlaying())
++		{
++			step.Child->finish(true);
++		}
++	}
++	// 가져간 속성은 맨 위 묶음이 끝날 때 한 번에 놓는다(먼저 끝난 자식이 놓으면 같은 번호로 쓰는 형제 단계가 빼앗긴 것으로 보인다).
++	if (_bChild == false)
++	{
++		releaseWriters(_writerId);
++	}
++
++	// 처리기 안에서 이 묶음의 마지막 참조가 풀려도 알림을 끝까지 보내도록 잡아 둔다.
++	PSharedPtr<PGameUITimeline> keepAlive = SharedWrap(this);
++	OnFinished.BroadCast(bCanceled);
++}
++
++void PGameUITimeline::releaseWriters(uint64 writerId)
++{
++	if (writerId == 0)
++	{
++		return;
++	}
++	for (HStep& step : _steps)
++	{
++		if (step.Type == EStepType::Child && step.Child.IsValid())
++		{
++			step.Child->releaseWriters(writerId);
++			continue;
++		}
++		if (step.Type != EStepType::Tween)
++		{
++			continue;
++		}
++		PSharedPtr<PGameUIElement> target = step.Tween.Target.Pin();
++		if (target.IsValid() && target->_tweenWriters[(int32)step.Tween.Property] == writerId)
++		{
++			target->_tweenWriters[(int32)step.Tween.Property] = 0;
++		}
++	}
++}
++
++bool PGameUITimeline::isInfinite() const
++{
++	return _loops <= 0;
++}
++
++// ---- 위젯 열림 · 닫힘 전환
++HGameUITransition HGameUITransition::Fade(float32 duration, EGameUIEase ease)
++{
++	HGameUITransition transition;
++	transition.Duration = duration;
++	transition.Ease     = ease;
++	transition.Opacity  = 0.0f;
++	return transition;
++}
++
++HGameUITransition HGameUITransition::FadeScale(float32 duration, float32 scale, EGameUIEase ease)
++{
++	HGameUITransition transition = Fade(duration, ease);
++	transition.Scale = HVector2(scale, scale);
++	return transition;
++}
++
++HGameUITransition HGameUITransition::FadeSlide(float32 duration, const HVector2& offset, EGameUIEase ease)
++{
++	HGameUITransition transition = Fade(duration, ease);
++	transition.Offset = offset;
++	return transition;
++}
++
++bool HGameUITransition::IsEnabled() const
++{
++	return Duration > 0.0f;
++}

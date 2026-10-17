@@ -1,6 +1,58 @@
 #include "PCH/PCH.h"
 #include "GameMaster/State/GameplayState.h"
 
+namespace
+{
+	// FNV-1a 64. 상태 체크섬 · 되감기 지점 해시가 같은 함수를 쓴다.
+	uint64 hashGameplayText(const PString& text)
+	{
+		uint64 hash = 14695981039346656037ULL;
+		for (char c : text.GetRawString())
+		{
+			hash ^= (uint64)(uint8)c;
+			hash *= 1099511628211ULL;
+		}
+		return hash;
+	}
+}
+
+// writeState 를 "State" 멤버로 바로 쓰기 위한 감싸개. 읽기는 HGameplayState::ReadJson 이 한다.
+struct HGameplayState::HStateJsonWriter : public IJsonable
+{
+	const HGameplayState&   State;
+	const ERewindPointJson  Points;
+
+	HStateJsonWriter(const HGameplayState& state, ERewindPointJson points)
+		: State(state)
+		, Points(points)
+	{
+	}
+
+protected:
+	virtual void WriteJson(PJsonData& json) const override
+	{
+		State.writeState(json, Points);
+	}
+	virtual void ReadJson(const PJsonData& json) override
+	{
+	}
+};
+
+void HGameplayRewindPoint::WriteJson(PJsonData& json) const
+{
+	json.AddMember("Name", Name);
+	json.AddMember("State", StateText);
+}
+
+void HGameplayRewindPoint::ReadJson(const PJsonData& json)
+{
+	Name      = PName();
+	StateText = PString();
+	json.GetData("Name", &Name);
+	json.GetData("State", &StateText);
+	Hash = hashGameplayText(StateText);
+}
+
 HGameplayState::HGameplayState()
 {
 	SeedAll(0);
@@ -45,8 +97,9 @@ void HGameplayState::copyFrom(const HGameplayState& rhs)
 	{
 		Random[i] = rhs.Random[i];
 	}
-	Sequence = rhs.Sequence;
-	Seed     = rhs.Seed;
+	Sequence     = rhs.Sequence;
+	Seed         = rhs.Seed;
+	RewindPoints = rhs.RewindPoints;
 
 	Tables.clear();
 	for (const HSTLUniquePtr<IGameplayComponentTable>& table : rhs.Tables)
@@ -66,9 +119,10 @@ void HGameplayState::moveFrom(HGameplayState& rhs) noexcept
 	{
 		Random[i] = rhs.Random[i];
 	}
-	Sequence = rhs.Sequence;
-	Seed     = rhs.Seed;
-	Tables   = std::move(rhs.Tables);
+	Sequence     = rhs.Sequence;
+	Seed         = rhs.Seed;
+	RewindPoints = std::move(rhs.RewindPoints);
+	Tables       = std::move(rhs.Tables);
 }
 
 void HGameplayState::SeedAll(uint64 seed)
@@ -199,11 +253,108 @@ IGameplayComponentTable* HGameplayState::findTable(uint64 typeId) const
 	return nullptr;
 }
 
+const HGameplayRewindPoint* HGameplayState::FindRewindPoint(const PName& name) const
+{
+	for (const HGameplayRewindPoint& point : RewindPoints)
+	{
+		if (point.Name == name)
+		{
+			return &point;
+		}
+	}
+	return nullptr;
+}
+
+void HGameplayState::MarkRewindPoint(const PName& name)
+{
+	HGameplayRewindPoint point;
+	point.Name      = name;
+	point.StateText = toJsonText(ERewindPointJson::None);
+	point.Hash      = hashGameplayText(point.StateText);
+
+	for (HGameplayRewindPoint& existing : RewindPoints)
+	{
+		if (existing.Name == name)
+		{
+			existing = std::move(point);
+			return;
+		}
+	}
+	RewindPoints.push_back(std::move(point));
+}
+
+bool HGameplayState::ClearRewindPoint(const PName& name)
+{
+	for (auto iter = RewindPoints.begin(); iter != RewindPoints.end(); ++iter)
+	{
+		if (iter->Name == name)
+		{
+			RewindPoints.erase(iter);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool HGameplayState::RewindTo(const PName& name, EGameplayRewindRandom random)
+{
+	const HGameplayRewindPoint* point = FindRewindPoint(name);
+	if (point == nullptr)
+	{
+		return false;
+	}
+
+	// 먼저 읽어 본다. 실패하면 아무것도 바꾸지 않는다.
+	PJson json;
+	if (PJson::ToObject(point->StateText, &json) == false)
+	{
+		JG_LOG(GameMaster, ELogLevel::Error, "HGameplayState: rewind point %s has invalid state text", name.ToString());
+		return false;
+	}
+	PJsonData stateJson;
+	if (json.FindMember("State", &stateJson) == false)
+	{
+		JG_LOG(GameMaster, ELogLevel::Error, "HGameplayState: rewind point %s has no state", name.ToString());
+		return false;
+	}
+
+	// 되돌리지 않는 것: 명령 순번(참가자가 seq 로 명령을 맞춘다) · 시드 · 지점 목록 · 지금까지 낸 엔티티 세대 · (KeepCurrent 면) 난수
+	const uint32 sequence = Sequence;
+	const uint64 seed     = Seed;
+	HList<HGameplayRewindPoint> points = std::move(RewindPoints);
+	HGameplayEntityRegistry     before = Entities;
+	HGameplayRandomStream       current[RandomStreamCount];
+	for (int32 i = 0; i < RandomStreamCount; ++i)
+	{
+		current[i] = Random[i];
+	}
+
+	stateJson.GetData(this);
+
+	Sequence     = sequence;
+	Seed         = seed;
+	RewindPoints = std::move(points);
+	if (random == EGameplayRewindRandom::KeepCurrent)
+	{
+		for (int32 i = 0; i < RandomStreamCount; ++i)
+		{
+			Random[i] = current[i];
+		}
+	}
+	Entities.KeepIssuedGenerations(before);
+	return true;
+}
+
 PString HGameplayState::ToJsonString() const
+{
+	return toJsonText(ERewindPointJson::Full);
+}
+
+PString HGameplayState::toJsonText(ERewindPointJson points) const
 {
 	PJson json;
 	json.AddMember("SchemaVersion", SchemaVersion);
-	json.AddMember("State", *this);
+	json.AddMember("State", HStateJsonWriter(*this, points));
 
 	PString text;
 	if (PJson::ToString(json, &text) == false)
@@ -223,9 +374,9 @@ bool HGameplayState::FromJsonString(const PString& text)
 
 	uint32 version = 0;
 	json.GetData("SchemaVersion", &version);
-	if (version != SchemaVersion)
+	if (version < MinReadableSchemaVersion || version > SchemaVersion)
 	{
-		JG_LOG(GameMaster, ELogLevel::Warning, "HGameplayState: schema version %u != %u", version, SchemaVersion);
+		JG_LOG(GameMaster, ELogLevel::Warning, "HGameplayState: schema version %u is not in %u..%u", version, MinReadableSchemaVersion, SchemaVersion);
 	}
 
 	return json.GetData("State", this);
@@ -233,20 +384,16 @@ bool HGameplayState::FromJsonString(const PString& text)
 
 uint64 HGameplayState::Checksum() const
 {
-	PString text = ToJsonString();
-	const HRawString& raw = text.GetRawString();
-
-	// FNV-1a 64
-	uint64 hash = 14695981039346656037ULL;
-	for (char c : raw)
-	{
-		hash ^= (uint64)(uint8)c;
-		hash *= 1099511628211ULL;
-	}
-	return hash;
+	// 되감기 지점은 표시한 뒤 바뀌지 않는다. 사본 전체 대신 지점 해시만 섞어 지점이 있어도 체크섬 비용이 그대로다.
+	return hashGameplayText(toJsonText(ERewindPointJson::HashOnly));
 }
 
 void HGameplayState::WriteJson(PJsonData& json) const
+{
+	writeState(json, ERewindPointJson::Full);
+}
+
+void HGameplayState::writeState(PJsonData& json, ERewindPointJson points) const
 {
 	json.AddMember("Entities", Entities);
 	json.AddMember("Zones", Zones);
@@ -271,6 +418,26 @@ void HGameplayState::WriteJson(PJsonData& json) const
 		tablesJson.AddMember(table->GetTypeName().ToString(), tableJson);
 	}
 	json.AddMember("Tables", tablesJson);
+
+	// 지점이 없으면 쓰지 않는다 — 되감기를 쓰지 않는 게임의 상태 JSON 은 그대로다.
+	if (RewindPoints.empty() == true || points == ERewindPointJson::None)
+	{
+		return;
+	}
+	if (points == ERewindPointJson::Full)
+	{
+		json.AddMember("RewindPoints", RewindPoints);
+		return;
+	}
+	HList<PName>  names;
+	HList<uint64> hashes;
+	for (const HGameplayRewindPoint& point : RewindPoints)
+	{
+		names.push_back(point.Name);
+		hashes.push_back(point.Hash);
+	}
+	json.AddMember("RewindPointNames", names);
+	json.AddMember("RewindPointHashes", hashes);
 }
 
 void HGameplayState::ReadJson(const PJsonData& json)
@@ -292,6 +459,9 @@ void HGameplayState::ReadJson(const PJsonData& json)
 	}
 	json.GetData("Sequence", &Sequence);
 	json.GetData("Seed", &Seed);
+
+	RewindPoints.clear();
+	json.GetData("RewindPoints", &RewindPoints);
 
 	// 테이블은 등록된 것만 읽는다. 저장에는 있는데 등록이 없는 타입은 경고 후 무시.
 	PJsonData tablesJson;

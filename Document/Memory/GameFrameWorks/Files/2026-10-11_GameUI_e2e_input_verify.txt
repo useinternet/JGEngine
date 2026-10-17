@@ -1,0 +1,42 @@
+GG-H32 게임 UI 화면 검증 도구 — 보낸 입력이 가끔 빠짐: 원인 · 수정 · 검증 기록 (2026-10-11 새벽, GUI 세션)
+
+§0. 지시
+- 사용자 대시보드 명령 2026-10-11 00:01 "지금 진행해줘"(엔진 총괄 전달) — 대시보드 "앞으로"의 제안 "게임 UI 화면 검증 도구 — 입력이 가끔 빠짐"(= 보류 GG-H32).
+- 완료 기준: 메인 엔진 데모 e2e 41단계 5회 연속 모두 통과, 작업 폴더도 그대로, D3D12 0 · live 0. 엔진 코드를 고쳐야 하는 원인이면 고치기 전에 총괄에 알림 → 엔진 원인 아님(§1), 엔진 코드 변경 없음.
+
+§1. 원인 (실험 도구 `tools/gameui_demo_testgame/gameui_input_probe.ps1`)
+- 증상: `gameui_e2e.ps1` 이 런처 창에 PostMessage 로 넣은 클릭 · 휠이 회차마다 다른 자리에서 하나씩 빠짐. 움직임(GG-16) · 스크롤(GG-20) · 휠(GG-21) 메인 검증 세 번 연속, GG-21 메인 4회 = 2 · 6 · 25+28 · 6단계. 빌드 직후 첫 실행의 첫 클릭 빠짐도 같은 무리.
+- 실험(메인 엔진 데모, End Turn 을 방식마다 30번 — 앱 Info 로그는 경고 이상일 때만 바로 쓰여 실행 중에는 못 세므로, 방식마다 따로 띄워 끝난 로그의 "End Turn clicked" 를 셈):
+  A 지금 방식(PowerShell 줄마다 이동 · 누름 · 뗌 PostMessage)            30/30
+  B 이동을 넣고 30ms 쉰 뒤 누름 · 뗌                                       0/30
+  C C# 안에서 세 메시지를 잇달아 PostMessage(사이 수 µs)                  30/30
+  D C# 묶음 + 앞서 SendMessageTimeout(WM_NULL)로 앱 프레임에 맞추고 3ms    30/30
+  PowerShell 한 줄 PostMessage 약 0.12ms(처음 부를 때는 더 김), 앱 프레임(WM_NULL 왕복) 약 20~36ms, 런처 창은 전경 아님 · 실제 커서는 창 밖이거나 다른 창에 가려짐.
+- 짜임: ImGui Win32 백엔드는 WM_MOUSEMOVE 를 처리할 때 TrackMouseEvent(TME_LEAVE)를 건다 — 실제 커서가 그 창 위에 없으면 WM_MOUSELEAVE 가 곧바로 큐에 들어오고, 처리하면 마우스 자리가 무효(-FLT_MAX)가 된다
+  (`imgui_impl_win32.cpp:668-706`). 앱은 프레임마다 한 번 큐를 비운다(`PWindowsJWindow::Update`). 스크립트가 이동 · 누름 · 뗌을 따로 넣는 사이에 앱이 큐를 비우면 이동 → (곧바로) 떠남 → 누름 · 뗌 차례가 되어,
+  누름이 무효 자리에서 처리되거나(이미지 위가 아님 — 클릭 없음) 뗌이 무효 자리에서 처리된다(게임 UI 버튼은 밖에서 뗀 것 — 클릭 아님). 휠도 [이동 · 휠] 사이에 떠남이 끼면 이미지 위가 아니라 버려진다.
+  B 가 30번 모두 빠지는 것이 이 차례의 결과다. 묶음이 앱이 큐를 비우기 전에 다 들어가 있으면 ImGui 입력 큐 규칙(누름 · 뗌 · 휠 뒤의 자리 이벤트는 다음 프레임으로)으로 떠남이 뒤로 밀려 그대로 된다.
+- 엔진 원인이 아니다: 실제 사람 입력은 실제 커서 자리와 함께 오고, 끼어드는 떠남은 이 검증 방식(창 밖 커서 + 넣은 메시지)에서만 생긴다.
+
+§2. 수정 (`tools/gameui_demo_testgame/gameui_e2e.ps1` 만, 단계 · 좌표 그대로)
+- C# 도우미 `SyncFrame`(SendMessageTimeout WM_NULL · SMTO_ABORTIFHUNG · 2초 — 앱이 프레임 앞머리에서 큐를 꺼낼 때까지 기다림) · `PostBurst`(맞춘 뒤 3ms 쉬고 묶음을 잇달아 PostMessage).
+  자리가 필요한 묶음을 모두 이것으로: 클릭 [이동 · 누름 · 뗌](Click-Ref · Click-RefQuick), 끌기 시작 [이동 · 누름] · 끝 [이동 · 뗌](Drag-Ref · DragWheel-Ref), 휠 [이동 · 휠](Wheel-Ref · DragWheel-Ref). 끄는 중 중간 이동 · 키 · 글자는 그대로(자리와 상관없음).
+- 시작 때 프레임 맞추기 10번(첫 호출 준비 비용을 여기서 치름 + 프레임 간격 출력), 끝에 묶음 수 · 맞추기 기다린 시간 · 시간 초과 출력.
+- 끝에 게임 로그로 단계마다 판정(`Invoke-E2ECheck`, README 기대 결과): 차례 검사 51줄(앞 줄을 찾은 자리 뒤에서, 몇 줄은 "사이에 있으면 안 되는 것" — 막힌 클릭 · 입력 중 Esc · 닫히는 메뉴 · 위 띠 휠) + 세기 7개
+  (End Turn 2 · Menu 5 · Resume 2 · 비활성 Draw 0 · "홍길동abz" 0 · [error]/[critical] 0 · live blocks 1 이상 0) + 종료 코드 0. 통과면 "E2E CHECK: PASS" · 종료 코드 0, 아니면 "E2E CHECK: FAIL" · 문제 목록 · 종료 코드 6.
+  `-CheckLog <jg_log.txt>` = 띄우지 않고 그 로그만 판정, `-NoCheck` = 판정 생략(다른 HUD).
+- 판정기 확인: GG-21 메인 4회의 로그(입력이 빠진 것) → 4개 모두 FAIL(빠진 단계: 1회차 Menu 수 4 · 6단계부터 밀림, 2회차 6단계, 3회차 25 · 28단계에서 26 · 28 · 29 · 30 · Menu 수, 4회차 6단계), 고친 뒤 실행 로그 → PASS.
+
+§3. 검증 (엔진 · 데모 코드 변경 없음 — 데모는 GG-21 그대로)
+- 메인 엔진 데모 `Temp/Games/GameUIDemo_GUI`: 고친 뒤 1회 PASS → 5회 연속(00:2x~00:34) 모두 "E2E CHECK: PASS - steps 1-41, 51 ordered checks + 7 counts", 종료 코드 0.
+  회차마다 입력 묶음 44, 프레임 맞추기 기다림 중앙값 10.4 · 16.7 · 12.5 · 14.2 · 12.5ms, 가장 김 27.8~36.3ms, 시간 초과 0. 로그 End Turn 2 · Menu 5 · Resume 2 · error 0 · live blocks 0(두 줄).
+- 작업 폴더 `Temp/wt/e2e`(00:36 메인 거울, gameui.selftest 461/461) 엔진으로 만든 검증 게임 `Temp/Games/GameUIDemo_E2E`: 빌드 직후 첫 실행 포함 2회 모두 PASS(예전에 첫 클릭이 빠지던 조건).
+- dbgcount(메인 엔진 데모 40초): 실행 중 D3D12 메시지 0, 디버그 출력 15줄(종료 단순 보고 — 기준선, Live Object 12).
+- 한 실행은 약 2분 반(시작 대기 40초 포함). 묶음마다 프레임 하나(약 20~36ms)를 더 기다린다.
+
+§4. 알릴 것
+- 화면 검증은 이제 출력 끝의 "E2E CHECK" 줄로 판정한다 — 로그를 사람이 README 와 대조하지 않아도 된다. 데모 HUD · 단계를 바꾸면 스크립트의 `$expected` · `$counts` 도 같이 고친다.
+- 에디터(ImGui) 창에 [이동 · 누름 · 뗌]을 PowerShell 줄마다 PostMessage 하는 다른 검증 스크립트도 창 밖 커서 상태에서 같은 빠짐이 생길 수 있다(예: `Etc/Files/tools/sceneviewport_focuslost_check.ps1`,
+  `Server/Files/tools/net_lobby_check/net_lobby_ui_driver.ps1` — 돌려 보지는 않음). 고치려면 같은 묶음 방식(이 스크립트의 GUIE2E.PostBurst). 게임 호스트 창(`DevOps/Files/tools/gamehost_e2e.ps1`)은 엔진 입력 계층이
+  누름 메시지의 자리를 그대로 쓰므로 다를 수 있다(확인 안 함).
+- 커밋은 사용자(도구 · 문서만).

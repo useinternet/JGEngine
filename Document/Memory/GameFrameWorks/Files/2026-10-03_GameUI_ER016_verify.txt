@@ -1,0 +1,35 @@
+ER-016 게임 UI 기본 글꼴을 게임 Content 에서 — 검증 기록 (2026-10-03 저녁, GUI 세션, 총괄 배정 · 새 사용자 결정 없음: D-23 ③ "Content 만")
+요청서 ProjectAH/Document/엔진요청/ER-016_GameUI_기본_글꼴을_게임_Content_에서_정하기.md
+
+§1. 바꾼 것 (작업 폴더 Temp/wt/er016 = 메인 거울 17:5x → 메인 반영 17:5x, MainTree.cmd hold)
+- 기본 글꼴 후보(PGameUIManager::GetDefaultFont): 게임 Content/Fonts/GameUIDefault.ttf → 엔진 Content/Fonts/GameUIDefault.ttf → OS 맑은 고딕 → Arial.
+  게임 Content = 개발 <Project>/Content, 패키지 <패키지>/Content/JGGame(쿡이 게임 Content 를 그대로 옮김). 엔진 단독 실행이면 게임 Content 없음.
+- SetDefaultFont(font): 게임이 정한다(예: LoadFont 로 자기 Content 의 다른 이름 글꼴). nullptr 이면 위 순서로 다시 찾는다.
+- 패키지 빌드(JG_WITH_EDITOR 0)에서 OS 글꼴로 떨어지면 경고 한 줄 "Game UI default font is the OS font <경로> - put Fonts/GameUIDefault.ttf in the game Content or call SetDefaultFont".
+- Core HFileHelper::ReadAllBytes(새): 파일 통째 바이트 읽기(wide 경로) + 패키지 읽기 가드. 게임 UI 글꼴 · 이미지 읽기(HGameUIFile::ReadAllBytes)가 이것을 거친다 →
+  패키지에서 OS 글꼴 같은 Content 밖 읽기가 "Package reads outside Content/Saved/Bin" 경고 · 쿡 스모크 보고서 "reads outside Content" 에 잡힌다
+  (전에는 직접 ifstream 이라 가드가 못 봄 — FileHelper.cpp 주석 고침).
+- 바뀐 파일(새 파일 없음 — 프로젝트 다시 생성 불필요): Core/FileIO/FileHelper.h/.cpp, GFW UI/GameUIFile.h · GameUIManager.h/.cpp · GameUISelfTest.cpp(testDefaultFont 4검사 + 게임 Content 글꼴이 있을 때 1).
+
+§2. 작업 폴더 검사: 빌드 48초 오류 0, gameui.selftest 300/300.
+
+§3. 개발 실행(검증 게임 Temp/Games/GameUIDemo_ER016 — 엔진 루트 = 작업 폴더, 소스 · Content 는 DevOps 가 패키지로 굽던 Temp/Games/GameUIDemo 판)
+- 게임 글꼴 없음: JGConsole -game gameui.selftest → 첫 "Font loaded : C:/Windows/Fonts/malgun.ttf"(개발 빌드라 경고 없음), 300/300.
+- <Project>/Content/Fonts/GameUIDefault.ttf 를 둠(시험용으로 맑은 고딕 복사): 첫 "Font loaded : .../GameUIDemo_ER016/Content/Fonts/GameUIDefault.ttf",
+  301/301(게임 Content 글꼴이 먼저인지 보는 검사까지 돎). → 완료 기준 (a) 개발 쪽.
+
+§4. 패키지(작업 폴더 JGConsole cook.run, ReleaseGame, 스모크 300프레임)
+- 1차(게임 글꼴 있음, HUD 원래 판): 기본 글꼴 = ".../Package/ReleaseGame.staging/Content/JGGame/Fonts/GameUIDefault.ttf"(OS 글꼴 경고 없음).
+  "reads outside Content 1" = HUD 서식 패널이 Arial · 맑은 고딕을 직접 여는 것("Package reads outside Content/Saved/Bin: C:/Windows/Fonts/arial.ttf")
+  — 이번 변경으로 가드가 게임 UI 읽기도 보게 되어 드러남(게임 코드의 선택).
+- 2차(게임 글꼴 있음, 시험 사본 HUD 의 직접 OS 글꼴을 게임 글꼴로 바꿈): 기본 글꼴 = 패키지 안 게임 글꼴, "smoke 300 frames, exit 0, error lines 0, reads outside Content 0",
+  쿡 경고 1(assimp DLL 안내만). → 완료 기준 (b) "게임 글꼴을 두면 경고가 없다".
+- 3차(게임 글꼴 없음, HUD 원래 판 — 먼저 한 번은 복사한 HUD 가 옛 시각이라 다시 컴파일되지 않아 시험 사본 오류 3줄, 시각 갱신 뒤 다시):
+  "Package reads outside Content/Saved/Bin: C:/Windows/Fonts/malgun.ttf" → "Font loaded : C:/Windows/Fonts/malgun.ttf" →
+  "Game UI default font is the OS font C:/Windows/Fonts/malgun.ttf - put Fonts/GameUIDefault.ttf in the game Content or call SetDefaultFont",
+  보고서 "error lines 0, reads outside Content 1", 쿡 경고 "the game reads 1 folder(s) outside Content/Saved/Bin". → 완료 기준 (b) "OS 글꼴을 읽으면 경고".
+
+§5. 메인 반영(MainTree.cmd -name=GUI hold → 6파일 줄끝 유지 복사(Core 두 파일은 마지막 줄 줄바꿈 없음 — 외톨이 CR 지움) → build 41초 → exec 검사 → release 17:51)
+- gameui.selftest 300/300, input.selftest 34/34, gmtest OK(GameViewport 31), console.selftest 64/64, datatable.selftest 127/127.
+
+§6. 알림: 게임 연출 구현(쓰는 법), 게임 총괄(반영), 엔진 총괄(보고). DevOps 에는 총괄 경유(가드가 HFileHelper::ReadAllBytes 도 봄).

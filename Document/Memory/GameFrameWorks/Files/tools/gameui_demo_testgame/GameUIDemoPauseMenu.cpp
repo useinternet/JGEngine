@@ -6,6 +6,8 @@ void JGGameUIDemoPauseMenu::OnInitialize()
 {
 	SetInputMode(EGameWidgetInputMode::Menu);
 	SetBackHandler(true);
+	SetOpenTransition(HGameUITransition::Fade(0.3f));
+	SetCloseTransition(HGameUITransition::Fade(0.4f, EGameUIEase::InQuad));
 
 	// 화면 전체를 살짝 어둡게(입력 차단은 입력 모드가 한다 — 이 막은 모습만)
 	PSharedPtr<PGameUIImage> dim = AddChild<PGameUIImage>(PName("Dim"));
@@ -16,6 +18,10 @@ void JGGameUIDemoPauseMenu::OnInitialize()
 	PSharedPtr<PGameUIImage> panel = AddChild<PGameUIImage>(PName("Panel"));
 	panel->SetLayout(HVector2(0.5f, 0.5f), HVector2(0.5f, 0.5f), HVector2(0.0f, 0.0f), HVector2(640.0f, 400.0f));
 	panel->SetColor(HLinearColor(0.08f, 0.10f, 0.16f, 0.96f));
+	HGameUIRenderTransform lowered;
+	lowered.Translation = HVector2(0.0f, 40.0f);
+	panel->SetRenderTransform(lowered);   // OnActivated 에서 0 으로 올라온다
+	_panel = panel;
 
 	PSharedPtr<PGameUIText> title = panel->AddChild<PGameUIText>(PName("Title"));
 	title->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 30.0f), HVector2(640.0f, 80.0f));
@@ -42,7 +48,19 @@ void JGGameUIDemoPauseMenu::OnInitialize()
 
 void JGGameUIDemoPauseMenu::OnActivated()
 {
+	// 지금 자리에서 올라온다(처음 열 때는 40 아래, 닫히다 다시 열면 내려가던 자리에서).
+	PlayTween(HGameUITween::To(_panel, EGameUITweenProperty::Translation, HVector2(0.0f, 0.0f), 0.3f, EGameUIEase::OutCubic));
 	JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo pause menu activated");
+}
+
+void JGGameUIDemoPauseMenu::OnDeactivated()
+{
+	// 닫힐 때(IsClosing)만 패널을 내린다. 이 트윈은 닫힘 전환과 함께 돈다.
+	if (IsClosing())
+	{
+		PlayTween(HGameUITween::To(_panel, EGameUITweenProperty::Translation, HVector2(0.0f, 40.0f), 0.4f, EGameUIEase::InQuad));
+	}
+	JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo pause menu deactivated (closing %d)", IsClosing() ? 1 : 0);
 }
 
 void JGGameUIDemoPauseMenu::OnShutdown()

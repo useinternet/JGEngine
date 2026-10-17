@@ -3,20 +3,22 @@
 #include "Core/GameInstance.h"
 #include "Core/WorldSelfTest.h"
 #include "GameMaster/GameMasterSelfTest.h"
+#include "Viewport/GameViewportSelfTest.h"
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
 JG_MODULE_IMPL(HGameFrameWorksModule, GAMEFRAMEWORKS_C_API)
 
 namespace
 {
-	// gmtest — GameMaster 커널 + 월드/게임 인스턴스 자체 검증(그래픽 없음).
-	// GameFrameWorks 가 연결된 프로세스에서 쓸 수 있다: JGConsole(시작할 때 연결), 프로젝트 모드 에디터(게임 모듈이 연결).
+	// gmtest — GameMaster 커널 + 월드/게임 인스턴스 + 게임 뷰포트 입력 라우팅 자체 검증(그래픽 없음).
+	// GameFrameWorks 가 연결된 프로세스에서 쓸 수 있다: JGConsole(시작할 때 연결), 에디터(엔진 모듈로 늘 연결 — 프로젝트 없이 띄워도, 2026-10-02 D-7).
 	// 월드 테스트의 게임 인스턴스 절만 모듈의 게임 인스턴스로 월드를 로드 · 언로드한다. 이미 월드가 있으면(에디터에서 게임이 도는 중) 그 절은 건너뛰고,
 	// 나머지는 자기 전용 PGameMaster / PWorld 를 쓰므로 에디터 안에서 돌려도 게임 월드를 건드리지 않는다.
 	bool executeGameMasterSelfTest(const HConsoleCommandArgs&)
 	{
 		int32 failures = PGameMasterSelfTest::Run();
 		failures += PWorldSelfTest::Run();
+		failures += PGameViewportSelfTest::Run();
 
 		if (failures == 0)
 		{
@@ -33,7 +35,7 @@ namespace
 	HAutoConsoleCommand GameMasterSelfTestCommand(
 		"gmtest",
 		"gmtest",
-		"Run the GameFrameWorks self tests (GameMaster kernel + world)",
+		"Run the GameFrameWorks self tests (GameMaster kernel + world + game viewport)",
 		&executeGameMasterSelfTest);
 }
 

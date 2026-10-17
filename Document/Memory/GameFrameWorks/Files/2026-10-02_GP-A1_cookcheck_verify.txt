@@ -1,0 +1,85 @@
+GP-A1 cook content check (game build pipeline D-23) - verification, 2026-10-02 night
+Design: Document/Memory/DevOps/Files/게임빌드파이프라인_설계_2026-10-02.md 4-10 (check rules), 5 (GP-A1), 7 (Data session).
+Work order: 엔진 총괄 (D-23). Signature agreed with DevOps before implementation.
+
+== 1. What was added (new files only, no existing file changed) ==
+Asset          Source/Runtime/Asset/Cook/AssetCookValidator.h/.cpp
+                 ValidateAssetsForCook(files, mounts, typeChecks, issues) - checks 1-3 + type-check hook (HAssetCookTypeCheck)
+GameFrameWorks Source/Runtime/GameFrameWorks/Data/ContentCookCheck.h/.cpp
+                 ValidateContentForCook(files, mounts(token, dir), outErrors, outWarnings) - entry for JGConsole cook.run step 7
+                 = Asset checks + data table check (datatable.validate rules). Header uses Core types only.
+               Source/Runtime/GameFrameWorks/Data/ContentCookCheckSelfTest.cpp - console command cookcheck.selftest
+Why the entry is in GFW: data tables live in GameFrameWorks (DataTable D3), Asset cannot call them, and JGConsole
+only has Core + GameFrameWorks include paths (JGConsole.module.json deps Core, GameFrameWorks).
+
+Rules (design 4-10):
+  1 .jgasset parses as JSON (error has line/column), JGObjectType, JGObject, JGAsset._guid present
+  2 GUID unique across both mounts (the asset database keeps the first and drops the copy)
+    _guid is parsed by the checker itself: 11 decimal parts, data1 != 0, 16-bit/8-bit ranges.
+    (HGuid::FromString uses std::stoull and throws on non-numeric text - see 5.)
+  3 every string inside an asset that starts with a mount token (/JGEngine/ · /JGGame/) names a file in the cook set.
+    Same normalization as HAssetPath (backslash, leading '/', no extension -> .jgasset), case-sensitive like the runtime lookup,
+    case-only mismatch gets a hint. The asset's own JGAsset.AssetPath field is not a reference (the database uses the file location).
+    One line per missing target: first JSON place + "and N more place(s)".
+  4 data tables: load issues + ValidateDataTableContent. Errors fail the cook, warnings are reported (cook continues).
+    RowRef "Table" lookups resolve inside the cook set; AssetRef existence is left to rule 3 (no duplicate warning).
+  + files outside every mount -> error. Paths come only from the given mounts (not from the cooking process' Content dirs).
+
+== 2. Worktree (Temp/wt/cookcheck, HEAD 0bd6356) ==
+PreBuild exit 0 (Asset 2, GameFrameWorks 3 new entries). Full build 86 s exit 0, warnings: LNK4098 x2 (pre-existing).
+(first try: C2589 - windows.h max macro on std::numeric_limits<uint64>::max -> UINT64_MAX)
+cookcheck.selftest OK (26/26), exit 0, live blocks 0.
+Regressions: datatable.selftest 127/127 · gameui.selftest 193/193 · console.selftest 64/64 · gmtest OK (World 64) - exit 0.
+  net.test all: 96 passed, 5 failed - all "tcp ... 127.0.0.1:47790" (bind failed, WSA 10048): port 47790 was held by an
+  unrelated C:\Program Files\Git\usr\bin\perl.exe (pid 9580, started 22:04). Not related to this change.
+
+== 3. Main tree ==
+Copied the 5 new files, PreBuild exit 0 (18 projects now).
+Main builds collided twice with other sessions' builds (PCH "Permission denied", LNK1104 on a DLL being linked) -> waited.
+Integration fix: DevOps' JGConsole/Cook/CookCommand.cpp enables the call with __has_include("Data/ContentCookCheck.h") and
+  passes the JG_ASSET_*_PATH_RECOGNITION_TOEKN macros (as the signature note said). Those live in Asset's AssetDefines.h,
+  which JGConsole cannot include -> C2065 once the header appeared. ContentCookCheck.h now defines the same two macros under
+  #ifndef (identical values; ContentCookCheck.cpp includes both headers, so a value change would raise C4005).
+  After that, another session's main build relinked JGConsole.exe (22:57:56) and DevOps reported main build exit 0.
+Own incremental main build: 14 projects OK; LNK1104 only on JGBuildTool.exe / JGHeaderTool.exe, which DevOps' cook run was
+  executing at that moment (step 2 project generation) - not rebuilt by me, nothing of mine in them.
+Main Bin runs:
+  cookcheck.selftest OK (26/26), exit 0, live blocks 0
+  datatable.selftest OK (127/127), exit 0, live blocks 0
+  engine Content after default excludes (RawResources/, TempAsset/): 0 files today (GP-G4 shaders not moved yet)
+  engine Content with TempAsset (Sample.jgasset 36 MB, a real mesh asset): 0 errors, 1926 ms (DevelopEngine)
+
+== 4. Self-test output (main Bin, <Engine> = C:/Develop/JGEngine) ==
+[good] warning /JGGame/Data/Items.jgasset : data table row 2 'Item_B', column 'Next': row 'Other_Z' is not found
+[missing_asset] error /JGGame/Data/Items.jgasset : reference '/JGGame/Meshes/Missing.jgasset' at JGObject.JGDataTable.Rows[0].Mesh and 2 more place(s) is not in the cook set
+[missing_texture] error /JGGame/Meshes/Box.jgasset : reference '/JGEngine/Textures/Gone' at JGObject.JGStaticMesh.Material is not in the cook set
+[case] error /JGGame/Data/Items.jgasset : reference '/JGGame/meshes/box.jgasset' at JGObject.JGDataTable.Rows[0].Mesh and 2 more place(s) differs in case from '/JGGame/Meshes/Box.jgasset' (asset lookup is case-sensitive)
+[missing_font] error /JGGame/Data/Items.jgasset : reference '/JGEngine/Fonts/Default.ttf' at JGObject.JGDataTable.Rows[0].Font is not in the cook set
+[missing_table] error /JGGame/Data/Items.jgasset : reference '/JGGame/Data/Nope' at JGObject.JGDataTable.Columns[2].Table is not in the cook set
+[missing_table] warning /JGGame/Data/Items.jgasset : data table column 'Next': table '/JGGame/Data/Nope' of column 'Next' is not found
+[duplicate_guid] error /JGGame/Meshes/Box.jgasset : GUID 2305730843-48479-17527-169-72-127-132-104-5-148-130 is also used by /JGEngine/Meshes/BoxCopy.jgasset (the asset database keeps only the first one; give the copy a new _guid)
+[bad_guid] error /JGGame/Misc/NoGuid.jgasset : JGAsset._guid is missing
+[bad_guid] error /JGGame/Misc/TextGuid.jgasset : JGAsset._guid 'abc-def' is not a GUID
+[bad_guid] error /JGGame/Misc/WideGuid.jgasset : JGAsset._guid '7-70000-2-3-4-5-6-7-8-9-10' is not a GUID
+[bad_guid] error /JGGame/Misc/ZeroGuid.jgasset : JGAsset._guid '0-1-2-3-4-5-6-7-8-9-10' is not a GUID
+[format] error /JGGame/Misc/Broken.jgasset : JSON line 4, column 1: Missing a name for object member.
+[format] error /JGGame/Misc/NoObject.jgasset : JGObject is missing
+[format] error /JGGame/Misc/NoType.jgasset : JGObjectType is missing
+[format] error <Engine>/Temp/CookCheckSelfTest/format/Outside/Stray.jgasset : file is outside the content mounts
+[duplicate_key] error /JGGame/Data/Items.jgasset : data table row 2 'Item_A', key 'Id': key 'Item_A' is a duplicate of row 1
+[table_format] error /JGGame/Data/Wrong.jgasset : data table: FormatVersion 99 is newer than this build reads (1)
+[table_format] error /JGGame/Data/Wrong.jgasset : data table: Columns is missing or not a list
+(each negative case also carries the good set's one warning; the engine's own loaders log 3 [error] lines for the
+ table_format fixture - expected)
+cookcheck.selftest: OK (26/26)
+
+Fixtures (temporary, removed after the run): <Engine>/Temp/CookCheckSelfTest/<case>/{Engine,Game}/...
+  good set: Engine Fonts/Default.ttf · Textures/Base.jgasset; Game Meshes/Box.jgasset (-> /JGEngine/Textures/Base, extensionless;
+  stale own AssetPath) · Data/Items.jgasset (AssetRef -> Box, String -> font, RowRef Table -> /JGGame/Data/Other) · Data/Other.jgasset
+
+== 5. Found while doing this (not changed) ==
+Asset loading reads _guid through PJsonData::GetData(HGuid*) (Core/FileIO/Json.h:1302) -> HGuid::FromString (Core/Misc/Guid.cpp).
+FromString splits on '-': fewer than 11 parts -> silently an invalid (zero) GUID; 11+ parts -> each part goes through
+PString::ToUint64/ToUint32 = std::stoull/stoul, which throw std::invalid_argument on a non-numeric part (e.g. a typo in a
+hand-edited .jgasset) and silently truncate out-of-range 16/8-bit parts. The cook check catches all of these before packaging;
+the runtime parse itself is Core's (reported to 엔진 총괄 as a possible 보류 item).

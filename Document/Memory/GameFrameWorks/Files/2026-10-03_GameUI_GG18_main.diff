@@ -1,0 +1,492 @@
+--- main/GameUIStyle.h
++++ gg18/GameUIStyle.h
+@@ -23,6 +23,9 @@
+ 	float32 ParagraphSpacing = 0.0f;    // '\n' 다음 문단 앞에 더하는 간격
+ 	bool    bBold            = false;   // 요소 전체 굵게(합성 — 글꼴에 굵은 면이 없어도 된다)
+ 	bool    bItalic          = false;   // 요소 전체 기울임(합성)
++	// 합성 굵게 세기(em 비율 — 그림 넓힘 양쪽 합 = 글자 폭 증가). 이 요소의 요소 전체 굵게와 <b> 구간이 모두 쓴다.
++	// 0 = 엔진 기본(PGameUIFont::BoldStrength = em/24, 지금까지와 같은 그림). 최대 PGameUIFont::MaxBoldStrength(em/6). 예: em/12 = 1.0f / 12.0f
++	float32 BoldStrength     = 0.0f;
+ };
+ 
+ // 버튼 스타일(CommonUI 의 ButtonStyle 자리). 배경 = Texture(없으면 단색) × 상태 색, 가운데 라벨은 Label 스타일.
+--- main/GameUIFont.h
++++ gg18/GameUIFont.h
+@@ -10,6 +10,7 @@
+ 	bool         bBold           = false;
+ 	bool         bItalic         = false;
+ 	float32      HorizontalScale = 1.0f;    // 장평(1.0 = 100%)
++	float32      BoldStrength    = 0.0f;    // 합성 굵게 세기(em 비율, 0 = 엔진 기본). 구간은 요소 값을 받는다(구간은 굵게 켜기만)
+ 	bool         bHasColor       = false;   // false 면 요소 색
+ 	HLinearColor Color;
+ };
+@@ -82,6 +83,7 @@
+ {
+ 	float32 HorizontalScale = 1.0f;    // 가로 배율로 래스터화(늘인 그림이 아니라 그 폭으로 그린다)
+ 	bool    bBold           = false;   // 커버리지를 넓혀 굵게(합성)
++	float32 BoldStrength    = 0.0f;    // 굵게 세기(em 비율, 0 = 엔진 기본 PGameUIFont::BoldStrength). 세기마다 따로 래스터화한다
+ };
+ 
+ // 아틀라스 상태(확인용).
+@@ -102,7 +104,8 @@
+ // (넘겨 연 페이지는 ClearGlyphs 까지 남아 비우고 다시 쓴다).
+ // GPU 텍스처는 그리기 직전 GetAtlasTexture(page) 가 페이지마다 만든다. 바뀐 페이지만 다시 만들고, 이전 텍스처는 GPU 가 끝낸 뒤 해제된다.
+ // 이 글꼴에 없는 글자는 대체 글꼴(SetFallbackFont, 사슬)의 폭 · 글리프 · 아틀라스로 배치 · 그린다. 줄 높이 · 기준선은 이 글꼴 것이다.
+-// 합성 굵게 = 글자 폭 + em × BoldStrength, 그림도 커버리지를 양쪽 합 같은 만큼 넓힌다(1픽셀 미만은 바깥 한 겹을 부분 픽셀로 — 작은 글자가 뭉치지 않게). 합성 기울임 = 그릴 때 사각형을 ItalicSkew 만큼 비튼다(폭은 그대로).
++// 합성 굵게 = 글자 폭 + em × 세기, 그림도 커버리지를 양쪽 합 같은 만큼 넓힌다(1픽셀 미만은 바깥 한 겹을 부분 픽셀로 — 작은 글자가 뭉치지 않게).
++// 세기는 기본 BoldStrength(em/24), 글 요소가 문단 서식으로 바꿀 수 있다(HGameUIParagraphStyle::BoldStrength, GG-18). 합성 기울임 = 그릴 때 사각형을 ItalicSkew 만큼 비튼다(폭은 그대로).
+ // 그래픽 없이(헤드리스) 래스터화 · 측정만 해도 된다.
+ class GAMEFRAMEWORKS_API PGameUIFont : public IMemoryObject
+ {
+@@ -110,9 +113,13 @@
+ 	static constexpr int32   AtlasSize             = 1024;
+ 	static constexpr int32   GlyphPadding          = 1;               // 선형 필터가 옆 글리프를 섞지 않게
+ 	static constexpr int32   DefaultAtlasPageLimit = 4;
+-	static constexpr float32 BoldStrength          = 1.0f / 24.0f;    // 합성 굵게가 더하는 폭(em 비율)
++	static constexpr float32 BoldStrength          = 1.0f / 24.0f;    // 합성 굵게 기본 세기 — 더하는 폭(em 비율)
++	static constexpr float32 MaxBoldStrength       = 1.0f / 6.0f;     // 글 요소가 정할 수 있는 가장 큰 세기
+ 	static constexpr float32 ItalicSkew            = 0.2126f;         // 합성 기울임(tan 12°)
+ 
++	// 굵게 세기(em 비율): 0 이하 = 기본 BoldStrength, MaxBoldStrength 를 넘으면 그 값.
++	static float32 ResolveBoldStrength(float32 strength);
++
+ 	struct HGlyph
+ 	{
+ 		int32        Width    = 0;         // 비트맵 픽셀. 공백은 0
+@@ -154,7 +161,7 @@
+ 	uint64                   _evictedPageCount = 0;
+ 	uint64                   _overLimitCount   = 0;
+ 	bool                     _bOverLimitWarned = false;
+-	HHashMap<uint64, HGlyph> _glyphs;   // 키 = 코드포인트 | 픽셀 크기 | 장평(%) | 굵게
++	HHashMap<uint64, HGlyph> _glyphs;   // 키 = 코드포인트 | 픽셀 크기 | 장평(%) | 굵게 세기
+ 	PSharedPtr<PGameUIFont>  _fallbackFont;
+ 
+ public:
+--- main/GameUIFont.cpp
++++ gg18/GameUIFont.cpp
+@@ -89,13 +89,23 @@
+ 		return HMath::Clamp((int32)(horizontalScale * 100.0f + 0.5f), 1, 2047);
+ 	}
+ 
+-	// 글리프 키 = 코드포인트(21비트) | 픽셀 크기(12비트) | 장평 %(11비트) | 굵게(1비트)
+-	uint64 makeGlyphKey(uint32 codepoint, int32 pixelSize, int32 scalePercent, bool bBold)
++	// 굵게 세기 → 글리프 키 값(1/10000 em, 1 ~ 2047). 0 = 굵게 아님. 기본 em/24 = 417.
++	int32 toBoldCode(bool bBold, float32 strength)
++	{
++		if (bBold == false)
++		{
++			return 0;
++		}
++		return HMath::Clamp((int32)(strength * 10000.0f + 0.5f), 1, 2047);
++	}
++
++	// 글리프 키 = 코드포인트(21비트) | 픽셀 크기(12비트) | 장평 %(11비트) | 굵게 세기(11비트, 0 = 굵게 아님) — 세기가 다른 요소의 같은 글자는 따로 둔다
++	uint64 makeGlyphKey(uint32 codepoint, int32 pixelSize, int32 scalePercent, int32 boldCode)
+ 	{
+ 		return (uint64)(codepoint & 0x1FFFFF)
+ 			| ((uint64)(pixelSize & 0xFFF) << 21)
+ 			| ((uint64)(scalePercent & 0x7FF) << 33)
+-			| ((uint64)(bBold ? 1 : 0) << 44);
++			| ((uint64)(boldCode & 0x7FF) << 44);
+ 	}
+ 
+ 	uint32 glyphKeyCodepoint(uint64 key)
+@@ -115,10 +125,10 @@
+ 		}
+ 	}
+ 
+-	// 합성 굵게의 한쪽 넓힘(픽셀). 양쪽 합 = 글자 폭 증가(em × BoldStrength)라 그림과 폭이 같이 는다.
+-	float32 boldRadius(int32 pixelSize)
++	// 합성 굵게의 한쪽 넓힘(픽셀). 양쪽 합 = 글자 폭 증가(em × 세기)라 그림과 폭이 같이 는다.
++	float32 boldRadius(int32 pixelSize, float32 strength)
+ 	{
+-		return (float32)pixelSize * PGameUIFont::BoldStrength * 0.5f;
++		return (float32)pixelSize * strength * 0.5f;
+ 	}
+ 
+ 	// 비트맵이 사방으로 늘어나는 칸 수(반지름의 올림).
+@@ -319,8 +329,9 @@
+ 
+ PGameUIFont::HGlyph PGameUIFont::GetGlyph(uint32 codepoint, int32 pixelSize, const HGameUIGlyphVariant& variant)
+ {
+-	const int32  scalePercent = toScalePercent(variant.HorizontalScale);
+-	const uint64 key          = makeGlyphKey(codepoint, pixelSize, scalePercent, variant.bBold);
++	const int32   scalePercent = toScalePercent(variant.HorizontalScale);
++	const float32 boldStrength = variant.bBold ? ResolveBoldStrength(variant.BoldStrength) : 0.0f;
++	const uint64  key          = makeGlyphKey(codepoint, pixelSize, scalePercent, toBoldCode(variant.bBold, boldStrength));
+ 	auto found = _glyphs.find(key);
+ 	if (found != _glyphs.end())
+ 	{
+@@ -352,7 +363,7 @@
+ 		glyph.Advance = advance * scaleX;
+ 		if (variant.bBold)
+ 		{
+-			glyph.Advance += (float32)pixelSize * BoldStrength;
++			glyph.Advance += (float32)pixelSize * boldStrength;
+ 		}
+ 
+ 		// 비트맵 상자. y 는 아래로 + 이고 기준선이 0 이라 y0 은 보통 음수다.
+@@ -364,9 +375,9 @@
+ 		const int32 rasterWidth  = x1 - x0;
+ 		const int32 rasterHeight = y1 - y0;
+ 
+-		// 합성 굵게: 커버리지를 사방으로 반지름(실수) 만큼 넓힌다 — 양쪽 합 = 폭 증가 em × BoldStrength.
++		// 합성 굵게: 커버리지를 사방으로 반지름(실수) 만큼 넓힌다 — 양쪽 합 = 폭 증가 em × 세기.
+ 		// 1픽셀보다 작으면 바깥 한 겹만 그 비율로 진해져 작은 글자의 속 빈 곳이 막히지 않는다.
+-		const float32 radius  = variant.bBold ? boldRadius(pixelSize) : 0.0f;
++		const float32 radius  = variant.bBold ? boldRadius(pixelSize, boldStrength) : 0.0f;
+ 		const int32   padding = variant.bBold ? boldPadding(radius) : 0;
+ 		const int32   width   = rasterWidth + padding * 2;
+ 		const int32   height  = rasterHeight + padding * 2;
+@@ -511,11 +522,20 @@
+ 	float32 advance = MeasureAdvance(codepoint, fontSize) * style.HorizontalScale;
+ 	if (style.bBold)
+ 	{
+-		advance += fontSize * BoldStrength;
++		advance += fontSize * ResolveBoldStrength(style.BoldStrength);
+ 	}
+ 	return advance;
+ }
+ 
++float32 PGameUIFont::ResolveBoldStrength(float32 strength)
++{
++	if (strength <= 0.0f)
++	{
++		return BoldStrength;
++	}
++	return HMath::Min(strength, MaxBoldStrength);
++}
++
+ namespace
+ {
+ 	// 배치 중 공통 값. 글자 폭 = 서식 넣은 폭, 글자 사이 = 자간 보정 × 장평 + 자간.
+@@ -570,7 +590,7 @@
+ 		}
+ 	};
+ 
+-	// 요소 서식 위에 구간 서식을 겹친다.
++	// 요소 서식 위에 구간 서식을 겹친다. 굵게 세기는 요소 값(구간은 굵게를 켜기만 한다).
+ 	HGameUITextRunStyle combineRun(const HGameUITextRunStyle& base, const HGameUITextRunStyle& span)
+ 	{
+ 		HGameUITextRunStyle run = base;
+--- main/GameUIText.cpp
++++ gg18/GameUIText.cpp
+@@ -19,6 +19,7 @@
+ 		HGameUIGlyphVariant variant;
+ 		variant.HorizontalScale = run.HorizontalScale;
+ 		variant.bBold           = run.bBold;
++		variant.BoldStrength    = run.BoldStrength;
+ 		const PGameUIFont::HGlyph glyph = font.GetGlyph(codepoint, pixelSize, variant);
+ 		if (glyph.bInAtlas == false)
+ 		{
+@@ -625,6 +626,7 @@
+ 	options.BaseStyle.bBold           = _paragraph.bBold;
+ 	options.BaseStyle.bItalic         = _paragraph.bItalic;
+ 	options.BaseStyle.HorizontalScale = _paragraph.HorizontalScale;
++	options.BaseStyle.BoldStrength    = _paragraph.BoldStrength;
+ 	options.Spans                     = _spans.empty() ? nullptr : &_spans;
+ 	return options;
+ }
+--- main/GameUISelfTest.cpp
++++ gg18/GameUISelfTest.cpp
+@@ -1273,6 +1273,153 @@
+ 		return true;
+ 	}
+ 
++	// 세로 획 글자의 가운데 줄 잉크 폭(커버리지 합 / 255)이 굵게로 는 양(픽셀). 글리프를 못 읽으면 -1.
++	float32 boldInkIncrease(PGameUIFont& font, uint32 codepoint, int32 size, const HGameUIGlyphVariant& bold)
++	{
++		const PGameUIFont::HGlyph normal = font.GetGlyph(codepoint, size);
++		const PGameUIFont::HGlyph thick  = font.GetGlyph(codepoint, size, bold);
++		std::vector<uint8> normalCoverage;
++		std::vector<uint8> thickCoverage;
++		if (readGlyphCoverage(normal, normalCoverage) == false || readGlyphCoverage(thick, thickCoverage) == false)
++		{
++			return -1.0f;
++		}
++		const int32 padding = (thick.Height - normal.Height) / 2;
++		const int32 row     = normal.Height / 2;
++		float32 normalInk = 0.0f;
++		float32 thickInk  = 0.0f;
++		for (int32 x = 0; x < normal.Width; ++x)
++		{
++			normalInk += (float32)normalCoverage[(size_t)row * normal.Width + x] / 255.0f;
++		}
++		for (int32 x = 0; x < thick.Width; ++x)
++		{
++			thickInk += (float32)thickCoverage[(size_t)(row + padding) * thick.Width + x] / 255.0f;
++		}
++		return thickInk - normalInk;
++	}
++
++	// 보통 글리프에서 비어 있던 칸(커버리지 < 25%) 수와, 그중 굵게 뒤 75% 이상으로 막힌 칸 수(ER-012 (a) 판정). 못 읽은 글자가 있으면 false.
++	bool countFilledHoles(PGameUIFont& font, const uint32* codepoints, int32 count, int32 size, const HGameUIGlyphVariant& bold, int32& outHoles, int32& outFilled)
++	{
++		outHoles  = 0;
++		outFilled = 0;
++		bool bRead = true;
++		for (int32 index = 0; index < count; ++index)
++		{
++			const PGameUIFont::HGlyph normal = font.GetGlyph(codepoints[index], size);
++			const PGameUIFont::HGlyph thick  = font.GetGlyph(codepoints[index], size, bold);
++			std::vector<uint8> normalCoverage;
++			std::vector<uint8> thickCoverage;
++			if (readGlyphCoverage(normal, normalCoverage) == false || readGlyphCoverage(thick, thickCoverage) == false)
++			{
++				bRead = false;
++				continue;
++			}
++			const int32 padding = (thick.Width - normal.Width) / 2;
++			for (int32 y = 0; y < normal.Height; ++y)
++			{
++				for (int32 x = 0; x < normal.Width; ++x)
++				{
++					if (normalCoverage[(size_t)y * normal.Width + x] < 64)
++					{
++						++outHoles;
++						if (thickCoverage[(size_t)(y + padding) * thick.Width + x + padding] >= 192)
++						{
++							++outFilled;
++						}
++					}
++				}
++			}
++		}
++		return bRead;
++	}
++
++	// 획 사이 빈 곳: 보통 글리프에서 가로 또는 세로로 양쪽 끝이 잉크(≥ 50%)인 빈 칸(< 25%) 연속 구간. 그 수와,
++	// 굵게 뒤 구간 전체가 75% 이상으로 진해진(막힌) 수, 그중 길이 3칸 이상인 구간이 막힌 수.
++	void countClosedGaps(PGameUIFont& font, const uint32* codepoints, int32 count, int32 size, const HGameUIGlyphVariant& bold,
++		int32& outGaps, int32& outClosed, int32& outWideClosed)
++	{
++		outGaps       = 0;
++		outClosed     = 0;
++		outWideClosed = 0;
++		for (int32 index = 0; index < count; ++index)
++		{
++			const PGameUIFont::HGlyph normal = font.GetGlyph(codepoints[index], size);
++			const PGameUIFont::HGlyph thick  = font.GetGlyph(codepoints[index], size, bold);
++			std::vector<uint8> normalCoverage;
++			std::vector<uint8> thickCoverage;
++			if (readGlyphCoverage(normal, normalCoverage) == false || readGlyphCoverage(thick, thickCoverage) == false)
++			{
++				continue;
++			}
++			const int32 padding = (thick.Width - normal.Width) / 2;
++			auto normalAt = [&](int32 x, int32 y)
++			{
++				return normalCoverage[(size_t)y * normal.Width + x];
++			};
++			auto thickAt = [&](int32 x, int32 y)
++			{
++				return thickCoverage[(size_t)(y + padding) * thick.Width + x + padding];
++			};
++			// bHorizontal: 줄(y 고정)을 따라, 아니면 열(x 고정)을 따라
++			for (int32 pass = 0; pass < 2; ++pass)
++			{
++				const bool  bHorizontal = pass == 0;
++				const int32 lines       = bHorizontal ? normal.Height : normal.Width;
++				const int32 length      = bHorizontal ? normal.Width : normal.Height;
++				for (int32 line = 0; line < lines; ++line)
++				{
++					int32 position = 0;
++					while (position < length)
++					{
++						const int32 x = bHorizontal ? position : line;
++						const int32 y = bHorizontal ? line : position;
++						if (normalAt(x, y) >= 64)
++						{
++							++position;
++							continue;
++						}
++						const int32 runBegin = position;
++						while (position < length && normalAt(bHorizontal ? position : line, bHorizontal ? line : position) < 64)
++						{
++							++position;
++						}
++						const int32 runEnd = position;   // [runBegin, runEnd)
++						if (runBegin == 0 || runEnd >= length)
++						{
++							continue;
++						}
++						const bool bInkBefore = normalAt(bHorizontal ? runBegin - 1 : line, bHorizontal ? line : runBegin - 1) >= 128;
++						const bool bInkAfter  = normalAt(bHorizontal ? runEnd : line, bHorizontal ? line : runEnd) >= 128;
++						if (bInkBefore == false || bInkAfter == false)
++						{
++							continue;
++						}
++						++outGaps;
++						bool bClosed = true;
++						for (int32 at = runBegin; at < runEnd; ++at)
++						{
++							if (thickAt(bHorizontal ? at : line, bHorizontal ? line : at) < 192)
++							{
++								bClosed = false;
++								break;
++							}
++						}
++						if (bClosed)
++						{
++							++outClosed;
++							if (runEnd - runBegin >= 3)
++							{
++								++outWideClosed;
++							}
++						}
++					}
++				}
++			}
++		}
++	}
++
+ 	// 요청서(ER-012) 완료 기준 (a) (b): 합성 굵게가 글자 크기에 비례하고, 1픽셀 미만은 부분 픽셀로
+ 	void testBoldAcceptance()
+ 	{
+@@ -1370,6 +1517,138 @@
+ 		manager->Shutdown();
+ 	}
+ 
++	// 요청서(ER-018) 완료 기준: 글 요소마다 굵게 세기(GG-18, D-33). 세기 0 = 지금 그대로(em/24 — 위 ER-012 기준이 그대로 통과)
++	void testBoldStrength()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();   // 기준 1000x1000 = GTarget → 배율 1
++		PSharedPtr<PGameUIFont>    font    = manager->GetDefaultFont();
++		if (font.IsValid() == false || font->HasGlyph(0xD3ED) == false)
++		{
++			++GSkipCount;
++			JG_LOG(GameUI, ELogLevel::Warning, "gameui.selftest: no Hangul default font on this machine. Bold strength checks skipped");
++			manager->Shutdown();
++			return;
++		}
++
++		check(PGameUIFont::ResolveBoldStrength(0.0f) == PGameUIFont::BoldStrength && PGameUIFont::ResolveBoldStrength(-1.0f) == PGameUIFont::BoldStrength
++			&& PGameUIFont::ResolveBoldStrength(1.0f / 12.0f) == 1.0f / 12.0f && PGameUIFont::ResolveBoldStrength(1.0f) == PGameUIFont::MaxBoldStrength,
++			"bold strength: 0 or less is the engine default, above the maximum is the maximum");
++
++		HGameUIGlyphVariant defaultBold;
++		defaultBold.bBold = true;
++		HGameUIGlyphVariant explicitDefault = defaultBold;
++		explicitDefault.BoldStrength = PGameUIFont::BoldStrength;
++		HGameUIGlyphVariant strongBold = defaultBold;
++		strongBold.BoldStrength = 1.0f / 12.0f;
++
++		// (b) 세기 0 = 지금 그대로: 기본 세기를 직접 줘도 같은 캐시 항목 · 같은 폭
++		const PGameUIFont::HGlyph plain    = font->GetGlyph(0xD3ED, 19);
++		const PGameUIFont::HGlyph byZero   = font->GetGlyph(0xD3ED, 19, defaultBold);
++		const PGameUIFont::HGlyph byValue  = font->GetGlyph(0xD3ED, 19, explicitDefault);
++		const PGameUIFont::HGlyph byStrong = font->GetGlyph(0xD3ED, 19, strongBold);
++		check(byZero.bInAtlas && byZero.Page == byValue.Page && byZero.UV.left == byValue.UV.left && byZero.UV.top == byValue.UV.top && byZero.Width == byValue.Width
++			&& byZero.Advance == byValue.Advance && byZero.Advance == plain.Advance + 19.0f * PGameUIFont::BoldStrength,
++			"accept ER-018 (b): bold strength 0 is the engine default (same glyph, width + em / 24)");
++
++		// (c) 세기가 다른 같은 글자는 캐시에서 섞이지 않는다(따로 래스터화 · 폭)
++		check(byStrong.bInAtlas && (byStrong.Page != byZero.Page || byStrong.UV.left != byZero.UV.left || byStrong.UV.top != byZero.UV.top)
++			&& nearlyEqual(byStrong.Advance - plain.Advance, 19.0f / 12.0f, 0.001f), "accept ER-018 (c): glyphs with different bold strengths are cached and sized apart");
++
++		// (a) 세기를 올리면 넓힘이 그만큼 커진다: 세로 획('I') 잉크 폭 증가가 세기 순서대로 늘고(em/24 < em/16 < em/12 < em/8), em/12 는 기본의 1.5배 이상.
++		//     한글 "폭로 강제 전투 협상"의 3칸 이상 빈 곳은 em/12 에서도 막히지 않는다(1px 미만 넓힘은 획 바로 옆 한 겹만 진해진다).
++		//     세기 · 크기마다 잉크 증가 · ER-012 빈 칸 판정 · 획 사이 빈 곳 막힘을 로그로 남긴다(게임이 세기를 고를 때 근거).
++		const uint32  hangul[]      = { 0xD3ED, 0xB85C, 0xAC15, 0xC81C, 0xC804, 0xD22C, 0xD611, 0xC0C1 };   // 폭 로 강 제 전 투 협 상
++		const int32   sizes[]       = { 14, 19, 24, 35 };
++		const int32   denominators[] = { 24, 16, 12, 8 };   // 세기 = em / 분모
++		bool bGrows       = true;
++		bool bWideOpen    = true;
++		for (int32 size : sizes)
++		{
++			float32 previousInk = 0.0f;
++			float32 defaultInk  = 0.0f;
++			for (int32 denominator : denominators)
++			{
++				HGameUIGlyphVariant variant = defaultBold;
++				variant.BoldStrength = 1.0f / (float32)denominator;
++				const float32 ink = boldInkIncrease(*font, 'I', size, variant);
++				int32 holes      = 0;
++				int32 filled     = 0;
++				int32 gaps       = 0;
++				int32 closed     = 0;
++				int32 wideClosed = 0;
++				countFilledHoles(*font, hangul, 8, size, variant, holes, filled);
++				countClosedGaps(*font, hangul, 8, size, variant, gaps, closed, wideClosed);
++				JG_LOG(GameUI, ELogLevel::Info, "gameui.selftest: bold em/%d %dpx — ink +%.2f (nominal +%.2f), empty pixels to 75%%+ %d of %d, gaps closed %d of %d (3px+ %d)",
++					denominator, size, ink, (float32)size / (float32)denominator, filled, holes, closed, gaps, wideClosed);
++				if (ink < 0.0f || ink <= previousInk)
++				{
++					bGrows = false;
++				}
++				if (denominator == 24)
++				{
++					defaultInk = ink;
++				}
++				if (denominator == 12 && (size == 14 || size == 19))
++				{
++					if (ink < defaultInk * 1.5f)
++					{
++						bGrows = false;
++					}
++					if (wideClosed > 0)
++					{
++						bWideOpen = false;
++					}
++				}
++				previousInk = ink;
++			}
++		}
++		check(bGrows, "accept ER-018 (a): the bold ink grows with the strength (em/24 < em/16 < em/12 < em/8, em/12 at least 1.5x em/24 at 14 / 19px)");
++		check(bWideOpen, "accept ER-018 (a): at bold strength em/12 (14 / 19px) Hangul gaps of 3px or more stay open");
++
++		// 글 요소: 문단 서식의 세기가 요소 전체 굵게와 <b> 구간 모두에 든다. 폭은 그림과 같이 는다(줄 나누기 · 측정)
++		PSharedPtr<JGGameWidget> widget = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		auto makeBoldText = [&widget](const char* name, const char* text, bool bRich, bool bWholeBold, float32 strength)
++		{
++			PSharedPtr<PGameUIText> element = widget->AddChild<PGameUIText>(PName(name));
++			element->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(400.0f, 60.0f));
++			element->SetFontSize(30.0f);
++			element->SetRichText(bRich);
++			element->SetText(PString(text));
++			HGameUIParagraphStyle paragraph;
++			paragraph.bBold        = bWholeBold;
++			paragraph.BoldStrength = strength;
++			element->SetParagraphStyle(paragraph);
++			return element;
++		};
++		const PString pok("\xED\x8F\xAD");   // 폭
++		const PString ro("\xEB\xA1\x9C");    // 로
++		const PString pokRo   = pok + ro;
++		const PString boldPok = PString("<b>") + pok + PString("</b>") + ro;
++		PSharedPtr<PGameUIText> wholeDefault = makeBoldText("WholeDefault", pokRo.GetCStr(), false, true, 0.0f);
++		PSharedPtr<PGameUIText> wholeStrong  = makeBoldText("WholeStrong", pokRo.GetCStr(), false, true, 1.0f / 12.0f);
++		PSharedPtr<PGameUIText> spanDefault  = makeBoldText("SpanDefault", boldPok.GetCStr(), true, false, 0.0f);
++		PSharedPtr<PGameUIText> spanStrong   = makeBoldText("SpanStrong", boldPok.GetCStr(), true, false, 1.0f / 12.0f);
++		const float32 perGlyph = 30.0f * (1.0f / 12.0f - 1.0f / 24.0f);
++		check(nearlyEqual(wholeStrong->MeasureContent(0.0f, manager.GetRawPointer()).x - wholeDefault->MeasureContent(0.0f, manager.GetRawPointer()).x, 2.0f * perGlyph, 0.01f),
++			"bold strength: the paragraph strength widens every glyph of an element-wide bold text");
++		check(nearlyEqual(spanStrong->MeasureContent(0.0f, manager.GetRawPointer()).x - spanDefault->MeasureContent(0.0f, manager.GetRawPointer()).x, perGlyph, 0.01f),
++			"bold strength: <b> spans use the element's bold strength (plain glyphs keep their width)");
++
++		// (c) 한 화면: 세기가 다른 두 요소의 같은 글자는 각자 세기로 그린다(다른 아틀라스 자리, 센 쪽이 더 넓은 그림)
++		widget->GetRoot()->RemoveChild(spanDefault);
++		widget->GetRoot()->RemoveChild(spanStrong);
++		wholeDefault->SetText(pok);
++		wholeStrong->SetText(pok);
++		HGameUIDrawList list;
++		manager->BuildDrawList(GTarget, list);
++		const bool bTwoQuads = list.GetQuadCount() == 2;
++		check(bTwoQuads && (list.Vertices[0].Texcoord.x != list.Vertices[4].Texcoord.x || list.Vertices[0].Texcoord.y != list.Vertices[4].Texcoord.y)
++			&& (list.Vertices[5].Position.x - list.Vertices[4].Position.x) > (list.Vertices[1].Position.x - list.Vertices[0].Position.x),
++			"accept ER-018 (c): two elements with different bold strengths draw the same glyph each with its own strength");
++
++		manager->Shutdown();
++	}
++
+ 	bool isPoint(const HVector2& a, const HVector2& b, float32 tolerance = 0.01f)
+ 	{
+ 		return nearlyEqual(a.x, b.x, tolerance) && nearlyEqual(a.y, b.y, tolerance);
+@@ -2647,6 +2926,7 @@
+ 		testTextFormat();
+ 		testTextFormatAcceptance();
+ 		testBoldAcceptance();
++		testBoldStrength();
+ 		testRenderTransform();
+ 		testFontAtlas();
+ 		testDragDrop();

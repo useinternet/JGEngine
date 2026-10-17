@@ -1,0 +1,73 @@
+GG-16 게임 UI 움직임(트윈 · 이징 · 묶음) + 위젯 열림 · 닫힘 전환 — 구현 · 검증 · 메인 반영 기록 (2026-10-03 저녁, GUI 세션)
+
+§0. 결정 · 범위
+- D-32: 사용자 2026-10-03 18:59 대시보드 "가 + 나 같이 진행해줘"(엔진 총괄 19:0x 전달). 요청서 ProjectAH ER-017, 검토서 `ER-017_검토_2026-10-03.md`.
+- (가) 트윈 · 이징 13종 + 게임 곡선 · 차례/동시 묶음 · 기다리기 · 함수 부르기 · 끝 알림(취소 구별) · 멈추기 · 끝으로 건너뛰기 · 되풀이(왕복) · 시간 배율 · 같은 속성 겹치기.
+- (나) 위젯 열림 · 닫힘 전환(보류 GG-H6 을 닫음): 닫히는 위젯은 스택에서 바로 빠지고 전환이 끝날 때까지 그 레이어 맨 위에 그려진 뒤 OnShutdown.
+- 범위 밖: 3D 월드(액터 · 카메라) 움직임. 이징 · 묶음 진행은 UI 타입에 기대지 않게 써 두었다(요소 속성 읽기 · 쓰기 두 함수만 UI 요소에 붙음).
+
+§1. 바뀐 파일 (GFW `Source/Runtime/GameFrameWorks/UI/`, 새 파일 2 → 프로젝트 다시 생성)
+- 새 `GameUITween.h/.cpp`: `EGameUIEase`(Linear · Quad · Cubic · Back · Elastic 의 In/Out/InOut = 13) · `HGameUIEase::Evaluate`, 게임 곡선 `FGameUIEaseCurve`(float(*)(float)),
+  `HGameUITween`(대상 약참조 · 속성 · 시작값(없으면 실제로 시작하는 순간의 지금 값) · 끝값 · 길이 · 지연 · 이징/곡선, `To` · `FromTo` · `SetDelay` · `SetCurve`),
+  `PGameUITimeline`(`Sequence()` · `Parallel()`, `Add(트윈)` · `Add(묶음)` · `Wait` · `Call(대리자 · 람다)` · `SetLoops(횟수, 왕복)`, `Stop` · `Skip` · `IsPlaying` · `IsFinished` · `GetDuration`, `OnFinished(bCanceled)`),
+  `HGameUITransition`(길이 · 이징 · 닫힌 모습 불투명도 · 배율 · 옮기기, `Fade` · `FadeScale` · `FadeSlide`).
+- `GameUIDefines.h`: `EGameUITweenProperty`(Position · Size · Angle · Scale · Translation · Opacity · Color).
+- `GameUIElement.h`: 속성마다 쓰는 묶음 번호 `_tweenWriters`(친구 PGameUITimeline).
+- `GameUIText.h/.cpp`: `GetColor(manager)`(덮어쓴 색, 없으면 관리자 기본 글자 색 — 지금 값에서 시작할 때 읽음).
+- `GameWidget.h/.cpp`: `PlayTimeline` · `PlayTween`, `SetOpenTransition` · `SetCloseTransition` · `Get…`, `IsClosing`. 내부 묶음 목록 · 진행 · 취소 · 전환 시작.
+- `GameUIManager.h/.cpp`: 닫히는 위젯 목록(레이어마다), `SetTweenTimeScale` · `GetTweenTimeScale`, Push(닫히는 중이면 다시 열기) · Remove(맨 위 + 닫힘 전환이면 닫히는 중으로) · ClearLayer(닫히는 위젯도 바로) · Update(묶음 진행, 닫힘 끝나면 내림) · 배치 · 그리기(열리는 맨 위 아래 위젯, 닫히는 위젯) · retire 순서.
+- `GameUI.h`(새 헤더 포함), `GameUISelfTest.cpp`(testTween · testTransition — 77 검사, 기존 300 그대로 → 377).
+- 전체 diff: `2026-10-03_GameUI_GG16_main.diff`(메인 → 반영판, 12파일).
+
+§2. 규칙 (쓰는 사람이 알아야 할 것)
+- 묶음은 위젯이 가진다. 관리자 Update 가 활성 위젯(각 스택 맨 위)과 닫히는 위젯의 묶음만 진행한다 → 덮이면 멈추고, 맨 위가 되면 이어 간다. 진행 dt = Update dt × 시간 배율(위젯 OnUpdate 는 그대로의 dt, 묶음이 먼저 돈다).
+- 재생을 건 자리에서 0초만큼 진행 — 첫 트윈의 시작값이 그 프레임 그리기부터 보인다.
+- 위젯이 화면에서 완전히 빠지면(OnShutdown 전) 모든 묶음이 취소(OnFinished(true))된다.
+- 대상 요소가 사라지면(트리를 다시 짬) 그 묶음은 오류 없이 취소로 끝난다.
+- 겹치기: 같은 요소 · 같은 속성에 다른 묶음의 트윈이 시작되면 그 속성을 쓰던 옛 묶음은 거기서 취소로 끝난다(Stop 과 같다 — 값은 그 자리, 남은 단계 · 함수는 하지 않음). 새 트윈은 지금 값에서 시작한다.
+  같은 묶음 안의 단계끼리는 막지 않는다(같은 프레임에 둘이 쓰면 뒤 단계 값). 검토서는 "옛 트윈만 멈추고 묶음은 이어 감"이었는데, 구현 중 되풀이 묶음이 다음 바퀴에 빼앗긴 속성을 다시 가져가거나
+  빈 되풀이가 끝나지 않는 문제가 있어 "옛 묶음 전체가 취소"로 정했다(혼자인 트윈이면 검토서와 같다).
+- Skip = 남은 트윈 끝값 · 남은 기다리기 넘김 · 남은 함수 차례대로 · OnFinished(false) 한 번. 끝없는 되풀이는 이번 바퀴 끝에서 멈춘다(왕복이면 그 바퀴 방향의 끝).
+- 색 트윈은 그림 · 글 요소만(버튼 · 입력란은 색이 스타일에 있어 움직이지 않음, 오류 없음). 불투명도는 0~1 로 잘린다(Back · Elastic 넘침도).
+- 전환: 루트 요소의 불투명도 · 그리기 변환(배율 · 옮기기)을 쓴다 — 게임은 루트 말고 자식에 쓴다. 루트 피벗은 이제 가운데(같은 사각형, 전환 배율이 화면 가운데 기준).
+  · 열림: Push 때 OnActivated 전에 시작(첫 그리기가 닫힌 모습). 맨 위가 열리는 동안 같은 스택 바로 아래 위젯도 그린다(덮여 멈춘 모습). 열리는 동안 입력은 받는다.
+  · 닫힘: DeactivateWidget 때 맨 위였고 닫힘 전환이 있으면 스택에서 바로 빠짐(OnDeactivated — 이 훅 안에서 IsClosing() == true, 아래 위젯 바로 활성) → 입력 · 뒤로가기 · 글자 포커스 없음 → 전환이 끝날 때까지 그 레이어 맨 위에 그림 → OnShutdown.
+    덮인 위젯을 빼면 전환 없이 바로 OnShutdown. 움직일 것이 없는 전환(닫힌 모습 = 열린 모습)은 바로 끝.
+  · 닫히는 중에 같은 객체를 다시 Push → 지금 모습에서 다시 열림(OnInitialize · OnShutdown 없음, 로그 "- reopened while closing"). 열림 전환이 없으면 바로 열린 모습.
+  · 열리는 중에 닫기 → 지금 모습에서 닫힘. ClearLayer · ClearAllWidgets · Shutdown → 닫히는 위젯도 전환 없이 바로 OnShutdown.
+  · 위젯이 빠지면 루트 불투명도 · 그리기 변환을 처음으로 되돌린다(다시 Push 하면 처음부터).
+- GetWidgetCount · GetTopWidget · FindWidget · 입력은 스택만 본다(닫히는 위젯 제외). Render 는 닫히는 위젯만 남아도 그린다.
+
+§3. 작업 폴더 검사 (`Temp/wt/gg16` = 19:05 메인 거울, 엔진 Bin 따로)
+- PreBuild(새 파일) → MSBuild JGEngine.sln DevelopEngine x64: 1차 C2365(데이터 멤버 To 와 정적 함수 To 이름 겹침 → 멤버를 FromValue · ToValue · bHasFromValue 로),
+  2차 C2064(람다를 받는 Call 템플릿이 대리자 오른값도 잡아 CreateLambda(대리자) → enable_if 로 대리자 제외), 3차 exit 0 · 경고 0.
+- gameui.selftest 376/376 → (OnDeactivated 안 IsClosing 순서 고친 뒤) 377/377, 종료 live 0. input 34 · gmtest(GameViewport 31, 실패 0) · console 64 · datatable 127, 모두 live 0.
+- 검증 게임 `Temp/Games/GameUIDemo_GG16`(EngineRoot = gg16): 생성 · 빌드 exit 0(70초). e2e 27단계 2회(2회차는 닫힘 · 열림 중간 캡처 시점 조정) — §4 와 같은 순서 · 결과. 종료 0, error 0, live 0.
+- dbgcount(디버거 아래 40초): 실행 중 D3D12 메시지 0. 종료 때 디버그 레이어 단순 보고 15줄("Process is terminating … Live Object : 12") — 메인 엔진 데모(GameUIDemo_GUI, 10:33 빌드)도 같은 15줄(기존 기준선, Graphics 현황 "종료 때 D3D12 live object 보고") → GG-16 과 무관.
+
+§4. 메인 반영 (MainTree)
+- 19:48:53 `MainTree.cmd -name=GUI hold -minutes=40` → 19:55:51 release(6분 58초).
+- 반영 전 확인: 메인의 12파일 중 기존 10파일 수정 시각이 모두 19:05 거울 전(가장 늦은 것 17:50 — 이 세션 ER-016 반영). 줄 끝: 메인과 같은 규칙(CRLF 6 · LF 4, 새 2파일 LF). 복사 뒤 cmp 12/12 같음.
+  D-22 ②(JGEditor 19:19, GUI 모듈 7파일)와 겹치는 파일 없음 — GUI 모듈 파일은 건드리지 않았다.
+- `exec GenerateProjectFiles.bat` exit 0(GameFrameWorks 프로젝트에 GameUITween 2) → `build` exit 0, 7초(/MP · PCH, GFW UI 16파일 다시 컴파일, 기존 LNK4098 경고 1줄 — 예전 빌드마다 나옴).
+- 메인 Bin(exec): gameui.selftest OK (377/377), input.selftest OK (34/34), gmtest OK(GameViewport 31 · 실패 0), console.selftest OK (64/64), datatable.selftest OK (127/127), 모두 live 0.
+- 메인 엔진 검증 게임 `Temp/Games/GameUIDemo_GUI`(EngineRoot = 메인):
+  · 게임 폴더 GenerateProjectFiles 다시(안 하면 게임 sln 의 GFW 프로젝트에 GameUITween 이 없어 LNK2019 23개) → 빌드 exit 0(16초).
+  · 회귀(데모 코드 그대로, 원래 gameui_e2e.ps1 22단계): 처음엔 "End Turn button not found" — D-22 ② 뒤 에디터가 125% 로 그리는데 게임 Bin imgui.ini 의 옛 Scene Viewport 크기(794x412)가 작아 버튼이 잘림.
+    imgui.ini 를 `imgui.ini.pre_d22_bak` 로 치우고(기본 배치, JGEditor 의 D-22 검증과 같은 방법) 다시: DPI 인식 2, 22단계 모두 README 기대 결과와 같음
+    (턴 2 → 메뉴 → 막힘 2 → Esc 닫힘 → 턴 3 → 월드 → Draw 막힘 → 메뉴 → Resume → 주소 192.168.0.10:4777 → 이름 홍길동ab → 입력 중 Esc → back 없음 → 끌어 놓기 → 밖에서 뗌 "returned"), error 0, live 0, 종료 0.
+  · GG-16 데모(HUD 카드 날아오기 · End Turn 눌림 반응 · 일시정지 메뉴 전환 · 한 객체 다시 올리기) + gameui_e2e.ps1 27단계: 빌드 exit 0 →
+    CardFlyIn finished (canceled 0)(1단계 전) · EndTurnPop finished (canceled 0)(1 · 6단계) ·
+    5 · 10 · 27단계: remove → "pause menu deactivated (closing 1)" → 0.4초 뒤 "GameUI closed … on Menu" + "pause menu closed" ·
+    24단계: Esc 바로 뒤 Resume 자리 클릭 → "SceneViewport Click (0.500, 0.591): nothing (no controller in the world)" 가 "GameUI closed" 보다 먼저, "Resume clicked" 없음(닫히는 메뉴는 입력을 받지 않음) ·
+    26단계: Esc 바로 뒤 Menu → "GameUI push JGGameUIDemoPauseMenu on Menu (stack 1) - reopened while closing" + activated, 그 사이 "pause menu closed" 없음(OnShutdown · OnInitialize 없이 다시 열림) ·
+    나머지 1~22단계는 위 회귀와 같음. error 0, live 0, 종료 0.
+  · dbgcount(메인 엔진 데모 40초): 실행 중 D3D12 메시지 0, 종료 단순 보고 15줄(기준선과 같음).
+- 캡처: `2026-10-03_gameui_gg16_menu.png`(열린 메뉴) · `_opening.png`(여는 중 — 패널이 올라오는 중) · `_closing.png`(닫는 중 — 반쯤 흐려지고 패널이 내려가는 중) · `_after.png`(끝 — 턴 3, 메뉴 없음, 금색 카드는 놓을 곳 안).
+- 데모 도구 갱신: `tools/gameui_demo_testgame/` HUD · PauseMenu 4파일 · gameui_e2e.ps1(27단계 · 캡처 6장) · README(기대 결과 23~27, imgui.ini · 다시 생성 주의).
+
+§5. 알릴 것 · 남은 것
+- 게임 프로젝트(ProjectAH 등): 엔진 클래스 크기가 바뀌었다(JGGameWidget · PGameUIElement 에 멤버 추가) → 게임 DLL 을 다시 빌드. 엔진에 새 파일(UI/GameUITween.*) → 게임 폴더 GenerateProjectFiles.bat 먼저.
+- D-22 ② 뒤 옛 imgui.ini 를 가진 게임 Bin 은 Scene Viewport 창이 작게 뜰 수 있다(사용자 결정 (가) 지금대로 — 끌어 넓히면 저장).
+- 커밋은 사용자(GG-C2 목록에 GG-16 파일 추가).
+- 보류 GG-H6 닫음. 3D 월드 움직임은 요구가 생기면(검토서 3.1 (2) — 이징 · 묶음을 GFW 공용으로).

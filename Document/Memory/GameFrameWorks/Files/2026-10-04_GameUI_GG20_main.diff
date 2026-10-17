@@ -1,0 +1,2214 @@
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIDefines.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIDefines.h
+@@ -11,7 +11,7 @@
+ 	Move,    // 포인터 이동
+ 	Down,    // 버튼 누름
+ 	Up,      // 버튼 뗌
+-	Wheel,   // 휠 (Wheel 값)
++	Wheel,   // 휠 (Wheel · WheelHorizontal 값)
+ 	Leave,   // 포인터가 그리는 영역을 벗어남. 호버를 푼다
+ };
+ 
+@@ -65,12 +65,14 @@
+ };
+ 
+ // 호스트가 넣는 포인터 이벤트. 좌표는 렌더 타깃 픽셀(왼쪽 위 원점, 아래로 +y).
++// 휠은 한 칸 = 1.0(고해상도 휠은 소수). Wheel = 세로(앞으로 굴리면 + — 위로 넘긴다), WheelHorizontal = 가로(오른쪽으로 +).
+ struct HGameUIPointerEvent
+ {
+-	EGameUIPointerEventType Type   = EGameUIPointerEventType::Move;
++	EGameUIPointerEventType Type            = EGameUIPointerEventType::Move;
+ 	HVector2                Position;
+-	EGameUIPointerButton    Button = EGameUIPointerButton::Left;
+-	float32                 Wheel  = 0.0f;
++	EGameUIPointerButton    Button          = EGameUIPointerButton::Left;
++	float32                 Wheel           = 0.0f;
++	float32                 WheelHorizontal = 0.0f;
+ };
+ 
+ // 호스트가 넣는 편집 키(글자 입력 포커스가 있을 때, PGameUIManager::HandleKey). 글자 자체는 HandleTextInput 으로 따로 온다.
+@@ -96,7 +98,7 @@
+ 	HVector2 Translation;                      // 배치 뒤 옮기기(논리 단위)
+ };
+ 
+-// 트윈이 움직이는 요소 속성(GG-16, UI/GameUITween.h). 값: 위치 · 크기 · 배율 · 옮기기 = HVector2, 각도 · 불투명도 = 실수, 색 = HLinearColor.
++// 트윈이 움직이는 요소 속성(GG-16, UI/GameUITween.h). 값: 위치 · 크기 · 배율 · 옮기기 · 넘긴 양 = HVector2, 각도 · 불투명도 = 실수, 색 = HLinearColor.
+ enum class EGameUITweenProperty : int32
+ {
+ 	Position,      // SetPosition(배치 — 자식도 따라 다시 배치된다)
+@@ -106,6 +108,7 @@
+ 	Translation,   // 그리기 변환 옮기기(논리 단위)
+ 	Opacity,       // SetOpacity
+ 	Color,         // 그림 · 글 요소의 색(그 밖의 요소는 움직이지 않는다)
++	ScrollOffset,  // 스크롤 칸의 넘긴 양(GG-20, 그 밖의 요소는 움직이지 않는다 — 부드럽게 넘기기)
+ 	Count,
+ };
+ 
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIStyle.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIStyle.h
+@@ -64,3 +64,30 @@
+ 	HLinearColor            SelectionColor    = HLinearColor(0.26f, 0.46f, 0.82f, 0.65f);
+ 	float32                 Padding           = 12.0f;   // 좌우 안쪽 여백(논리 단위). 글은 이 안에서만 보인다
+ };
++
++// 스크롤 막대를 언제 보이나(PGameUIScrollBox, 넘기는 방향의 막대만).
++enum class EGameUIScrollBarVisibility
++{
++	Auto,     // 내용이 칸보다 클 때만
++	Always,   // 늘(내용이 다 들어가면 손잡이가 막대 전체)
++	Never,    // 숨김(휠 · 코드로는 넘어간다)
++};
++
++// 스크롤 칸 스타일(PGameUIScrollBox). 막대 = 바탕(TrackTexture, 없으면 단색) × TrackColor 위에 손잡이(ThumbTexture) × 상태 색.
++// 막대는 칸 안 오른쪽(세로) · 아래(가로)에 놓이고 보이는 칸을 그만큼 줄인다: 막대 자리 = Thickness + 2 × Margin.
++// 스크롤 칸이 스타일을 정하지 않으면 관리자 기본 스크롤 스타일을 통째로 쓴다.
++struct HGameUIScrollStyle
++{
++	PSharedPtr<IRawTexture>    TrackTexture;
++	PSharedPtr<IRawTexture>    ThumbTexture;
++	HLinearColor               TrackColor     = HLinearColor(0.10f, 0.11f, 0.13f, 0.60f);
++	HLinearColor               ThumbNormal    = HLinearColor(0.42f, 0.45f, 0.52f, 0.85f);
++	HLinearColor               ThumbHovered   = HLinearColor(0.56f, 0.60f, 0.68f, 0.95f);
++	HLinearColor               ThumbPressed   = HLinearColor(0.70f, 0.74f, 0.82f, 1.00f);
++	float32                    Thickness      = 12.0f;   // 막대 굵기(논리 단위)
++	float32                    Margin         = 2.0f;    // 막대 둘레 여백(칸 가장자리 · 내용 쪽)
++	float32                    MinThumbLength = 24.0f;   // 손잡이 최소 길이
++	float32                    WheelStep      = 60.0f;   // 휠 한 칸에 넘기는 양(논리 단위)
++	float32                    SmoothSeconds  = 0.0f;    // > 0 이면 휠 · 막대 빈 곳 누르기를 이 길이로 부드럽게(넘긴 양 트윈, OutCubic). 0 = 바로
++	EGameUIScrollBarVisibility Visibility     = EGameUIScrollBarVisibility::Auto;
++};
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIElement.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIElement.h
+@@ -2,6 +2,7 @@
+ #include "UI/GameUIDefines.h"
+ 
+ class HGameUIDrawList;
++class JGGameWidget;
+ class PGameUIManager;
+ 
+ // 요소가 자기 모습을 그릴 때 받는 정보. 논리 단위 × Scale = 렌더 타깃 픽셀.
+@@ -22,6 +23,8 @@
+ // 그리기 변환(SetRenderTransform: 회전 · 배율 · 옮기기, 피벗 기준) · 불투명도(SetOpacity)는 배치를 바꾸지 않고 그릴 때와 판정 때만 쓰며 자식에 곱해진다.
+ // 돌린 요소는 돌린 모양 안에서만 맞는다. 돌린 요소 안의 잘라내기(글자 SetClip · 입력란 여백)는 돌린 사각형을 감싸는 축 정렬 사각형으로 자른다.
+ // 끌기(SetDraggable)를 켠 요소는 관리자가 끌기 이벤트를 준다(PGameUIManager::OnDragBegin 참고). 엔진은 끄는 요소를 옮기지 않는다.
++// 자식 잘라내기(SetClipChildren, GG-20)를 켠 요소는 자손을 자기 사각형 안에만 그리고, 포인터가 자기 사각형 밖이면 자손을 판정하지 않는다
++// (잘려 안 보이는 자손은 올리기 · 누르기 · 끌기 · 놓을 곳 · 휠을 받지 않는다). 스크롤 칸(PGameUIScrollBox)이 쓴다.
+ class GAMEFRAMEWORKS_API PGameUIElement : public IMemoryObject
+ {
+ 	friend class PGameUIManager;
+@@ -34,6 +37,7 @@
+ 	bool     _bHitTestVisible = false;
+ 	bool     _bEnabled        = true;
+ 	bool     _bDraggable      = false;
++	bool     _bClipChildren   = false;
+ 	HVector2 _anchor;
+ 	HVector2 _pivot;
+ 	HVector2 _position;
+@@ -82,6 +86,10 @@
+ 	// 누를 수 있어야 한다(SetHitTestVisible(true) — 버튼 · 입력란은 기본으로 켜짐). 꺼진 요소는 끌리지 않는다.
+ 	void SetDraggable(bool bDraggable);
+ 	bool IsDraggable() const;
++	// 자식 잘라내기. 켜면 자손을 이 요소 사각형 안에만 그리고(돌린 · 배율을 준 요소면 그 모양을 감싸는 축 정렬 사각형),
++	// 포인터가 이 요소 사각형(돌린 모양) 밖이면 자손을 판정하지 않는다. 이 요소 자신의 모습은 자르지 않는다.
++	void SetClipChildren(bool bClipChildren);
++	bool IsClipChildren() const;
+ 
+ 	// 배치를 한 번에 정한다.
+ 	void SetLayout(const HVector2& anchor, const HVector2& pivot, const HVector2& position, const HVector2& size);
+@@ -95,6 +103,8 @@
+ 	const HVector2& GetSize() const;
+ 	// 마지막으로 그리거나 입력을 받을 때 계산한 사각형(논리 단위, 그리기 변환 전).
+ 	const HRect& GetLayoutRect() const;
++	// 부모 사각형 안에서 지금 배치 값(앵커 · 피벗 · 위치 · 크기)으로 정해지는 사각형(배치 식 그대로, 그리기 변환 전). 배치 전에도 쓸 수 있다.
++	HRect CalculateLayoutRect(const HRect& parentRect) const;
+ 
+ 	// 그리기 변환(배치는 그대로 — 그릴 때와 입력 판정 때만, 자식에 곱해진다). 기준점 = 이 요소 배치 사각형 안 피벗 자리.
+ 	void SetRenderTransform(const HGameUIRenderTransform& transform);
+@@ -120,10 +130,18 @@
+ 	virtual void onDragBegin(const HVector2& position) {}
+ 	virtual void onDragMove(const HVector2& position, const PSharedPtr<PGameUIElement>& target) {}
+ 	virtual void onDragEnd(const HVector2& position, const PSharedPtr<PGameUIElement>& dropTarget, bool bCanceled) {}
++	// 누른 요소가 누르는 동안의 이동을 직접 받는다(GG-20 — 스크롤 손잡이 · 슬라이더). 끌기(SetDraggable)와 달리 문턱 없이 바로.
++	// 누른 요소(캡처)가 onPointerDown 바로 다음에 받는다. true 를 돌려주면 뗄 때까지 이동마다 onPointerHeldMove 를 받고, 조상 요소의 끌기는 시작하지 않는다.
++	// position = 포인터 자리(논리 단위, 캔버스 — 변환 전 자리는 CanvasToLocal). 뗌은 지금처럼 onPointerUp 으로 온다.
++	virtual bool onPointerHeldBegin(EGameUIPointerButton button, const HVector2& position) { return false; }
++	virtual void onPointerHeldMove(const HVector2& position) {}
++	// 배치 훅: 이 요소의 사각형 · 변환을 정한 직후, 자식을 배치하기 전에 부른다(자식 자리를 이 요소가 정할 때 — 스크롤 칸).
++	// ownerWidget = 이 트리를 가진 위젯(관리자가 배치할 때 넘긴다).
++	virtual void onLayout(JGGameWidget* ownerWidget) {}
+ 
+ private:
+ 	void adoptChild(PSharedPtr<PGameUIElement> child, const PName& name);
+-	void layout(const HRect& parentRect, const HGameUIAffine& parentWorld = HGameUIAffine(), float32 parentOpacity = 1.0f);
++	void layout(const HRect& parentRect, JGGameWidget* ownerWidget, const HGameUIAffine& parentWorld = HGameUIAffine(), float32 parentOpacity = 1.0f);
+ 	void buildDraw(HGameUIDrawContext& context);
+ 	// point(논리)에 있는 가장 위 · 가장 깊은 입력 받는 요소. 꺼진 요소 아래에서 맞으면 그 꺼진 요소. 없으면 nullptr.
+ 	// excluded 와 그 자손은 판정에서 뺀다(끄는 중인 요소 아래 놓을 곳을 찾을 때).
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIElement.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIElement.cpp
+@@ -166,6 +166,16 @@
+ 	return _bDraggable;
+ }
+ 
++void PGameUIElement::SetClipChildren(bool bClipChildren)
++{
++	_bClipChildren = bClipChildren;
++}
++
++bool PGameUIElement::IsClipChildren() const
++{
++	return _bClipChildren;
++}
++
+ void PGameUIElement::SetLayout(const HVector2& anchor, const HVector2& pivot, const HVector2& position, const HVector2& size)
+ {
+ 	_anchor   = anchor;
+@@ -219,6 +229,16 @@
+ 	return _layoutRect;
+ }
+ 
++HRect PGameUIElement::CalculateLayoutRect(const HRect& parentRect) const
++{
++	const float32 parentWidth  = parentRect.right - parentRect.left;
++	const float32 parentHeight = parentRect.bottom - parentRect.top;
++
++	const float32 left = parentRect.left + _anchor.x * parentWidth  + _position.x - _pivot.x * _size.x;
++	const float32 top  = parentRect.top  + _anchor.y * parentHeight + _position.y - _pivot.y * _size.y;
++	return HRect(left, top, left + _size.x, top + _size.y);
++}
++
+ void PGameUIElement::SetRenderTransform(const HGameUIRenderTransform& transform)
+ {
+ 	_renderTransform     = transform;
+@@ -282,30 +302,28 @@
+ 	_children.push_back(child);
+ }
+ 
+-void PGameUIElement::layout(const HRect& parentRect, const HGameUIAffine& parentWorld, float32 parentOpacity)
++void PGameUIElement::layout(const HRect& parentRect, JGGameWidget* ownerWidget, const HGameUIAffine& parentWorld, float32 parentOpacity)
+ {
+-	const float32 parentWidth  = parentRect.right - parentRect.left;
+-	const float32 parentHeight = parentRect.bottom - parentRect.top;
+-
+-	const float32 left = parentRect.left + _anchor.x * parentWidth  + _position.x - _pivot.x * _size.x;
+-	const float32 top  = parentRect.top  + _anchor.y * parentHeight + _position.y - _pivot.y * _size.y;
+-	_layoutRect = HRect(left, top, left + _size.x, top + _size.y);
++	_layoutRect = CalculateLayoutRect(parentRect);
+ 
+ 	// 그리기 변환은 배치를 바꾸지 않는다: 자식 배치는 변환 전 사각형으로, 그릴 때 · 판정 때 조상 변환과 곱한 것을 쓴다.
+ 	_worldTransform = parentWorld;
+ 	if (_bHasRenderTransform)
+ 	{
+-		const HVector2 pivotPoint(left + _pivot.x * _size.x, top + _pivot.y * _size.y);
++		const HVector2 pivotPoint(_layoutRect.left + _pivot.x * _size.x, _layoutRect.top + _pivot.y * _size.y);
+ 		_worldTransform = parentWorld * HGameUIAffine::FromRenderTransform(_renderTransform, pivotPoint);
+ 	}
+ 	_bWorldTransformed = _worldTransform.IsIdentity() == false;
+ 	_worldInverse      = _bWorldTransformed ? _worldTransform.Inverse() : HGameUIAffine();
+ 	_worldOpacity      = parentOpacity * _opacity;
+ 
++	// 자식 자리를 이 요소가 정하는 경우(스크롤 칸)는 여기서 정한다.
++	onLayout(ownerWidget);
++
+ 	// PSharedPtr 는 const 를 전파한다(const 참조의 -> 는 const T*). 자식을 고치므로 비 const 로 돈다.
+ 	for (PSharedPtr<PGameUIElement>& child : _children)
+ 	{
+-		child->layout(_layoutRect, _worldTransform, _worldOpacity);
++		child->layout(_layoutRect, ownerWidget, _worldTransform, _worldOpacity);
+ 	}
+ }
+ 
+@@ -324,9 +342,29 @@
+ 	context.DrawList->Opacity   = _worldOpacity;
+ 
+ 	onBuildDraw(context);
+-	for (PSharedPtr<PGameUIElement>& child : _children)
++	if (_bClipChildren == false)
+ 	{
+-		child->buildDraw(context);
++		for (PSharedPtr<PGameUIElement>& child : _children)
++		{
++			child->buildDraw(context);
++		}
++	}
++	else
++	{
++		// 자식 잘라내기: 받은 클립 ∩ 자기 사각형(픽셀, 변환이 있으면 감싸는 축 정렬 사각형)으로 자손을 그리고 되돌린다. 겹치면 안쪽이 더 좁아진다.
++		const HRect bounds     = LocalToCanvasBounds(_layoutRect);
++		const HRect parentClip = context.Clip;
++		const HRect clip(HMath::Max(parentClip.left, bounds.left * context.Scale), HMath::Max(parentClip.top, bounds.top * context.Scale),
++			HMath::Min(parentClip.right, bounds.right * context.Scale), HMath::Min(parentClip.bottom, bounds.bottom * context.Scale));
++		if (clip.right > clip.left && clip.bottom > clip.top)
++		{
++			context.Clip = clip;
++			for (PSharedPtr<PGameUIElement>& child : _children)
++			{
++				child->buildDraw(context);
++			}
++			context.Clip = parentClip;
++		}
+ 	}
+ 
+ 	context.bEnabled = bParentEnabled;
+@@ -339,21 +377,26 @@
+ 		return nullptr;
+ 	}
+ 
++	// 변환된 요소는 포인터를 변환 전 자리로 되돌려 사각형 안인지 본다(돌린 모양 안에서만 맞는다).
++	const HRect&   rect  = element->_layoutRect;
++	const HVector2 local = element->CanvasToLocal(point);
++	const bool bInside = local.x >= rect.left && local.x < rect.right && local.y >= rect.top && local.y < rect.bottom;
++
+ 	// 뒤에 추가한 자식이 위에 있으므로 뒤에서부터. 꺼진 요소 아래에서 맞으면 꺼진 요소가 받는다(막기만 하고 반응하지 않는다).
+-	const HList<PSharedPtr<PGameUIElement>>& children = element->_children;
+-	for (auto it = children.rbegin(); it != children.rend(); ++it)
++	// 자식 잘라내기를 켠 요소는 자기 사각형 밖에서 자손을 보지 않는다(잘려 안 보이는 자손은 맞지 않는다).
++	if (element->_bClipChildren == false || bInside)
+ 	{
+-		PSharedPtr<PGameUIElement> hit = hitTest(*it, point, excluded);
+-		if (hit.IsValid())
++		const HList<PSharedPtr<PGameUIElement>>& children = element->_children;
++		for (auto it = children.rbegin(); it != children.rend(); ++it)
+ 		{
+-			return element->_bEnabled ? hit : element;
++			PSharedPtr<PGameUIElement> hit = hitTest(*it, point, excluded);
++			if (hit.IsValid())
++			{
++				return element->_bEnabled ? hit : element;
++			}
+ 		}
+ 	}
+ 
+-	// 변환된 요소는 포인터를 변환 전 자리로 되돌려 사각형 안인지 본다(돌린 모양 안에서만 맞는다).
+-	const HRect&   rect  = element->_layoutRect;
+-	const HVector2 local = element->CanvasToLocal(point);
+-	const bool bInside = local.x >= rect.left && local.x < rect.right && local.y >= rect.top && local.y < rect.bottom;
+ 	if (element->_bHitTestVisible && bInside)
+ 	{
+ 		return element;
+--- a/Source/Runtime/GameFrameWorks/UI/GameWidget.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameWidget.h
+@@ -19,12 +19,15 @@
+ //   닫힘 전환이 있으면 DeactivateWidget 때 스택에서는 바로 빠지고(OnDeactivated, 입력 · 뒤로가기를 받지 않음) 전환이 끝날 때까지 그 레이어 맨 위에 그려진 뒤 OnShutdown.
+ //   그 OnDeactivated 안에서 IsClosing() 이 true 다 — 자식 요소의 닫는 모습 트윈을 여기서 걸면 닫히는 동안 돈다(덮여서 비활성이 될 때는 false).
+ //   닫히는 중에 다시 Push 하면 지금 모습에서 다시 열린다(OnInitialize · OnShutdown 없음).
++// 스크롤 칸 열쇠(GG-20, PGameUIScrollBox::SetScrollKey): 열쇠를 준 칸의 넘긴 양을 위젯이 열쇠별로 기억한다 — 칸째 다시 만들어도
++//   같은 위젯 안 같은 열쇠의 새 칸이 그 자리에서 시작한다. OnShutdown 때 잊는다.
+ JGCLASS()
+ class GAMEFRAMEWORKS_API JGGameWidget : public JGObject
+ {
+ 	JG_GENERATED_CLASS_BODY
+ 
+ 	friend class PGameUIManager;
++	friend class PGameUIScrollBox;
+ 
+ private:
+ 	PSharedPtr<PGameUIElement> _root;
+@@ -40,6 +43,7 @@
+ 	HGameUITransition                  _openTransition;
+ 	HGameUITransition                  _closeTransition;
+ 	PSharedPtr<PGameUITimeline>        _transition;    // 지금 도는 열림 · 닫힘 전환
++	HHashMap<PName, HVector2>          _scrollMemory;  // 스크롤 칸 열쇠 → 넘긴 양(OnShutdown 때 비운다)
+ 
+ public:
+ 	JGGameWidget();
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIManager.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIManager.h
+@@ -29,6 +29,8 @@
+ // 호스트가 하는 일: 월드를 그린 렌더 타깃 위에 Render, 포인터를 먼저 HandlePointer(true 면 월드 입력을 건너뜀), 뒤로가기(Esc)를 HandleBackAction.
+ // 글자 입력 포커스(입력란)가 있으면(WantsTextInput) 확정 글자를 HandleTextInput, 편집 키(Esc 포함)를 HandleKey 로 먼저 넘긴다.
+ // 위젯 스택이 바뀌면(올림 · 내림 · 비움) 호버 · 누름 · 끌기가 풀린다. 끌기는 취소 이벤트가 위젯 훅보다 먼저 온다.
++// 휠(GG-20): 포인터 아래 요소에서 바깥쪽으로 스크롤 칸(PGameUIScrollBox)을 찾아, 그 방향으로 더 넘어갈 수 있는 가장 안쪽 칸이 받는다
++// (끝에 닿은 칸은 바깥 칸으로 넘긴다). 받을 칸이 없으면 UI 위에서 소비만 한다(월드 줌을 막는다).
+ // 그래픽 없이(헤드리스) 써도 된다. 그때는 그리기 · 텍스처 로드만 하지 않는다. 메인 스레드 전용.
+ class GAMEFRAMEWORKS_API PGameUIManager : public IMemoryObject
+ {
+@@ -46,6 +48,7 @@
+ 	PWeakPtr<PGameUIElement> _hovered;
+ 	PWeakPtr<PGameUIElement> _captured;
+ 	EGameUIPointerButton     _capturedButton = EGameUIPointerButton::Left;
++	bool                     _bCapturedHeld  = false;   // 누른 요소가 누르는 동안 이동을 받는다(onPointerHeldBegin 이 true)
+ 	uint32                   _stackVersion   = 0;   // 스택이 바뀔 때마다 +1 (입력을 전하는 중에 화면이 바뀌었는지 본다)
+ 	HVector2                 _pointerPosition;      // 마지막 포인터 이벤트 자리(논리 단위)
+ 	bool                     _bPointerInside = false;
+@@ -71,6 +74,7 @@
+ 	HGameUITextStyle                         _defaultTextStyle;
+ 	HGameUIButtonStyle                       _defaultButtonStyle;
+ 	HGameUITextInputStyle                    _defaultTextInputStyle;
++	HGameUIScrollStyle                       _defaultScrollStyle;
+ 
+ public:
+ 	// 끌기 이벤트. 게임 위젯이 구독하고 요소로 가린다(요소마다 대리자를 두지 않는다). 엔진은 끄는 요소를 옮기지 않는다 —
+@@ -212,6 +216,8 @@
+ 	const HGameUIButtonStyle& GetDefaultButtonStyle() const;
+ 	void SetDefaultTextInputStyle(const HGameUITextInputStyle& style);
+ 	const HGameUITextInputStyle& GetDefaultTextInputStyle() const;
++	void SetDefaultScrollStyle(const HGameUIScrollStyle& style);
++	const HGameUIScrollStyle& GetDefaultScrollStyle() const;
+ 
+ 	// 위젯을 모두 내리고(OnShutdown) 글꼴 · 텍스처를 놓는다(게임 인스턴스 종료).
+ 	void Shutdown();
+@@ -235,6 +241,8 @@
+ 	void setHovered(const PSharedPtr<PGameUIElement>& element);
+ 	// 호버 · 누름(캡처) · 끌기 후보를 풀고 끌기를 취소한다. 스택을 바꾸는 일은 맨 먼저 부른다(취소 처리기가 스택을 바꿀 수 있다).
+ 	void resetPointerState();
++	// 휠: hit 에서 바깥쪽으로 스크롤 칸을 찾아 가장 안쪽의 넘어갈 수 있는 칸에 준다. 받았으면 true.
++	bool routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal);
+ 	// 후보를 끄는 요소로: 누름은 클릭이 아니게 풀고 OnDragBegin.
+ 	void beginDrag(PSharedPtr<PGameUIElement> element);
+ 	void moveDrag(const HVector2& position, const PSharedPtr<PGameUIElement>& target);
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIManager.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIManager.cpp
+@@ -6,6 +6,7 @@
+ #include "UI/GameUIRenderer.h"
+ #include "UI/GameUIFile.h"
+ #include "UI/GameUITextInput.h"
++#include "UI/GameUIScrollBox.h"
+ #include "JGGraphics.h"
+ #include "Classes/Texture.h"
+ #include <cmath>
+@@ -87,6 +88,39 @@
+ 		return nullptr;
+ 	}
+ 
++	// element 아래(자기 포함)에 target 이 있으면 true. 그 길에 있는 스크롤 칸을 바깥 → 안쪽 순서로 outBoxes 에 둔다.
++	bool collectScrollBoxesOnPath(const PSharedPtr<PGameUIElement>& element, const PGameUIElement* target, HList<PSharedPtr<PGameUIScrollBox>>& outBoxes)
++	{
++		if (element.IsValid() == false)
++		{
++			return false;
++		}
++
++		// PSharedPtr 는 const 를 전파하므로 비 const 사본으로 바꾼다.
++		PSharedPtr<PGameUIElement> candidate = element;
++		PSharedPtr<PGameUIScrollBox> box = RawDynamicCast<PGameUIScrollBox>(candidate);
++		if (box.IsValid())
++		{
++			outBoxes.push_back(box);
++		}
++		if (element.GetRawPointer() == target)
++		{
++			return true;
++		}
++		for (const PSharedPtr<PGameUIElement>& child : element->GetChildren())
++		{
++			if (collectScrollBoxesOnPath(child, target, outBoxes))
++			{
++				return true;
++			}
++		}
++		if (box.IsValid())
++		{
++			outBoxes.pop_back();
++		}
++		return false;
++	}
++
+ 	// 커서 깜빡임: 주기 1초 중 앞 0.6초 보인다. 입력 · 커서 이동 직후에는 보인다.
+ 	constexpr float32 CaretBlinkPeriod  = 1.0f;
+ 	constexpr float32 CaretBlinkVisible = 0.6f;
+@@ -428,7 +462,7 @@
+ 		root->_pivot    = HVector2(0.5f, 0.5f);
+ 		root->_position = HVector2(0.0f, 0.0f);
+ 		root->_size     = logicalSize;
+-		root->layout(HRect(0.0f, 0.0f, logicalSize.x, logicalSize.y));
++		root->layout(HRect(0.0f, 0.0f, logicalSize.x, logicalSize.y), widget.GetRawPointer());
+ 	}
+ }
+ 
+@@ -618,8 +652,15 @@
+ 	{
+ 	case EGameUIPointerEventType::Move:
+ 	{
++		// 누르는 동안 이동을 받는 요소(손잡이 · 슬라이더)를 끄는 동안은 호버를 바꾸지 않는다(지나가는 요소가 밝아지지 않게).
++		PSharedPtr<PGameUIElement> captured = _captured.Pin();
++		if (captured.IsValid() && _bCapturedHeld)
++		{
++			captured->onPointerHeldMove(point);
++			return true;
++		}
+ 		setHovered(hit);
+-		return hit.IsValid() || _captured.Pin().IsValid() || bBlocked;
++		return hit.IsValid() || captured.IsValid() || bBlocked;
+ 	}
+ 	case EGameUIPointerEventType::Down:
+ 	{
+@@ -630,10 +671,12 @@
+ 			// Menu 위젯이 떠 있으면 빈 곳 클릭도 아래 · 월드로 보내지 않는다.
+ 			return bBlocked;
+ 		}
+-		if (_captured.Pin().IsValid() == false)
++		const bool bNewCapture = _captured.Pin().IsValid() == false;
++		if (bNewCapture)
+ 		{
+ 			_captured       = hit;
+ 			_capturedButton = event.Button;
++			_bCapturedHeld  = false;
+ 			if (bLeftButton)
+ 			{
+ 				// 끌기 후보: 누른 요소부터 위로 가장 가까운 끌 수 있는 요소. 문턱을 넘게 움직이면 끌기가 된다.
+@@ -642,6 +685,13 @@
+ 			}
+ 		}
+ 		hit->onPointerDown(event.Button);
++		// 누른 요소가 누르는 동안 이동을 직접 받겠다면(손잡이 · 슬라이더) 조상 끌기 후보는 버린다.
++		if (bNewCapture && _stackVersion == stackVersion && _captured.Pin().GetRawPointer() == hit.GetRawPointer()
++			&& hit->onPointerHeldBegin(event.Button, point))
++		{
++			_bCapturedHeld = true;
++			_dragCandidate = nullptr;
++		}
+ 		return true;
+ 	}
+ 	case EGameUIPointerEventType::Up:
+@@ -655,7 +705,8 @@
+ 		if (captured.IsValid() && _capturedButton == event.Button)
+ 		{
+ 			// 누른 요소가 뗌을 받는다. 포인터가 밖으로 나갔으면 bInside = false(버튼은 클릭하지 않는다).
+-			_captured = nullptr;
++			_captured      = nullptr;
++			_bCapturedHeld = false;
+ 			captured->onPointerUp(event.Button, hit.GetRawPointer() == captured.GetRawPointer());
+ 			if (_stackVersion == stackVersion)
+ 			{
+@@ -679,7 +730,11 @@
+ 	}
+ 	case EGameUIPointerEventType::Wheel:
+ 	{
+-		// 휠은 UI 위에서만 소비한다(월드 줌을 막는다). 스크롤 요소는 아직 없다.
++		// 포인터 아래의 스크롤 칸이 받는다(가장 안쪽부터, 끝이면 바깥 칸). 받을 칸이 없으면 UI 위에서만 소비한다(월드 줌을 막는다).
++		if (hit.IsValid() && routeWheel(inputWidgets, hit, event.Wheel, event.WheelHorizontal))
++		{
++			return true;
++		}
+ 		return hit.IsValid() || bBlocked;
+ 	}
+ 	default:
+@@ -1016,6 +1071,16 @@
+ 	return _defaultTextInputStyle;
+ }
+ 
++void PGameUIManager::SetDefaultScrollStyle(const HGameUIScrollStyle& style)
++{
++	_defaultScrollStyle = style;
++}
++
++const HGameUIScrollStyle& PGameUIManager::GetDefaultScrollStyle() const
++{
++	return _defaultScrollStyle;
++}
++
+ void PGameUIManager::Shutdown()
+ {
+ 	ClearAllWidgets();
+@@ -1030,6 +1095,7 @@
+ 	_defaultTextStyle      = HGameUITextStyle();
+ 	_defaultButtonStyle    = HGameUIButtonStyle();
+ 	_defaultTextInputStyle = HGameUITextInputStyle();
++	_defaultScrollStyle    = HGameUIScrollStyle();
+ 	_tweenTimeScale        = 1.0f;
+ 	_fonts.clear();
+ 	_textures.clear();
+@@ -1114,6 +1180,7 @@
+ 	widget->_manager = nullptr;
+ 	widget->OnShutdown();
+ 	widget->_root->ClearChildren();
++	widget->_scrollMemory.clear();
+ 	// 전환이 남긴 루트 모습을 처음으로(다시 Push 하면 처음부터).
+ 	widget->_root->SetOpacity(1.0f);
+ 	widget->_root->ClearRenderTransform();
+@@ -1191,7 +1258,8 @@
+ 	setHovered(nullptr);
+ 
+ 	PSharedPtr<PGameUIElement> captured = _captured.Pin();
+-	_captured = nullptr;
++	_captured      = nullptr;
++	_bCapturedHeld = false;
+ 	if (captured.IsValid())
+ 	{
+ 		captured->onPointerUp(_capturedButton, false);
+@@ -1207,7 +1275,8 @@
+ 
+ 	// 끌기가 되면 그 누름은 클릭이 아니다: 누른 요소에 밖에서 뗀 것으로 알린다(버튼 누름 모습도 풀린다).
+ 	PSharedPtr<PGameUIElement> captured = _captured.Pin();
+-	_captured = nullptr;
++	_captured      = nullptr;
++	_bCapturedHeld = false;
+ 	if (captured.IsValid())
+ 	{
+ 		captured->onPointerUp(_capturedButton, false);
+@@ -1218,6 +1287,33 @@
+ 	OnDragBegin.BroadCast(element, _dragStart);
+ }
+ 
++bool PGameUIManager::routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal)
++{
++	if (wheel == 0.0f && wheelHorizontal == 0.0f)
++	{
++		return false;
++	}
++	for (const PSharedPtr<JGGameWidget>& widget : widgets)
++	{
++		HList<PSharedPtr<PGameUIScrollBox>> boxes;
++		if (collectScrollBoxesOnPath(widget->GetRoot(), hit.GetRawPointer(), boxes) == false)
++		{
++			continue;
++		}
++		// 가장 안쪽 칸부터. 그 방향으로 더 넘어갈 수 없는(끝에 닿은) 칸은 바깥 칸으로 넘긴다. 꺼진 칸은 받지 않는다.
++		for (auto it = boxes.rbegin(); it != boxes.rend(); ++it)
++		{
++			PSharedPtr<PGameUIScrollBox> box = *it;
++			if (box->IsEnabled() && box->handleWheel(wheel, wheelHorizontal))
++			{
++				return true;
++			}
++		}
++		return false;
++	}
++	return false;
++}
++
+ void PGameUIManager::moveDrag(const HVector2& position, const PSharedPtr<PGameUIElement>& target)
+ {
+ 	PSharedPtr<PGameUIElement> dragged = _dragged;
+--- a/Source/Runtime/GameFrameWorks/UI/GameUITween.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUITween.h
+@@ -38,7 +38,7 @@
+ 	static float32 Evaluate(EGameUIEase ease, float32 t);
+ };
+ 
+-// ---- 트윈 값: 위치 · 크기 · 배율 · 옮기기 = X · Y, 각도 · 불투명도 = X, 색 = X · Y · Z · W(R · G · B · A).
++// ---- 트윈 값: 위치 · 크기 · 배율 · 옮기기 · 넘긴 양 = X · Y, 각도 · 불투명도 = X, 색 = X · Y · Z · W(R · G · B · A).
+ struct HGameUITweenValue
+ {
+ 	float32 X = 0.0f;
+@@ -210,6 +210,8 @@
+ 	// 이 번호로 가져간 요소 속성을 놓는다(자식 묶음까지. 다른 묶음이 가져간 것은 그대로).
+ 	void    releaseWriters(uint64 writerId);
+ 	bool    isInfinite() const;
++	// 요소 속성 쓰기(UI 요소에 붙는 부분). 넘긴 양은 스크롤 칸의 트윈 전용 경로로 쓴다(그 트윈을 스스로 취소하지 않게).
++	static void writeProperty(PSharedPtr<PGameUIElement> element, EGameUITweenProperty property, const HGameUITweenValue& value);
+ 
+ 	static constexpr float32 Running = -1.0f;
+ 	static constexpr float32 Lost    = -2.0f;
+--- a/Source/Runtime/GameFrameWorks/UI/GameUITween.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUITween.cpp
+@@ -3,6 +3,7 @@
+ #include "UI/GameUIElement.h"
+ #include "UI/GameUIImage.h"
+ #include "UI/GameUIText.h"
++#include "UI/GameUIScrollBox.h"
+ #include "UI/GameUIManager.h"
+ #include <cmath>
+ 
+@@ -19,7 +20,7 @@
+ 	// 같은 요소 · 같은 속성을 쓰는 묶음(재생 한 번)을 가르는 번호(메인 스레드 전용).
+ 	uint64 GNextTweenWriterId = 0;
+ 
+-	// ---- 요소 속성 읽기 · 쓰기(UI 요소에 붙는 부분. 묶음 진행은 이 둘만 거친다)
++	// ---- 요소 속성 읽기(UI 요소에 붙는 부분. 묶음 진행은 이것과 PGameUITimeline::writeProperty 만 거친다)
+ 	HGameUITweenValue readProperty(const PSharedPtr<PGameUIElement>& element, EGameUITweenProperty property, const PGameUIManager* manager)
+ 	{
+ 		switch (property)
+@@ -52,66 +53,83 @@
+ 			}
+ 			return HGameUITweenValue(HLinearColor(1.0f, 1.0f, 1.0f, 1.0f));
+ 		}
++		case EGameUITweenProperty::ScrollOffset:
++		{
++			PSharedPtr<PGameUIElement> candidate = element;
++			PSharedPtr<PGameUIScrollBox> box = RawDynamicCast<PGameUIScrollBox>(candidate);
++			return box.IsValid() ? HGameUITweenValue(box->GetScrollOffset()) : HGameUITweenValue();
++		}
+ 		default:
+ 			break;
+ 		}
+ 		return HGameUITweenValue();
+ 	}
++}
+ 
+-	void writeProperty(PSharedPtr<PGameUIElement> element, EGameUITweenProperty property, const HGameUITweenValue& value)
++// ---- 요소 속성 쓰기(UI 요소에 붙는 부분)
++void PGameUITimeline::writeProperty(PSharedPtr<PGameUIElement> element, EGameUITweenProperty property, const HGameUITweenValue& value)
++{
++	switch (property)
+ 	{
+-		switch (property)
+-		{
+-		case EGameUITweenProperty::Position:
+-			element->SetPosition(HVector2(value.X, value.Y));
+-			break;
+-		case EGameUITweenProperty::Size:
+-			element->SetSize(HVector2(value.X, value.Y));
+-			break;
+-		case EGameUITweenProperty::Angle:
+-		{
+-			HGameUIRenderTransform transform = element->GetRenderTransform();
+-			transform.Angle = value.X;
+-			element->SetRenderTransform(transform);
+-			break;
+-		}
+-		case EGameUITweenProperty::Scale:
++	case EGameUITweenProperty::Position:
++		element->SetPosition(HVector2(value.X, value.Y));
++		break;
++	case EGameUITweenProperty::Size:
++		element->SetSize(HVector2(value.X, value.Y));
++		break;
++	case EGameUITweenProperty::Angle:
++	{
++		HGameUIRenderTransform transform = element->GetRenderTransform();
++		transform.Angle = value.X;
++		element->SetRenderTransform(transform);
++		break;
++	}
++	case EGameUITweenProperty::Scale:
++	{
++		HGameUIRenderTransform transform = element->GetRenderTransform();
++		transform.Scale = HVector2(value.X, value.Y);
++		element->SetRenderTransform(transform);
++		break;
++	}
++	case EGameUITweenProperty::Translation:
++	{
++		HGameUIRenderTransform transform = element->GetRenderTransform();
++		transform.Translation = HVector2(value.X, value.Y);
++		element->SetRenderTransform(transform);
++		break;
++	}
++	case EGameUITweenProperty::Opacity:
++		element->SetOpacity(value.X);
++		break;
++	case EGameUITweenProperty::Color:
++	{
++		const HLinearColor color(value.X, value.Y, value.Z, value.W);
++		PSharedPtr<PGameUIImage> image = RawDynamicCast<PGameUIImage>(element);
++		if (image.IsValid())
+ 		{
+-			HGameUIRenderTransform transform = element->GetRenderTransform();
+-			transform.Scale = HVector2(value.X, value.Y);
+-			element->SetRenderTransform(transform);
++			image->SetColor(color);
+ 			break;
+ 		}
+-		case EGameUITweenProperty::Translation:
++		PSharedPtr<PGameUIText> text = RawDynamicCast<PGameUIText>(element);
++		if (text.IsValid())
+ 		{
+-			HGameUIRenderTransform transform = element->GetRenderTransform();
+-			transform.Translation = HVector2(value.X, value.Y);
+-			element->SetRenderTransform(transform);
+-			break;
++			text->SetColor(color);
+ 		}
+-		case EGameUITweenProperty::Opacity:
+-			element->SetOpacity(value.X);
+-			break;
+-		case EGameUITweenProperty::Color:
++		// 그 밖의 요소(버튼 · 입력란 — 색이 스타일에 있다)는 움직이지 않는다.
++		break;
++	}
++	case EGameUITweenProperty::ScrollOffset:
++	{
++		// 스크롤 칸만. ScrollTo 와 달리 넘긴 양 트윈(이 묶음)을 취소하지 않는다.
++		PSharedPtr<PGameUIScrollBox> box = RawDynamicCast<PGameUIScrollBox>(element);
++		if (box.IsValid())
+ 		{
+-			const HLinearColor color(value.X, value.Y, value.Z, value.W);
+-			PSharedPtr<PGameUIImage> image = RawDynamicCast<PGameUIImage>(element);
+-			if (image.IsValid())
+-			{
+-				image->SetColor(color);
+-				break;
+-			}
+-			PSharedPtr<PGameUIText> text = RawDynamicCast<PGameUIText>(element);
+-			if (text.IsValid())
+-			{
+-				text->SetColor(color);
+-			}
+-			// 그 밖의 요소(버튼 · 입력란 — 색이 스타일에 있다)는 움직이지 않는다.
+-			break;
+-		}
+-		default:
+-			break;
++			box->setOffsetFromTween(HVector2(value.X, value.Y));
+ 		}
++		break;
++	}
++	default:
++		break;
+ 	}
+ }
+ 
+--- a/Source/Runtime/GameFrameWorks/UI/GameUI.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUI.h
+@@ -28,5 +28,6 @@
+ #include "UI/GameUIText.h"
+ #include "UI/GameUIButton.h"
+ #include "UI/GameUITextInput.h"
++#include "UI/GameUIScrollBox.h"
+ #include "UI/GameUIFont.h"
+ #include "Core/GameInstance.h"
+--- a/Source/Runtime/GameFrameWorks/UI/GameUISelfTest.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUISelfTest.cpp
+@@ -3058,6 +3058,607 @@
+ 		check(joinEvents(events) == PString("D2:shutdown H:deactivate H:shutdown") && dialog2->IsClosing() == false, "accept transition: Shutdown shuts a closing widget down (top layer first)");
+ 	}
+ 
++	// ---- 스크롤 칸(GG-20, ProjectAH ER-020 · 결정 D-35 가 + 나)
++	bool wheelAt(PSharedPtr<PGameUIManager>& manager, float32 x, float32 y, float32 wheel, float32 wheelHorizontal = 0.0f)
++	{
++		HGameUIPointerEvent event = pointer(EGameUIPointerEventType::Wheel, x, y);
++		event.Wheel           = wheel;
++		event.WheelHorizontal = wheelHorizontal;
++		return manager->HandlePointer(event, GTarget);
++	}
++
++	// 누르고 to 로 옮긴 뒤 뗀다(손잡이 끌기).
++	void pressMoveRelease(PSharedPtr<PGameUIManager>& manager, const HVector2& from, const HVector2& to)
++	{
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, from.x, from.y), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, to.x, to.y), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, to.x, to.y), GTarget);
++	}
++
++	HVector2 centerOf(const HRect& rect)
++	{
++		return HVector2((rect.left + rect.right) * 0.5f, (rect.top + rect.bottom) * 0.5f);
++	}
++
++	// 칸 내부 요소(보이는 칸 · 막대 · 손잡이)의 마지막 배치 사각형.
++	HRect partRect(const PSharedPtr<PGameUIScrollBox>& box, const char* name)
++	{
++		PSharedPtr<PGameUIElement> part = box->FindChild(PName(name));
++		return part.IsValid() ? part->GetLayoutRect() : HRect();
++	}
++
++	PSharedPtr<PGameUIScrollBox> addScrollBox(PSharedPtr<PGameUIElement> parent, const char* name, const HRect& rect)
++	{
++		PSharedPtr<PGameUIScrollBox> box = parent->AddChild<PGameUIScrollBox>(PName(name));
++		box->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(rect.left, rect.top), HVector2(rect.right - rect.left, rect.bottom - rect.top));
++		return box;
++	}
++
++	// 내용에 버튼 count 개를 세로로(간격 pitch) 붙이고 버튼마다 클릭 수를 clicks 에 센다.
++	HList<PSharedPtr<PGameUIButton>> addRows(PSharedPtr<PGameUIScrollBox> box, int32 count, float32 width, float32 height, float32 pitch, HList<int32>& clicks)
++	{
++		HList<PSharedPtr<PGameUIButton>> rows;
++		clicks.assign((size_t)count, 0);
++		HList<int32>* counter = &clicks;
++		for (int32 i = 0; i < count; ++i)
++		{
++			PSharedPtr<PGameUIButton> row = box->GetContent()->AddChild<PGameUIButton>(PName(PString::Format("Row%d", i)));
++			row->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, (float32)i * pitch), HVector2(width, height));
++			row->OnClicked.AddLambda([counter, i]()
++				{
++					++(*counter)[(size_t)i];
++				});
++			rows.push_back(row);
++		}
++		return rows;
++	}
++
++	// 글자 배치(글꼴 아틀라스)의 사각형 수. 배치 클립이 모두 clip 이고 사각형이 모두 clip 과 겹치면(칸 밖 사각형이 목록에 없으면) bAllInside.
++	uint64 countGlyphQuads(const HGameUIDrawList& list, const HRect& clip, bool& bAllInside)
++	{
++		uint64 quads = 0;
++		bAllInside = true;
++		for (const HGameUIDrawCommand& command : list.Commands)
++		{
++			if (command.Font == nullptr)
++			{
++				continue;
++			}
++			if (isRect(command.Clip, clip.left, clip.top, clip.right, clip.bottom) == false)
++			{
++				bAllInside = false;
++			}
++			for (uint32 index = command.IndexOffset; index + 6 <= command.IndexOffset + command.IndexCount; index += 6)
++			{
++				const uint32 base = list.Indices[index];
++				float32 top    = list.Vertices[base].Position.y;
++				float32 bottom = top;
++				for (uint32 corner = 1; corner < 4; ++corner)
++				{
++					top    = HMath::Min(top, list.Vertices[base + corner].Position.y);
++					bottom = HMath::Max(bottom, list.Vertices[base + corner].Position.y);
++				}
++				if (bottom <= clip.top || top >= clip.bottom)
++				{
++					bAllInside = false;
++				}
++				++quads;
++			}
++		}
++		return quads;
++	}
++
++	// 정점 vertexIndex 로 시작하는 사각형을 담은 배치. 없으면 nullptr.
++	const HGameUIDrawCommand* findQuadCommand(const HGameUIDrawList& list, int32 vertexIndex)
++	{
++		for (const HGameUIDrawCommand& command : list.Commands)
++		{
++			for (uint32 index = command.IndexOffset; index + 6 <= command.IndexOffset + command.IndexCount; index += 6)
++			{
++				if ((int32)list.Indices[index] == vertexIndex)
++				{
++					return &command;
++				}
++			}
++		}
++		return nullptr;
++	}
++
++	// 완료 기준 (a): 6줄 칸의 20줄 글 — 휠 · 손잡이 끌기 · 막대 빈 곳 누르기로 끝까지, 글자는 칸으로 잘린다.
++	void testScrollBoxText()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();   // 기준 1000x1000 = GTarget → 배율 1
++		PSharedPtr<PGameUIFont>    font    = manager->GetDefaultFont();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		if (font.IsValid() == false)
++		{
++			++GSkipCount;
++			JG_LOG(GameUI, ELogLevel::Warning, "gameui.selftest: no default font. Scroll text check skipped");
++			manager->Shutdown();
++			return;
++		}
++
++		// 칸 (100, 100)-(500, 280) = 줄 간격 30 의 6줄. 글 폭 = 칸 폭 − 막대 자리(12 + 2 × 2)
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(widget->GetRoot(), "StoryBox", HRect(100.0f, 100.0f, 500.0f, 280.0f));
++		int32    scrolledCount = 0;
++		HVector2 lastScrolled;
++		box->OnScrolled.AddLambda([&scrolledCount, &lastScrolled](const HVector2& offset)
++			{
++				++scrolledCount;
++				lastScrolled = offset;
++			});
++		PString story;
++		for (int32 line = 1; line <= 20; ++line)
++		{
++			story = story.Empty() ? PString::Format("Line %d", line) : PString::Format("%s\nLine %d", story, line);
++		}
++		PSharedPtr<PGameUIText> text = box->GetContent()->AddChild<PGameUIText>(PName("Story"));
++		HGameUIParagraphStyle paragraph;
++		paragraph.LineHeight = 30.0f;
++		text->SetParagraphStyle(paragraph);
++		text->SetFontSize(20.0f);
++		text->SetText(story);
++		const float32 textWidth  = 400.0f - 16.0f;
++		const float32 textHeight = text->MeasureContent(textWidth, manager.GetRawPointer()).y;
++		text->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(textWidth, textHeight));
++		const float32 maxScroll   = textHeight - 180.0f;
++		const uint64  totalGlyphs = 20 * 4 + 9 * 1 + 11 * 2;   // "Line" + 숫자(공백 · 줄바꿈은 사각형이 없다)
++
++		HGameUIDrawList top;
++		manager->BuildDrawList(GTarget, top);
++		check(textHeight >= 570.0f && box->IsScrollBarVisible(true) && box->IsScrollBarVisible(false) == false
++			&& isPoint(box->GetViewportSize(), HVector2(384.0f, 180.0f)) && nearlyEqual(box->GetMaxScroll().y, maxScroll),
++			"scroll: a 20-line text in a 6-line box shows the vertical bar only (viewport 384 x 180)");
++		bool bTopInside = false;
++		const uint64 topQuads = countGlyphQuads(top, HRect(100.0f, 100.0f, 484.0f, 280.0f), bTopInside);
++		check(bTopInside && topQuads > 0 && topQuads * 2 < totalGlyphs,
++			"accept ER-020 (a): every glyph is clipped to the viewport and lines outside it are not in the draw list");
++
++		// 휠 한 칸 = 60. 끝에 닿을 때까지, 넘길 때마다 OnScrolled 한 번
++		const HVector2 boxCenter(300.0f, 190.0f);
++		int32 wheelSteps = 0;
++		while (box->GetScrollOffset().y < maxScroll - 0.01f && wheelSteps < 50)
++		{
++			wheelAt(manager, boxCenter.x, boxCenter.y, -1.0f);
++			++wheelSteps;
++		}
++		const int32 expectedSteps = (int32)std::ceil(maxScroll / 60.0f);
++		check(wheelSteps == expectedSteps && nearlyEqual(box->GetScrollOffset().y, maxScroll) && scrolledCount == expectedSteps && nearlyEqual(lastScrolled.y, maxScroll),
++			"accept ER-020 (a): wheel steps of 60 reach the end, one OnScrolled per step");
++		check(wheelAt(manager, boxCenter.x, boxCenter.y, -1.0f) && scrolledCount == expectedSteps && nearlyEqual(box->GetScrollOffset().y, maxScroll),
++			"scroll: the wheel at the end is consumed over the box and changes nothing");
++		HGameUIDrawList end;
++		manager->BuildDrawList(GTarget, end);
++		bool bEndInside = false;
++		const uint64 endQuads = countGlyphQuads(end, HRect(100.0f, 100.0f, 484.0f, 280.0f), bEndInside);
++		check(bEndInside && endQuads > 0 && endQuads * 2 < totalGlyphs, "scroll: at the end the glyphs are still clipped to the viewport");
++		wheelAt(manager, boxCenter.x, boxCenter.y, 1.0f);
++		check(nearlyEqual(box->GetScrollOffset().y, maxScroll - 60.0f), "scroll: wheel forward scrolls back up by one step");
++
++		// 막대: 칸 안 오른쪽(486~498), 위아래 여백 2. 손잡이 길이 = 막대 × 보이는 칸 / 내용
++		box->ScrollTo(HVector2(0.0f, 0.0f));
++		manager->UpdateLayout(GTarget);
++		const HRect   track      = partRect(box, "ScrollBox.VerticalBar");
++		const HRect   thumb      = partRect(box, "ScrollBox.VerticalThumb");
++		const float32 thumbSize  = thumb.bottom - thumb.top;
++		check(isRect(track, 486.0f, 102.0f, 498.0f, 278.0f) && nearlyEqual(thumb.top, 102.0f) && nearlyEqual(thumbSize, HMath::Max(176.0f * 180.0f / textHeight, 24.0f), 0.05f),
++			"scroll: the bar sits inside the right edge and the thumb is track x viewport / content long");
++
++		// 손잡이 끌기: 반만큼 → 넘긴 양 반, 칸 밖 멀리 → 끝
++		const HVector2 grab   = centerOf(thumb);
++		const float32  travel = (track.bottom - track.top) - thumbSize;
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, grab.x, grab.y), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, grab.x, grab.y + travel * 0.5f), GTarget);
++		const bool bHalf = nearlyEqual(box->GetScrollOffset().y, maxScroll * 0.5f, 0.05f);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, grab.x + 300.0f, grab.y + 1000.0f), GTarget);
++		const bool bEnd = nearlyEqual(box->GetScrollOffset().y, maxScroll);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, grab.x + 300.0f, grab.y + 1000.0f), GTarget);
++		check(bHalf && bEnd, "accept ER-020 (a): dragging the thumb follows the pointer and reaches the end past the box");
++
++		// 막대 빈 곳 누르기: 손잡이 아래를 누를 때마다 보이는 칸의 7/8(157.5), 끝까지. 손잡이 위를 누르면 거꾸로
++		box->ScrollTo(HVector2(0.0f, 0.0f));
++		const HVector2 belowThumb(492.0f, 276.0f);
++		check(click(manager, belowThumb.x, belowThumb.y) && nearlyEqual(box->GetScrollOffset().y, 157.5f), "scroll: pressing the track below the thumb pages down by 7/8 of the viewport");
++		int32 pages = 1;
++		while (box->GetScrollOffset().y < maxScroll - 0.01f && pages < 20)
++		{
++			click(manager, belowThumb.x, belowThumb.y);
++			++pages;
++		}
++		const bool bPagedToEnd = nearlyEqual(box->GetScrollOffset().y, maxScroll) && pages == (int32)std::ceil(maxScroll / 157.5f);
++		click(manager, 492.0f, 104.0f);
++		check(bPagedToEnd && nearlyEqual(box->GetScrollOffset().y, maxScroll - 157.5f), "accept ER-020 (a): track presses reach the end and a press above the thumb pages up");
++
++		manager->Shutdown();
++	}
++
++	// 완료 기준 (b): 칸보다 긴 버튼 40개 — 칸 밖 버튼은 안 눌리고, 넘긴 뒤 들어온 버튼은 눌린다. ScrollIntoView.
++	void testScrollBoxRows()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(widget->GetRoot(), "List", HRect(600.0f, 100.0f, 900.0f, 300.0f));
++		HList<int32> clicks;
++		const HList<PSharedPtr<PGameUIButton>> rows = addRows(box, 40, 280.0f, 40.0f, 50.0f, clicks);
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(box->GetResolvedContentSize().y, 1990.0f) && nearlyEqual(box->GetMaxScroll().y, 1790.0f) && box->GetScrollDirection() == EGameUIScrollDirection::Vertical,
++			"scroll: the automatic content size wraps the visible rows (40 x 50 - 10)");
++		check(isRect(rows[3]->GetLayoutRect(), 600.0f, 250.0f, 880.0f, 290.0f) && isRect(rows[3]->CalculateLayoutRect(box->GetContent()->GetLayoutRect()), 600.0f, 250.0f, 880.0f, 290.0f),
++			"scroll: content rows are laid out from the viewport's top-left (CalculateLayoutRect agrees)");
++
++		// 칸 밖 버튼(Row10 = 화면 600~640)은 올리기 · 누르기가 안 되고 아래(빈 곳 · 월드)로 간다
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 700.0f, 620.0f), GTarget);
++		const bool bNoHover = manager->GetHoveredElement().IsValid() == false;
++		const bool bPassed  = click(manager, 700.0f, 620.0f) == false;
++		check(bNoHover && bPassed && clicks[10] == 0, "accept ER-020 (b): a row outside the box is neither hovered nor clicked (the click goes below)");
++		check(click(manager, 700.0f, 220.0f) && clicks[2] == 1, "scroll: a row inside the box is clicked");
++		box->ScrollTo(HVector2(0.0f, 450.0f));
++		check(click(manager, 700.0f, 170.0f) && clicks[10] == 1, "accept ER-020 (b): after ScrollTo the row that came into the box is clicked");
++		check(click(manager, 700.0f, 220.0f) && clicks[2] == 1 && clicks[11] == 1, "accept ER-020 (b): the row that went out is not clicked at its old place (the row now there is)");
++
++		// 칸 가장자리에 걸친 버튼은 보이는 부분만 눌린다(Row9 = 화면 90~130, 칸 위 100)
++		box->ScrollTo(HVector2(0.0f, 460.0f));
++		const bool bCutPart   = click(manager, 700.0f, 95.0f) == false && clicks[9] == 0;
++		const bool bShownPart = click(manager, 700.0f, 120.0f) && clicks[9] == 1;
++		check(bCutPart && bShownPart, "scroll: a row cut by the box edge is clicked only on its visible part");
++
++		// ScrollIntoView: 가장 적게 넘긴다(여백 5)
++		check(box->ScrollIntoView(rows[30], 5.0f) && nearlyEqual(box->GetScrollOffset().y, 1545.0f - 200.0f), "scroll: ScrollIntoView scrolls down the least to show a row below (margin 5)");
++		check(box->ScrollIntoView(rows[2], 5.0f) && nearlyEqual(box->GetScrollOffset().y, 95.0f), "scroll: ScrollIntoView scrolls up to show a row above");
++		check(box->ScrollIntoView(rows[3], 5.0f) && nearlyEqual(box->GetScrollOffset().y, 95.0f), "scroll: ScrollIntoView keeps the offset when the row is already shown");
++		PSharedPtr<PGameUIButton> extra = box->GetContent()->AddChild<PGameUIButton>(PName("Extra"));
++		extra->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 2400.0f), HVector2(280.0f, 40.0f));
++		check(box->ScrollIntoView(extra) && nearlyEqual(box->GetScrollOffset().y, 2240.0f), "scroll: ScrollIntoView works on a row added this frame (before layout)");
++		PSharedPtr<PGameUIButton> stranger = Allocate<PGameUIButton>();
++		check(box->ScrollIntoView(stranger) == false && nearlyEqual(box->GetScrollOffset().y, 2240.0f), "scroll: ScrollIntoView refuses an element outside the content");
++		extra->SetVisible(false);
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(box->GetScrollOffset().y, 1790.0f), "scroll: when the content shrinks the offset follows (hidden rows do not count)");
++
++		manager->Shutdown();
++	}
++
++	// 완료 기준 (c): 칸 밖 휠 · 다 들어간 칸(막대 없음) · 겹친 칸. 요소 공통 자식 잘라내기.
++	void testScrollBoxRouting()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		const HGameUIScrollStyle   style   = manager->GetDefaultScrollStyle();
++
++		// 다 들어가는 칸: 막대는 그려지지도 판정되지도 않는다. 휠은 칸 위에서 소비만
++		PSharedPtr<PGameUIScrollBox> fit = addScrollBox(widget->GetRoot(), "Fit", HRect(100.0f, 100.0f, 400.0f, 400.0f));
++		HList<int32> fitClicks;
++		addRows(fit, 3, 200.0f, 40.0f, 50.0f, fitClicks);
++		int32 fitScrolled = 0;
++		fit->OnScrolled.AddLambda([&fitScrolled](const HVector2& offset)
++			{
++				++fitScrolled;
++			});
++		HGameUIDrawList fitList;
++		manager->BuildDrawList(GTarget, fitList);
++		check(fit->IsScrollBarVisible(true) == false && fit->IsScrollBarVisible(false) == false && findQuad(fitList, style.TrackColor) < 0 && findQuad(fitList, style.ThumbNormal) < 0,
++			"accept ER-020 (c): content that fits shows no bar (none drawn)");
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 392.0f, 250.0f), GTarget);
++		check(manager->GetHoveredElement().GetRawPointer() == fit.GetRawPointer(), "accept ER-020 (c): a hidden bar is not hit (the box is)");
++		check(wheelAt(manager, 250.0f, 250.0f, -1.0f) && fitScrolled == 0 && nearlyEqual(fit->GetScrollOffset().y, 0.0f), "scroll: wheel over a box with nothing to scroll is consumed and scrolls nothing");
++
++		// 칸 밖 휠: 빈 곳은 지금처럼 소비 안 함, 다른 UI 위는 소비만
++		PSharedPtr<PGameUIScrollBox> list = addScrollBox(widget->GetRoot(), "List", HRect(500.0f, 100.0f, 800.0f, 300.0f));
++		HList<int32> listClicks;
++		addRows(list, 40, 280.0f, 40.0f, 50.0f, listClicks);
++		PSharedPtr<PGameUIImage> panel = addPanel(widget, "Panel", HLinearColor(0.9f, 0.1f, 0.1f, 1.0f), HRect(850.0f, 500.0f, 950.0f, 600.0f));
++		panel->SetHitTestVisible(true);
++		check(wheelAt(manager, 950.0f, 950.0f, -1.0f) == false && nearlyEqual(list->GetScrollOffset().y, 0.0f), "accept ER-020 (c): wheel outside every box changes nothing (not consumed over empty space)");
++		check(wheelAt(manager, 900.0f, 550.0f, -1.0f) && nearlyEqual(list->GetScrollOffset().y, 0.0f), "scroll: wheel over other UI is consumed as before and no box scrolls");
++		check(wheelAt(manager, 650.0f, 200.0f, -1.0f) && nearlyEqual(list->GetScrollOffset().y, 60.0f), "scroll: wheel over a row in the box scrolls the box");
++
++		// 겹친 칸: 안쪽부터, 안쪽이 그 방향 끝이면 바깥이 받는다. 거꾸로 굴리면 다시 안쪽부터
++		PSharedPtr<PGameUIScrollBox> outer = addScrollBox(widget->GetRoot(), "Outer", HRect(100.0f, 500.0f, 400.0f, 800.0f));
++		PSharedPtr<PGameUIScrollBox> inner = addScrollBox(outer->GetContent(), "Inner", HRect(0.0f, 0.0f, 250.0f, 150.0f));
++		HList<int32> innerClicks;
++		addRows(inner, 10, 200.0f, 40.0f, 50.0f, innerClicks);   // 490 → 넘길 수 있는 양 340
++		PSharedPtr<PGameUIImage> filler = outer->GetContent()->AddChild<PGameUIImage>(PName("Filler"));
++		filler->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 160.0f), HVector2(250.0f, 600.0f));   // 바깥 내용 760 → 460
++		manager->UpdateLayout(GTarget);
++		for (int32 step = 0; step < 6; ++step)
++		{
++			wheelAt(manager, 225.0f, 575.0f, -1.0f);
++		}
++		const bool bInnerFirst = nearlyEqual(inner->GetScrollOffset().y, 340.0f) && nearlyEqual(outer->GetScrollOffset().y, 0.0f);
++		wheelAt(manager, 225.0f, 575.0f, -1.0f);
++		const bool bThenOuter = nearlyEqual(inner->GetScrollOffset().y, 340.0f) && nearlyEqual(outer->GetScrollOffset().y, 60.0f);
++		wheelAt(manager, 225.0f, 520.0f, 1.0f);
++		const bool bBackInner = nearlyEqual(inner->GetScrollOffset().y, 280.0f) && nearlyEqual(outer->GetScrollOffset().y, 60.0f);
++		check(bInnerFirst && bThenOuter && bBackInner, "accept ER-020 (c): nested boxes - the inner box takes the wheel until its end, then the outer box");
++
++		// 요소 공통 자식 잘라내기(일반 판): 자식은 판 안에만 그리고, 판 밖으로 나간 부분은 판정하지 않는다
++		PSharedPtr<PGameUIImage> clipPanel = addPanel(widget, "ClipPanel", HLinearColor(0.1f, 0.8f, 0.1f, 1.0f), HRect(500.0f, 500.0f, 600.0f, 600.0f));
++		clipPanel->SetClipChildren(true);
++		PSharedPtr<PGameUIImage> overflow = clipPanel->AddChild<PGameUIImage>(PName("Overflow"));
++		overflow->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(50.0f, 50.0f), HVector2(150.0f, 150.0f));
++		overflow->SetColor(HLinearColor(0.1f, 0.1f, 0.9f, 1.0f));
++		overflow->SetHitTestVisible(true);
++		HGameUIDrawList clipList;
++		manager->BuildDrawList(GTarget, clipList);
++		const HGameUIDrawCommand* overflowCommand = findQuadCommand(clipList, findQuad(clipList, overflow->GetColor()));
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 575.0f, 575.0f), GTarget);
++		const bool bInsideHit = manager->GetHoveredElement().GetRawPointer() == overflow.GetRawPointer();
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 650.0f, 650.0f), GTarget);
++		const bool bOutsideMiss = manager->GetHoveredElement().IsValid() == false;
++		check(clipPanel->IsClipChildren() && overflowCommand != nullptr && isRect(overflowCommand->Clip, 500.0f, 500.0f, 600.0f, 600.0f) && bInsideHit && bOutsideMiss,
++			"scroll: SetClipChildren on a plain panel clips the child drawing and its hit area");
++
++		manager->Shutdown();
++	}
++
++	// 완료 기준 (d): 15° · 1.3배 부모 아래 칸 — 그리기는 돌린 칸을 감싸는 축 정렬 사각형으로, 판정은 돌린 칸 안만.
++	void testScrollBoxTransform()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		PSharedPtr<PGameUIImage> frame = addPanel(widget, "Frame", HLinearColor(0.3f, 0.3f, 0.3f, 1.0f), HRect(300.0f, 300.0f, 600.0f, 500.0f));
++		frame->SetPivot(HVector2(0.5f, 0.5f));
++		frame->SetPosition(HVector2(450.0f, 400.0f));
++		HGameUIRenderTransform transform;
++		transform.Angle = 15.0f;
++		transform.Scale = HVector2(1.3f, 1.3f);
++		frame->SetRenderTransform(transform);
++		const HGameUIAffine expected = HGameUIAffine::FromRenderTransform(transform, HVector2(450.0f, 400.0f));
++
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(frame, "Turned", HRect(0.0f, 0.0f, 300.0f, 200.0f));
++		PSharedPtr<PGameUIButton> big = box->GetContent()->AddChild<PGameUIButton>(PName("Big"));
++		big->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(284.0f, 600.0f));
++		HGameUIDrawList list;
++		manager->BuildDrawList(GTarget, list);
++		PSharedPtr<PGameUIElement> viewport = box->FindChild(PName("ScrollBox.Viewport"));
++		const HRect expectedClip = viewport->LocalToCanvasBounds(viewport->GetLayoutRect());
++		const HGameUIDrawCommand* bigCommand = findQuadCommand(list, findQuad(list, big->ResolveStyle(manager.GetRawPointer()).Normal));
++		check(isRect(viewport->GetLayoutRect(), 300.0f, 300.0f, 584.0f, 500.0f) && bigCommand != nullptr
++			&& isRect(bigCommand->Clip, expectedClip.left, expectedClip.top, expectedClip.right, expectedClip.bottom),
++			"accept ER-020 (d): under a 15 degree 1.3x parent the content is clipped to the box around the turned viewport");
++
++		auto hoveredAt = [&manager](const HVector2& point)
++		{
++			manager->HandlePointer(pointer(EGameUIPointerEventType::Move, point.x, point.y), GTarget);
++			return manager->GetHoveredElement();
++		};
++		const bool bInside      = hoveredAt(expected.Apply(HVector2(320.0f, 480.0f))).GetRawPointer() == big.GetRawPointer();
++		const bool bCutOff      = hoveredAt(expected.Apply(HVector2(320.0f, 520.0f))).GetRawPointer() != big.GetRawPointer();   // 버튼 자리지만 칸 아래
++		const bool bCornerMiss  = hoveredAt(HVector2(expectedClip.left + 3.0f, expectedClip.top + 3.0f)).GetRawPointer() != big.GetRawPointer();
++		check(bInside && bCutOff && bCornerMiss, "accept ER-020 (d): hit testing follows the turned viewport (its corners and the cut part miss)");
++
++		manager->Shutdown();
++	}
++
++	PSharedPtr<PGameUIScrollBox> addKeyedList(PSharedPtr<JGGameWidget> widget, const char* key, HList<int32>& clicks)
++	{
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(widget->GetRoot(), "Deck", HRect(100.0f, 100.0f, 400.0f, 300.0f));
++		if (key != nullptr)
++		{
++			box->SetScrollKey(PName(key));
++		}
++		addRows(box, 40, 280.0f, 40.0f, 50.0f, clicks);
++		return box;
++	}
++
++	// 완료 기준 (e): 열쇠 — 칸째 다시 만들어도 같은 열쇠면 넘긴 양 유지, 위젯이 닫히면 잊음. 내용만 다시 만들면 그대로(잘림).
++	void testScrollBoxMemory()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		HList<int32> clicks;
++
++		PSharedPtr<PGameUIScrollBox> first = addKeyedList(widget, "DeckList", clicks);
++		manager->UpdateLayout(GTarget);
++		first->ScrollTo(HVector2(0.0f, 300.0f));
++		widget->GetRoot()->RemoveChild(first);
++		PSharedPtr<PGameUIScrollBox> rebuilt = addKeyedList(widget, "DeckList", clicks);
++		manager->UpdateLayout(GTarget);
++		check(rebuilt->GetScrollKey() == PName("DeckList") && nearlyEqual(rebuilt->GetScrollOffset().y, 300.0f),
++			"accept ER-020 (e): rebuilding the box with the same key starts at the remembered offset");
++		check(click(manager, 200.0f, 120.0f) && clicks[6] == 1, "scroll: the rebuilt box is clicked at its remembered place (row 6)");
++
++		// 내용만 다시 만들면 넘긴 양은 칸에 남고 새 내용 크기로 잘린다
++		rebuilt->GetContent()->ClearChildren();
++		addRows(rebuilt, 10, 280.0f, 40.0f, 50.0f, clicks);   // 490 → 넘길 수 있는 양 290
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(rebuilt->GetScrollOffset().y, 290.0f), "scroll: rebuilding only the content keeps the offset, cut to the new content");
++
++		widget->GetRoot()->RemoveChild(rebuilt);
++		PSharedPtr<PGameUIScrollBox> other = addKeyedList(widget, "Other", clicks);
++		PSharedPtr<PGameUIScrollBox> unkeyed = addKeyedList(widget, nullptr, clicks);
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(other->GetScrollOffset().y, 0.0f) && nearlyEqual(unkeyed->GetScrollOffset().y, 0.0f), "scroll: another key or no key starts at the top");
++		widget->GetRoot()->RemoveChild(other);
++		widget->GetRoot()->RemoveChild(unkeyed);
++
++		// 첫 배치 전에 코드로 넘기면 그 자리가 기억보다 앞선다
++		PSharedPtr<PGameUIScrollBox> explicitBox = addKeyedList(widget, "DeckList", clicks);
++		explicitBox->ScrollTo(HVector2(0.0f, 50.0f));
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(explicitBox->GetScrollOffset().y, 50.0f), "scroll: ScrollTo before the first layout wins over the key memory");
++
++		// 위젯이 닫히면(OnShutdown) 잊는다
++		manager->RemoveWidget(widget);
++		manager->PushWidgetInstance(widget, EGameUILayer::Game);
++		PSharedPtr<PGameUIScrollBox> reopened = addKeyedList(widget, "DeckList", clicks);
++		manager->UpdateLayout(GTarget);
++		check(nearlyEqual(reopened->GetScrollOffset().y, 0.0f), "accept ER-020 (e): the key memory is forgotten when the widget shuts down");
++
++		manager->Shutdown();
++	}
++
++	// 결정 (나): 부드럽게 넘기기(넘긴 양 트윈) — 휠 목표가 쌓이고, 손잡이 · ScrollTo 는 멈추고, 게임 트윈도 쓴다.
++	void testScrollBoxSmooth()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(widget->GetRoot(), "Smooth", HRect(100.0f, 100.0f, 400.0f, 300.0f));
++		HList<int32> clicks;
++		addRows(box, 40, 280.0f, 40.0f, 50.0f, clicks);   // 넘길 수 있는 양 1790
++		HGameUIScrollStyle style;
++		style.SmoothSeconds = 0.2f;
++		box->SetStyle(style);
++		int32 scrolled = 0;
++		box->OnScrolled.AddLambda([&scrolled](const HVector2& offset)
++			{
++				++scrolled;
++			});
++		manager->UpdateLayout(GTarget);
++
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		const bool bNoJump = nearlyEqual(box->GetScrollOffset().y, 0.0f);
++		manager->Update(0.1f);
++		const float32 middle = box->GetScrollOffset().y;
++		manager->Update(0.15f);
++		check(box->HasStyle() && bNoJump && nearlyEqual(middle, 60.0f * 0.875f, 0.05f) && nearlyEqual(box->GetScrollOffset().y, 60.0f) && scrolled == 2,
++			"accept D-35 (b): smooth scrolling eases to the wheel target over SmoothSeconds (OutCubic), OnScrolled each frame it moves");
++
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		manager->Update(0.05f);
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		manager->Update(0.3f);
++		check(nearlyEqual(box->GetScrollOffset().y, 180.0f), "smooth: quick wheel steps add up from the moving target (60 + 60 + 60)");
++
++		// 손잡이를 누르면 그 자리에서 멈춘다
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		manager->Update(0.05f);
++		const float32 caught = box->GetScrollOffset().y;
++		manager->UpdateLayout(GTarget);
++		const HVector2 grab = centerOf(partRect(box, "ScrollBox.VerticalThumb"));
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, grab.x, grab.y), GTarget);
++		manager->Update(0.3f);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, grab.x, grab.y), GTarget);
++		check(caught > 180.0f && caught < 240.0f && nearlyEqual(box->GetScrollOffset().y, caught), "smooth: pressing the thumb stops the smooth scroll where it is");
++
++		// ScrollTo 도 멈춘다
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		box->ScrollTo(HVector2(0.0f, 10.0f));
++		manager->Update(0.3f);
++		check(nearlyEqual(box->GetScrollOffset().y, 10.0f), "smooth: ScrollTo cancels the smooth scroll");
++
++		// 게임이 넘긴 양 트윈을 직접 재생한다(지금 자리에서 시작, 끝을 넘는 목표는 끝에서 멈춘다)
++		HTimelineLog gameLog;
++		PSharedPtr<PGameUITimeline> toFive = widget->PlayTween(HGameUITween::To(box, EGameUITweenProperty::ScrollOffset, HVector2(0.0f, 500.0f), 0.2f, EGameUIEase::Linear));
++		watch(toFive, gameLog);
++		manager->Update(0.1f);
++		const float32 halfway = box->GetScrollOffset().y;
++		manager->Update(0.1f);
++		check(nearlyEqual(halfway, 255.0f, 0.05f) && nearlyEqual(box->GetScrollOffset().y, 500.0f) && gameLog.Finished == 1 && gameLog.Canceled == 0,
++			"accept D-35 (b): the ScrollOffset tween property scrolls a box from a game timeline");
++		widget->PlayTween(HGameUITween::To(box, EGameUITweenProperty::ScrollOffset, HVector2(0.0f, 99999.0f), 0.1f));
++		manager->Update(0.2f);
++		check(nearlyEqual(box->GetScrollOffset().y, 1790.0f), "smooth: a tween past the end stops at the end");
++
++		// 게임 트윈 중 휠: 같은 속성이라 게임 묶음은 취소, 휠 목표로 이어 간다
++		HTimelineLog longLog;
++		PSharedPtr<PGameUITimeline> slow = widget->PlayTween(HGameUITween::To(box, EGameUITweenProperty::ScrollOffset, HVector2(0.0f, 0.0f), 1.0f, EGameUIEase::Linear));
++		watch(slow, longLog);
++		manager->Update(0.1f);
++		const float32 before = box->GetScrollOffset().y;
++		wheelAt(manager, 200.0f, 200.0f, -1.0f);
++		manager->Update(0.3f);
++		check(longLog.Canceled == 1 && nearlyEqual(box->GetScrollOffset().y, HMath::Min(before + 60.0f, 1790.0f)), "smooth: the wheel takes over from a game scroll tween (that timeline is canceled)");
++
++		manager->Shutdown();
++	}
++
++	// 결정 (나): 가로 막대 · 가로 휠 · 가로만 칸.
++	void testScrollBoxHorizontal()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++
++		// 두 방향: 내용 600 x 600, 칸 300 x 200 → 두 막대, 보이는 칸 284 x 184, 넘길 수 있는 양 316 x 416
++		PSharedPtr<PGameUIScrollBox> both = addScrollBox(widget->GetRoot(), "Both", HRect(100.0f, 500.0f, 400.0f, 700.0f));
++		both->SetScrollDirection(EGameUIScrollDirection::Both);
++		PSharedPtr<PGameUIImage> sheet = both->GetContent()->AddChild<PGameUIImage>(PName("Sheet"));
++		sheet->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(600.0f, 600.0f));
++		manager->UpdateLayout(GTarget);
++		check(both->IsScrollBarVisible(true) && both->IsScrollBarVisible(false) && isPoint(both->GetViewportSize(), HVector2(284.0f, 184.0f))
++			&& isPoint(both->GetMaxScroll(), HVector2(316.0f, 416.0f)),
++			"accept D-35 (b): content bigger both ways shows both bars and each bar takes its room");
++		check(isRect(partRect(both, "ScrollBox.HorizontalBar"), 102.0f, 686.0f, 382.0f, 698.0f) && isRect(partRect(both, "ScrollBox.VerticalBar"), 386.0f, 502.0f, 398.0f, 682.0f),
++			"scroll: the horizontal bar runs along the bottom and the corner between the bars stays empty");
++
++		wheelAt(manager, 250.0f, 600.0f, 0.0f, 1.0f);
++		const bool bHorizontalWheel = isPoint(both->GetScrollOffset(), HVector2(60.0f, 0.0f));
++		wheelAt(manager, 250.0f, 600.0f, -1.0f);
++		check(bHorizontalWheel && isPoint(both->GetScrollOffset(), HVector2(60.0f, 60.0f)), "scroll: the horizontal wheel scrolls sideways, the vertical wheel down");
++
++		manager->UpdateLayout(GTarget);
++		const HVector2 grab = centerOf(partRect(both, "ScrollBox.HorizontalThumb"));
++		pressMoveRelease(manager, grab, HVector2(grab.x + 1000.0f, grab.y + 40.0f));
++		check(isPoint(both->GetScrollOffset(), HVector2(316.0f, 60.0f)), "accept D-35 (b): dragging the horizontal thumb reaches the right end");
++		both->ScrollTo(HVector2(0.0f, 60.0f));
++		check(click(manager, 378.0f, 692.0f) && isPoint(both->GetScrollOffset(), HVector2(284.0f * 0.875f, 60.0f)), "scroll: pressing the horizontal track pages right by 7/8 of the viewport");
++
++		// 가로만: 세로 휠도 가로로 넘긴다
++		PSharedPtr<PGameUIScrollBox> strip = addScrollBox(widget->GetRoot(), "Strip", HRect(500.0f, 500.0f, 900.0f, 600.0f));
++		strip->SetScrollDirection(EGameUIScrollDirection::Horizontal);
++		PSharedPtr<PGameUIImage> film = strip->GetContent()->AddChild<PGameUIImage>(PName("Film"));
++		film->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(1000.0f, 80.0f));
++		manager->UpdateLayout(GTarget);
++		wheelAt(manager, 700.0f, 540.0f, -1.0f);
++		check(strip->IsScrollBarVisible(false) && strip->IsScrollBarVisible(true) == false && isPoint(strip->GetScrollOffset(), HVector2(60.0f, 0.0f)),
++			"scroll: a horizontal-only box scrolls sideways with the vertical wheel");
++
++		// 세로만 칸은 가로 휠을 받지 않는다(넘치는 폭은 잘린다)
++		PSharedPtr<PGameUIScrollBox> column = addScrollBox(widget->GetRoot(), "Column", HRect(500.0f, 100.0f, 800.0f, 300.0f));
++		HList<int32> clicks;
++		addRows(column, 40, 500.0f, 40.0f, 50.0f, clicks);
++		manager->UpdateLayout(GTarget);
++		check(wheelAt(manager, 650.0f, 200.0f, 0.0f, 1.0f) && isPoint(column->GetScrollOffset(), HVector2(0.0f, 0.0f)) && column->IsScrollBarVisible(false) == false,
++			"scroll: a vertical box ignores the horizontal wheel and shows no horizontal bar for wide rows");
++
++		manager->Shutdown();
++	}
++
++	// 누른 요소가 이동을 받는 훅: 손잡이는 바깥 끌기를 시작하지 않고, 끄는 동안 호버는 그대로. 꺼진 칸은 받지 않는다.
++	void testScrollBoxHeld()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		PSharedPtr<PGameUIImage> panel = addPanel(widget, "Panel", HLinearColor(0.3f, 0.3f, 0.3f, 1.0f), HRect(100.0f, 100.0f, 500.0f, 500.0f));
++		panel->SetHitTestVisible(true);
++		panel->SetDraggable(true);
++		PSharedPtr<PGameUIScrollBox> box = addScrollBox(panel, "InPanel", HRect(50.0f, 50.0f, 350.0f, 250.0f));   // 화면 (150, 150)-(450, 350)
++		HList<int32> clicks;
++		addRows(box, 40, 280.0f, 40.0f, 50.0f, clicks);
++		int32 dragBegins = 0;
++		manager->OnDragBegin.AddLambda([&dragBegins](const PSharedPtr<PGameUIElement>& element, const HVector2& position)
++			{
++				++dragBegins;
++			});
++		manager->UpdateLayout(GTarget);
++
++		PSharedPtr<PGameUIElement> thumb = box->FindChild(PName("ScrollBox.VerticalThumb"));
++		const HVector2 grab = centerOf(thumb->GetLayoutRect());
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, grab.x, grab.y), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, grab.x, grab.y + 40.0f), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 250.0f, 200.0f), GTarget);   // 버튼 위를 지나간다
++		const bool bHoverKept = manager->GetHoveredElement().GetRawPointer() == thumb.GetRawPointer();
++		const float32 dragged = box->GetScrollOffset().y;
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, 250.0f, 200.0f), GTarget);
++		check(dragBegins == 0 && dragged > 0.0f && bHoverKept && manager->GetHoveredElement().IsValid() && manager->GetHoveredElement().GetRawPointer() != thumb.GetRawPointer(),
++			"scroll: dragging the thumb inside a draggable panel scrolls without starting the panel drag, and hover waits until release");
++		const int32 clicksBefore = clicks[5] + clicks[6] + clicks[7] + clicks[8] + clicks[9] + clicks[10];
++		pressMoveRelease(manager, HVector2(250.0f, 200.0f), HVector2(250.0f, 260.0f));
++		check(dragBegins == 1 && clicks[5] + clicks[6] + clicks[7] + clicks[8] + clicks[9] + clicks[10] == clicksBefore,
++			"scroll: pressing a row and moving still drags the draggable panel (existing rule)");
++
++		// 꺼진 칸: 휠 · 손잡이를 받지 않는다(입력은 막는다)
++		box->ScrollTo(HVector2(0.0f, 100.0f));
++		box->SetEnabled(false);
++		manager->UpdateLayout(GTarget);
++		const HVector2 disabledGrab = centerOf(thumb->GetLayoutRect());
++		const bool bWheelConsumed = wheelAt(manager, 250.0f, 250.0f, -1.0f);
++		pressMoveRelease(manager, disabledGrab, HVector2(disabledGrab.x, disabledGrab.y + 60.0f));
++		check(bWheelConsumed && nearlyEqual(box->GetScrollOffset().y, 100.0f), "scroll: a disabled box takes neither the wheel nor the thumb");
++
++		manager->Shutdown();
++	}
++
+ 	void testGameInstanceUI()
+ 	{
+ 		if (JGGameInstance::HasInstance() == false)
+@@ -3097,6 +3698,14 @@
+ 		testDisabledAndStyle();
+ 		testTween();
+ 		testTransition();
++		testScrollBoxText();
++		testScrollBoxRows();
++		testScrollBoxRouting();
++		testScrollBoxTransform();
++		testScrollBoxMemory();
++		testScrollBoxSmooth();
++		testScrollBoxHorizontal();
++		testScrollBoxHeld();
+ 		testGameInstanceUI();
+ 
+ 		if (GFailureCount == 0)
+@@ -3111,6 +3720,6 @@
+ 	HAutoConsoleCommand GameUISelfTestCommand(
+ 		"gameui.selftest",
+ 		"gameui.selftest",
+-		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop, tweens, transitions). No GPU needed",
++		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop, tweens, transitions, scroll boxes). No GPU needed",
+ 		&executeSelfTest);
+ }
+--- /dev/null
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.h
+@@ -0,0 +1,138 @@
++#pragma once
++#include "UI/GameUIElement.h"
++#include "UI/GameUIStyle.h"
++
++class PGameUIScrollBox;
++class PGameUITimeline;
++
++// 넘긴 양이 바뀌었다(휠 · 손잡이 끌기 · 막대 빈 곳 누르기 · 코드 · 넘긴 양 트윈 — 바뀔 때마다 한 번). 인자 = 새 넘긴 양. 방송은 스크롤 칸만 한다.
++// 내용이 줄어 배치 때 넘긴 양이 잘리거나 열쇠 기억에서 시작할 때는 오지 않는다(배치 중).
++JG_DECLARE_EVENT(HOnGameUIScrolled, PGameUIScrollBox, const HVector2&);
++
++// 스크롤 칸이 넘기는 방향.
++enum class EGameUIScrollDirection
++{
++	Vertical,     // 세로만(가로로 넘치는 내용은 잘린다)
++	Horizontal,   // 가로만(세로 휠도 가로로 넘긴다)
++	Both,
++};
++
++// 스크롤 칸(GG-20, ProjectAH ER-020). 칸(이 요소 사각형)보다 큰 내용을 칸 안에서 넘겨 보인다 — 칸 밖 내용은 그리지도 판정하지도 않는다.
++// 넘길 자식은 내용 요소에 붙인다: box->GetContent()->AddChild<T>(이름). 내용 요소의 왼쪽 위가 (0, 0)이고 자식은 위 · 왼쪽 앵커(기본)로 둔다.
++// 내용 크기: SetContentSize 로 정하거나(축마다 0 = 자동) 보이는 자식의 사각형을 감싸는 크기(자동은 앵커를 위 · 왼쪽으로 보고 계산한다).
++//   글 하나를 넘기려면 글 요소 높이를 글에 맞춘다: text->SetSize(HVector2(폭, text->MeasureContent(폭, 관리자).y)).
++//   넘기지 않는 방향의 내용 요소 크기는 보이는 칸과 같다(세로 칸의 내용 폭 = 보이는 칸 폭).
++// 넘긴 양 = 내용 왼쪽 위가 보이는 칸 왼쪽 위에서 위 · 왼쪽으로 간 거리(논리 단위). 늘 0 ~ GetMaxScroll() 로 잘린다(내용이 줄면 따라 줄어든다).
++// 막대: 넘기는 방향마다 칸 안 오른쪽(세로) · 아래(가로). 스타일(HGameUIScrollStyle) Visibility 가 Auto 면 내용이 칸보다 클 때만 보이고,
++//   보이는 막대 자리(Thickness + 2 × Margin)만큼 보이는 칸이 줄어든다. 손잡이를 끌면 따라 넘어가고, 막대 빈 곳을 누르면 그쪽으로 보이는 칸의 7/8 만큼.
++//   숨은 막대는 그리지도 판정하지도 않는다. 막대를 누르면 바깥 요소의 끌기(SetDraggable)는 시작하지 않는다.
++// 휠: 관리자가 포인터 아래에서 가장 안쪽 칸부터 준다(그 방향 끝에 닿은 칸은 바깥 칸으로). 한 칸 = 스타일 WheelStep.
++//   세로로 넘길 것이 없고 가로로만 넘길 수 있는 칸은 세로 휠도 가로로 넘긴다. 꺼진(SetEnabled(false)) 칸은 휠 · 막대를 받지 않는다.
++// 부드럽게 넘기기: 스타일 SmoothSeconds > 0 이면 휠 · 막대 빈 곳 누르기가 넘긴 양 트윈(EGameUITweenProperty::ScrollOffset, OutCubic)으로
++//   이 칸을 가진 위젯에서 돈다. 연달아 굴리면 목표가 이어 쌓인다. 게임도 같은 트윈을 위젯 PlayTween 으로 직접 재생할 수 있다.
++//   손잡이 끌기 · ScrollTo · ScrollBy · ScrollIntoView 는 넘긴 양을 쓰던 트윈(그 묶음 전체)을 취소하고 바로 넘긴다.
++// 열쇠(SetScrollKey): 칸째 다시 만들어도 같은 위젯 안 같은 열쇠의 새 칸은 마지막 넘긴 양에서 시작한다(위젯이 기억, OnShutdown 때 잊음).
++//   첫 배치 전에 코드로 넘기면(ScrollTo 등) 그 자리가 기억보다 앞선다. 열쇠는 한 위젯 안에서 칸마다 다르게 준다.
++// 입력 받기 · 자식 잘라내기가 기본으로 켜져 있다(칸 위 클릭 · 휠이 아래 · 월드로 가지 않는다). 이 요소의 자식(GetChildren)은 내부 요소다 — 직접 붙이거나 지우지 않는다.
++// 그리기 변환(돌리기 · 배율)을 받은 칸: 내용은 돌린 칸을 감싸는 축 정렬 사각형으로 잘리고, 판정은 돌린 칸 안만이다.
++class GAMEFRAMEWORKS_API PGameUIScrollBox : public PGameUIElement
++{
++	friend class PGameUIManager;
++	friend class PGameUITimeline;
++	friend class PGameUIScrollBoxBar;
++	friend class PGameUIScrollBoxThumb;
++
++	// 지금 배치 값 · 스타일로 정해지는 칸 모양(논리 단위). 배치 · 입력 · 코드가 같은 계산을 쓴다.
++	struct HScrollGeometry
++	{
++		HVector2 ContentSize;                 // 정했거나 자동으로 잰 내용 크기
++		HVector2 ViewportSize;                // 막대를 뺀 보이는 칸
++		HVector2 MaxScroll;
++		bool     bBarVisible[2] = {};         // [0] 세로, [1] 가로
++	};
++
++	PSharedPtr<PGameUIElement> _viewport;      // 보이는 칸(자식 잘라내기)
++	PSharedPtr<PGameUIElement> _content;       // 넘기는 내용(위치 = −넘긴 양)
++	PSharedPtr<PGameUIElement> _bars[2];       // 막대 바탕 [0] 세로, [1] 가로
++	PSharedPtr<PGameUIElement> _thumbs[2];     // 손잡이
++
++	EGameUIScrollDirection      _direction = EGameUIScrollDirection::Vertical;
++	HVector2                    _contentSize;  // 정한 값(축마다 0 = 자동)
++	HVector2                    _offset;
++	HVector2                    _smoothTarget; // 부드럽게 넘기는 중의 목표
++	PSharedPtr<PGameUITimeline> _smoothTimeline;
++	HGameUIScrollStyle          _style;
++	bool                        _bHasStyle    = false;
++	PName                       _scrollKey;
++	bool                        _bKeyRestored = false;   // 열쇠 기억을 이미 봤거나 코드로 넘겼다
++	PWeakPtr<JGGameWidget>      _ownerWidget;            // 마지막 배치의 위젯(부드럽게 넘기기 · 열쇠 · 기본 스타일)
++
++public:
++	HOnGameUIScrolled OnScrolled;
++
++public:
++	PGameUIScrollBox();
++	virtual ~PGameUIScrollBox();
++
++	// 내용 요소. 넘길 자식은 여기에 붙인다.
++	PSharedPtr<PGameUIElement> GetContent() const;
++	void SetScrollDirection(EGameUIScrollDirection direction);
++	EGameUIScrollDirection GetScrollDirection() const;
++	// 내용 크기(논리 단위). 축마다 0 이면 자동(보이는 자식의 사각형을 감싸는 크기).
++	void SetContentSize(const HVector2& size);
++	const HVector2& GetContentSize() const;
++
++	// ---- 넘기기(논리 단위, 바로). 넘긴 양을 쓰던 트윈(부드럽게 넘기기 포함)은 취소한다. 바뀌면 OnScrolled.
++	void ScrollTo(const HVector2& offset);
++	void ScrollBy(const HVector2& delta);
++	// descendant(내용 요소 아래 요소)가 보이는 칸 안에 들게 가장 적게 넘긴다. margin = 칸 가장자리와 띄울 거리.
++	// 배치 값으로 계산하므로 방금 붙인 요소에도 된다(그리기 변환은 보지 않는다). 칸보다 크면 위 · 왼쪽을 맞춘다. 내용 요소 아래가 아니면 false.
++	bool ScrollIntoView(const PSharedPtr<PGameUIElement>& descendant, float32 margin = 0.0f);
++	const HVector2& GetScrollOffset() const;
++	// 지금 배치 값 · 스타일로 계산한 값(배치 전에도 된다): 내용 크기, 막대를 뺀 보이는 칸, 넘길 수 있는 최대 양, 막대가 보이나.
++	HVector2 GetResolvedContentSize() const;
++	HVector2 GetViewportSize() const;
++	HVector2 GetMaxScroll() const;
++	bool IsScrollBarVisible(bool bVertical) const;
++
++	// ---- 열쇠(게임이 정한 이름 — 같은 위젯 안에서 칸째 다시 만들어도 넘긴 양을 잇는다). 기본은 없음.
++	void SetScrollKey(const PName& key);
++	const PName& GetScrollKey() const;
++
++	// ---- 스타일. 정하지 않으면 관리자 기본 스크롤 스타일을 통째로 쓴다.
++	void SetStyle(const HGameUIScrollStyle& style);
++	// 직접 정한 스타일을 지운다(관리자 기본을 따른다).
++	void ClearStyle();
++	bool HasStyle() const;
++	// 쓰는 스타일: 직접 정한 것, 없으면 관리자 기본(manager 가 nullptr 이면 타입 기본값).
++	HGameUIScrollStyle ResolveStyle(const PGameUIManager* manager) const;
++
++protected:
++	virtual void onLayout(JGGameWidget* ownerWidget) override;
++
++private:
++	HGameUIScrollStyle resolveCurrentStyle() const;
++	HVector2           resolveContentSize() const;
++	HScrollGeometry    computeGeometry(const HGameUIScrollStyle& style) const;
++	HVector2           clampOffset(const HVector2& offset, const HScrollGeometry& geometry) const;
++	// 내용 요소 크기: 넘기는 방향은 max(내용, 보이는 칸), 넘기지 않는 방향은 보이는 칸.
++	HVector2           contentElementSize(const HScrollGeometry& geometry) const;
++	void               layoutParts(const HGameUIScrollStyle& style, const HScrollGeometry& geometry);
++	// 입력이 이어 쌓을 자리: 부드럽게 넘기는 중이면 목표, 아니면 지금 넘긴 양.
++	HVector2           scrollBase() const;
++
++	// 넘긴 양을 바꾸고(이미 잘린 값) 열쇠 기억에 쓰고 알린다.
++	void applyOffset(const HVector2& offset);
++	void rememberOffset();
++	// 넘긴 양을 쓰던 트윈을 취소한다(부드럽게 넘기기 묶음은 바로 멈춘다).
++	void cancelScrollTweens();
++	// 입력으로 넘기기: 스타일이 부드럽게면 트윈, 아니면 바로(트윈 취소).
++	void scrollToByInput(const HVector2& target, const HGameUIScrollStyle& style);
++	// 관리자: 휠(세로 · 가로 칸 수). 그 방향으로 넘어갔으면 true(끝에 닿아 못 넘기면 false — 바깥 칸이 받는다).
++	bool handleWheel(float32 wheel, float32 wheelHorizontal);
++	// 막대: 빈 곳 누르기(direction = −1 위 · 왼쪽, +1 아래 · 오른쪽), 손잡이 끌기(막대 안 손잡이 시작 자리).
++	void pageScroll(bool bVertical, float32 direction);
++	void dragThumbTo(bool bVertical, float32 thumbStart);
++	// 넘긴 양 트윈이 쓴다(그 트윈을 취소하지 않는다).
++	void setOffsetFromTween(const HVector2& offset);
++};
+--- /dev/null
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.cpp
+@@ -0,0 +1,616 @@
++#include "PCH/PCH.h"
++#include "UI/GameUIScrollBox.h"
++#include "UI/GameUIDrawList.h"
++#include "UI/GameUIManager.h"
++#include "UI/GameUITween.h"
++#include "UI/GameWidget.h"
++#include "Classes/Texture.h"
++
++namespace
++{
++	constexpr float32 ScrollEpsilon = 0.01f;    // 이보다 작은 넘침은 넘침이 아니다(실수 오차)
++	constexpr float32 PageFraction  = 0.875f;   // 막대 빈 곳 누르기 한 번 = 보이는 칸의 7/8
++
++	HRect toPixels(const HRect& rect, float32 scale)
++	{
++		return HRect(rect.left * scale, rect.top * scale, rect.right * scale, rect.bottom * scale);
++	}
++
++	float32 axisOf(const HVector2& value, bool bVertical)
++	{
++		return bVertical ? value.y : value.x;
++	}
++
++	// 내용 좌표(parentRect)에서 배치 식 그대로 내려가며 target 의 사각형을 찾는다(배치 전 요소도 된다).
++	bool findRectBelow(const PSharedPtr<PGameUIElement>& parent, const HRect& parentRect, const PGameUIElement* target, HRect& outRect)
++	{
++		for (const PSharedPtr<PGameUIElement>& child : parent->GetChildren())
++		{
++			const HRect childRect = child->CalculateLayoutRect(parentRect);
++			if (child.GetRawPointer() == target)
++			{
++				outRect = childRect;
++				return true;
++			}
++			if (findRectBelow(child, childRect, target, outRect))
++			{
++				return true;
++			}
++		}
++		return false;
++	}
++}
++
++// 막대 바탕(내부). 빈 곳을 누르면 그쪽으로 보이는 칸의 7/8 만큼 넘긴다.
++class PGameUIScrollBoxBar : public PGameUIElement
++{
++public:
++	PGameUIScrollBox* Box       = nullptr;   // 이 막대를 가진 칸(칸이 막대를 가지므로 칸이 먼저 사라지지 않는다)
++	bool              bVertical = true;
++
++public:
++	PGameUIScrollBoxBar()
++	{
++		_bHitTestVisible = true;
++	}
++
++protected:
++	virtual void onBuildDraw(HGameUIDrawContext& context) override
++	{
++		const HGameUIScrollStyle style = Box->ResolveStyle(context.Manager);
++		context.DrawList->AddQuad(toPixels(_layoutRect, context.Scale), HRect(0.0f, 0.0f, 1.0f, 1.0f), style.TrackColor, style.TrackTexture, nullptr, context.Clip);
++	}
++
++	virtual bool onPointerHeldBegin(EGameUIPointerButton button, const HVector2& position) override
++	{
++		if (button != EGameUIPointerButton::Left)
++		{
++			return false;
++		}
++
++		// 손잡이 앞을 눌렀으면 앞(위 · 왼쪽)으로, 뒤를 눌렀으면 뒤로. 누르고 있는 동안의 이동은 쓰지 않는다(바깥 끌기만 막는다).
++		// 넘김 알림 처리기가 칸을 트리에서 빼도 이 함수가 끝날 때까지 칸을 잡아 둔다(아래도 같다).
++		PSharedPtr<PGameUIScrollBox> box = SharedWrap(Box);
++		const HRect& thumb = box->_thumbs[bVertical ? 0 : 1]->GetLayoutRect();
++		const float32 pointer    = axisOf(CanvasToLocal(position), bVertical);
++		const float32 thumbStart = bVertical ? thumb.top : thumb.left;
++		const float32 thumbEnd   = bVertical ? thumb.bottom : thumb.right;
++		if (pointer < thumbStart)
++		{
++			box->pageScroll(bVertical, -1.0f);
++		}
++		else if (pointer >= thumbEnd)
++		{
++			box->pageScroll(bVertical, 1.0f);
++		}
++		return true;
++	}
++};
++
++// 손잡이(내부). 누르고 끌면 따라 넘어간다(문턱 없이 바로).
++class PGameUIScrollBoxThumb : public PGameUIElement
++{
++public:
++	PGameUIScrollBox* Box        = nullptr;
++	bool              bVertical  = true;
++	bool              bHovered   = false;
++	bool              bPressed   = false;
++	float32           GrabOffset = 0.0f;   // 누른 자리 − 손잡이 시작(축 방향)
++
++public:
++	PGameUIScrollBoxThumb()
++	{
++		_bHitTestVisible = true;
++	}
++
++protected:
++	virtual void onBuildDraw(HGameUIDrawContext& context) override
++	{
++		const HGameUIScrollStyle style = Box->ResolveStyle(context.Manager);
++		const HLinearColor& color = bPressed ? style.ThumbPressed : (bHovered ? style.ThumbHovered : style.ThumbNormal);
++		context.DrawList->AddQuad(toPixels(_layoutRect, context.Scale), HRect(0.0f, 0.0f, 1.0f, 1.0f), color, style.ThumbTexture, nullptr, context.Clip);
++	}
++
++	virtual void onPointerEnter() override
++	{
++		bHovered = true;
++	}
++
++	virtual void onPointerLeave() override
++	{
++		bHovered = false;
++	}
++
++	virtual bool onPointerHeldBegin(EGameUIPointerButton button, const HVector2& position) override
++	{
++		if (button != EGameUIPointerButton::Left)
++		{
++			return false;
++		}
++		bPressed   = true;
++		GrabOffset = axisOf(CanvasToLocal(position), bVertical) - (bVertical ? _layoutRect.top : _layoutRect.left);
++		// 부드럽게 넘기던 것은 멈추고 손잡이를 따른다.
++		PSharedPtr<PGameUIScrollBox> box = SharedWrap(Box);
++		box->cancelScrollTweens();
++		return true;
++	}
++
++	virtual void onPointerHeldMove(const HVector2& position) override
++	{
++		PSharedPtr<PGameUIScrollBox> box = SharedWrap(Box);
++		const HRect& track = box->_bars[bVertical ? 0 : 1]->GetLayoutRect();
++		const float32 thumbStart = axisOf(CanvasToLocal(position), bVertical) - GrabOffset - (bVertical ? track.top : track.left);
++		box->dragThumbTo(bVertical, thumbStart);
++	}
++
++	virtual void onPointerUp(EGameUIPointerButton button, bool bInside) override
++	{
++		if (button == EGameUIPointerButton::Left)
++		{
++			bPressed = false;
++		}
++	}
++};
++
++PGameUIScrollBox::PGameUIScrollBox()
++{
++	_bHitTestVisible = true;
++	_bClipChildren   = true;
++
++	_viewport = AddChild<PGameUIElement>(PName(PString("ScrollBox.Viewport")));
++	_viewport->SetClipChildren(true);
++	_content = _viewport->AddChild<PGameUIElement>(PName(PString("ScrollBox.Content")));
++
++	// 막대는 보이는 칸 뒤에 붙인다(위에 그려지고 먼저 판정된다).
++	const char* const barNames[2]   = { "ScrollBox.VerticalBar", "ScrollBox.HorizontalBar" };
++	const char* const thumbNames[2] = { "ScrollBox.VerticalThumb", "ScrollBox.HorizontalThumb" };
++	for (int32 axis = 0; axis < 2; ++axis)
++	{
++		PSharedPtr<PGameUIScrollBoxBar> bar = AddChild<PGameUIScrollBoxBar>(PName(PString(barNames[axis])));
++		bar->Box       = this;
++		bar->bVertical = axis == 0;
++		bar->SetVisible(false);
++
++		PSharedPtr<PGameUIScrollBoxThumb> thumb = bar->AddChild<PGameUIScrollBoxThumb>(PName(PString(thumbNames[axis])));
++		thumb->Box       = this;
++		thumb->bVertical = axis == 0;
++
++		_bars[axis]   = bar;
++		_thumbs[axis] = thumb;
++	}
++}
++
++PGameUIScrollBox::~PGameUIScrollBox()
++{
++}
++
++PSharedPtr<PGameUIElement> PGameUIScrollBox::GetContent() const
++{
++	return _content;
++}
++
++void PGameUIScrollBox::SetScrollDirection(EGameUIScrollDirection direction)
++{
++	_direction = direction;
++}
++
++EGameUIScrollDirection PGameUIScrollBox::GetScrollDirection() const
++{
++	return _direction;
++}
++
++void PGameUIScrollBox::SetContentSize(const HVector2& size)
++{
++	_contentSize = HVector2(HMath::Max(size.x, 0.0f), HMath::Max(size.y, 0.0f));
++}
++
++const HVector2& PGameUIScrollBox::GetContentSize() const
++{
++	return _contentSize;
++}
++
++void PGameUIScrollBox::ScrollTo(const HVector2& offset)
++{
++	// 코드로 넘긴 자리가 열쇠 기억보다 앞선다(첫 배치 전에 불렀을 때).
++	_bKeyRestored = true;
++	cancelScrollTweens();
++	applyOffset(clampOffset(offset, computeGeometry(resolveCurrentStyle())));
++}
++
++void PGameUIScrollBox::ScrollBy(const HVector2& delta)
++{
++	ScrollTo(HVector2(_offset.x + delta.x, _offset.y + delta.y));
++}
++
++bool PGameUIScrollBox::ScrollIntoView(const PSharedPtr<PGameUIElement>& descendant, float32 margin)
++{
++	if (descendant.IsValid() == false)
++	{
++		return false;
++	}
++
++	const HScrollGeometry geometry = computeGeometry(resolveCurrentStyle());
++	const HVector2 contentSize = contentElementSize(geometry);
++	HRect rect;
++	if (findRectBelow(_content, HRect(0.0f, 0.0f, contentSize.x, contentSize.y), descendant.GetRawPointer(), rect) == false)
++	{
++		return false;
++	}
++
++	// 보이는 창 = [넘긴 양, 넘긴 양 + 보이는 칸]. 앞으로 벗어났거나 칸보다 크면 앞을 맞추고, 뒤로 벗어났으면 뒤를 맞춘다.
++	HVector2 target = _offset;
++	const bool bAxes[2] = { _direction != EGameUIScrollDirection::Horizontal, _direction != EGameUIScrollDirection::Vertical };
++	for (int32 axis = 0; axis < 2; ++axis)
++	{
++		if (bAxes[axis] == false)
++		{
++			continue;
++		}
++		const bool    bVertical = axis == 0;
++		const float32 start     = (bVertical ? rect.top : rect.left) - margin;
++		const float32 end       = (bVertical ? rect.bottom : rect.right) + margin;
++		const float32 view      = axisOf(geometry.ViewportSize, bVertical);
++		float32&      value     = bVertical ? target.y : target.x;
++		if (start < value || end - start > view)
++		{
++			value = start;
++		}
++		else if (end > value + view)
++		{
++			value = end - view;
++		}
++	}
++	ScrollTo(target);
++	return true;
++}
++
++const HVector2& PGameUIScrollBox::GetScrollOffset() const
++{
++	return _offset;
++}
++
++HVector2 PGameUIScrollBox::GetResolvedContentSize() const
++{
++	return resolveContentSize();
++}
++
++HVector2 PGameUIScrollBox::GetViewportSize() const
++{
++	return computeGeometry(resolveCurrentStyle()).ViewportSize;
++}
++
++HVector2 PGameUIScrollBox::GetMaxScroll() const
++{
++	return computeGeometry(resolveCurrentStyle()).MaxScroll;
++}
++
++bool PGameUIScrollBox::IsScrollBarVisible(bool bVertical) const
++{
++	return computeGeometry(resolveCurrentStyle()).bBarVisible[bVertical ? 0 : 1];
++}
++
++void PGameUIScrollBox::SetScrollKey(const PName& key)
++{
++	_scrollKey    = key;
++	_bKeyRestored = false;
++}
++
++const PName& PGameUIScrollBox::GetScrollKey() const
++{
++	return _scrollKey;
++}
++
++void PGameUIScrollBox::SetStyle(const HGameUIScrollStyle& style)
++{
++	_style     = style;
++	_bHasStyle = true;
++}
++
++void PGameUIScrollBox::ClearStyle()
++{
++	_style     = HGameUIScrollStyle();
++	_bHasStyle = false;
++}
++
++bool PGameUIScrollBox::HasStyle() const
++{
++	return _bHasStyle;
++}
++
++HGameUIScrollStyle PGameUIScrollBox::ResolveStyle(const PGameUIManager* manager) const
++{
++	if (_bHasStyle || manager == nullptr)
++	{
++		return _style;
++	}
++	return manager->GetDefaultScrollStyle();
++}
++
++void PGameUIScrollBox::onLayout(JGGameWidget* ownerWidget)
++{
++	// 이 칸을 가진 위젯을 기억한다(부드럽게 넘기기 · 열쇠 · 기본 스타일). 다른 위젯으로 옮겨 붙었으면(처음 배치는 아님) 그 위젯의 기억에서 다시 시작한다.
++	PSharedPtr<JGGameWidget> widget = _ownerWidget.Pin();
++	if (widget.GetRawPointer() != ownerWidget)
++	{
++		if (widget.IsValid())
++		{
++			_bKeyRestored = false;
++		}
++		widget = nullptr;
++		if (ownerWidget != nullptr)
++		{
++			widget = SharedWrap(ownerWidget);
++		}
++		_ownerWidget = widget;
++	}
++
++	const HGameUIScrollStyle style = ResolveStyle(widget.IsValid() ? widget->GetManager() : nullptr);
++	const HScrollGeometry geometry = computeGeometry(style);
++
++	// 열쇠: 처음 배치될 때 위젯이 기억한 넘긴 양에서 시작한다.
++	if (_bKeyRestored == false && _scrollKey != NAME_NONE && widget.IsValid())
++	{
++		_bKeyRestored = true;
++		auto found = widget->_scrollMemory.find(_scrollKey);
++		if (found != widget->_scrollMemory.end())
++		{
++			_offset = found->second;
++		}
++	}
++
++	// 내용이 줄었으면 넘긴 양도 따라 줄인다(배치 중이라 알리지 않는다).
++	_offset = clampOffset(_offset, geometry);
++	rememberOffset();
++	layoutParts(style, geometry);
++}
++
++HGameUIScrollStyle PGameUIScrollBox::resolveCurrentStyle() const
++{
++	PSharedPtr<JGGameWidget> widget = _ownerWidget.Pin();
++	return ResolveStyle(widget.IsValid() ? widget->GetManager() : nullptr);
++}
++
++HVector2 PGameUIScrollBox::resolveContentSize() const
++{
++	HVector2 size = _contentSize;
++	if (size.x > 0.0f && size.y > 0.0f)
++	{
++		return size;
++	}
++
++	// 자동: 보이는 자식의 사각형을 감싸는 크기(앵커는 위 · 왼쪽으로 본다).
++	HVector2 extent(0.0f, 0.0f);
++	for (const PSharedPtr<PGameUIElement>& child : _content->GetChildren())
++	{
++		if (child->IsVisible() == false)
++		{
++			continue;
++		}
++		const HVector2& position = child->GetPosition();
++		const HVector2& pivot    = child->GetPivot();
++		const HVector2& childSize = child->GetSize();
++		extent.x = HMath::Max(extent.x, position.x + (1.0f - pivot.x) * childSize.x);
++		extent.y = HMath::Max(extent.y, position.y + (1.0f - pivot.y) * childSize.y);
++	}
++	if (size.x <= 0.0f)
++	{
++		size.x = extent.x;
++	}
++	if (size.y <= 0.0f)
++	{
++		size.y = extent.y;
++	}
++	return size;
++}
++
++PGameUIScrollBox::HScrollGeometry PGameUIScrollBox::computeGeometry(const HGameUIScrollStyle& style) const
++{
++	HScrollGeometry geometry;
++	geometry.ContentSize = resolveContentSize();
++
++	const HVector2 boxSize(HMath::Max(_size.x, 0.0f), HMath::Max(_size.y, 0.0f));
++	const float32  barSpace       = HMath::Max(style.Thickness, 0.0f) + HMath::Max(style.Margin, 0.0f) * 2.0f;
++	const bool     bCanVertical   = _direction != EGameUIScrollDirection::Horizontal;
++	const bool     bCanHorizontal = _direction != EGameUIScrollDirection::Vertical;
++
++	auto needsBar = [&style](bool bCanScroll, float32 content, float32 view)
++	{
++		if (bCanScroll == false || style.Visibility == EGameUIScrollBarVisibility::Never)
++		{
++			return false;
++		}
++		return style.Visibility == EGameUIScrollBarVisibility::Always || content > view + ScrollEpsilon;
++	};
++
++	// 한쪽 막대가 보이면 보이는 칸이 줄어 다른 쪽도 넘칠 수 있다 — 한 번 더 본다.
++	bool bVerticalBar   = needsBar(bCanVertical, geometry.ContentSize.y, boxSize.y);
++	bool bHorizontalBar = needsBar(bCanHorizontal, geometry.ContentSize.x, boxSize.x - (bVerticalBar ? barSpace : 0.0f));
++	if (bVerticalBar == false)
++	{
++		bVerticalBar = needsBar(bCanVertical, geometry.ContentSize.y, boxSize.y - (bHorizontalBar ? barSpace : 0.0f));
++		if (bVerticalBar && bHorizontalBar == false)
++		{
++			bHorizontalBar = needsBar(bCanHorizontal, geometry.ContentSize.x, boxSize.x - barSpace);
++		}
++	}
++
++	geometry.ViewportSize = HVector2(HMath::Max(boxSize.x - (bVerticalBar ? barSpace : 0.0f), 0.0f), HMath::Max(boxSize.y - (bHorizontalBar ? barSpace : 0.0f), 0.0f));
++	geometry.MaxScroll    = HVector2(bCanHorizontal ? HMath::Max(geometry.ContentSize.x - geometry.ViewportSize.x, 0.0f) : 0.0f,
++		bCanVertical ? HMath::Max(geometry.ContentSize.y - geometry.ViewportSize.y, 0.0f) : 0.0f);
++	geometry.bBarVisible[0] = bVerticalBar;
++	geometry.bBarVisible[1] = bHorizontalBar;
++	return geometry;
++}
++
++HVector2 PGameUIScrollBox::clampOffset(const HVector2& offset, const HScrollGeometry& geometry) const
++{
++	return HVector2(HMath::Clamp(offset.x, 0.0f, geometry.MaxScroll.x), HMath::Clamp(offset.y, 0.0f, geometry.MaxScroll.y));
++}
++
++HVector2 PGameUIScrollBox::contentElementSize(const HScrollGeometry& geometry) const
++{
++	const bool bCanVertical   = _direction != EGameUIScrollDirection::Horizontal;
++	const bool bCanHorizontal = _direction != EGameUIScrollDirection::Vertical;
++	return HVector2(bCanHorizontal ? HMath::Max(geometry.ContentSize.x, geometry.ViewportSize.x) : geometry.ViewportSize.x,
++		bCanVertical ? HMath::Max(geometry.ContentSize.y, geometry.ViewportSize.y) : geometry.ViewportSize.y);
++}
++
++void PGameUIScrollBox::layoutParts(const HGameUIScrollStyle& style, const HScrollGeometry& geometry)
++{
++	const HVector2 zero(0.0f, 0.0f);
++	_viewport->SetLayout(zero, zero, zero, geometry.ViewportSize);
++	_content->SetLayout(zero, zero, HVector2(-_offset.x, -_offset.y), contentElementSize(geometry));
++
++	const float32 thickness = HMath::Max(style.Thickness, 0.0f);
++	const float32 margin    = HMath::Max(style.Margin, 0.0f);
++	for (int32 axis = 0; axis < 2; ++axis)
++	{
++		const bool bVertical = axis == 0;
++		_bars[axis]->SetVisible(geometry.bBarVisible[axis]);
++		if (geometry.bBarVisible[axis] == false)
++		{
++			continue;
++		}
++
++		// 막대: 칸 안 오른쪽(세로) · 아래(가로), 길이는 보이는 칸 쪽(두 막대가 다 보이면 모서리는 비운다).
++		const float32 trackLength = HMath::Max(axisOf(geometry.ViewportSize, bVertical) - margin * 2.0f, 0.0f);
++		const HVector2 barPosition = bVertical ? HVector2(_size.x - margin - thickness, margin) : HVector2(margin, _size.y - margin - thickness);
++		_bars[axis]->SetLayout(zero, zero, barPosition, bVertical ? HVector2(thickness, trackLength) : HVector2(trackLength, thickness));
++
++		// 손잡이: 길이 = 보이는 칸 / 내용 비율(최소 길이), 자리 = 넘긴 양 비율.
++		const float32 content   = axisOf(geometry.ContentSize, bVertical);
++		const float32 view      = axisOf(geometry.ViewportSize, bVertical);
++		const float32 maxScroll = axisOf(geometry.MaxScroll, bVertical);
++		float32 thumbLength = (content > view && content > 0.0f) ? trackLength * view / content : trackLength;
++		thumbLength = HMath::Min(HMath::Max(thumbLength, style.MinThumbLength), trackLength);
++		const float32 thumbStart = (maxScroll > 0.0f) ? (trackLength - thumbLength) * axisOf(_offset, bVertical) / maxScroll : 0.0f;
++		_thumbs[axis]->SetLayout(zero, zero, bVertical ? HVector2(0.0f, thumbStart) : HVector2(thumbStart, 0.0f),
++			bVertical ? HVector2(thickness, thumbLength) : HVector2(thumbLength, thickness));
++	}
++}
++
++HVector2 PGameUIScrollBox::scrollBase() const
++{
++	if (_smoothTimeline.IsValid() && _smoothTimeline->IsPlaying())
++	{
++		return _smoothTarget;
++	}
++	return _offset;
++}
++
++void PGameUIScrollBox::applyOffset(const HVector2& offset)
++{
++	if (offset.x == _offset.x && offset.y == _offset.y)
++	{
++		return;
++	}
++	_offset = offset;
++	rememberOffset();
++
++	// 처리기 안에서 이 칸이 풀려도 알림을 끝까지 보내도록 잡아 둔다.
++	PSharedPtr<PGameUIScrollBox> keepAlive = SharedWrap(this);
++	OnScrolled.BroadCast(_offset);
++}
++
++void PGameUIScrollBox::rememberOffset()
++{
++	if (_scrollKey == NAME_NONE)
++	{
++		return;
++	}
++	PSharedPtr<JGGameWidget> widget = _ownerWidget.Pin();
++	if (widget.IsValid())
++	{
++		widget->_scrollMemory[_scrollKey] = _offset;
++	}
++}
++
++void PGameUIScrollBox::cancelScrollTweens()
++{
++	// 넘긴 양을 쓰던 묶음은 다음 진행에서 취소로 끝난다(같은 속성을 다른 쪽이 가져간 것과 같다). 부드럽게 넘기기 묶음은 바로 멈춘다.
++	_tweenWriters[(int32)EGameUITweenProperty::ScrollOffset] = 0;
++	if (_smoothTimeline.IsValid())
++	{
++		PSharedPtr<PGameUITimeline> timeline = _smoothTimeline;
++		_smoothTimeline = nullptr;
++		timeline->Stop();
++	}
++}
++
++void PGameUIScrollBox::scrollToByInput(const HVector2& target, const HGameUIScrollStyle& style)
++{
++	PSharedPtr<JGGameWidget> widget = _ownerWidget.Pin();
++	if (style.SmoothSeconds > 0.0f && widget.IsValid())
++	{
++		// 부드럽게: 같은 속성 겹치기 규칙으로 앞 트윈은 다음 진행에서 끝나고, 새 트윈이 지금 자리에서 새 목표로 이어 간다.
++		_smoothTarget = target;
++		PSharedPtr<PGameUIScrollBox> self = SharedWrap(this);
++		_smoothTimeline = widget->PlayTween(HGameUITween::To(self, EGameUITweenProperty::ScrollOffset, HGameUITweenValue(target), style.SmoothSeconds, EGameUIEase::OutCubic));
++		return;
++	}
++	cancelScrollTweens();
++	applyOffset(target);
++}
++
++bool PGameUIScrollBox::handleWheel(float32 wheel, float32 wheelHorizontal)
++{
++	const HGameUIScrollStyle style = resolveCurrentStyle();
++	const HScrollGeometry geometry = computeGeometry(style);
++
++	// 세로 휠은 앞으로 굴리면(+) 위로. 세로로 넘길 것이 없으면 가로로 넘긴다. 가로 휠은 오른쪽(+)으로.
++	HVector2 delta(0.0f, 0.0f);
++	if (geometry.MaxScroll.y > 0.0f)
++	{
++		delta.y -= wheel * style.WheelStep;
++	}
++	else
++	{
++		delta.x -= wheel * style.WheelStep;
++	}
++	delta.x += wheelHorizontal * style.WheelStep;
++
++	// 이미 그 방향 끝이면 받지 않는다(바깥 칸으로).
++	const HVector2 base   = scrollBase();
++	const HVector2 target = clampOffset(HVector2(base.x + delta.x, base.y + delta.y), geometry);
++	if (HMath::Abs(target.x - base.x) < ScrollEpsilon && HMath::Abs(target.y - base.y) < ScrollEpsilon)
++	{
++		return false;
++	}
++	scrollToByInput(target, style);
++	return true;
++}
++
++void PGameUIScrollBox::pageScroll(bool bVertical, float32 direction)
++{
++	const HGameUIScrollStyle style = resolveCurrentStyle();
++	const HScrollGeometry geometry = computeGeometry(style);
++	HVector2 target = scrollBase();
++	float32& value  = bVertical ? target.y : target.x;
++	value += direction * axisOf(geometry.ViewportSize, bVertical) * PageFraction;
++	scrollToByInput(clampOffset(target, geometry), style);
++}
++
++void PGameUIScrollBox::dragThumbTo(bool bVertical, float32 thumbStart)
++{
++	// 손잡이가 움직일 수 있는 거리(막대 − 손잡이)에서의 비율 = 넘긴 양 비율.
++	const int32   axis        = bVertical ? 0 : 1;
++	const HRect&  track       = _bars[axis]->GetLayoutRect();
++	const HRect&  thumb       = _thumbs[axis]->GetLayoutRect();
++	const float32 trackLength = bVertical ? track.bottom - track.top : track.right - track.left;
++	const float32 thumbLength = bVertical ? thumb.bottom - thumb.top : thumb.right - thumb.left;
++	const float32 travel      = trackLength - thumbLength;
++
++	const HScrollGeometry geometry = computeGeometry(resolveCurrentStyle());
++	const float32 ratio = (travel > 0.0f) ? HMath::Clamp(thumbStart / travel, 0.0f, 1.0f) : 0.0f;
++	HVector2 target = _offset;
++	float32& value  = bVertical ? target.y : target.x;
++	value = ratio * axisOf(geometry.MaxScroll, bVertical);
++
++	cancelScrollTweens();
++	applyOffset(clampOffset(target, geometry));
++}
++
++void PGameUIScrollBox::setOffsetFromTween(const HVector2& offset)
++{
++	applyOffset(clampOffset(offset, computeGeometry(resolveCurrentStyle())));
++}
+--- a/Source/Runtime/GameFrameWorks/Viewport/GameViewport.cpp
++++ b/Source/Runtime/GameFrameWorks/Viewport/GameViewport.cpp
+@@ -372,9 +372,10 @@
+ 	}
+ 	case EInputEventType::PointerWheel:
+ 	{
+-		uiEvent.Type  = EGameUIPointerEventType::Wheel;
+-		uiEvent.Wheel = event.WheelDelta.y;
+-		const bool bConsumed = (event.WheelDelta.y != 0.0f) && ui != nullptr && ui->HandlePointer(uiEvent, targetSize);
++		uiEvent.Type            = EGameUIPointerEventType::Wheel;
++		uiEvent.Wheel           = event.WheelDelta.y;
++		uiEvent.WheelHorizontal = event.WheelDelta.x;
++		const bool bConsumed = (event.WheelDelta.y != 0.0f || event.WheelDelta.x != 0.0f) && ui != nullptr && ui->HandlePointer(uiEvent, targetSize);
+ 		return bConsumed ? EGameViewportInputTarget::GameUI : EGameViewportInputTarget::None;
+ 	}
+ 	case EInputEventType::PointerDown:
+--- a/Source/Runtime/GUI/GUI.h
++++ b/Source/Runtime/GUI/GUI.h
+@@ -31,6 +31,7 @@
+ 	bool     bDown[(int32)EGUIMouseButton::Count]    = {};  // 이미지에서 시작한 누름이 이어지는 중 (끌기)
+ 	HVector2 MouseDelta;                                    // 이번 프레임 마우스 이동 (픽셀)
+ 	float32  Wheel = 0.0f;                                  // 이미지 위에 있을 때만
++	float32  WheelHorizontal = 0.0f;                        // 가로 휠(오른쪽으로 +). 이미지 위에 있을 때만
+ 	HVector2 ScreenPosition;                                // 이미지 왼쪽 위 (ImGui 화면 좌표. IME 창 자리 계산용)
+ };
+ 
+@@ -106,6 +107,7 @@
+ 	// 접을 수 있는 구역 머리. 펼쳐져 있으면 true (닫는 호출 없음).
+ 	static bool CollapsingHeader(const PString& InName, bool bDefaultOpen = true);
+ 	// 마우스 입력을 받는 이미지 (씬 뷰포트). 이미지 위에서 누른 버튼은 창 이동 대신 이 항목이 받는다.
++	// 이미지 위 휠도 이 항목이 받는다 — 창 내용이 넘쳐도 창이 함께 스크롤되지 않는다(뷰포트 줌 · 게임 UI 스크롤).
+ 	// InName 은 같은 창 안에서 항목을 구분하는 ID 다 (보이지 않는다).
+ 	static HGUIImageInput InteractiveImage(const PString& InName, uint64 InTextureID, const HVector2& InSize);
+ private:
+--- a/Source/Runtime/GUI/GUI.cpp
++++ b/Source/Runtime/GUI/GUI.cpp
+@@ -469,6 +469,9 @@
+ 	ImGui::SetCursorScreenPos(ItemMin);
+ 	ImGui::InvisibleButton(InName.GetCStr(), ImVec2(InSize.x, InSize.y),
+ 		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
++	// 이미지 위 휠은 이 항목이 갖는다(다음 프레임부터 창 스크롤에 쓰이지 않는다). 휠 값은 아래에서 IO 로 그대로 읽는다.
++	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
++	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelX);
+ 
+ 	const ImGuiIO& IO = ImGui::GetIO();
+ 	const bool bActive = ImGui::IsItemActive();
+@@ -481,6 +484,8 @@
+ 	}
+ 	Input.MouseDelta     = HVector2(IO.MouseDelta.x, IO.MouseDelta.y);
+ 	Input.Wheel          = Input.bHovered ? IO.MouseWheel : 0.0f;
++	// ImGui 가로 휠은 왼쪽이 + 라서 뒤집는다(엔진 입력은 오른쪽이 +).
++	Input.WheelHorizontal = Input.bHovered ? -IO.MouseWheelH : 0.0f;
+ 	Input.ScreenPosition = HVector2(ItemMin.x, ItemMin.y);
+ 	return Input;
+ }
+--- a/Source/Editor/JGEditor/Widgets/SceneViewport.cpp
++++ b/Source/Editor/JGEditor/Widgets/SceneViewport.cpp
+@@ -334,10 +334,10 @@
+ 	}
+ 
+ 	bool bWheelUsedByGame = false;
+-	if (input.Wheel != 0.0f)
++	if (input.Wheel != 0.0f || input.WheelHorizontal != 0.0f)
+ 	{
+ 		event.Type       = EInputEventType::PointerWheel;
+-		event.WheelDelta = HVector2(0.0f, input.Wheel);
++		event.WheelDelta = HVector2(input.WheelHorizontal, input.Wheel);
+ 		bWheelUsedByGame = _viewport->HandleInput(event);
+ 	}
+ 

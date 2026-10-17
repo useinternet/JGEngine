@@ -79,12 +79,15 @@ $HWND_TOPMOST   = [IntPtr](-1)
 $HWND_NOTOPMOST = [IntPtr](-2)
 $SWP_NOSIZE_NOMOVE_SHOW = 0x0001 -bor 0x0002 -bor 0x0040
 $DPI_UNAWARE    = [IntPtr](-1)
+$DPI_PER_MONITOR_V2 = [IntPtr](-4)
+# 앱 좌표의 DPI 문맥. 에디터가 DPI 인식이 아니면(옛 빌드) 앱 좌표 = 논리 좌표, 인식이면(D-22 ②) 실제 픽셀이다 — 창을 찾은 뒤 정한다.
+$script:AppDpiContext = $DPI_UNAWARE
 $GA_ROOT        = 2
 
 # 에디터 프로세스의 보이는 창(본 창 + ImGui 가 따로 띄운 창)을 앱 좌표(논리)로 모아 한 장에 그린다.
 # 창마다 PrintWindow 로 그리므로 다른 프로그램 화면은 담기지 않는다(창 사이 빈 곳은 검은색).
 function Save-WindowCapture([IntPtr]$hwnd, [int]$processId, [string]$path) {
-    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($DPI_UNAWARE)
+    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($script:AppDpiContext)
     try {
         # 아래 창부터 그려 위 창이 덮게 한다 (EnumWindows 는 위 → 아래)
         $windows = @([GfwVerifyWin32]::GetVisibleWindowsOf([uint32]$processId))
@@ -163,7 +166,7 @@ function Get-WindowDescriptionAt([GfwVerifyWin32+POINT]$point) {
 
 function Invoke-ClientClick([IntPtr]$hwnd, [int]$processId, [int]$x, [int]$y) {
     # 이 스레드만 DPI 비인식으로: 앱 좌표(논리) 그대로 화면 좌표를 구하고 커서를 옮긴다.
-    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($DPI_UNAWARE)
+    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($script:AppDpiContext)
     try {
         $point = New-Object GfwVerifyWin32+POINT
         $point.X = $x
@@ -190,7 +193,7 @@ function Invoke-ClientClick([IntPtr]$hwnd, [int]$processId, [int]$x, [int]$y) {
 }
 
 function Invoke-ClientRightDrag([IntPtr]$hwnd, [int]$processId, [int]$x1, [int]$y1, [int]$x2, [int]$y2) {
-    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($DPI_UNAWARE)
+    $previous = [GfwVerifyWin32]::SetThreadDpiAwarenessContext($script:AppDpiContext)
     try {
         $from = New-Object GfwVerifyWin32+POINT
         $from.X = $x1
@@ -243,6 +246,7 @@ if ($proc.HasExited) { Write-Output "Process exited during wait with code $($pro
 $client = New-Object GfwVerifyWin32+RECT
 [GfwVerifyWin32]::GetClientRect($hwnd, [ref]$client) | Out-Null
 $awareness = [GfwVerifyWin32]::GetAwarenessFromDpiAwarenessContext([GfwVerifyWin32]::GetWindowDpiAwarenessContext($hwnd))
+if ($awareness -ne 0) { $script:AppDpiContext = $DPI_PER_MONITOR_V2 }
 Write-Output "Client area (physical) $($client.Right)x$($client.Bottom), window DPI awareness $awareness (0 unaware, 1 system, 2 per monitor)"
 
 Save-WindowCapture $hwnd $proc.Id "${OutPrefix}_before.png"

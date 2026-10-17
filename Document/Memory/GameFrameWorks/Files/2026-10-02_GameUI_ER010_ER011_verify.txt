@@ -1,0 +1,101 @@
+GameUI ER-010(글 서식, GG-10) · ER-011(글꼴 아틀라스 용량 + 글꼴 대체, GG-11) 검증 기록 — 2026-10-02 (GUI 세션)
+사용자 지시: "권고 대로 진행" (검토서 Files/ER-010_ER-011_검토_2026-10-02.md 권고: ER-010 먼저 — 문단 서식 + 양쪽 맞춤 + 요소 전체 합성 굵게/기울임 + 글 안 마크업 구간 서식,
+  구간 글꼴 · 글 사이 그림은 나중 / ER-011 — 페이지 + 페이지 단위 LRU(기본 4장) + ClearGlyphs · 통계 + 글꼴 대체)
+작업 위치: 격리 워크트리 <scratchpad>\wt_ft (git worktree add --detach HEAD efba16a — 메인의 UI 파일 = HEAD) → 검증 → 메인 트리 반영
+
+== 1. 바뀐 코드 (GFW UI/ 11파일 수정, 새 파일 없음) ==
+GameUIDefines.h   EGameUIHorizontalAlign::Justify
+GameUIStyle.h     HGameUIParagraphStyle { LineHeight(0 = 글꼴 기본), LetterSpacing(1/1000 em, 글자 사이에만), HorizontalScale, ParagraphSpacing, bBold, bItalic }
+GameUIFont.h/.cpp
+  ER-010: HGameUITextRunStyle(굵게 · 기울임 · 장평 · 색) · HGameUITextSpan · HGameUITextGlyph(글자 자리 X · Run) · HGameUITextLayoutOptions,
+    HGameUITextLine 에 Top · GlyphBegin/Count · bParagraphStart · bWrapped · bJustified, HGameUITextLayout 에 Glyphs · Runs · BaselineOffset.
+    LayoutText(text, options, layout) — 서식 넣은 폭(장평 · 굵게 = 폭 + em/24)으로 줄 나누기, 자간, 줄 간격(남는 높이 절반을 기준선 위에), 문단 간격,
+    말줄임(자간 포함 폭 안), 양쪽 맞춤(자동으로 바뀐 줄만, 띄어쓰기 뒤 사이 4배 — 한글 줄도 고르게). 옛 7인자 LayoutText 는 서식 없는 배치 그대로.
+    글리프 변형 HGameUIGlyphVariant(장평 = 가로 배율로 래스터화, 굵게 = 커버리지 넓히기 반지름 max(1, em/48)), 글리프 키에 장평 % · 굵게 비트.
+  ER-011: 아틀라스 페이지(HAtlasPage, 1024² RGBA8, 처음 쓸 때 연다), 상한 SetAtlasPageLimit(기본 4장 = 16MB),
+    상한이면 이번 프레임에 안 쓴 가장 오래된 페이지를 비움(그 페이지 글리프는 캐시에서 지움 → 다음에 쓸 때 다시 래스터화),
+    모든 페이지를 이번 프레임에 썼으면 상한을 넘겨 열고 경고 한 번. 프레임 = static BeginFrame()(PGameUIManager::BuildDrawList 가 부름).
+    ClearGlyphs · GetAtlasPageCount · GetAtlasStats(PageCount · PageLimit · Usage · EvictedPageCount · OverLimitCount) · GetAtlasTexture(page) · GetAtlasPixels(page).
+    글꼴 대체 SetFallbackFont(사슬, 돌면 거부): 없는 글자는 대체 글꼴의 폭 · 글리프 · 아틀라스(그 글꼴 캐시), 다른 글꼴 사이 커닝 0, 줄 높이 · 기준선은 원래 글꼴.
+    HasGlyph 는 사슬까지 본다. HGlyph 에 Page · Font, GetGlyph 는 값으로 돌려준다(비우기로 캐시 항목이 지워져도 안전). IsAtlasFull 삭제(쓰는 곳 없음).
+    PGameUIFont 복사 금지(= delete — DLL 내보내기 클래스라 막지 않으면 복사 대입이 만들어져 이동 전용 페이지와 충돌, C2280).
+GameUIDrawList.h/.cpp  HGameUIDrawCommand::FontPage(배치 = 텍스처 · 글꼴 · 페이지 · 클립), 네 꼭짓점 AddQuad(기울임 글자)
+GameUIText.h/.cpp  SetRichText(글 안 마크업 <b> <i> <color=#RRGGBB(AA)> <hscale=퍼센트>, &lt; &gt; &amp;, 모르는 태그 · 짝 없는 닫는 태그 · 잘못된 값은 글자 그대로),
+  GetDisplayText · GetSpans, SetParagraphStyle, LayoutContent, 그리기 = 글리프마다 서식(변형 글리프 · 기울임 비튼 사각형 · 구간 색), 배치는 글리프의 글꼴 · 페이지
+GameUIRenderer.cpp  GetAtlasTexture(command.FontPage)
+GameUIManager.cpp   BuildDrawList 앞에서 PGameUIFont::BeginFrame()
+GameUISelfTest.cpp  testTextFormat 29 · testTextFormatAcceptance 4(요청서 완료 기준 a~d) · testFontAtlas 17
+
+== 2. 빌드 (워크트리) ==
+ER-010 만: -t:Rebuild 7분 40초, 오류 0 → gameui.selftest OK (222/222)
+ER-011 첫 빌드: C2280 (HAtlasPage 복사 대입 — dllexport 클래스의 암시적 복사 대입이 HList<HAtlasPage> 복사를 만든다) → PGameUIFont 복사 금지로 고침
+ER-011 -t:Rebuild 7분 47초, 오류 0, 컴파일 경고 0 (MSB8029 16 — %TEMP% 아래 워크트리라 헤더 변경 추적 안 함, 그래서 매번 Rebuild)
+
+== 3. 헤드리스 (워크트리 Bin) ==
+JGConsole.exe gameui.selftest → "gameui.selftest: OK (243/243), skipped groups 0", 종료 0, live blocks 0, 1.1초
+  (193 → ER-010 222 → 완료 기준 226 → ER-011 243)
+  경고 3줄은 음성 검사: "Font atlas needs more than 2 pages in one frame"(상한 2 · 모든 페이지 사용 중), "Fallback font chain loops back"(돈 사슬 거부), "already in the Game stack"(기존)
+  서식: 서식 없는 배치 = 글자 폭 누적 · 글꼴 줄 높이 · 기준선, 줄 간격 45(높이 135 · 줄 위치) · 기준선 = 남는 높이 절반 위, 문단 간격은 '\n' 다음 문단 앞에만(자동으로 바뀐 줄 앞 아님),
+    자간 ±100 = ±0.1 em(마지막 글자 뒤 없음), 장평 50% = 폭 절반(커닝 포함), 합성 굵게 = 글자마다 em/24, 양쪽 맞춤(바뀐 줄 끝 = 폭, 마지막 줄 왼쪽, 띄어쓰기 뒤 4/11 · 나머지 1/11),
+    한글 줄(띄어쓰기 없음) 글자 사이 고르게(+3 · +3), 자간 + 말줄임 폭 안,
+    마크업(표시 글 · 구간 바이트 범위 · 겹침 결합 · 엔티티 · 모르는 태그 · 짝 없는 닫는 태그 · 잘못된 색 · 리치 텍스트 끔 = 글자 그대로), 굵은 구간이 줄바꿈을 바꿈,
+    MeasureContent = 문단 서식(2줄 × 40), 요소 Justify, 굵게 · 장평 글리프 따로 래스터화(장평 200% 폭 ≈ 2배 · 높이 같음), 기울임 = 윗변이 오른쪽으로 비튼 사각형, 구간 색 = 정점 색
+  요청서 완료 기준 (ER-010):
+    (a) 35px · 줄 간격 45 · 자간 -100 · 양쪽 맞춤, 폭 400: 자동으로 바뀐 줄 끝 = 폭, 문단 마지막 줄 왼쪽, MeasureContent 높이 = 줄 수 × 45 + 문단 간격 8
+    (b) 굵은 면 없는 TTF(맑은 고딕 Regular) 한 요소 "폭로 <b>폭로</b> <b><i>특성 참조</i></b>": 사각형 8개, 굵은 "폭로"가 더 넓고, "특성 참조" 4글자만 비틀림
+    (c) 장평 93% → 폭 × 0.93, 자간 +40 → 글자 사이(6곳)마다 0.04 em
+    (d) a<hscale=140>X</hscale>b → 뒤 글자 b 와 전체 폭이 0.4 × (X 폭 + 커닝)만큼 밀림
+  아틀라스 (ER-011):
+    새 글꼴은 페이지 0장(처음 쓸 때 연다), 상한 기본 4
+    서로 다른 한글 1,000자 × 12 · 16 · 20 · 24 · 32px = 5,000 글리프 → 빈칸 0, 페이지 3장, 사용률 76%, 비운 페이지 0, 상한 넘김 0 (요청서 완료 기준)
+    글리프가 자기 페이지를 안다(첫 글자 페이지 0, 마지막 글자 마지막 페이지), ClearGlyphs → 글리프 0 · 페이지 0 → 다시 쓰면 페이지 1장
+    상한 2: 프레임 1 에 페이지 0 을 채움 → 프레임 2 에 새 글자만 → 페이지 1 이 차면 이번 프레임에 안 쓴 페이지 0 을 비움(비운 페이지 1, 페이지 2장, 상한 넘김 0),
+      이번 프레임 글자는 같은 자리(페이지 · UV), 비운 글자는 다시 쓰면 다시 래스터화(글리프 수 +1)
+    프레임 3 에 두 페이지를 모두 쓰면 비울 페이지가 없음 → 상한을 넘겨 3장째(상한 넘김 1, 비운 페이지 그대로 1), 쓴 글자 자리 그대로
+    그리기: 페이지 0 글자 · 페이지 1 글자 = 같은 글꼴의 배치 2개(FontPage 0 · 1)
+  글꼴 대체: Arial(한글 없음) + 맑은 고딕 → HasGlyph(한) 참, 한 = 맑은 고딕 글리프(폭 같음) · A = Arial 글리프, 측정 폭 = 대체 글꼴 폭 · 다른 글꼴 사이 커닝 0,
+    "A한" 폭 = Arial A + 맑은 고딕 한, 그리기 배치 2개(Arial · 맑은 고딕), 돈 사슬 거부, 대체를 지우면 다시 빈 글리프 상자(Arial)
+회귀: gmtest OK(World 64 passed, 0 failures) / console.selftest OK (64/64) / net.test all 101 passed / datatable.selftest OK (127/127) — 모두 종료 0 · live blocks 0
+  (datatable 의 "chunk committed memory passed 16/32 MB" 경고 2줄은 그 검사 자체의 큰 표 — 이번 변경과 무관)
+
+== 4. 메인 트리 반영 ==
+메인의 UI 11파일 = HEAD(efba16a) 확인(git hash-object = HEAD blob) → 워크트리 것을 CRLF 로 복사(메인 작업 파일이 CRLF), 복사 뒤 양쪽 git hash-object 같음.
+새 파일 없음 → PreBuild 필요 없음. 같은 시각 메인의 GFW 다른 변경(GameFrameWorksModule.cpp · GameMasterSelfTest.cpp — 다른 세션)은 건드리지 않음.
+메인 증분 빌드 7분 32초(GFW 전체 · JGEditor 다시 컴파일), 오류 0, 경고 1(기존 LNK4098 MSVCRT).
+메인 Bin: gameui.selftest OK (243/243) "atlas pages 3, usage 76%" · gmtest OK(World 64) · console.selftest OK (64/64) · net.test all 101 passed — 모두 종료 0 · live blocks 0
+
+== 5. 화면 (메인 엔진, 검증 게임 GameUIDemo — Files/tools/gameui_demo_testgame/) ==
+HUD 에 왼쪽 서식 패널 추가(입력 받지 않음): 마크업 구간 서식 줄 · 양쪽 맞춤 문단(줄 간격 36 · 자간 +20 · 문단 간격 10) · 요소 전체 합성 굵게 + 기울임 + 장평 90% ·
+  대체 글꼴 줄(Arial + 맑은 고딕) · 따로 연 글꼴(맑은 고딕 새 인스턴스)의 아틀라스 두 페이지 줄 + 통계 줄.
+  두 페이지: 첫 그리기로 위 줄 글자가 페이지 0 에 들어간 뒤 OnUpdate 가 그리지 않는 128px 글자 70자(U+B000~)로 페이지 0 을 채움 → 아래 줄 글자는 페이지 1(앞 "페이지 · 글자"는 페이지 0 에 이미 있어 한 줄이 두 페이지에 걸친다).
+<scratchpad>\Games\Main2\GameUIDemo(EngineRoot = 메인) GenerateProjectFiles → 전체 빌드: 첫 시도 오류 1(데모 코드 — 람다가 const PSharedPtr<PGameUIText>& 를 받아 const 전파로 SetLayout 불가 → 값으로 받게 고침) → 다시 빌드 오류 0
+gameui_e2e.ps1 -WaitSeconds 25 → 20단계 모두 README 기대대로, 종료 0:
+  "Orange pixels 3376 as sRGB display (242,115,26)", Font loaded arial.ttf, "HUD initialized: 10 root elements", "GameUIDemo atlas filled: pages 2, filler 70 glyphs",
+  1~6 같음, 7 빈 곳 (480, 540) "nothing (no controller in the world)" ← 서식 패널 위지만 입력을 받지 않아 월드로 감, 8~20 같음(주소 192.168.0.10:4777 · 이름 홍길동ab · 입력 중 Esc 해제만 · 다음 Esc 뒤로가기)
+  [error] · [critical] 0, 경고 1(기존 Asset "NOT Support Asset Path"), live blocks 0(청크 1 remote pending 44 = 런처 기준선),
+  종료 때 Graphics "UnRegister GameUIFontAtlas_malgun_0 / _1" — 페이지 텍스처 두 장이 만들어지고 풀림
+디버거 아래 30초(dbgcount): 실행 중 D3D12 메시지 0. 디버그 출력 15줄은 모두 종료 때 보고(Live Producer 1 · Live Object 12 — 5-14 뒤 기준선과 같음, 두 페이지 텍스처가 남지 않음),
+  C++ 첫 기회 예외 2(0xE06D7363 x 2 — 다른 실행 기록과 같은 기준선), 종료 0, 로그 [error] 0 · live blocks 0
+캡처: Files/2026-10-02_gameui_format.png(전체, before), Files/2026-10-02_gameui_format_zoom.png(왼쪽 패널 3배 — 굵게 · 기울임 · 빨강 · 파랑 · 넓게 140% · 좁게 70% · 글자 그대로 <b>,
+  양쪽 맞춤 문단 1 · 2줄 오른쪽 끝이 맞고 3줄 · 둘째 문단은 왼쪽, 굵은 기울임 줄, Arial 줄 안의 한글, 페이지 0 · 1 글자, "pages 2 / limit 4 · usage 56% · evicted 0")
+  화면 배율이 0.33(창 안 뷰포트 약 632×356)이라 글자가 작다 — 글리프는 그 배율의 픽셀 크기로 래스터화(8~10px)
+
+== 6. 문서 ==
+TODO_GameUI.md(요청 표 반영 · GG-10 · GG-11 완료 이력 · GG-C2 커밋 대기 · 보류 GG-H3 · GG-H4 고침 · GG-H25 새로 · GG-H24 고침), 현황.md §10(구조 · 진행 · 마지막 상태 · 함정 3 · 검증 243),
+진행현황.md(게임 UI 행 · D-17 · D-18 반영됨 · 변경 로그), README.md, 검증 게임 README · 소스, Document/GameUI_진행보고_2026-10-02.html
+게임 세션("게임 구현")에 결과 · 쓰는 법을 보냄(ProjectAH 요청서는 그쪽이 고친다), 총괄 세션에 한두 줄 보고.
+
+== 7. ER-012 작은 글자 합성 굵게 (GG-12) — 10-02 밤, 사용자 결정 D-21(대시보드 "권고대로 진행", 총괄 전달) ==
+코드(GameUIFont.cpp · GameUIFont.h 주석): 굵게 반지름 = 픽셀 크기 × BoldStrength / 2(실수), 넓히기 dilateLine = 정수부 거리까지 최댓값 + 바로 바깥 한 겹은 커버리지 × 소수부,
+  비트맵 사방 패딩 = 반지름의 올림. 전에는 max(1, 반올림(픽셀/48)) 이라 72px 미만이 늘 사방 1px(획 +2px). API 변경 없음
+작업 위치: 저장소 Temp/wt/gameui(HEAD + 메인의 GG-10 · GG-11 UI 11파일만 올린 스냅숏 — 메인의 다른 세션 진행분은 넣지 않음) → 빌드 57초 오류 0
+검사 GameUISelfTest testBoldAcceptance(요청서 완료 기준):
+  (a) 11 · 14 · 16px 굵은 "폭로 강제 전투 협상": 보통 글리프의 빈 칸(< 25%) 548 · 886 · 1068 가운데 굵게 뒤 75% 이상으로 막힌 칸 0 · 0 · 0
+  (b) 'I' 가운데 줄 잉크 폭 0.87 → 1.27(+0.40) · 1.89 → 2.65(+0.76) · 3.78 → 5.78(+2.00), 기대 em/24 = 0.46 · 1.00 · 2.00 (±0.5 안)
+  (c) ER-010 (a)~(d) · 서식 · 아틀라스 검사 그대로 — gameui.selftest OK (245/245)
+메인 반영: GameUIFont.cpp · GameUISelfTest.cpp = 스냅숏 때 해시 그대로, GameUIFont.h 는 주석 한 줄만 다름 → 복사(CRLF). 메인 전체 빌드는 다른 세션의 진행분
+  (DevOps Cook/CookCommand.cpp C2065 — 그쪽이 바로 고침, JGEditor.dll 잠김) 때문에 실패했지만 GameFrameWorks.dll 은 다시 링크됨 → 메인 Bin gameui.selftest 245/245
+검증 게임(Temp/Games/GameUIDemo — GFW 세션의 새 Viewport/ 파일 때문에 GenerateProjectFiles 다시) 빌드 22초 → E2E: 첫 실행은 1단계 클릭이 기록되지 않음(창 준비 전 —
+  PC 가 다른 세션 빌드로 바쁨, 나머지 단계 정상), -WaitSeconds 30 로 다시 → 20단계 모두 정상(턴 2 → 3, 192.168.0.10:4777, 홍길동ab), 오류 0 · live blocks 0
+캡처 Files/2026-10-02_gameui_bold_small_zoom.png(같은 자리 3배, 래스터 약 10px): "굵게 Bold" · "요소 전체: 합성 굵게 + 기울임" 줄이 덩어리 없이 읽힘
+  (예전 Files/2026-10-02_gameui_format_zoom.png 의 같은 줄과 비교)

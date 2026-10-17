@@ -1,0 +1,171 @@
+GP-F1 게임 뷰포트 코어 PGameViewport 검증 기록 (D-23 게임 빌드 파이프라인, GameFrameWorks 몫)
+작성 2026-10-02 23:0x. 구성 DevelopEngine|x64. 명령 출력 원문에서 옮김.
+지시: 엔진 총괄 세션(사용자 결정 D-23 "결정 4 권고 대로" — 설계 DevOps/Files/게임빌드파이프라인_설계_2026-10-02.md §4-5 · §5 · §7).
+완료 기준(설계 §5): 자체 테스트에 뷰포트 라우팅 케이스 추가, gameui.selftest 등 회귀 통과.
+
+== 바꾼 것 ==
+새 파일(미추적)
+  Source/Runtime/GameFrameWorks/Viewport/GameViewport.h/.cpp      PGameViewport + EGameViewportInputTarget{None, GameUI, World}
+  Source/Runtime/GameFrameWorks/Viewport/GameViewportSelfTest.h/.cpp  PGameViewportSelfTest(28 검사), gmtest 가 월드 자체 테스트 뒤에 실행
+수정
+  Source/Runtime/GameFrameWorks/Core/GameFrameWorksModule.cpp       gmtest 에 PGameViewportSelfTest::Run, 주석 · 설명 "+ game viewport"
+고치지 않은 것: UI/GameUIManager.* (지금 API 그대로 씀 — HandlePointer · HandleBackAction · WantsTextInput · HandleTextInput · HandleKey ·
+  GetTextInputCaretRect · GetTextInputSelection · Render), JGEditor SceneViewport.*(GP-E1 몫), Graphics.
+
+PGameViewport (설계 4-5 초안 + 더한 것)
+  Initialize(name, w, h)   그래픽이 있으면 PSceneRenderer(name, w, h), 없으면(헤드리스) 렌더러 없이 true. 크기 0 이면 false
+  Resize(w, h)             뷰포트(입력 좌표) 크기. 0 은 무시(최소화). 렌더 텍스처 크기 맞추기는 GP-G2 PSceneRenderer::Resize 가 메인에 들어오면
+                           Render 에 붙인다 — 그 전에는 처음 크기 그대로 두고 Info 로그 한 번(게임 UI · 광선 좌표는 렌더 텍스처 크기로 바꿔 맞음)
+  Render(PString* outProblem)  월드(활성 카메라) → 디스플레이 텍스처 → 게임 UI. 월드 · 카메라 · 렌더러가 없으면 false + 이유
+  GetDisplayTexture · GetSize · GetRenderSize
+  HandleInput(HInputEvent, EGameViewportInputTarget* out)
+    포인터: 게임 UI 먼저(입력 모드 · 레이어 규칙 = PGameUIManager). UI 가 받지 않은 왼쪽 누름 → ViewportPointToRay → 월드의 모든 컨트롤러 HandleClick
+            (컨트롤러가 있으면 World). 뗌은 그 버튼의 누름을 받은 쪽을 돌려준다. 오른쪽 · 가운데 · X1/X2 · 휠은 UI 가 안 받으면 None(호스트 조작)
+    키: 입력란 포커스가 있으면 편집 키(BackSpace · Del · ← → 반복, Home · End · Tab · Enter · Esc) · Ctrl+A/C/X/V(OS 클립보드 HPlatform, GP-C1) — 모두 GameUI.
+        없으면 Esc = HandleBackAction
+    글자: 입력란 포커스가 있으면 HandleTextInput(UTF-8, BMP 밖 글자도)
+    FocusLost: 누르고 있던 누름을 취소(화면 밖 뗌 + 벗어남 → 버튼은 클릭하지 않음)
+  WantsTextInput · GetTextInputCaretRect(뷰포트 픽셀) · ViewportPointToRay(뷰포트 픽셀 → 광선) · SetSource(world, ui)(기본 = 게임 인스턴스)
+
+== 1. 격리 worktree (Temp/wt/gp_f1, HEAD 0bd6356 + 메인의 InputEvent.h 사본) ==
+PreBuild(worktree 의 JGHeaderTool → JGBuildTool) exit 0 → GameFrameWorks.vcxproj 에 GameViewport* 4건
+MSBuild JGEngine.sln DevelopEngine|x64 -m : exit 0, 70초, error 0, C++ warning 0
+JGConsole.exe gmtest (첫 판) : GameViewport 25/27 — 실패 2건은 검사 코드 실수였다
+  (1) 검사 메시지(함수 인자)가 동작보다 먼저 평가됨(인자 평가 순서 미정) → 동작을 먼저 하고 검사하도록 고침
+  (2) 커서 사각형을 입력란 상자 안으로 기대했으나 글꼴 줄 높이(32)가 상자(24)보다 큼 → 게임 UI 의 커서 사각형과 같은지로 고침
+  (3) FocusLost 때 마지막 위치에서 뗌을 보내면 버튼이 클릭됨(잡은 요소 안에서 뗌) → 화면 밖 뗌으로 바꿈(구현 수정)
+고친 뒤: GameMaster 110 · World 64 · GameViewport 28/28, gmtest OK. gameui.selftest 193/193(HEAD) · datatable.selftest 127/127
+net.test all 96/101 — 실패 5건 = "tcp listen on 127.0.0.1:47790" WSA 10048: 다른 세션 perl.exe(PID 9580)가 그 포트를 잡고 있었음. 메인에서 다시 돌려 통과(아래)
+worktree 는 git worktree remove --force 로 지웠다(파일은 메인으로 옮긴 뒤)
+
+== 2. 메인 트리 ==
+메인 Core 에 GP-C1(입력 계층 · HPlatform 클립보드)이 들어온 뒤라 입력란 Ctrl+C/X/V 를 메인 사본에서 붙였다(worktree 의 HEAD 에는 없는 API).
+PreBuild(22:50) exit 0 → GameFrameWorks.vcxproj 에 GameViewport* 4건. 그 직후 다른 세션 빌드가 GFW 를 다시 빌드(22:51:15, 내 소스 22:50 반영 확인 —
+  obj 22:51 > cpp 22:50, DLL 에 GameViewport 문자열 · 클립보드 Win32 import). 이 세션의 GFW 빌드는 최신이라 1초(exit 0, error 0, warning 0)
+JGConsole.exe (메인 Bin, 22:5x)
+  gmtest            exit 0 — GameMaster self test 110 passed · World self test 64 passed · GameViewport self test 28 passed, 0 failed · gmtest: OK
+                    [error] 2 · [warning] 1 = 기준선(R5 · §13 단계 한도 · Undo 가드), live blocks 0
+  gameui.selftest   OK (243/243)   (GUI 세션의 새 검사 포함)
+  input.selftest    OK (34/34)
+  datatable.selftest OK (127/127)
+  console.selftest  OK (64/64)
+  net.test all      Network self test 101 passed, 0 failed
+GameViewport 검사 원문:
+  [PASS] viewport: without a renderer Render is false with a reason (Game viewport  has no renderer (no graphics))
+  [PASS] viewport: size = render size without a renderer
+  [PASS] viewport: headless Initialize succeeds without a renderer
+  [PASS] viewport: move over a button goes to the game UI
+  [PASS] viewport: down on a game UI button goes to the UI, not the world
+  [PASS] viewport: up completes the button click (clicks 1 == 1)
+  [PASS] viewport: down on empty space goes to the world through the camera ray (actor ViewportTarget entity E0.0 at (0.00, 1.00, -0.58) distance 6.85 / board none)
+  [PASS] viewport: the up of a world press reports the world and does not click again
+  [PASS] viewport: right press on empty space is left to the host
+  [PASS] viewport: wheel on empty space is left to the host
+  [PASS] viewport: wheel over the game UI goes to the UI
+  [PASS] viewport: an X1 press is left to the host
+  [PASS] viewport: a Menu widget blocks the world (press goes to the UI)
+  [PASS] viewport: Esc is the back action (the menu closes)
+  [PASS] viewport: Esc without a back handler is left to the host
+  [PASS] viewport: pressing a text input gives it the focus
+  [PASS] viewport: committed characters reach the focused input (A한)
+  [PASS] viewport: Backspace edits the focused input
+  [PASS] viewport: other keys while typing belong to the game (not the host)
+  [PASS] viewport: Ctrl+A selects all in the focused input
+  [PASS] viewport: the IME caret rect is the input caret in viewport pixels (36.8, 56.0, 38.8, 88.0)
+  [PASS] viewport: Esc while typing releases the focus instead of going back
+  [PASS] viewport: focus lost cancels a held press (clicks 1 == 1)
+  [PASS] viewport: after focus lost the game UI holds no press (empty space goes to the world)
+  [PASS] viewport: after Resize the game UI is hit at the scaled position
+  [PASS] viewport: Resize to zero (minimized) is ignored
+  [PASS] viewport: the center ray points at the orbit target
+  [PASS] viewport: with the source cleared and no renderer Render is false
+검사 방식: 자기 전용 PWorld(궤도 카메라 · 원점 판정 상자 · 컨트롤러) · PGameUIManager(버튼 · 입력란, 기준 크기 = 뷰포트) 를 SetSource 로 주고,
+  Initialize 없이 Resize 로 크기만 정한 렌더러 없는 뷰포트를 쓴다 — 에디터 안 gmtest 에서도 게임 인스턴스 · GPU 자원을 건드리지 않는다.
+검사하지 않은 것: Ctrl+C/X/V(사용자 OS 클립보드를 덮어쓰므로 자동 검사에서 뺌), 렌더(헤드리스 — 실제 그리기는 GP-D3 GameHost · GP-E1 에디터에서),
+  렌더 텍스처 크기 ≠ 뷰포트 크기일 때의 좌표 변환(렌더러가 있을 때만 생김 — GP-G2 뒤 GameHost 크기 변경으로 확인).
+
+== 3. 남은 것 (메인에 들어오면 붙임) ==
+GP-G2 PSceneRenderer::Resize(w, h) (Graphics 가 시그니처 알림: 같은 크기 true · 0 false · Render 밖 · 텍스처 다시 받기) → Render 첫머리에서
+  렌더러 크기 ≠ 뷰포트 크기면 Resize. 지금의 "render texture stays" 로그 자리.
+
+== 4. GP-F1b 렌더 텍스처 크기 맞추기 + 에디터 안 gmtest (10-02 23:0x ~ 10-03) ==
+Graphics GP-G2 PSceneRenderer::Resize 메인 반영(23:02, Graphics 알림: Update 단계에서 불러도 됨 — 옛 텍스처는 GPU 가 쓰던 프레임이 끝난 뒤 놓이고,
+  ImGui 는 SRV 디스크립터를 그릴 때 자기 힙으로 복사한다) →
+  PGameViewport::Render 첫머리: 렌더러 크기 ≠ 뷰포트 크기면 _renderer->Resize(w, h). 실패하면 오류 로그 한 번 · 이전 크기로 그림 · 같은 크기로는 다시 시도하지 않음
+  (크기가 바뀔 때마다 셰이더 두 개를 다시 컴파일하므로). 헤더 주석에서 "아직 붙이지 않은 것" 제거.
+에디터 안 gmtest 를 돌리려고 DevConsole 세션의 UI 러너(Etc/Files/tools/devconsole_ui_runner.ps1.txt, WM_CHAR 로 "gmtest" + Enter)를 썼다.
+  23:07 1회차: 무효 — Graphics GP-G4 셰이더 이동(Source/Shader → Content/Shaders) 직후라 메인 Bin 이 옛 경로를 봐 셰이더 템플릿을 못 찾음.
+          이 실행이 JGLauncher.exe · Asset.dll 을 잡아 Graphics 재빌드가 LNK1168 로 잠깐 막혔다(Graphics 가 끝난 뒤 다시 빌드, 23:09)
+  2회차: 무효 — 위젯 4개가 다시 열려(imgui.ini [JGWidget][Open]) DevConsole 입력줄에 포커스가 없어 글자가 들어가지 않음
+  3회차: imgui.ini 를 백업하고 DevConsole 만 열리게 바꿔 실행 → 끝나고 원래대로 되돌림. 이때는 그래픽이 있을 때만 도는 렌더러 검사 2개가 있었다
+         (64x36 PSceneRenderer 로 그리기 → Resize(32, 18) → 다시 그리기):
+         GameMaster 110 · World 64 · GameViewport 29 passed(헤드리스 Initialize 검사는 그래픽이 있어 SKIP, 렌더러 검사 2개 통과 — 크기 변경 뒤 디스플레이 텍스처 32x18)
+         그러나 제출 때 D3D12 디버그 레이어 오류 28줄: [538] ClearRenderTargetView 12 · ClearDepthStencilView 4 ("Resource state COMMON ... invalid for use as a
+         render target"), [527] ResourceBarrier 12 ("Before state RENDER_TARGET does not match COMMON"). 모두 ViewportSelfTest_* 리소스이고, 이름마다 객체 주소가 둘
+         (크기 변경 전 · 후 렌더러)이라 두 세대가 똑같이 오류 → Resize 문제가 아니라 콘솔 명령 실행 중(프레임 밖 — 스케줄러가 프레임을 제출한 뒤. 처음 적은 "GUI 생성 단계"는 틀림, 10-03 Graphics 분석으로 정정)에 렌더러를 만들고 그린 맥락 문제.
+         실제 호스트는 GameHost End 단계 · 에디터 Update 단계에서 그리므로 해당 없음. → 렌더러 검사를 gmtest 에서 뺐다(Graphics 에 알림)
+         (10-03 저녁: 콘솔 명령 안 렌더러 경고 막기(D-31) 뒤 이 검사 2개를 되살렸다 — 6절)
+  4회차(최종, 렌더러 검사 뺀 뒤): GameMaster 110 · World 64 · GameViewport 27 passed, 0 failed · gmtest: OK. [error] 2 = 의도된 2줄, D3D12 0,
+         [warning] 2 = 기준선(Asset NOT Support Asset Path · Undo 가드), "Start Collect Shader in (../../Content/Shaders)", live blocks 0, 종료 0
+헤드리스(JGConsole) gmtest: GameMaster 110 · World 64 · GameViewport 28 passed, 0 failed, gmtest: OK
+GFW 빌드(메인, 렌더러 검사 뺀 뒤): exit 0, error 0, C++ warning 0
+남은 확인: 렌더 텍스처 크기 변경을 실제 호스트 맥락에서 — GameHost(GP-D3) 창 크기 변경 · 에디터 씬 뷰포트(GP-E1). Graphics 가 DevScene OnUpdate 에서 Resize 를 확인했다.
+  → 10-03 확인됨: DevOps GameHost(창 크기 변경 · 최소화/복원 뒤 새 크기로 그림, 패키지 exe 도 같은 화면 · 클릭),
+    JGEditor 씬 뷰포트 GP-E1(Resize 0.3초 디바운스, API 그대로 — Document/Memory/Etc/Files/2026-10-03_GP-E1_D-22_verify.txt).
+
+== 5. GP-F1c 포커스를 잃으면 게임 UI 끌기 취소 (10-03 10:3x ~ 10:4x) ==
+계기: GUI 세션 GG-15(끌어다 놓기, ER-015 · D-25) 메인 반영 알림(메인 빌드 10:32) — PGameUIManager::CancelDrag(): 끄는 중이면
+  OnDragEnd(bCanceled = true, 놓은 곳 nullptr, 자리 = 마지막 포인터 자리), 문턱 전 누름의 끌기 후보도 지움, 끄는 중이 아니면 아무것도 안 함.
+  엔진 총괄 지시(10:2x): 알림이 오면 바로.
+문제: PGameViewport::releaseAllButtons(FocusLost)는 게임 UI 에 화면 밖(-1, -1) 뗌 · 벗어남만 보냈다 → 끌기 중이면 "빈 곳에 놓음"(취소 아님)으로 끝났다.
+바꾼 것 (Source/Runtime/GameFrameWorks/Viewport/)
+  GameViewport.cpp        : releaseAllButtons 맨 앞(합성 뗌 · 벗어남 전)에서 ui->CancelDrag()
+  GameViewport.h          : HandleInput 주석 한 줄(FocusLost 가 끌기를 취소로 끝냄) — API · 레이아웃 변경 없음(JGEditor · DevOps 의 다음 빌드에서 의존 파일이 다시 컴파일될 뿐)
+  GameViewportSelfTest.cpp: 끌 수 있는 요소 [200, 260]x[10, 50](PGameUIImage, SetDraggable) + 검사 3개 — 누르고 움직이면 끌기 시작(대상 GameUI),
+                            FocusLost → 끝 이벤트 1번 · bCanceled · 놓은 곳 없음, 늦게 온 뗌은 다시 끝내지 않고 빈 곳 누름은 월드로. GameViewport 28 → 31
+worktree Temp/wt/gpf1c (git stash create 스냅숏 1351ad1 = 메인 HEAD 0bd6356 + 미커밋 — GG-15 포함, 추적 안 되는 파일 30개 복사.
+  추적 파일은 체크아웃 줄바꿈만 다르고 내용은 메인과 같음 확인)
+  PreBuild → 엔진 솔루션 빌드 60초, 오류 0 · C++ 경고 0 · LNK4098 2(기준선, B-4 빌드와 같은 수)
+  gmtest: GameMaster 120 · World 64 · GameViewport 31 passed, 0 failed, [error] 2 = 의도된 2줄
+  고친 줄을 뺀 빌드(음성 확인): GameViewport 30 passed, 1 failed —
+    [FAIL] viewport: focus lost ends the game UI drag as canceled, not as a drop on empty space (ends 1, canceled 0)
+    → 새 검사가 이 결함을 잡는다. 되돌려 다시 빌드 → 31 passed
+  gameui.selftest: OK (296/296) · input.selftest: OK (34/34) · datatable.selftest: OK (127/127) · console.selftest: OK (64/64) · net.test all: 101 passed, 0 failed
+메인 반영: 메인의 세 파일이 내 변경 말고는 다르지 않음(diff — 마지막 수정 10-02 23:05 · 10-03 09:50) 확인 → cl · link · JGLauncher 없음(10:44:00) → 복사 →
+  GFW 빌드(BuildProjectReferences=false) exit 0, 18초, 오류 0 · C++ 경고 0, GameFrameWorks.dll 10:44:18
+  메인 Bin gmtest: GameMaster 120 · World 64 · GameViewport 31 passed, 0 failed (새 끌기 검사 3줄 PASS), [error] 2(의도) · gameui.selftest OK (296/296)
+  worktree 지움(git worktree remove --force Temp/wt/gpf1c → exit 0). 커밋은 사용자.
+호스트별 적용(10-03 JGEditor 정정):
+  GameHost = GameHostModule::onInput 이 창 입력을 그대로 넘긴다(WindowsInput: WM_KILLFOCUS → FocusLost) → 바로 적용.
+  에디터 씬 뷰포트(GP-E1) = 아직 FocusLost 를 보내지 않는다(ImGui 는 누름이 풀리면 PointerUp 만, 앱 포커스를 잃은 프레임 끝에 마우스 버튼을 지움)
+    → 에디터 안 끌기 중 Alt+Tab 은 그 자리 "놓기". JGEditor 가 D-22 ② 와 함께 고칠 예정(창 · 앱 포커스를 잃은 프레임에 FocusLost,
+    뒤따르는 PointerUp 은 안 보냄. HGUI 의 AppFocusLost 읽기 함수를 GUI 에 요청).
+
+== 6. 콘솔 명령 안 렌더러 검사 다시 넣기(GP-F1b 후속) (10-03 19:52 ~ 20:01) ==
+계기: 엔진 총괄 배정. 콘솔 명령 안 렌더러 경고 막기(D-31) — 사용자 결정 (가) "Graphics 가 막는다"(10-03 19:31) → 프레임 밖 GPU 기록 방어(Graphics 5-33)
+  메인 반영 19:4x(미커밋, Graphics/Files/2026-10-03_5-33_프레임밖GPU기록방어.md): 버린 렌더러의 렌더 텍스처 상태 기록을 그 프레임의 GPU 작업이
+  끝날 때까지 남기고, 프레임 밖 리스트 재사용은 앞 GPU 작업을 기다린다. Graphics 가 같은 장면(렌더러 생성 → Render → Resize → Render → 버림)을 0 경고로 확인.
+  4절에서 뺀 검사를 되살려, 앞으로 이 경고가 돌아오면 에디터 안 gmtest 가 잡게 한다.
+바꾼 것 (Source/Runtime/GameFrameWorks/Viewport/)
+  GameViewportSelfTest.cpp: runRendererChecks(4절 3회차 판 그대로 — 이전 대화 기록에서 원문을 찾아 옮김) — 그래픽이 있을 때만:
+      Initialize("ViewportSelfTest", 64, 36) + SetSource(검사 전용 월드 · UI) → Render → 디스플레이 텍스처 64x36,
+      Resize(32, 18) → Render → 디스플레이 텍스처 32x18 · GetRenderSize 32x18. 헤드리스면 "[SKIP] renderer section". 라우팅 검사 뒤 ui->Shutdown 앞에서 부름.
+      #include "Classes/Texture.h"(IRawTexture::GetTextureInfo) 추가, 함수 주석에 D-31 회귀를 잡는다는 설명.
+  GameViewportSelfTest.h: 주석 — "렌더러 검사는 넣지 않는다 · GPU 기록은 프레임 안에서만" → 그래픽이 있으면 렌더러 검사, 콘솔 명령 안 GPU 기록은 D-31 로 안전.
+worktree Temp/wt/gfw_rt (19:54, git stash create 스냅숏 b8ff636 = 메인 HEAD 0bd6356 + 미커밋 — D-22 ② · GG-17 · D-31 포함,
+  추적 안 되는 파일 32개 복사, 추적 파일 내용은 메인과 같음 확인, Graphics ResourceStateTracker.h 의 bReleased(D-31) 있음 확인)
+  PreBuild → 엔진 솔루션 빌드 56초(19:55:56 시작), 오류 0 · C++ 경고 0 · LNK4098 2(기준선)
+  헤드리스 JGConsole gmtest: GameMaster 120 · World 64 · GameViewport 31 passed, 0 failed, "[SKIP] renderer section: no graphics (headless)",
+    [error] 2 = 의도된 2줄, live blocks 0
+  에디터 안 gmtest(19:58:02 ~ 19:58:40, DevConsole UI 러너, worktree Bin imgui.ini 를 DevConsole 만 열리게):
+    GameMaster 120 · World 64 · GameViewport 32 passed, 0 failed(헤드리스 Initialize 검사 1 SKIP + 렌더러 검사 2) · gmtest: OK (0 failures)
+    D3D12 DebugLayer 0줄(4절 3회차는 28줄), [error] 2 = 의도된 2줄, [warning] 2 = 기준선(Undo 가드 · Asset NOT Support Asset Path),
+    ViewportSelfTest_* 리소스 두 세대(64x36 · 32x18) 생성 → 해제 기록 36줄(버린 뒤 GPU 작업이 끝나 놓임), live blocks 0 (청크 2), 종료 코드 0
+메인 반영 (지침서 3절 메인 트리 도우미 — MainTree.cmd -name=GFW)
+  hold -minutes=15 (19:59:45 잠금) → 메인의 두 파일이 내 변경 말고는 같음(마지막 수정 10-03 10:44 · 10:04) 확인 뒤 복사(19:59:46)
+  → build -project=GameFrameWorks -p:BuildProjectReferences=false: exit 0, 4초, 오류 0 · C++ 경고 0, GameFrameWorks.dll 19:59:51
+  → exec JGConsole.exe gmtest(Bin 에서): 120 · 64 · 31, [SKIP] renderer section, [error] 2(의도), live 0
+  → 메인 Bin imgui.ini 백업 → DevConsole 만 → exec 러너(20:00:12 ~ 20:00:51, 38초): GameMaster 120 · World 64 · GameViewport 32 · gmtest: OK,
+    D3D12 DebugLayer 0, [error] 2(의도) · [warning] 2(기준선), 렌더러 리소스 생성 · 해제 36줄, live blocks 0 (청크 2), 종료 0 → imgui.ini 되돌림(같음 확인)
+  → release(20:01). worktree 지움(Temp/wt/gfw_rt). 커밋은 사용자 — 프레임 밖 GPU 기록 방어(Graphics 5-33)와 같은 커밋이나 그 뒤
+    (그것 없이 에디터 안 gmtest 를 돌리면 검사는 통과하지만 D3D12 [538] · [527] 경고 28줄이 다시 난다).

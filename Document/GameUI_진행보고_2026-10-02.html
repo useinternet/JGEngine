@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>게임 UI 진행 보고</title>
+<meta name="description" content="2026-10-02 게임 UI: 글 서식(ER-010, GG-10) · 글꼴 아틀라스 페이지와 글꼴 대체(ER-011, GG-11) — 쓰는 법, 검증 결과, 알아둘 것">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #e1e0d9; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #6da7ec;
+    --callout: #eef4fc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --neutral: #5598e7;
+      --callout: #14213a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --line: #2c2c2a; --ring: rgba(255,255,255,0.10);
+    --accent: #3987e5; --neutral: #5598e7; --callout: #14213a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.6 "Segoe UI", "Malgun Gothic", system-ui, -apple-system, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  p { margin: 0 0 10px; }
+  .meta { color: var(--ink-2); margin-bottom: 20px; }
+  .lead { font-size: 16px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px 18px; }
+  .lead p:last-child { margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 16px; }
+  .stat .v { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--ink-2); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 13px; color: var(--ink-2); font-weight: 600; background: var(--page); }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--ink); }
+  .badge::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: none; }
+  .b-done { --dot: var(--good); }
+  .b-todo { --dot: var(--neutral); }
+  .b-note { --dot: var(--serious); }
+  .b-decide { --dot: var(--warning); }
+  .b-decide::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border-radius: 0; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  figure { margin: 16px 0 0; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--ring); border-radius: 8px; }
+  figcaption { font-size: 13px; color: var(--ink-2); margin-top: 6px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  .small { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+  code { font: 13px/1.4 Consolas, "D2Coding", monospace; background: var(--page); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  pre { font: 13px/1.5 Consolas, "D2Coding", monospace; background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 8px 0 0; }
+  pre code { background: none; border: none; padding: 0; }
+  @media (max-width: 720px) { table { display: block; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>게임 UI 진행 보고 — 글 서식 · 글꼴 아틀라스</h1>
+  <div class="meta">2026-10-02 낮 · GameFrameWorks 게임 UI(<code>UI/</code>) · 게임 프로젝트 요청 ER-010(글 서식) · ER-011(글꼴 아틀라스 용량) · 결정: "권고 대로 진행"(D-17 · D-18) · 상태: <strong>메인 트리 반영, 미커밋</strong>(커밋은 사용자 — GG-C2)</div>
+
+  <div class="lead">
+    <p><strong>요약.</strong> 글자 요소에 문단 서식(줄 간격 · 자간 · 장평 · 문단 간격 · 요소 전체 합성 굵게/기울임)과 양쪽 맞춤을 넣었고, 글 안 마크업(<code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;color=#…&gt;</code> <code>&lt;hscale=…&gt;</code>)으로 글의 일부만 굵게 · 기울임 · 색 · 장평을 바꿀 수 있게 했습니다. 글꼴 아틀라스는 한 장이 차면 새 페이지를 열고, 상한(기본 4장)에서는 이번 프레임에 쓰지 않은 가장 오래된 페이지를 비워 다시 씁니다. 글꼴에 없는 글자는 대체 글꼴로 그립니다.</p>
+    <p><strong>결과.</strong> 헤드리스 셀프 테스트 243/243(요청서 완료 기준 포함), 기존 회귀 통과, 메인 트리 빌드 오류 0. 검증 게임에 서식 패널을 붙여 에디터 실제 입력 20단계를 다시 통과했고, 디버거 아래에서 실행 중 D3D12 메시지는 0건이었습니다. 두 아틀라스 페이지의 글자가 한 줄에 함께 그려지는 것도 화면에서 확인했습니다.</p>
+    <p><strong>남은 일.</strong> 커밋(사용자), 실제 한글 IME 확인(GG-9U). 확인해 주신 GUI 3-5(<code>imgui.ini</code> 추적 해제 · 백업 zip 삭제)는 끝냈습니다. 구간 글꼴 바꾸기 · 글 사이 그림 · 아틀라스 부분 갱신은 보류 표에 있습니다.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">243 / 243</div><div class="k"><code>gameui.selftest</code> — 서식 29 · 완료 기준 4 · 아틀라스 · 대체 17 추가(전 193), 약 1초</div></div>
+    <div class="stat"><div class="v">0 / 5,000</div><div class="k">빈 글리프 — 서로 다른 한글 1,000자 × 12 · 16 · 20 · 24 · 32px → 3페이지 · 사용률 76% · 비우기 0</div></div>
+    <div class="stat"><div class="v">20 / 20</div><div class="k">검증 게임 실제 입력 단계(메인 엔진) · 오류 로그 0 · 남은 메모리 블록 0</div></div>
+    <div class="stat"><div class="v">0</div><div class="k">실행 중 D3D12 메시지(디버거 아래 30초) · 빌드 오류(워크트리 · 메인)</div></div>
+  </div>
+
+  <h2>1. 화면</h2>
+  <p>검증 게임 <code>GameUIDemo</code> HUD의 왼쪽 패널입니다. 창 안 뷰포트가 작아 화면 배율이 0.33이라 글자가 작게 래스터화되었습니다. 오른쪽 그림은 그 부분을 3배로 키운 것입니다.</p>
+  <div class="shots">
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-02_gameui_format.png" alt="에디터 Scene Viewport: 위 띠, 왼쪽 서식 패널, 오른쪽 줄바꿈 패널과 입력란 두 개, 카드 두 장, Draw · End Turn 버튼">
+      <figcaption>전체: 왼쪽 위가 새 서식 패널, 오른쪽은 어제의 줄바꿈 패널과 입력란입니다.</figcaption>
+    </figure>
+    <figure>
+      <img src="Memory/GameFrameWorks/Files/2026-10-02_gameui_format_zoom.png" alt="서식 패널 확대: 굵게 Bold · 보통 · 기울임 Italic · 빨강 파랑 · 넓게 140% 좁게 70% · 글자 그대로의 &lt;b&gt;, 오른쪽 끝이 맞는 양쪽 맞춤 문단, 굵은 기울임 줄, Arial 줄 안의 한글, 페이지 0 글자 · 페이지 1 글자 줄, 아틀라스 통계">
+      <figcaption>위부터: 마크업 구간 서식 · 양쪽 맞춤 문단(줄 간격 36 · 자간 +20 · 문단 간격 10) · 요소 전체 굵게 + 기울임 + 장평 90% · Arial + 맑은 고딕 대체 · 두 페이지에 걸친 글자 · 통계(pages 2 / limit 4).</figcaption>
+    </figure>
+  </div>
+
+  <h2>2. 쓰는 법 — 글 서식 (ER-010, GG-10)</h2>
+  <table>
+    <tr><th>할 일</th><th>방법</th></tr>
+    <tr><td class="name">문단 서식</td><td><code>HGameUIParagraphStyle</code>을 <code>text-&gt;SetParagraphStyle(style)</code>. <code>LineHeight</code>(기준선 사이, 0 = 글꼴 기본) · <code>LetterSpacing</code>(1/1000 em, 글자 사이에만, 음수 가능) · <code>HorizontalScale</code>(1.0 = 100%) · <code>ParagraphSpacing</code>(줄바꿈 문자 다음 문단 앞) · <code>bBold</code> · <code>bItalic</code>(요소 전체 합성)</td></tr>
+    <tr><td class="name">양쪽 맞춤</td><td><code>SetAlignment(EGameUIHorizontalAlign::Justify, …)</code> + 줄바꿈(<code>Word</code> · <code>Character</code>). 자동으로 바뀐 줄만 폭에 맞추고, 문단 마지막 줄 · 말줄임 줄은 왼쪽. 남는 폭은 글자 사이에 나누되 띄어쓰기 뒤에 4배를 줍니다(띄어쓰기가 적은 한글 줄도 고르게 펴짐)</td></tr>
+    <tr><td class="name">구간 서식</td><td><code>SetRichText(true)</code> 뒤 글에 <code>&lt;b&gt;…&lt;/b&gt;</code> <code>&lt;i&gt;…&lt;/i&gt;</code> <code>&lt;color=#RRGGBB&gt;…&lt;/color&gt;</code>(또는 <code>#RRGGBBAA</code>) <code>&lt;hscale=140&gt;…&lt;/hscale&gt;</code>(퍼센트). 겹쳐 쓸 수 있습니다. 글자 그대로의 꺾쇠 · &amp; 는 <code>&amp;lt;</code> <code>&amp;gt;</code> <code>&amp;amp;</code>. 모르는 태그 · 짝 없는 닫는 태그 · 잘못된 값은 글자 그대로 보입니다(글이 조용히 사라지지 않음). 기본은 꺼짐</td></tr>
+    <tr><td class="name">합성 방식</td><td>굵게 = 글자마다 폭 + em/24, 커버리지를 넓힌 글리프를 따로 래스터화 · 기울임 = 기준선을 축으로 12° 비튼 사각형(폭은 그대로) · 장평 = 그 폭으로 래스터화(늘린 그림이 아니라 선명함). 굵은 · 기울임 글꼴 면은 아직 쓰지 않습니다(GG-H25)</td></tr>
+    <tr><td class="name">측정</td><td><code>MeasureContent(width, manager)</code>와 새 <code>LayoutContent(width, manager, layout)</code>(그리기와 같은 줄 · 글자 자리)가 서식을 반영합니다. 직접 배치는 <code>PGameUIFont::LayoutText(text, HGameUITextLayoutOptions, layout)</code>. 지금까지의 7인자 <code>LayoutText</code>는 서식 없는 배치 그대로입니다</td></tr>
+  </table>
+  <pre><code>text-&gt;SetRichText(true);
+text-&gt;SetText(PString("&lt;b&gt;굵게&lt;/b&gt; 보통 &lt;i&gt;기울임&lt;/i&gt; &lt;color=#FF5A5A&gt;빨강&lt;/color&gt; &lt;hscale=140&gt;넓게&lt;/hscale&gt;"));
+
+HGameUIParagraphStyle style;
+style.LineHeight    = 45.0f;     // 35px 본문
+style.LetterSpacing = -100.0f;   // -0.1 em
+text-&gt;SetParagraphStyle(style);
+text-&gt;SetWrap(EGameUITextWrap::Word);
+text-&gt;SetAlignment(EGameUIHorizontalAlign::Justify, EGameUIVerticalAlign::Top);</code></pre>
+
+  <h2>3. 쓰는 법 — 글꼴 아틀라스 · 대체 (ER-011, GG-11)</h2>
+  <table>
+    <tr><th>할 일</th><th>방법</th></tr>
+    <tr><td class="name">기본 동작</td><td>바뀌었습니다. 1024² 페이지(4MB)가 차면 새 페이지를 엽니다. 상한에서는 이번 프레임에 쓰지 않은 가장 오래된 페이지를 비우고 다시 채웁니다(비운 글자는 다음에 쓸 때 다시 래스터화). 게임 코드를 바꾸지 않아도 글자가 빠지지 않습니다</td></tr>
+    <tr><td class="name">상한</td><td><code>font-&gt;SetAtlasPageLimit(n)</code>(기본 4). 한 프레임에 상한보다 많이 필요하면 상한을 넘겨 열고 경고 "Font atlas needs more than N pages in one frame"을 한 번 남깁니다. 넘겨 연 페이지와 줄인 상한은 <code>ClearGlyphs</code>까지 남습니다</td></tr>
+    <tr><td class="name">비우기</td><td><code>font-&gt;ClearGlyphs()</code> — 글리프와 페이지를 모두 비웁니다(화면을 크게 바꿀 때). 그리기 목록을 만들기 전에 부릅니다</td></tr>
+    <tr><td class="name">확인</td><td><code>GetAtlasPageCount()</code> · <code>GetAtlasStats()</code>(페이지 수 · 상한 · 사용률 · 비운 페이지 · 상한 넘김) · <code>GetGlyphCount()</code></td></tr>
+    <tr><td class="name">글꼴 대체</td><td><code>font-&gt;SetFallbackFont(other)</code>(사슬 가능, 돌면 거부). 이 글꼴에 없는 글자는 대체 글꼴의 폭 · 글리프로 배치하고 그립니다. 줄 높이 · 기준선은 원래 글꼴, 다른 글꼴 사이 커닝은 0. <code>HasGlyph</code>는 대체 사슬까지 봅니다. 글꼴을 준비할 때(그리기 전) 정합니다</td></tr>
+  </table>
+
+  <h2>4. 검증</h2>
+  <table>
+    <tr><th>#</th><th>내용</th><th>결과</th></tr>
+    <tr><td class="name">V1</td><td><code>gameui.selftest</code>: 줄 간격 · 기준선 · 문단 간격 · 자간 · 장평 · 합성 굵게 · 양쪽 맞춤(띄어쓰기 4배, 한글 줄 고르게) · 자간 + 말줄임 · 마크업(구간 · 겹침 · 엔티티 · 모르는 태그 그대로) · 굵은 구간 줄바꿈 · 변형 글리프 · 기울임 사각형 · 구간 색 / 페이지 · 비우기 · 이번 프레임 보존 · 상한 넘김 · <code>ClearGlyphs</code> · 페이지별 배치 · 대체 글꼴(측정 · 커닝 · 그리기 · 돈 사슬 거부)</td><td><span class="badge b-done">243/243</span> 워크트리 · 메인</td></tr>
+    <tr><td class="name">V1 기준</td><td>요청서 완료 기준: (a) 35px · 줄 간격 45 · 자간 −100 · 양쪽 맞춤 → 줄 끝 = 폭, 마지막 줄 왼쪽, 높이 = 줄 수 × 45 + 문단 간격 (b) 굵은 면 없는 TTF 한 요소에서 구간만 굵게 · 굵게 + 기울임 (c) 장평 93% = 폭 93%, 자간 +40 = 0.04 em (d) 장평 140% 구간이 뒤 글자를 민다 / 한글 1,000자 × 5크기 빈칸 · 경고 없음</td><td><span class="badge b-done">모두 통과</span></td></tr>
+    <tr><td class="name">V2</td><td>검증 게임(메인 엔진) 실제 입력 20단계 + 서식 · 아틀라스 패널 캡처</td><td><span class="badge b-done">통과</span> 오류 0 · 종료 0 · 페이지 텍스처 2장 생성 · 해제</td></tr>
+    <tr><td class="name">V3</td><td><code>gmtest</code> · <code>console.selftest</code> · <code>net.test all</code> · <code>datatable.selftest</code>, 디버거 아래 검증 게임 30초</td><td><span class="badge b-done">통과</span> 64 · 64 · 101 · 127, D3D12 메시지 0(종료 보고는 기준선과 같음)</td></tr>
+  </table>
+
+  <h2>5. 알아둘 것</h2>
+  <table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td class="name"><span class="badge b-note">빌드</span></td><td>첫 빌드에서 C2280이 났습니다. <code>PGameUIFont</code>가 DLL 내보내기 클래스라, 막지 않으면 컴파일러가 복사 대입을 만들어 내보내려 하고, 이동만 되는 아틀라스 페이지(4MB)와 부딪힙니다. 글꼴 복사를 금지해 해결했습니다.</td></tr>
+    <tr><td class="name">프레임</td><td>"이번 프레임" = 관리자가 그리기 목록을 한 번 만드는 동안(<code>PGameUIFont::BeginFrame</code>). 관리자는 목록을 만들자마자 그리므로 관리자가 여럿이어도 안전합니다. 헤드리스처럼 그리기 목록을 만들지 않으면 비우지 않고 상한을 넘깁니다.</td></tr>
+    <tr><td class="name">기울임</td><td>폭이 그대로라 기울인 글자가 다음 글자 쪽으로 조금 넘어갑니다. 진짜 기울임 글꼴 면은 보류(GG-H25)입니다.</td></tr>
+    <tr><td class="name">API 변경</td><td><code>GetGlyph</code>는 값으로 돌려줍니다(글리프에 페이지 · 글꼴), <code>GetAtlasTexture(page)</code> · <code>GetAtlasPixels(page)</code>, <code>IsAtlasFull</code> 삭제. 게임 프로젝트 코드에서 쓰는 곳이 없음을 확인했습니다. 엔진 헤더가 바뀌었으니 게임 솔루션은 다시 빌드합니다.</td></tr>
+    <tr><td class="name">범위 밖</td><td>구간 글꼴 바꾸기 · 글 사이 그림 · 로컬라이제이션(GG-H3), 바뀐 사각형만 올리는 부분 갱신 · 1채널 아틀라스(GG-H4 — Graphics 기능 필요), 굵은 · 기울임 글꼴 면(GG-H25).</td></tr>
+  </table>
+
+  <h2>6. 할 일</h2>
+  <ul>
+    <li><span class="badge b-decide">커밋</span> GG-C2 — GFW <code>UI/</code> 11파일(새 파일 없음), 재빌드 Bin, 문서 · 캡처 · 검증 게임 소스. 목록은 <code>TODO_GameUI.md</code> 다음 할 일 3.</li>
+    <li><span class="badge b-decide">확인</span> 실제 한글 IME 입력 한 번(GG-9U).</li>
+    <li><span class="badge b-done">GUI 3-5</span> 완료(D-19 ③, 미커밋): <code>.gitignore</code>에 <code>Bin/DevelopEngine/imgui.ini</code> + 추적 해제(로컬 파일은 그대로), 백업 zip 2개 삭제(git 이력에 남음). 이제 실행만으로 <code>git status</code>가 바뀌지 않고, 새 PC · 새 워크트리는 기본 창 배치로 시작합니다.</li>
+    <li>게임 세션에는 결과와 쓰는 법을 보냈습니다(ProjectAH 요청서는 그쪽이 고칩니다).</li>
+  </ul>
+
+  <h2>7. 문서 위치</h2>
+  <ul>
+    <li>검토서 <code>Memory/GameFrameWorks/Files/ER-010_ER-011_검토_2026-10-02.md</code></li>
+    <li>검증 기록 <code>Memory/GameFrameWorks/Files/2026-10-02_GameUI_ER010_ER011_verify.txt</code></li>
+    <li>TODO · 현황 <code>Memory/GameFrameWorks/TODO_GameUI.md</code> · <code>Memory/GameFrameWorks/현황.md</code> §10</li>
+    <li>검증 게임 <code>Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/</code>(README 기대 결과)</li>
+    <li>어제 보고서 <code>GameUI_진행보고_2026-10-01.html</code></li>
+  </ul>
+</main>
+</body>
+</html>

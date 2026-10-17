@@ -1,0 +1,17 @@
+font C:/Windows/Fonts/malgun.ttf, strength current 0.0625 / supersample 0.0357 / outline 0.0312 / horizontal 0.0625 em
+size method      ink  veryDark%  darkestLuma  inkSum(+vs regular)  gapsClosed
+  14 regular      488    35.9%       0          349.3 (  +0.0)      0/0
+  14 current      815    21.5%       0          524.3 (+175.0)      0/106
+  14 supersample  663    54.0%       0          537.3 (+188.0)      0/106
+  14 outline      640    51.2%       0          520.7 (+171.4)      0/106
+  14 horizontal   658    42.1%       0          482.5 (+133.2)      5/106
+  16 regular      606    42.2%       0          456.5 (  +0.0)      0/0
+  16 current     1105    23.2%       0          729.0 (+272.5)      0/117
+  16 supersample  813    55.6%       0          671.7 (+215.2)      1/117
+  16 outline      813    56.8%       0          683.6 (+227.1)      0/117
+  16 horizontal   798    48.4%       0          616.5 (+160.0)      1/117
+  20 regular      903    47.6%       0          723.3 (  +0.0)      0/0
+  20 current     1791    24.0%       0         1238.6 (+515.3)      0/135
+  20 supersample 1293    67.1%       0         1125.9 (+402.6)      2/135
+  20 outline     1283    60.1%       0         1077.3 (+354.0)      0/135
+  20 horizontal  1151    54.0%       0          946.1 (+222.8)      3/135

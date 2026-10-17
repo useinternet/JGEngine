@@ -1,0 +1,901 @@
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIElement.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIElement.h
+@@ -3,8 +3,13 @@
+ 
+ class HGameUIDrawList;
+ class JGGameWidget;
++class PGameUIElement;
+ class PGameUIManager;
+ 
++// 휠 알림(GG-21 — SetWheelInput 을 켠 요소). 인자: 받은 요소, 세로 칸 수(앞으로 굴리면 +), 가로 칸 수(오른쪽으로 +), 포인터 자리(캔버스 논리 단위).
++// 칸 수는 소수일 수 있다(정밀 휠 · 터치패드 — 0.25 칸 같은 작은 값이 자주 온다). 방송은 요소만 한다(PGameUIElement::onWheel 기본 구현).
++JG_DECLARE_EVENT(HOnGameUIWheel, PGameUIElement, PGameUIElement&, float32, float32, const HVector2&);
++
+ // 요소가 자기 모습을 그릴 때 받는 정보. 논리 단위 × Scale = 렌더 타깃 픽셀.
+ struct HGameUIDrawContext
+ {
+@@ -25,6 +30,7 @@
+ // 끌기(SetDraggable)를 켠 요소는 관리자가 끌기 이벤트를 준다(PGameUIManager::OnDragBegin 참고). 엔진은 끄는 요소를 옮기지 않는다.
+ // 자식 잘라내기(SetClipChildren, GG-20)를 켠 요소는 자손을 자기 사각형 안에만 그리고, 포인터가 자기 사각형 밖이면 자손을 판정하지 않는다
+ // (잘려 안 보이는 자손은 올리기 · 누르기 · 끌기 · 놓을 곳 · 휠을 받지 않는다). 스크롤 칸(PGameUIScrollBox)이 쓴다.
++// 휠 받기(SetWheelInput, GG-21)를 켠 요소는 그 위에서 굴린 휠을 OnWheel(파생은 onWheel)로 받는다 — 지도 · 판 확대 · 축소 등. 스크롤 칸은 기본으로 켜져 있다.
+ class GAMEFRAMEWORKS_API PGameUIElement : public IMemoryObject
+ {
+ 	friend class PGameUIManager;
+@@ -38,6 +44,7 @@
+ 	bool     _bEnabled        = true;
+ 	bool     _bDraggable      = false;
+ 	bool     _bClipChildren   = false;
++	bool     _bWheelInput     = false;
+ 	HVector2 _anchor;
+ 	HVector2 _pivot;
+ 	HVector2 _position;
+@@ -58,6 +65,11 @@
+ 	uint64        _tweenWriters[(int32)EGameUITweenProperty::Count] = {};
+ 
+ public:
++	// 휠(GG-21). SetWheelInput 을 켠 요소가 받는다 — 파생 없이 람다로(AddLambda). 받으면 휠은 거기서 끝난다(월드 · 바깥 요소로 가지 않는다).
++	// 람다가 이 요소나 조상의 PSharedPtr 를 잡으면 서로 붙잡아 풀리지 않는다 — 인자로 오는 요소를 쓴다.
++	HOnGameUIWheel OnWheel;
++
++public:
+ 	PGameUIElement() = default;
+ 	virtual ~PGameUIElement() = default;
+ 
+@@ -90,6 +102,12 @@
+ 	// 포인터가 이 요소 사각형(돌린 모양) 밖이면 자손을 판정하지 않는다. 이 요소 자신의 모습은 자르지 않는다.
+ 	void SetClipChildren(bool bClipChildren);
+ 	bool IsClipChildren() const;
++	// 휠 받기(GG-21). 켜면 이 요소 위에서 굴린 휠을 OnWheel(파생은 onWheel)로 받는다. 기본은 꺼짐(스크롤 칸만 켜짐).
++	// 휠은 누르기와 같은 판정 길로 간다: 포인터 아래 가장 위 · 가장 깊은 입력 받는 요소에서 위젯 루트까지 가장 안쪽부터 바깥으로,
++	// 휠을 켜고 켜진(SetEnabled) 요소에 주고 받으면 끝(스크롤 칸은 그 방향 끝이면 바깥으로 넘긴다). 빈 곳(입력 받는 자식이 없는 자리)에서도
++	// 받으려면 입력 받기(SetHitTestVisible(true))도 켠다(끌기와 같은 규칙). 끄는 중이면 휠을 켠 끄는 요소가 먼저 받는다(지도를 끌면서 확대).
++	void SetWheelInput(bool bWheelInput);
++	bool IsWheelInput() const;
+ 
+ 	// 배치를 한 번에 정한다.
+ 	void SetLayout(const HVector2& anchor, const HVector2& pivot, const HVector2& position, const HVector2& size);
+@@ -135,6 +153,10 @@
+ 	// position = 포인터 자리(논리 단위, 캔버스 — 변환 전 자리는 CanvasToLocal). 뗌은 지금처럼 onPointerUp 으로 온다.
+ 	virtual bool onPointerHeldBegin(EGameUIPointerButton button, const HVector2& position) { return false; }
+ 	virtual void onPointerHeldMove(const HVector2& position) {}
++	// 휠(GG-21, 휠 받기를 켠 요소만 — SetWheelInput). wheel = 세로 칸 수(앞으로 +), wheelHorizontal = 가로 칸 수(오른쪽 +, 둘 다 소수일 수 있다),
++	// position = 포인터 자리(캔버스 논리 단위. 요소 자리는 CanvasToLocal — 배치는 휠 처리 직전에 다시 계산한다).
++	// 받았으면 true(관리자가 멈춘다), false 면 바깥 요소에 넘긴다. 기본: OnWheel 을 알리고 true. 스크롤 칸은 넘기기에 쓴다(그 방향 끝이면 false).
++	virtual bool onWheel(float32 wheel, float32 wheelHorizontal, const HVector2& position);
+ 	// 배치 훅: 이 요소의 사각형 · 변환을 정한 직후, 자식을 배치하기 전에 부른다(자식 자리를 이 요소가 정할 때 — 스크롤 칸).
+ 	// ownerWidget = 이 트리를 가진 위젯(관리자가 배치할 때 넘긴다).
+ 	virtual void onLayout(JGGameWidget* ownerWidget) {}
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIElement.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIElement.cpp
+@@ -176,6 +176,23 @@
+ 	return _bClipChildren;
+ }
+ 
++void PGameUIElement::SetWheelInput(bool bWheelInput)
++{
++	_bWheelInput = bWheelInput;
++}
++
++bool PGameUIElement::IsWheelInput() const
++{
++	return _bWheelInput;
++}
++
++bool PGameUIElement::onWheel(float32 wheel, float32 wheelHorizontal, const HVector2& position)
++{
++	// 람다로 받는 요소는 늘 받는다(알림에는 돌려줄 값이 없다). 바깥에 넘기려면 파생해서 false.
++	OnWheel.BroadCast(*this, wheel, wheelHorizontal, position);
++	return true;
++}
++
+ void PGameUIElement::SetLayout(const HVector2& anchor, const HVector2& pivot, const HVector2& position, const HVector2& size)
+ {
+ 	_anchor   = anchor;
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.h
+@@ -26,8 +26,9 @@
+ // 막대: 넘기는 방향마다 칸 안 오른쪽(세로) · 아래(가로). 스타일(HGameUIScrollStyle) Visibility 가 Auto 면 내용이 칸보다 클 때만 보이고,
+ //   보이는 막대 자리(Thickness + 2 × Margin)만큼 보이는 칸이 줄어든다. 손잡이를 끌면 따라 넘어가고, 막대 빈 곳을 누르면 그쪽으로 보이는 칸의 7/8 만큼.
+ //   숨은 막대는 그리지도 판정하지도 않는다. 막대를 누르면 바깥 요소의 끌기(SetDraggable)는 시작하지 않는다.
+-// 휠: 관리자가 포인터 아래에서 가장 안쪽 칸부터 준다(그 방향 끝에 닿은 칸은 바깥 칸으로). 한 칸 = 스타일 WheelStep.
++// 휠: 관리자가 포인터 아래에서 가장 안쪽 칸부터 준다(그 방향 끝에 닿은 칸은 바깥 칸 · 휠을 켠 바깥 요소로). 한 칸 = 스타일 WheelStep.
+ //   세로로 넘길 것이 없고 가로로만 넘길 수 있는 칸은 세로 휠도 가로로 넘긴다. 꺼진(SetEnabled(false)) 칸은 휠 · 막대를 받지 않는다.
++//   휠 받기(SetWheelInput, GG-21)가 기본으로 켜져 있다 — 끄면 이 칸은 휠을 바깥에 넘긴다. 휠은 넘기기에 쓰고 OnScrolled 로 알린다(OnWheel 은 오지 않는다).
+ // 부드럽게 넘기기: 스타일 SmoothSeconds > 0 이면 휠 · 막대 빈 곳 누르기가 넘긴 양 트윈(EGameUITweenProperty::ScrollOffset, OutCubic)으로
+ //   이 칸을 가진 위젯에서 돈다. 연달아 굴리면 목표가 이어 쌓인다. 게임도 같은 트윈을 위젯 PlayTween 으로 직접 재생할 수 있다.
+ //   손잡이 끌기 · ScrollTo · ScrollBy · ScrollIntoView 는 넘긴 양을 쓰던 트윈(그 묶음 전체)을 취소하고 바로 넘긴다.
+@@ -37,7 +38,6 @@
+ // 그리기 변환(돌리기 · 배율)을 받은 칸: 내용은 돌린 칸을 감싸는 축 정렬 사각형으로 잘리고, 판정은 돌린 칸 안만이다.
+ class GAMEFRAMEWORKS_API PGameUIScrollBox : public PGameUIElement
+ {
+-	friend class PGameUIManager;
+ 	friend class PGameUITimeline;
+ 	friend class PGameUIScrollBoxBar;
+ 	friend class PGameUIScrollBoxThumb;
+@@ -109,6 +109,8 @@
+ 
+ protected:
+ 	virtual void onLayout(JGGameWidget* ownerWidget) override;
++	// 휠 = 넘기기(그 방향 끝이면 false — 바깥 요소가 받는다).
++	virtual bool onWheel(float32 wheel, float32 wheelHorizontal, const HVector2& position) override;
+ 
+ private:
+ 	HGameUIScrollStyle resolveCurrentStyle() const;
+@@ -128,7 +130,7 @@
+ 	void cancelScrollTweens();
+ 	// 입력으로 넘기기: 스타일이 부드럽게면 트윈, 아니면 바로(트윈 취소).
+ 	void scrollToByInput(const HVector2& target, const HGameUIScrollStyle& style);
+-	// 관리자: 휠(세로 · 가로 칸 수). 그 방향으로 넘어갔으면 true(끝에 닿아 못 넘기면 false — 바깥 칸이 받는다).
++	// 휠(세로 · 가로 칸 수, onWheel 이 부른다). 그 방향으로 넘어갔으면 true(끝에 닿아 못 넘기면 false — 바깥 칸 · 요소가 받는다).
+ 	bool handleWheel(float32 wheel, float32 wheelHorizontal);
+ 	// 막대: 빈 곳 누르기(direction = −1 위 · 왼쪽, +1 아래 · 오른쪽), 손잡이 끌기(막대 안 손잡이 시작 자리).
+ 	void pageScroll(bool bVertical, float32 direction);
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIScrollBox.cpp
+@@ -156,6 +156,7 @@
+ {
+ 	_bHitTestVisible = true;
+ 	_bClipChildren   = true;
++	_bWheelInput     = true;
+ 
+ 	_viewport = AddChild<PGameUIElement>(PName(PString("ScrollBox.Viewport")));
+ 	_viewport->SetClipChildren(true);
+@@ -552,6 +553,11 @@
+ 	applyOffset(target);
+ }
+ 
++bool PGameUIScrollBox::onWheel(float32 wheel, float32 wheelHorizontal, const HVector2& position)
++{
++	return handleWheel(wheel, wheelHorizontal);
++}
++
+ bool PGameUIScrollBox::handleWheel(float32 wheel, float32 wheelHorizontal)
+ {
+ 	const HGameUIScrollStyle style = resolveCurrentStyle();
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIManager.h
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIManager.h
+@@ -29,8 +29,8 @@
+ // 호스트가 하는 일: 월드를 그린 렌더 타깃 위에 Render, 포인터를 먼저 HandlePointer(true 면 월드 입력을 건너뜀), 뒤로가기(Esc)를 HandleBackAction.
+ // 글자 입력 포커스(입력란)가 있으면(WantsTextInput) 확정 글자를 HandleTextInput, 편집 키(Esc 포함)를 HandleKey 로 먼저 넘긴다.
+ // 위젯 스택이 바뀌면(올림 · 내림 · 비움) 호버 · 누름 · 끌기가 풀린다. 끌기는 취소 이벤트가 위젯 훅보다 먼저 온다.
+-// 휠(GG-20): 포인터 아래 요소에서 바깥쪽으로 스크롤 칸(PGameUIScrollBox)을 찾아, 그 방향으로 더 넘어갈 수 있는 가장 안쪽 칸이 받는다
+-// (끝에 닿은 칸은 바깥 칸으로 넘긴다). 받을 칸이 없으면 UI 위에서 소비만 한다(월드 줌을 막는다).
++// 휠(GG-20 · GG-21): 휠 받기를 켠 요소(SetWheelInput — 스크롤 칸은 기본으로 켜짐)가 받는다. 포인터 아래 판정 요소에서 위젯 루트까지 가장 안쪽부터 바깥으로,
++// 처음 받는 요소에서 끝난다(스크롤 칸은 그 방향 끝이면 바깥으로 넘긴다). 끄는 중이면 휠을 켠 끄는 요소가 먼저. 받을 요소가 없으면 UI 위에서 소비만 한다(월드 줌을 막는다).
+ // 그래픽 없이(헤드리스) 써도 된다. 그때는 그리기 · 텍스처 로드만 하지 않는다. 메인 스레드 전용.
+ class GAMEFRAMEWORKS_API PGameUIManager : public IMemoryObject
+ {
+@@ -241,8 +241,8 @@
+ 	void setHovered(const PSharedPtr<PGameUIElement>& element);
+ 	// 호버 · 누름(캡처) · 끌기 후보를 풀고 끌기를 취소한다. 스택을 바꾸는 일은 맨 먼저 부른다(취소 처리기가 스택을 바꿀 수 있다).
+ 	void resetPointerState();
+-	// 휠: hit 에서 바깥쪽으로 스크롤 칸을 찾아 가장 안쪽의 넘어갈 수 있는 칸에 준다. 받았으면 true.
+-	bool routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal);
++	// 휠: 휠을 켠 끄는 요소, 그다음 hit 에서 바깥쪽으로 휠을 켠 요소에 차례로 준다(onWheel 이 true 면 끝). 받았으면 true.
++	bool routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal, const HVector2& position);
+ 	// 후보를 끄는 요소로: 누름은 클릭이 아니게 풀고 OnDragBegin.
+ 	void beginDrag(PSharedPtr<PGameUIElement> element);
+ 	void moveDrag(const HVector2& position, const PSharedPtr<PGameUIElement>& target);
+--- a/Source/Runtime/GameFrameWorks/UI/GameUIManager.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUIManager.cpp
+@@ -6,7 +6,6 @@
+ #include "UI/GameUIRenderer.h"
+ #include "UI/GameUIFile.h"
+ #include "UI/GameUITextInput.h"
+-#include "UI/GameUIScrollBox.h"
+ #include "JGGraphics.h"
+ #include "Classes/Texture.h"
+ #include <cmath>
+@@ -88,36 +87,27 @@
+ 		return nullptr;
+ 	}
+ 
+-	// element 아래(자기 포함)에 target 이 있으면 true. 그 길에 있는 스크롤 칸을 바깥 → 안쪽 순서로 outBoxes 에 둔다.
+-	bool collectScrollBoxesOnPath(const PSharedPtr<PGameUIElement>& element, const PGameUIElement* target, HList<PSharedPtr<PGameUIScrollBox>>& outBoxes)
++	// element 아래(자기 포함)에 target 이 있으면 true. 그 길의 요소(element · target 포함)를 바깥 → 안쪽 순서로 outPath 에 둔다.
++	bool collectPath(const PSharedPtr<PGameUIElement>& element, const PGameUIElement* target, HList<PSharedPtr<PGameUIElement>>& outPath)
+ 	{
+ 		if (element.IsValid() == false)
+ 		{
+ 			return false;
+ 		}
+ 
+-		// PSharedPtr 는 const 를 전파하므로 비 const 사본으로 바꾼다.
+-		PSharedPtr<PGameUIElement> candidate = element;
+-		PSharedPtr<PGameUIScrollBox> box = RawDynamicCast<PGameUIScrollBox>(candidate);
+-		if (box.IsValid())
+-		{
+-			outBoxes.push_back(box);
+-		}
++		outPath.push_back(element);
+ 		if (element.GetRawPointer() == target)
+ 		{
+ 			return true;
+ 		}
+ 		for (const PSharedPtr<PGameUIElement>& child : element->GetChildren())
+ 		{
+-			if (collectScrollBoxesOnPath(child, target, outBoxes))
++			if (collectPath(child, target, outPath))
+ 			{
+ 				return true;
+ 			}
+ 		}
+-		if (box.IsValid())
+-		{
+-			outBoxes.pop_back();
+-		}
++		outPath.pop_back();
+ 		return false;
+ 	}
+ 
+@@ -730,8 +720,9 @@
+ 	}
+ 	case EGameUIPointerEventType::Wheel:
+ 	{
+-		// 포인터 아래의 스크롤 칸이 받는다(가장 안쪽부터, 끝이면 바깥 칸). 받을 칸이 없으면 UI 위에서만 소비한다(월드 줌을 막는다).
+-		if (hit.IsValid() && routeWheel(inputWidgets, hit, event.Wheel, event.WheelHorizontal))
++		// 휠을 켠 요소가 받는다(GG-21): 끄는 중이면 휠을 켠 끄는 요소, 그다음 포인터 아래 길의 가장 안쪽부터(스크롤 칸은 끝이면 바깥).
++		// 받을 요소가 없으면 UI 위에서만 소비한다(월드 줌을 막는다).
++		if (routeWheel(inputWidgets, hit, event.Wheel, event.WheelHorizontal, point))
+ 		{
+ 			return true;
+ 		}
+@@ -1287,24 +1278,38 @@
+ 	OnDragBegin.BroadCast(element, _dragStart);
+ }
+ 
+-bool PGameUIManager::routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal)
++bool PGameUIManager::routeWheel(const HList<PSharedPtr<JGGameWidget>>& widgets, const PSharedPtr<PGameUIElement>& hit, float32 wheel, float32 wheelHorizontal, const HVector2& position)
+ {
+ 	if (wheel == 0.0f && wheelHorizontal == 0.0f)
+ 	{
+ 		return false;
+ 	}
++
++	// 끄는 중: 끄는 동안의 판정은 끄는 요소와 그 자손을 뺀다(놓을 곳 찾기) — 휠을 켠 끄는 요소에 먼저 준다(지도를 끌면서 확대).
++	// 안 켰으면 아래로 이어 간다(카드를 끌면서 그 아래 목록 넘기기).
++	PSharedPtr<PGameUIElement> dragged = _dragged;
++	if (dragged.IsValid() && dragged->_bWheelInput && dragged->_bEnabled && dragged->onWheel(wheel, wheelHorizontal, position))
++	{
++		return true;
++	}
++	if (hit.IsValid() == false)
++	{
++		return false;
++	}
++
+ 	for (const PSharedPtr<JGGameWidget>& widget : widgets)
+ 	{
+-		HList<PSharedPtr<PGameUIScrollBox>> boxes;
+-		if (collectScrollBoxesOnPath(widget->GetRoot(), hit.GetRawPointer(), boxes) == false)
++		// 길은 강참조로 든다(처리기가 트리를 다시 짜도 도는 동안 요소가 남는다).
++		HList<PSharedPtr<PGameUIElement>> path;
++		if (collectPath(widget->GetRoot(), hit.GetRawPointer(), path) == false)
+ 		{
+ 			continue;
+ 		}
+-		// 가장 안쪽 칸부터. 그 방향으로 더 넘어갈 수 없는(끝에 닿은) 칸은 바깥 칸으로 넘긴다. 꺼진 칸은 받지 않는다.
+-		for (auto it = boxes.rbegin(); it != boxes.rend(); ++it)
++		// 가장 안쪽부터. 받지 않은 요소(그 방향 끝에 닿은 스크롤 칸 · false 를 돌려준 파생 요소)는 바깥에 넘긴다. 꺼진 요소는 받지 않는다.
++		for (auto it = path.rbegin(); it != path.rend(); ++it)
+ 		{
+-			PSharedPtr<PGameUIScrollBox> box = *it;
+-			if (box->IsEnabled() && box->handleWheel(wheel, wheelHorizontal))
++			PSharedPtr<PGameUIElement> element = *it;
++			if (element->_bWheelInput && element->_bEnabled && element->onWheel(wheel, wheelHorizontal, position))
+ 			{
+ 				return true;
+ 			}
+--- a/Source/Runtime/GameFrameWorks/UI/GameUISelfTest.cpp
++++ b/Source/Runtime/GameFrameWorks/UI/GameUISelfTest.cpp
+@@ -3659,6 +3659,286 @@
+ 		manager->Shutdown();
+ 	}
+ 
++	// ---- 일반 요소 휠 받기(GG-21, ProjectAH ER-021 · 결정 D-36 가)
++	struct HWheelLog
++	{
++		int32           Count           = 0;
++		PGameUIElement* Element         = nullptr;
++		float32         Wheel           = 0.0f;
++		float32         WheelHorizontal = 0.0f;
++		HVector2        Position;
++	};
++
++	void watchWheel(PSharedPtr<PGameUIElement> element, HWheelLog& log)
++	{
++		element->OnWheel.AddLambda([&log](PGameUIElement& receiver, float32 wheel, float32 wheelHorizontal, const HVector2& position)
++			{
++				++log.Count;
++				log.Element         = &receiver;
++				log.Wheel           = wheel;
++				log.WheelHorizontal = wheelHorizontal;
++				log.Position        = position;
++			});
++	}
++
++	// 파생 요소: onWheel 이 bAccept 를 돌려준다(false 면 바깥에 넘긴다).
++	class PUITestWheelElement : public PGameUIElement
++	{
++	public:
++		int32 Calls   = 0;
++		bool  bAccept = true;
++
++	protected:
++		virtual bool onWheel(float32 wheel, float32 wheelHorizontal, const HVector2& position) override
++		{
++			++Calls;
++			return bAccept;
++		}
++	};
++
++	// 요소의 그리기 변환 피벗 자리(배치 사각형 왼쪽 위 + 피벗 × 크기).
++	HVector2 pivotPointOf(const PGameUIElement& element)
++	{
++		const HRect& rect = element.GetLayoutRect();
++		return HVector2(rect.left + element.GetPivot().x * (rect.right - rect.left), rect.top + element.GetPivot().y * (rect.bottom - rect.top));
++	}
++
++	// 포인터 기준 확대(검토서 ER-021 §3, 회전 없는 요소): q = CanvasToLocal(포인터), P = 피벗 자리, t' = t − (s' − s) × (q − P).
++	void zoomAtPointer(PGameUIElement& element, const HVector2& pointerPoint, float32 factor)
++	{
++		const HVector2 local = element.CanvasToLocal(pointerPoint);
++		const HVector2 pivot = pivotPointOf(element);
++		HGameUIRenderTransform transform = element.GetRenderTransform();
++		const HVector2 scale(transform.Scale.x * factor, transform.Scale.y * factor);
++		transform.Translation = HVector2(transform.Translation.x - (scale.x - transform.Scale.x) * (local.x - pivot.x),
++			transform.Translation.y - (scale.y - transform.Scale.y) * (local.y - pivot.y));
++		transform.Scale = scale;
++		element.SetRenderTransform(transform);
++	}
++
++	// 요청서(ER-021) 완료 기준: 휠을 켠 일반 요소가 휠(칸 수 · 포인터 자리)을 받는다. 휠을 안 켠 화면은 그대로.
++	void testWheelInput()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		const HVector2 zero(0.0f, 0.0f);
++
++		// 지도(입력 받기 · 휠 받기) (100, 100)-(500, 400) 안에 입력 받는 표시 (150, 150)-(200, 200)
++		PSharedPtr<PGameUIImage> map = addPanel(widget, "Map", HLinearColor(0.2f, 0.3f, 0.2f, 1.0f), HRect(100.0f, 100.0f, 500.0f, 400.0f));
++		map->SetHitTestVisible(true);
++		const bool bOffByDefault = map->IsWheelInput() == false;
++		map->SetWheelInput(true);
++		PSharedPtr<PGameUIButton> pin = map->AddChild<PGameUIButton>(PName("Pin"));
++		pin->SetLayout(zero, zero, HVector2(50.0f, 50.0f), HVector2(50.0f, 50.0f));
++		HWheelLog mapLog;
++		watchWheel(map, mapLog);
++		PSharedPtr<PGameUIScrollBox> defaultBox = Allocate<PGameUIScrollBox>();
++		check(bOffByDefault && map->IsWheelInput() && pin->IsWheelInput() == false && defaultBox->IsWheelInput(),
++			"wheel: wheel input is off by default and on for scroll boxes; SetWheelInput turns it on");
++
++		const bool bConsumed = wheelAt(manager, 300.0f, 300.0f, -1.0f);
++		check(bConsumed && mapLog.Count == 1 && mapLog.Element == map.GetRawPointer() && nearlyEqual(mapLog.Wheel, -1.0f) && nearlyEqual(mapLog.WheelHorizontal, 0.0f)
++			&& isPoint(mapLog.Position, HVector2(300.0f, 300.0f)), "accept ER-021: a plain element with wheel input gets OnWheel (element, notches, pointer) and the wheel is consumed");
++		wheelAt(manager, 175.0f, 175.0f, 0.25f, -0.5f);
++		check(mapLog.Count == 2 && nearlyEqual(mapLog.Wheel, 0.25f) && nearlyEqual(mapLog.WheelHorizontal, -0.5f) && isPoint(mapLog.Position, HVector2(175.0f, 175.0f)),
++			"wheel: over a child without wheel input the wheel goes up to the element, fractional notches pass through as they are");
++
++		// 휠 받기를 안 켠 패널 · 빈 곳은 지금과 같다
++		PSharedPtr<PGameUIImage> plain = addPanel(widget, "Plain", HLinearColor(0.4f, 0.2f, 0.2f, 1.0f), HRect(600.0f, 100.0f, 800.0f, 300.0f));
++		plain->SetHitTestVisible(true);
++		const bool bPlainConsumed = wheelAt(manager, 700.0f, 200.0f, -1.0f);
++		check(bPlainConsumed && mapLog.Count == 2 && wheelAt(manager, 900.0f, 900.0f, -1.0f) == false,
++			"wheel: without wheel input the wheel is only consumed over UI and passes through over empty space (unchanged)");
++
++		// 입력 받기를 안 켠 휠 요소는 빈 곳에서 받지 못한다(누르기와 같은 판정 길)
++		PSharedPtr<PGameUIImage> ghost = addPanel(widget, "Ghost", HLinearColor(0.2f, 0.2f, 0.4f, 1.0f), HRect(600.0f, 500.0f, 800.0f, 700.0f));
++		ghost->SetWheelInput(true);
++		HWheelLog ghostLog;
++		watchWheel(ghost, ghostLog);
++		check(wheelAt(manager, 700.0f, 600.0f, -1.0f) == false && ghostLog.Count == 0, "wheel: a wheel element without hit testing gets nothing over its empty area (the same path as clicks)");
++
++		// 꺼진 휠 요소는 건너뛴다(판정은 되어 소비)
++		map->SetEnabled(false);
++		const bool bDisabledConsumed = wheelAt(manager, 300.0f, 300.0f, -1.0f);
++		map->SetEnabled(true);
++		check(bDisabledConsumed && mapLog.Count == 2, "wheel: a disabled wheel element is skipped");
++
++		manager->Shutdown();
++	}
++
++	// 포인터 기준 확대 식(t' = t − (s' − s)(q − P))과 배율 · 옮기기 트윈 한 묶음 — 돌리고 키운 부모 아래에서도 포인터 아래 점이 그대로.
++	void testWheelZoom()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		const HVector2 zero(0.0f, 0.0f);
++
++		// 판(가운데 (500, 500), 10° · 1.2배) 안의 지도(피벗 가운데, 1.3배 · 옮기기 (20, -10))
++		PSharedPtr<PGameUIElement> board = widget->AddChild<PGameUIElement>(PName("Board"));
++		board->SetLayout(zero, HVector2(0.5f, 0.5f), HVector2(500.0f, 500.0f), HVector2(800.0f, 600.0f));
++		HGameUIRenderTransform boardTransform;
++		boardTransform.Angle = 10.0f;
++		boardTransform.Scale = HVector2(1.2f, 1.2f);
++		board->SetRenderTransform(boardTransform);
++		PSharedPtr<PGameUIImage> map = board->AddChild<PGameUIImage>(PName("Map"));
++		map->SetLayout(zero, HVector2(0.5f, 0.5f), HVector2(400.0f, 300.0f), HVector2(400.0f, 300.0f));
++		HGameUIRenderTransform mapTransform;
++		mapTransform.Scale       = HVector2(1.3f, 1.3f);
++		mapTransform.Translation = HVector2(20.0f, -10.0f);
++		map->SetRenderTransform(mapTransform);
++		map->SetHitTestVisible(true);
++		map->SetWheelInput(true);
++		map->OnWheel.AddLambda([](PGameUIElement& element, float32 wheel, float32 wheelHorizontal, const HVector2& pointerPoint)
++			{
++				zoomAtPointer(element, pointerPoint, std::pow(1.15f, wheel));
++			});
++		manager->UpdateLayout(GTarget);
++
++		const HVector2 pointerPoint(520.0f, 470.0f);
++		const HVector2 before = map->CanvasToLocal(pointerPoint);
++		const bool bConsumed = wheelAt(manager, pointerPoint.x, pointerPoint.y, 2.0f);
++		manager->UpdateLayout(GTarget);
++		const HVector2 after = map->CanvasToLocal(pointerPoint);
++		check(bConsumed && nearlyEqual(map->GetRenderTransform().Scale.x, 1.3f * 1.15f * 1.15f, 0.001f) && isPoint(before, after, 0.01f),
++			"accept ER-021: zooming with t' = t - (s' - s)(q - P) keeps the point under the pointer (under a turned, scaled parent)");
++		wheelAt(manager, pointerPoint.x, pointerPoint.y, -0.5f);
++		manager->UpdateLayout(GTarget);
++		check(isPoint(map->CanvasToLocal(pointerPoint), before, 0.01f) && nearlyEqual(map->GetRenderTransform().Scale.x, 1.3f * std::pow(1.15f, 1.5f), 0.001f),
++			"wheel: a half notch zooms by 1.15 ^ 0.5 around the same point");
++
++		// 부드럽게: 배율 · 옮기기 트윈을 한 동시 묶음(같은 길이 · 이징)으로 — 움직이는 동안에도 포인터 아래 점이 그대로
++		const HVector2 tweenPointer(470.0f, 520.0f);
++		const HVector2 anchorLocal = map->CanvasToLocal(tweenPointer);
++		const HVector2 pivot       = pivotPointOf(*map);
++		const HGameUIRenderTransform start = map->GetRenderTransform();
++		const float32  targetScale = start.Scale.x * 1.6f;
++		const HVector2 targetTranslation(start.Translation.x - (targetScale - start.Scale.x) * (anchorLocal.x - pivot.x),
++			start.Translation.y - (targetScale - start.Scale.y) * (anchorLocal.y - pivot.y));
++		PSharedPtr<PGameUITimeline> zoom = PGameUITimeline::Parallel();
++		zoom->Add(HGameUITween::To(map, EGameUITweenProperty::Scale, HVector2(targetScale, targetScale), 0.2f, EGameUIEase::OutCubic))
++			.Add(HGameUITween::To(map, EGameUITweenProperty::Translation, targetTranslation, 0.2f, EGameUIEase::OutCubic));
++		widget->PlayTimeline(zoom);
++		manager->Update(0.07f);
++		manager->UpdateLayout(GTarget);
++		const HVector2 midway   = map->CanvasToLocal(tweenPointer);
++		const float32  midScale = map->GetRenderTransform().Scale.x;
++		manager->Update(0.2f);
++		manager->UpdateLayout(GTarget);
++		const HVector2 end = map->CanvasToLocal(tweenPointer);
++		check(midScale > start.Scale.x + 0.01f && midScale < targetScale - 0.01f && isPoint(midway, anchorLocal, 0.01f) && isPoint(end, anchorLocal, 0.01f)
++			&& nearlyEqual(map->GetRenderTransform().Scale.x, targetScale, 0.001f), "accept ER-021: a parallel Scale + Translation tween (same length and ease) keeps the pointer point fixed while it plays");
++
++		manager->Shutdown();
++	}
++
++	// 받는 순서: 스크롤 칸과 한 길(가장 안쪽부터, 칸은 그 방향 끝이면 바깥). 파생 onWheel 의 false · 스크롤 칸 휠 끄기는 바깥으로.
++	void testWheelPriority()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++		const HVector2 zero(0.0f, 0.0f);
++
++		// 휠 지도 (100, 100)-(500, 500) 안의 스크롤 칸 (100, 100)-(400, 250)(줄 5개 → 넘길 양 90)
++		PSharedPtr<PGameUIImage> map = addPanel(widget, "Map", HLinearColor(0.2f, 0.3f, 0.2f, 1.0f), HRect(100.0f, 100.0f, 500.0f, 500.0f));
++		map->SetHitTestVisible(true);
++		map->SetWheelInput(true);
++		HWheelLog mapLog;
++		watchWheel(map, mapLog);
++		PSharedPtr<PGameUIScrollBox> inner = addScrollBox(map, "Inner", HRect(0.0f, 0.0f, 300.0f, 150.0f));
++		HList<int32> innerClicks;
++		addRows(inner, 5, 200.0f, 40.0f, 50.0f, innerClicks);
++		HWheelLog innerLog;
++		watchWheel(inner, innerLog);
++		manager->UpdateLayout(GTarget);
++		wheelAt(manager, 200.0f, 175.0f, -1.0f);
++		wheelAt(manager, 200.0f, 175.0f, -1.0f);
++		const bool bBoxFirst = nearlyEqual(inner->GetScrollOffset().y, 90.0f) && mapLog.Count == 0;
++		wheelAt(manager, 200.0f, 175.0f, -1.0f);
++		check(bBoxFirst && mapLog.Count == 1 && innerLog.Count == 0,
++			"accept ER-021: a scroll box inside a wheel element scrolls first and passes the wheel on at its end (the box sends no OnWheel)");
++		wheelAt(manager, 300.0f, 400.0f, -1.0f);
++		check(mapLog.Count == 2, "wheel: over the element outside the inner box the element gets the wheel");
++
++		// 스크롤 칸 안의 휠 요소: 그 요소 위에서는 요소(가장 안쪽), 다른 줄 위에서는 칸
++		PSharedPtr<PGameUIScrollBox> list = addScrollBox(widget->GetRoot(), "List", HRect(600.0f, 100.0f, 900.0f, 300.0f));
++		HList<int32> listClicks;
++		addRows(list, 20, 280.0f, 40.0f, 50.0f, listClicks);
++		PSharedPtr<PGameUIImage> zoomable = list->GetContent()->AddChild<PGameUIImage>(PName("Zoomable"));
++		zoomable->SetLayout(zero, zero, HVector2(200.0f, 0.0f), HVector2(60.0f, 40.0f));   // 첫 줄 오른쪽 (800, 100)-(860, 140)
++		zoomable->SetHitTestVisible(true);
++		zoomable->SetWheelInput(true);
++		HWheelLog zoomableLog;
++		watchWheel(zoomable, zoomableLog);
++		manager->UpdateLayout(GTarget);
++		wheelAt(manager, 830.0f, 120.0f, -1.0f);
++		const bool bInnermost = zoomableLog.Count == 1 && nearlyEqual(list->GetScrollOffset().y, 0.0f);
++		wheelAt(manager, 700.0f, 220.0f, -1.0f);
++		check(bInnermost && zoomableLog.Count == 1 && nearlyEqual(list->GetScrollOffset().y, 60.0f),
++			"wheel: a wheel element inside a scroll box takes the wheel over itself, the box scrolls over other rows");
++
++		// 파생 요소가 false 를 돌려주면 바깥(지도)이 받는다, true 면 거기서 끝
++		PSharedPtr<PUITestWheelElement> derived = map->AddChild<PUITestWheelElement>(PName("Derived"));
++		derived->SetLayout(zero, zero, HVector2(0.0f, 300.0f), HVector2(100.0f, 100.0f));   // (100, 400)-(200, 500)
++		derived->SetHitTestVisible(true);
++		derived->SetWheelInput(true);
++		derived->bAccept = false;
++		manager->UpdateLayout(GTarget);
++		const int32 mapBefore = mapLog.Count;
++		wheelAt(manager, 150.0f, 450.0f, -1.0f);
++		const bool bPassed = derived->Calls == 1 && mapLog.Count == mapBefore + 1;
++		derived->bAccept = true;
++		wheelAt(manager, 150.0f, 450.0f, -1.0f);
++		check(bPassed && derived->Calls == 2 && mapLog.Count == mapBefore + 1, "wheel: a derived onWheel returning false passes the wheel outward, true keeps it");
++
++		// 스크롤 칸의 휠 받기를 끄면 바깥에 넘긴다
++		inner->ScrollTo(HVector2(0.0f, 0.0f));
++		inner->SetWheelInput(false);
++		const int32 mapBefore2 = mapLog.Count;
++		wheelAt(manager, 200.0f, 175.0f, -1.0f);
++		check(inner->IsWheelInput() == false && nearlyEqual(inner->GetScrollOffset().y, 0.0f) && mapLog.Count == mapBefore2 + 1,
++			"wheel: a scroll box with wheel input off passes the wheel to the outer element");
++
++		manager->Shutdown();
++	}
++
++	// 끄는 동안: 휠을 켠 끄는 요소가 먼저(끄는 동안의 판정은 끄는 요소를 뺀다), 안 켠 끄는 요소면 그 아래 스크롤 칸이 넘긴다(지금 규칙).
++	void testWheelWhileDragging()
++	{
++		PSharedPtr<PGameUIManager> manager = makeManager();
++		PSharedPtr<JGGameWidget>   widget  = manager->PushWidget<JGGameWidget>(EGameUILayer::Game);
++
++		PSharedPtr<PGameUIImage> map = addPanel(widget, "Map", HLinearColor(0.2f, 0.3f, 0.2f, 1.0f), HRect(100.0f, 100.0f, 500.0f, 500.0f));
++		map->SetHitTestVisible(true);
++		map->SetDraggable(true);
++		map->SetWheelInput(true);
++		HWheelLog mapLog;
++		watchWheel(map, mapLog);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, 300.0f, 300.0f), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 320.0f, 300.0f), GTarget);
++		const bool bDragging = manager->GetDraggedElement().GetRawPointer() == map.GetRawPointer();
++		const bool bConsumed = wheelAt(manager, 320.0f, 300.0f, 1.0f);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, 320.0f, 300.0f), GTarget);
++		check(bDragging && bConsumed && mapLog.Count == 1 && nearlyEqual(mapLog.Wheel, 1.0f) && manager->GetDraggedElement().IsValid() == false,
++			"accept ER-021: the dragged element with wheel input gets the wheel while it is dragged");
++
++		PSharedPtr<PGameUIScrollBox> list = addScrollBox(widget->GetRoot(), "List", HRect(600.0f, 100.0f, 900.0f, 300.0f));
++		HList<int32> clicks;
++		addRows(list, 20, 280.0f, 40.0f, 50.0f, clicks);
++		PSharedPtr<PGameUIImage> card = addPanel(widget, "Card", HLinearColor(0.6f, 0.5f, 0.2f, 1.0f), HRect(600.0f, 500.0f, 700.0f, 600.0f));
++		card->SetHitTestVisible(true);
++		card->SetDraggable(true);
++		manager->UpdateLayout(GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Down, 650.0f, 550.0f), GTarget);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Move, 700.0f, 200.0f), GTarget);
++		const bool bCardDragging = manager->GetDraggedElement().GetRawPointer() == card.GetRawPointer();
++		wheelAt(manager, 700.0f, 200.0f, -1.0f);
++		manager->HandlePointer(pointer(EGameUIPointerEventType::Up, 700.0f, 200.0f), GTarget);
++		check(bCardDragging && nearlyEqual(list->GetScrollOffset().y, 60.0f) && mapLog.Count == 1,
++			"wheel: while dragging an element without wheel input the scroll box under the pointer scrolls (unchanged)");
++
++		manager->Shutdown();
++	}
++
+ 	void testGameInstanceUI()
+ 	{
+ 		if (JGGameInstance::HasInstance() == false)
+@@ -3706,6 +3986,10 @@
+ 		testScrollBoxSmooth();
+ 		testScrollBoxHorizontal();
+ 		testScrollBoxHeld();
++		testWheelInput();
++		testWheelZoom();
++		testWheelPriority();
++		testWheelWhileDragging();
+ 		testGameInstanceUI();
+ 
+ 		if (GFailureCount == 0)
+@@ -3720,6 +4004,6 @@
+ 	HAutoConsoleCommand GameUISelfTestCommand(
+ 		"gameui.selftest",
+ 		"gameui.selftest",
+-		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop, tweens, transitions, scroll boxes). No GPU needed",
++		"Run the game UI self tests (widget stacks, input routing, back, styles, layout, font, text wrap, text input, drag and drop, tweens, transitions, scroll boxes, wheel input). No GPU needed",
+ 		&executeSelfTest);
+ }
+--- a/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/GameUIDemoHUD.h
++++ b/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/GameUIDemoHUD.h
+@@ -8,6 +8,7 @@
+ class PGameUIText;
+ class PGameUIFont;
+ class PGameUIButton;
++class PGameUITimeline;
+ class JGGameUIDemoPauseMenu;
+ 
+ // 게임 UI 검증 게임의 HUD(Game 레이어, 입력 모드 Game). 위 띠(패널 · 턴 글자 · 안내 · Menu 버튼), 카드 뒷면 2장, 손패 글자,
+@@ -22,6 +23,8 @@
+ // 움직임(GG-16): 처음 활성 때 카드 두 장이 왼쪽 밖에서 날아오고(옮기기 · 불투명도 트윈), End Turn 을 누르면 버튼이 눌렸다가 튕기며 돌아온다.
+ // 스크롤 칸(GG-20): 카드와 놓을 곳 사이 목록 칸(버튼 40줄, 줄이 칸보다 넓어 세로 · 가로 막대, 바로 넘김)과
+ // 가운데 이야기 칸(20줄 글, 세로 막대, 부드럽게 넘기기 0.15초). 넘길 때마다 · 줄을 누르면 로그를 남긴다.
++// 휠 받기(GG-21): 오른쪽 입력란 위 지도 틀(자식 잘라내기 · 끌기 · 휠 받기) 안의 지도(칸 16개)를 휠로 포인터 기준 확대 · 축소하고(배율 · 옮기기 트윈 한 묶음),
++// 틀을 끌어 옮긴다(끄는 동안의 휠은 바로 확대). 확대가 끝나면 그 휠 때 포인터 아래였던 지도 점이 얼마나 움직였는지 로그를 남긴다.
+ JGCLASS()
+ class GAMEUIDEMO_API JGGameUIDemoHUD : public JGGameWidget
+ {
+@@ -48,6 +51,17 @@
+ 	PSharedPtr<JGGameUIDemoPauseMenu> _pauseMenu;          // 한 객체를 다시 올린다
+ 	bool                              _bCardsFlown = false;
+ 
++	// 휠 받기(GG-21): 틀이 휠 · 끌기를 받고 안의 지도를 그리기 변환으로 움직인다.
++	PSharedPtr<PGameUIImage>    _mapFrame;
++	PSharedPtr<PGameUIElement>  _mapContent;
++	PSharedPtr<PGameUITimeline> _mapZoom;
++	float32                     _mapTargetScale = 0.5f;   // 연달아 굴리면 목표 배율을 쌓는다
++	HVector2                    _mapZoomLocal;            // 마지막 휠 때 포인터 아래 지도 점(지도 자리)
++	HVector2                    _mapZoomPointer;          // 그때 포인터 자리(캔버스)
++	HVector2                    _mapDragGrab;
++	HVector2                    _mapDragTranslation;
++	int32                       _mapDragMoves = 0;
++
+ public:
+ 	JGGameUIDemoHUD() = default;
+ 	virtual ~JGGameUIDemoHUD() = default;
+@@ -66,6 +80,10 @@
+ 	void onMenuClicked();
+ 	void fillAtlasPage();
+ 	void addScrollBoxes();
++	void addMap();
++	void zoomMap(const HVector2& pointerPoint, float32 wheel);
++	void logMapAnchor();
++	HVector2 mapPivotPoint() const;
+ 	void onDragBegin(const PSharedPtr<PGameUIElement>& element, const HVector2& position);
+ 	void onDragMove(const PSharedPtr<PGameUIElement>& element, const HVector2& position, const PSharedPtr<PGameUIElement>& target);
+ 	void onDragEnd(const PSharedPtr<PGameUIElement>& element, const HVector2& position, const PSharedPtr<PGameUIElement>& dropTarget, bool bCanceled);
+--- a/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/GameUIDemoHUD.cpp
++++ b/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/GameUIDemoHUD.cpp
+@@ -2,6 +2,7 @@
+ #include "GameUIDemoHUD.h"
+ #include "GameUIDemoPauseMenu.h"
+ #include "UI/GameUI.h"
++#include <cmath>
+ 
+ namespace
+ {
+@@ -20,6 +21,13 @@
+ 	const HLinearColor DropZoneColor(0.02f, 0.03f, 0.05f, 0.55f);
+ 	const HLinearColor DropZoneHotColor(0.18f, 0.48f, 0.30f, 0.80f);
+ 	const HVector2     CardInZonePosition(920.0f, -40.0f);
++
++	// 휠 받기(GG-21) 지도: 칸 160 × 150 을 8 × 2(1280 × 300), 처음 배율 0.5 = 틀(640 × 150)에 꼭 맞음. 휠 한 칸 = 1.15배.
++	constexpr float32 MapMinScale    = 0.5f;
++	constexpr float32 MapMaxScale    = 2.0f;
++	constexpr float32 MapZoomStep    = 1.15f;
++	constexpr float32 MapZoomSeconds = 0.12f;
++	const char* const MapColumnNames[8] = { "A", "B", "C", "D", "E", "F", "G", "H" };
+ }
+ 
+ int32 JGGameUIDemoHUD::GetTurn() const
+@@ -71,8 +79,9 @@
+ 	dropLabel->SetAlignment(EGameUIHorizontalAlign::Left, EGameUIVerticalAlign::Middle);
+ 	dropLabel->SetText(PString("놓을 곳\nDrop zone"));
+ 
+-	// 스크롤 칸(GG-20). 카드보다 먼저 붙여 끄는 카드가 그 위에 그려지게 한다.
++	// 스크롤 칸(GG-20) · 휠로 확대하는 지도(GG-21). 카드보다 먼저 붙여 끄는 카드가 그 위에 그려지게 한다.
+ 	addScrollBoxes();
++	addMap();
+ 
+ 	// 손패: 엔진 Content 의 카드 뒷면 두 장. 두 번째(금색)는 끌 수 있다.
+ 	const char* const cardFiles[2] = { "RawResources/CardBack_Tree_Dark_63x88mm_300dpi.png", "RawResources/CardBack_Tree_Gold_63x88mm_300dpi.png" };
+@@ -345,6 +354,106 @@
+ 		list->GetMaxScroll().x, list->GetMaxScroll().y, story->GetMaxScroll().x, story->GetMaxScroll().y);
+ }
+ 
++void JGGameUIDemoHUD::addMap()
++{
++	// 틀: 오른쪽 줄바꿈 패널과 입력란 사이 1240~1880 × 430~580. 자식 잘라내기 · 입력 받기 · 끌기 · 휠 받기를 켠다 — 지도가 작아져도 틀이 받는다.
++	_mapFrame = AddChild<PGameUIImage>(PName("MapFrame"));
++	_mapFrame->SetLayout(HVector2(1.0f, 0.0f), HVector2(1.0f, 0.0f), HVector2(-40.0f, 430.0f), HVector2(640.0f, 150.0f));
++	_mapFrame->SetColor(HLinearColor(0.02f, 0.03f, 0.05f, 0.72f));
++	_mapFrame->SetClipChildren(true);
++	_mapFrame->SetHitTestVisible(true);
++	_mapFrame->SetDraggable(true);
++	_mapFrame->SetWheelInput(true);
++	_mapFrame->OnWheel.AddLambda([this](PGameUIElement& element, float32 wheel, float32 wheelHorizontal, const HVector2& pointerPoint)
++		{
++			zoomMap(pointerPoint, wheel);
++		});
++
++	// 지도: 피벗 왼쪽 위, 그리기 변환으로만 확대 · 옮기기(배치는 그대로). 칸 · 글은 입력을 받지 않는다(틀이 받는다).
++	_mapContent = _mapFrame->AddChild<PGameUIElement>(PName("MapContent"));
++	_mapContent->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(1280.0f, 300.0f));
++	HGameUIRenderTransform start;
++	start.Scale = HVector2(MapMinScale, MapMinScale);
++	_mapContent->SetRenderTransform(start);
++	_mapTargetScale = MapMinScale;
++	for (int32 row = 0; row < 2; ++row)
++	{
++		for (int32 column = 0; column < 8; ++column)
++		{
++			const bool bDark = ((row + column) % 2) == 0;
++			PSharedPtr<PGameUIImage> tile = _mapContent->AddChild<PGameUIImage>(PName(PString::Format("MapTile%d_%d", column, row)));
++			tile->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2((float32)column * 160.0f, (float32)row * 150.0f), HVector2(160.0f, 150.0f));
++			tile->SetColor(bDark ? HLinearColor(0.14f, 0.22f, 0.17f, 1.0f) : HLinearColor(0.20f, 0.30f, 0.23f, 1.0f));
++			PSharedPtr<PGameUIText> label = tile->AddChild<PGameUIText>(PName("Label"));
++			label->SetLayout(HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(0.0f, 0.0f), HVector2(160.0f, 150.0f));
++			label->SetFontSize(36.0f);
++			label->SetAlignment(EGameUIHorizontalAlign::Center, EGameUIVerticalAlign::Middle);
++			label->SetText(PString::Format("장소 %s%d", PString(MapColumnNames[column]), row + 1));
++		}
++	}
++}
++
++HVector2 JGGameUIDemoHUD::mapPivotPoint() const
++{
++	const HRect&    rect  = _mapContent->GetLayoutRect();
++	const HVector2& pivot = _mapContent->GetPivot();
++	return HVector2(rect.left + pivot.x * (rect.right - rect.left), rect.top + pivot.y * (rect.bottom - rect.top));
++}
++
++void JGGameUIDemoHUD::zoomMap(const HVector2& pointerPoint, float32 wheel)
++{
++	// 포인터 기준 확대(GG-21): q = 지도.CanvasToLocal(포인터), P = 지도 피벗 자리, 목표 배율 s' 에서 옮기기 t' = t − (s' − s) × (q − P).
++	// 배율 · 옮기기 트윈을 한 동시 묶음(같은 길이 · 이징)으로 걸면 움직이는 동안에도 q 가 포인터 아래 그대로다. 연달아 굴리면 목표 배율을 쌓고
++	// 새 묶음이 지금 값에서 이어 간다(같은 속성이라 옛 묶음은 취소). 칸 수가 소수(정밀 휠)여도 1.15 ^ 칸 수.
++	const HGameUIRenderTransform current = _mapContent->GetRenderTransform();
++	const float32  targetScale = HMath::Clamp(_mapTargetScale * std::pow(MapZoomStep, wheel), MapMinScale, MapMaxScale);
++	const HVector2 local       = _mapContent->CanvasToLocal(pointerPoint);
++	const HVector2 pivot       = mapPivotPoint();
++	const HVector2 targetTranslation(current.Translation.x - (targetScale - current.Scale.x) * (local.x - pivot.x),
++		current.Translation.y - (targetScale - current.Scale.y) * (local.y - pivot.y));
++	_mapTargetScale = targetScale;
++	_mapZoomLocal   = local;
++	_mapZoomPointer = pointerPoint;
++
++	const bool bDragging = GetManager()->GetDraggedElement().GetRawPointer() == _mapFrame.GetRawPointer();
++	JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo map zoom wheel %.2f -> scale %.3f at (%.0f, %.0f)%s", wheel, targetScale, pointerPoint.x, pointerPoint.y,
++		PString(bDragging ? " (dragging)" : ""));
++	if (bDragging)
++	{
++		// 끄는 중: 끌기가 이동마다 옮기기를 정하므로 바로 바꾸고, 끌기 기준도 같은 만큼 옮긴다.
++		HGameUIRenderTransform next = current;
++		next.Scale       = HVector2(targetScale, targetScale);
++		next.Translation = targetTranslation;
++		_mapContent->SetRenderTransform(next);
++		_mapDragTranslation = _mapDragTranslation + (targetTranslation - current.Translation);
++		logMapAnchor();
++		return;
++	}
++
++	PSharedPtr<PGameUITimeline> zoom = PGameUITimeline::Parallel();
++	zoom->Add(HGameUITween::To(_mapContent, EGameUITweenProperty::Scale, HVector2(targetScale, targetScale), MapZoomSeconds, EGameUIEase::OutCubic))
++		.Add(HGameUITween::To(_mapContent, EGameUITweenProperty::Translation, targetTranslation, MapZoomSeconds, EGameUIEase::OutCubic));
++	zoom->OnFinished.AddLambda([this](bool bCanceled)
++		{
++			// 다음 휠이 이어 받아 취소된 묶음은 건너뛴다(끝난 묶음만 확인).
++			if (bCanceled == false)
++			{
++				logMapAnchor();
++			}
++		});
++	_mapZoom = PlayTimeline(zoom);
++}
++
++void JGGameUIDemoHUD::logMapAnchor()
++{
++	// 그 휠 때 포인터 아래였던 지도 점의 지금 화면 자리(틀 · 지도 위로 변환이 없어 캔버스 = P + t + s × (q − P)).
++	const HGameUIRenderTransform transform = _mapContent->GetRenderTransform();
++	const HVector2 pivot = mapPivotPoint();
++	const HVector2 anchor(pivot.x + transform.Translation.x + transform.Scale.x * (_mapZoomLocal.x - pivot.x),
++		pivot.y + transform.Translation.y + transform.Scale.y * (_mapZoomLocal.y - pivot.y));
++	JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo map zoom done scale %.3f, point under the pointer moved %.2f", transform.Scale.x, HVector2::Length(anchor - _mapZoomPointer));
++}
++
+ void JGGameUIDemoHUD::OnUpdate(float32 deltaSeconds)
+ {
+ 	// 위 줄 글자가 한 번 그려진 뒤(아틀라스에 글리프가 생긴 뒤) 한 번만 채운다.
+@@ -412,6 +521,19 @@
+ 
+ void JGGameUIDemoHUD::onDragBegin(const PSharedPtr<PGameUIElement>& element, const HVector2& position)
+ {
++	if (element.GetRawPointer() == _mapFrame.GetRawPointer())
++	{
++		// 지도 옮기기: 도는 확대는 끝값으로 건너뛰고(끌기와 같은 옮기기를 두고 다투지 않게) 지금 옮기기에서 시작한다.
++		if (_mapZoom.IsValid() && _mapZoom->IsPlaying())
++		{
++			_mapZoom->Skip();
++		}
++		_mapDragGrab        = position;
++		_mapDragTranslation = _mapContent->GetRenderTransform().Translation;
++		_mapDragMoves       = 0;
++		JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo map pan begin at (%.0f, %.0f)", position.x, position.y);
++		return;
++	}
+ 	if (element.GetRawPointer() != _dragCard.GetRawPointer())
+ 	{
+ 		return;
+@@ -424,6 +546,15 @@
+ 
+ void JGGameUIDemoHUD::onDragMove(const PSharedPtr<PGameUIElement>& element, const HVector2& position, const PSharedPtr<PGameUIElement>& target)
+ {
++	if (element.GetRawPointer() == _mapFrame.GetRawPointer())
++	{
++		// 시작 옮기기 + 누른 자리에서 온 거리(이동마다 처음부터 — 사이 프레임의 쓰레기 자리가 남지 않는다).
++		HGameUIRenderTransform transform = _mapContent->GetRenderTransform();
++		transform.Translation = _mapDragTranslation + (position - _mapDragGrab);
++		_mapContent->SetRenderTransform(transform);
++		++_mapDragMoves;
++		return;
++	}
+ 	if (element.GetRawPointer() != _dragCard.GetRawPointer())
+ 	{
+ 		return;
+@@ -444,6 +575,13 @@
+ 
+ void JGGameUIDemoHUD::onDragEnd(const PSharedPtr<PGameUIElement>& element, const HVector2& position, const PSharedPtr<PGameUIElement>& dropTarget, bool bCanceled)
+ {
++	if (element.GetRawPointer() == _mapFrame.GetRawPointer())
++	{
++		const HVector2& translation = _mapContent->GetRenderTransform().Translation;
++		JG_LOG(GameUIDemo, ELogLevel::Info, "GameUIDemo map pan end at (%.0f, %.0f): translation (%.0f, %.0f), scale %.3f (moves %d)%s", position.x, position.y,
++			translation.x, translation.y, _mapContent->GetRenderTransform().Scale.x, _mapDragMoves, PString(bCanceled ? " - canceled" : ""));
++		return;
++	}
+ 	if (element.GetRawPointer() != _dragCard.GetRawPointer())
+ 	{
+ 		return;
+--- a/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/gameui_e2e.ps1
++++ b/Document/Memory/GameFrameWorks/Files/tools/gameui_demo_testgame/gameui_e2e.ps1
+@@ -13,6 +13,7 @@
+ #     → 열림 · 닫힘 전환(GG-16): 메뉴 열기 → Esc 바로 뒤 Resume 자리 클릭(닫히는 메뉴는 받지 않음 → 월드) · 닫히는 중 캡처 → 다시 열기 → Esc 바로 뒤 Menu(닫히다 다시 열기) → Resume
+ #     → 스크롤 칸(GG-20, 28~37): 목록 칸 휠 3칸 → 줄 클릭 → 칸 아래(잘린 줄 자리) 클릭(월드) → 세로 손잡이 끝까지 끌기 → 세로 막대 빈 곳 → 위 띠 위 휠(넘김 없음)
+ #       → 가로 손잡이 끝까지 끌기 → 가로 휠(WM_MOUSEHWHEEL) → 이야기 칸 휠 2칸(부드럽게) → 이야기 막대 빈 곳 → (스크롤 캡처)
++#     → 휠 받기(GG-21, 38~41): 지도 휠 앞으로 2칸(확대) → 다른 자리에서 뒤로 1칸(축소) → 지도 끌어 옮기기 → 끄는 중 휠(끌면서 확대) → (지도 캡처)
+ #  3) 캡처(after) → WM_CLOSE → 종료 코드. 결과 판정은 게임 Bin 의 jg_log.txt 로 한다(README 기대 결과).
+ $ErrorActionPreference = "Stop"
+ Add-Type -AssemblyName System.Drawing
+@@ -205,6 +206,36 @@
+ # 휠(GG-20): 한 칸마다 [이동 · 휠]을 잇달아 넣는다(이동이 먼저 처리돼 휠이 그 자리에서 온다).
+ # wParam 위 16비트 = 한 칸 120 — 세로(WM_MOUSEWHEEL 0x020A)는 앞으로 +, 뒤로(아래로 넘기기) −. 가로(WM_MOUSEHWHEEL 0x020E)는 오른쪽 +.
+ # lParam 은 화면 좌표다(클라이언트 + 클라이언트 원점).
++# 끄는 중 휠(GG-21): [이동 · 누름] → 문턱(6)을 넘는 이동 몇 번 → [이동 · 휠(왼쪽 누름 상태)] → [이동 · 뗌].
++function DragWheel-Ref([string]$label, [double]$fromX, [double]$fromY, [double]$wheelX, [double]$wheelY, [double]$toX, [double]$toY, [int]$notches) {
++    $from = Ref-ToClient $fromX $fromY
++    $mid  = Ref-ToClient $wheelX $wheelY
++    $to   = Ref-ToClient $toX $toY
++    Write-Output ("{0} from ref ({1}, {2}), wheel {3} at ({4}, {5}), release at ({6}, {7})" -f $label, $fromX, $fromY, $notches, $wheelX, $wheelY, $toX, $toY)
++    Post-Mouse $hwnd 0x0200 0 $from[0] $from[1]   # WM_MOUSEMOVE
++    Post-Mouse $hwnd 0x0201 1 $from[0] $from[1]   # WM_LBUTTONDOWN
++    Start-Sleep -Milliseconds 300
++    for ($s = 1; $s -le 3; $s++) {
++        $x = [int]($from[0] + ($mid[0] - $from[0]) * $s / 3)
++        $y = [int]($from[1] + ($mid[1] - $from[1]) * $s / 3)
++        Post-Mouse $hwnd 0x0200 1 $x $y           # WM_MOUSEMOVE (왼쪽 누름)
++        Start-Sleep -Milliseconds 100
++    }
++    $delta = 120
++    if ($notches -lt 0) { $delta = -120 }
++    $wParam = [IntPtr]([int64]((($delta -band 0xFFFF) -shl 16) -bor 1))   # 위 16비트 = 휠, 아래 = MK_LBUTTON
++    $screenX = $mid[0] + $origin.X; $screenY = $mid[1] + $origin.Y
++    $lParam = [IntPtr](($screenY -shl 16) -bor ($screenX -band 0xFFFF))
++    for ($n = 0; $n -lt [Math]::Abs($notches); $n++) {
++        Post-Mouse $hwnd 0x0200 1 $mid[0] $mid[1]   # WM_MOUSEMOVE
++        [GUIE2E]::PostMessage($hwnd, 0x020A, $wParam, $lParam) | Out-Null   # WM_MOUSEWHEEL
++        Start-Sleep -Milliseconds 400
++    }
++    Post-Mouse $hwnd 0x0200 1 $to[0] $to[1]       # WM_MOUSEMOVE
++    Post-Mouse $hwnd 0x0202 0 $to[0] $to[1]       # WM_LBUTTONUP
++    Start-Sleep -Milliseconds 800
++}
++
+ function Wheel-Ref([string]$label, [double]$refX, [double]$refY, [int]$notches, [int]$message = 0x020A) {
+     $client = Ref-ToClient $refX $refY
+     Write-Output ("{0} at ref ({1}, {2}) -> client ({3}, {4}), {5} notches" -f $label, $refX, $refY, $client[0], $client[1], $notches)
+@@ -329,6 +360,16 @@
+ $scrollShot = Capture $hwnd (Join-Path $OutDir "gameui_e2e_scroll.png")
+ $scrollShot.Dispose()
+ 
++# 휠 받기(GG-21). 지도 틀 1240~1880 × 430~580(자식 잘라내기 · 끌기 · 휠 받기), 안의 지도 1280 × 300 을 배율 0.5 로 시작(틀에 꼭 맞음).
++# 휠 한 칸 = 1.15배(포인터 기준, 0.12초 OutCubic 트윈). 끝나면 "map zoom done … moved 0.00"(포인터 아래 점이 그대로).
++Wheel-Ref "Step 38: wheel forward 2 notches over the map (zoom in around the pointer)" 1400 505 2
++Wheel-Ref "Step 39: wheel back 1 notch at another place (zoom out)" 1700 470 -1
++Drag-Ref "Step 40: drag the map frame (pan the map)" 1500 520 1380 480
++DragWheel-Ref "Step 41: wheel while dragging the map (the dragged element gets the wheel)" 1600 500 1560 500 1540 500 1
++Start-Sleep -Seconds 1
++$mapShot = Capture $hwnd (Join-Path $OutDir "gameui_e2e_map.png")
++$mapShot.Dispose()
++
+ $after = Capture $hwnd (Join-Path $OutDir "gameui_e2e_after.png")
+ $after.Dispose()
+ 

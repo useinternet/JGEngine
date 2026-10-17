@@ -65,6 +65,26 @@ void HGameplayContext::SetActors(const HList<HGameplayEntityId>& actors)
 	Engine.ContextSetActors(*this, actors);
 }
 
+void HGameplayContext::MarkRewindPoint(const PName& name)
+{
+	State.MarkRewindPoint(name);
+}
+
+bool HGameplayContext::ClearRewindPoint(const PName& name)
+{
+	return State.ClearRewindPoint(name);
+}
+
+bool HGameplayContext::HasRewindPoint(const PName& name) const
+{
+	return State.FindRewindPoint(name) != nullptr;
+}
+
+bool HGameplayContext::RewindTo(const PName& name, EGameplayRewindRandom random)
+{
+	return Engine.ContextRewindTo(*this, name, random);
+}
+
 const IGameplayBoard* HGameplayContext::Board() const
 {
 	return Engine.Board.GetRawPointer();

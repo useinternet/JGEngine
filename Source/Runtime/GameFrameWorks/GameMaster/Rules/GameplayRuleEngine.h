@@ -68,6 +68,7 @@ public:
 	void  ContextFinishGame(HGameplayContext& ctx, int32 resultCode);
 	void  ContextSetStep(HGameplayContext& ctx, const PName& step);
 	void  ContextSetActors(HGameplayContext& ctx, const HList<HGameplayEntityId>& actors);
+	bool  ContextRewindTo(HGameplayContext& ctx, const PName& name, EGameplayRewindRandom random);
 	void  TriggerEnqueue(const HGameplayTriggerContext& ctx, const HGameplayEffectRequest& request, bool bFront);
 
 private:

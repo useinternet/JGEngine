@@ -1,0 +1,60 @@
+B-4 검증 기록 — 보드 시야 기본 구현 (IGameplayBoard::TraceLine · HasLineOfSight)
+작성 2026-10-03 10:1x. 메인 트리 C:\Develop\JGEngine, 구성 DevelopEngine|x64. 명령 출력 원문에서 옮김.
+배정: 엔진 총괄(10-03, GP-F1b 뒤) — GFW TODO B-4 "Square · Hex 의 HasLineOfSight 기본 구현 + 자체 테스트", gmtest 에 연결, 기존 회귀(110 + 64 + 28) 유지.
+
+== 1. 바꾼 것 ==
+GameMaster/Boards/GameplayBoard.h · .cpp
+  IGameplayBoard::TraceLine(from, to, outCells) — 새 가상 함수. 격자 선 = from 에서 to 까지 지나는 칸(양 끝 포함, from 부터 차례로).
+    기본(격자 아님 — 없음 · 자유 공간) = 비움. 보드 경계는 보지 않는다(경계는 시야가 본다).
+    사각(PGameplayBoardSquare) : 정수 브레젠험, 대각 걸음 허용. 칸 수 = max(|dx|, |dy|) + 1
+    육각(PGameplayBoardHex)    : 큐브 좌표 선형 보간 + 큐브 반올림. 칸 수 = 육각 거리 + 1, 이웃끼리 이어진다.
+                                두 칸 경계에 정확히 걸린 점이 한쪽으로 반올림되게 시작 · 끝을 조금 치운다(q +1e-6, r +1e-6, s -2e-6 — 큐브 합 0 유지)
+    대칭: 두 끝을 정해진 순서(Y 먼저, 다음 X)로 놓고 그린 뒤 요청 방향이 반대면 뒤집는다
+          → A→B 와 B→A 가 같은 칸을 지난다(결정론. 서버 · 클라이언트, 공격 · 반격이 같은 답)
+  IGameplayBoard::HasLineOfSight(board, from, to) — 새 가상 함수(기본 규칙).
+    양 끝이 경계 안이고, 격자 선의 사이 칸(양 끝 제외)이 모두 경계 안 · IsBlocked 아님이면 true.
+    점유(엔티티)는 막지 않는다. 양 끝은 막혀 있어도 된다(벽 위에 서기 · 벽을 보기). 같은 칸은 늘 보인다.
+    격자 선이 없는 보드(자유 공간)는 경계만 본다. 다른 규칙(유닛이 가림 · 높이)은 게임이 파생해 덮는다 — TraceLine 을 그대로 쓸 수 있다.
+  vtable 변경: FindPath 와 CoordsInRange 사이에 두 함수가 들어간다. 엔진 밖에서 보드 API 를 쓰는 코드 없음
+    (ProjectAH · Temp/Games 에서 IGameplayBoard · CoordsInRange · GetBoard() 검색 0, 저장소 안은 GFW 만) → 게임 모듈 다시 빌드 필요 없음.
+GameMaster/GameMasterSelfTest.cpp — 7절 뒤에 "7-2. 시야 (B-4)" 10 검사. GameMaster 110 → 120.
+Viewport/GameViewportSelfTest.h — 주석만: 콘솔 명령 실행 시점을 "GUI 생성 단계" → "프레임 밖"(Graphics 분석)으로 바로잡고 규칙을 적음
+  (GPU 기록은 프레임 안 GraphicsBegin ~ GraphicsEnd 사이 단계에서만).
+
+== 2. 자체 테스트 (gmtest → GameMaster 7-2) ==
+  [PASS] LOS square: Bresenham cells for a straight, a diagonal and a shallow line (from the given start)
+  [PASS] LOS square: every line on 5x5 is end-to-end, 8-way steps, max(|dx|,|dy|)+1 cells and the same both ways (bad 0 of 625)
+  [PASS] LOS hex: a straight line along q visits each cell
+  [PASS] LOS hex: every line on 5x5 is end-to-end, neighbor steps, distance+1 cells and the same both ways (bad 0 of 625)
+  [PASS] LOS square: a blocked cell between the ends hides the target both ways; a line that misses it still sees
+  [PASS] LOS square: blocked cells at the ends do not block (stand on or look at a wall)
+  [PASS] LOS square: an occupant does not block the default line of sight
+  [PASS] LOS square: an end outside the board has no sight; a cell sees itself
+  [PASS] LOS hex: a blocked cell on the line hides the target; another direction sees
+  [PASS] LOS free: no grid line, sight only checks the bounds
+  고정 값: 사각 (0,0)→(3,0) 직선 · (0,0)→(3,3) 대각 · (4,1)→(0,0) = (4,1)(3,1)(2,1)(1,0)(0,0).
+  전수(5x5 의 625 쌍, 사각 · 육각 각각): 양 끝 일치, 걸음이 8방(사각) / 육각 이웃, 칸 수, 반대 방향과 같은 칸.
+  막힘: 사각 (2,0) 막힘 → (0,0)↔(4,0) 양쪽 다 안 보임, (0,0)→(4,1) 보임 / 끝 칸 (0,2) · (4,2) 막힘은 무관 / (2,4) 점유 무관 /
+        (7,0) 경계 밖 false · 같은 칸 true. 육각 (1,0) 막힘 → (0,0)→(2,0) 안 보임, (0,0)→(0,2) 보임. 자유 공간: 격자 선 비어 있음 · 시야 true.
+
+== 3. worktree 검증 (Temp/wt/b4, 10-03 ~10:04) ==
+  기준: git stash create(메인 HEAD 0bd6356 + 미커밋 — 스태시 목록은 건드리지 않음) = d3b3c13 → git worktree add --detach,
+        추적 안 되는 Source · Content · Build · ThirdParty 파일 복사(GP-F1 의 Viewport/ 등)
+  PreBuild(JGHeaderTool · JGBuildTool) → 엔진 솔루션 전체 빌드 74초, 오류 0 · 경고 0 (10:03:38 끝)
+  JGConsole.exe gmtest:
+    == GameMaster self test: 120 passed, 0 failed ==
+    == World self test: 64 passed, 0 failed ==
+    == GameViewport self test: 28 passed, 0 failed ==
+    [error] 2 = 의도된 음성 검사(RequestChoice 를 효과 Resolve 밖에서 → 거부 · 흐름 1024 걸음 멈춤 — B-4 전과 같음)
+  net.test all: Network self test: 101 passed, 0 failed (10:04:25)
+  gameui.selftest: OK (256/256), skipped groups 0 · input.selftest: OK (34/34) · datatable.selftest: OK (127/127) · console.selftest: OK (64/64)
+
+== 4. 메인 반영 (10:04 ~ 10:10) ==
+  메인의 네 파일(GameplayBoard.h · .cpp, GameMasterSelfTest.cpp, GameViewportSelfTest.h)이 스냅숏 d3b3c13 뒤로 바뀌지 않았음을 확인하고 복사(10:04:52).
+  GFW 빌드: cl · link · JGLauncher 가 없을 때까지 기다린 뒤(10:07:25) MSBuild Temp/ProjectFiles/GameFrameWorks.vcxproj -p:BuildProjectReferences=false
+    → exit 0, 1초, 오류 0 · C++ 경고 0. 다른 세션 빌드가 10:05 에 이미 복사본을 컴파일했다
+      (GameplayBoard.obj 10:05:05 · GameMasterSelfTest.obj 10:05:10 · GameFrameWorks.dll 10:05:25 — 모두 복사 뒤).
+    DLL 확인: ?TraceLine@PGameplayBoardSquare@@… · ?TraceLine@PGameplayBoardHex@@… 심볼, "LOS square" 문자열 1.
+  메인 Bin JGConsole.exe gmtest (10:09): GameMaster 120 passed 0 failed · World 64 · GameViewport 28, LOS 10 줄 모두 PASS, [error] 2(위와 같은 의도된 것).
+  worktree 지움: git worktree remove --force Temp/wt/b4 → exit 0 (Temp/wt/gameui 는 GUI 세션 것이라 그대로).
+  커밋은 사용자(이 세션은 커밋하지 않음).

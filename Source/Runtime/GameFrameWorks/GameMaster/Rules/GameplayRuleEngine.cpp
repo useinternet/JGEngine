@@ -420,6 +420,27 @@ EGameplaySubmitResult PGameplayRuleEngine::runQueue(HGameplayState& state, uint3
 	return EGameplaySubmitResult::Executed;
 }
 
+bool PGameplayRuleEngine::ContextRewindTo(HGameplayContext& ctx, const PName& name, EGameplayRewindRandom random)
+{
+	if (ctx.State.RewindTo(name, random) == false)
+	{
+		return false;
+	}
+
+	// 지점 뒤의 일은 없던 일이 된다: 남은 효과 · 아직 반응하지 않은 트리거 · 이 효과가 요청한 선택.
+	// 명령 순번은 상태가 그대로 두므로 이 명령의 원인 번호(ctx.CauseSequence)도 그대로다.
+	_queue.Clear();
+	_dispatcher.Clear();
+	_bChoiceRequested = false;
+	_requestedChoice.Clear();
+
+	HGameplayEvent rewound{ PName(HGameplayBuiltin::EventRewound) };
+	rewound.Tag    = name;
+	rewound.Amount = (int32)random;
+	ContextEmit(ctx, rewound);
+	return true;
+}
+
 void PGameplayRuleEngine::resolveOne(HGameplayState& state, const HGameplayEffectRequest& request, uint32 causeSequence)
 {
 	HGameplayContext ctx(state, *this, causeSequence, request.Depth);

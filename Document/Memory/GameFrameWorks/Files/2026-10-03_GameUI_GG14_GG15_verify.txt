@@ -1,0 +1,62 @@
+GameUI GG-14(요소 변환, ProjectAH ER-014 · 사용자 결정 D-24) · GG-15(끌어다 놓기, ER-015 · D-25) 검증 기록 — 2026-10-03, GUI 세션
+검토서 Files/ER-014_ER-015_검토_2026-10-02.md, TODO TODO_GameUI.md, 현황 현황.md §10.
+
+§1. GG-14 메인 반영 (10-03 아침, 엔진 총괄 09:44 "어제 멈춘 작업 이어서" 전달)
+- 구현 · 워크트리 검증: 10-02 밤, Temp/wt/gameui (HEAD + 메인 UI 파일 스냅숏). gameui.selftest 245 → 256(요소 변환 11검사:
+  15° · 1.3배 피벗 (400,450) 둘레 사각형 네 꼭짓점, 돌린 모양 안은 맞고 감싸는 사각형 모서리는 빗나감, CanvasToLocal,
+  글리프는 변환 배율의 정수 픽셀(26px)로 래스터화해 1:1 로 그림, 배율 0.5 픽셀 공간, 옮기기 (50,-20), 불투명도 0.5 × 0.5 = 0.25,
+  변환을 지우면 그리기 목록이 변환 전과 같음), gmtest 통과.
+- 메인 반영: UI 9파일(GameUIDefines.h · GameUIElement.h/.cpp · GameUIDrawList.h/.cpp · GameUIText.cpp · GameUITextInput.cpp ·
+  GameUIManager.cpp · GameUISelfTest.cpp) — 메인 쪽은 10-02 밤 이후 아무도 안 바꿈 → 파일마다 메인 줄끝 그대로 복사(내용 = 워크트리, 외톨이 CR 0).
+- 메인 빌드: 첫 시도(09:53) LNK1104 JGLauncher.exe · Asset.dll — 같은 때 다른 세션 빌드(VS2022 MSBuild, JGGameBootstrap 등)와 겹침.
+  cl · link 가 30초 조용해진 뒤 다시(10:00:47) → 성공 51초(/MP · PCH).
+- 메인 Bin 검사: gameui.selftest 256/256, input.selftest 34/34, gmtest OK(GameMaster 110 · World 64 · GameViewport 28),
+  console.selftest 64/64, datatable.selftest 127/127, net.test all 101/101.
+- 화면(E2E): Temp/Games/GameUIDemo 는 지금 DevOps 가 엔진 루트를 Temp/wt/gp 로 바꿔 쓰는 중(10-02 23:08 카드 · 메시를 게임 Content 로 옮긴 판,
+  10:00 ReleaseGame 패키지) → 메인 엔진용 사본 Temp/Games/GameUIDemo_GUI 를 README 절차로 새로 만듦
+  (CreateGameProject → Files/tools 소스 복사 → GenerateProjectFiles → DevelopEngine 빌드 성공).
+  gameui_e2e.ps1 -WaitSeconds 30 → 20단계 모두 기대대로: 1 End Turn(턴 2) · 2 Menu push · 3 · 4 막힘 · 5 Esc 로 메뉴 닫힘 · 6 턴 3 ·
+  7 월드 피킹("nothing (no controller in the world)") · 8 비활성 Draw(클릭 로그 없음) · 9 · 10 Menu → Resume ·
+  14 "address committed: 192.168.0.10:4777" · 17 "name committed: 홍길동ab" · 19 로그 없음 · 20 "no game UI back handler".
+  [error] · [critical] 0, 경고는 기존 1줄(Asset "NOT Support Asset Path"), live blocks 0, 종료 코드 0.
+  에디터 로그 "SceneViewport render size 1280x720 -> 640x360 (game UI scale 0.333)" — JGEditor 의 보이는 크기 렌더(D-22 ①)와
+  SceneViewport → PGameViewport 이전이 이미 메인에 있음(게임 UI 입력 경로는 PGameViewport::HandleInput 을 거쳐 그대로 동작).
+- 알림: JGEditor(SceneViewport 안 고침, 메인 반영 · e2e 결과), 엔진 총괄.
+
+§2. GG-15 끌어다 놓기 (10-03 아침) — 검토서 §3.2 권고 범위 그대로
+- 착수 전 GameFrameWorks 세션에 알림(HandlePointer 진입점 · 반환값 그대로, 끄는 동안 이동 · 왼쪽 뗌 true, PGameViewport::releaseAllButtons 에서 CancelDrag 제안).
+- 바뀐 파일(UI/ 5): GameUIElement.h/.cpp(SetDraggable · IsDraggable, 가상 훅 onDragBegin/Move/End, hitTest 에 빼는 요소 인자),
+  GameUIManager.h/.cpp(JG_DECLARE_EVENT HOnGameUIDragBegin/Move/End → OnDragBegin/Move/End, GetPointerPosition · IsPointerDown · IsPointerInside ·
+  SetDragThreshold/GetDragThreshold(기본 6) · GetDraggedElement · CancelDrag, 끌기 후보 · 끄는 요소(강참조), resetPointerState 를 스택 변경 맨 앞으로),
+  GameUISelfTest.cpp(testDragDrop 40검사, PUITestDragElement · HDragLog).
+- 규칙: 왼쪽 버튼만. 끌기 원천 = 누른 요소부터 위로 가장 가까운 SetDraggable 요소(누른 요소가 꺼져 있으면 없음). 누른 자리에서 문턱을 넘게 움직이면 시작 —
+  그 순간 누른 요소에 밖에서 뗀 것으로 알려(버튼 누름 모습 풀림) 클릭이 아니게 하고 OnDragBegin(누른 자리) → 바로 OnDragMove(지금 자리, 아래 대상).
+  끄는 동안 판정은 끄는 요소와 그 자손을 뺀다(놓을 곳 · 호버). 왼쪽 뗌 = OnDragEnd(뗀 자리, 놓은 곳). 취소(놓은 곳 nullptr, 자리 = 마지막 포인터 자리) =
+  위젯 스택 변경(Push · Remove · Clear — 맨 먼저 풀어 위젯 훅보다 먼저 온다) · CancelDrag · 끄는 중 왼쪽 누름이 또 옴 · Shutdown. Leave 는 호버만 푼다.
+  엔진은 끄는 요소를 옮기지 않는다(게임이 이동에서 위치 · 그리기 변환을 바꾼다). 시작한 끌기는 끝 이벤트 하나로 반드시 끝난다(끄는 요소 강참조).
+- 워크트리: 빌드 9초(GFW 10파일) → gameui.selftest 292/292(첫 판), gmtest 통과.
+- 메인 반영 1차(10:25): 메인 5파일은 GG-14 복사(09:52) 뒤 아무도 안 바꿈 → 줄끝 유지 복사 → 메인 빌드 51초 성공 → 메인 검사 gameui 292/292 · input 34 ·
+  gmtest(GameViewport 28) · console 64 · datatable 127 · net 101.
+- 화면 1차(데모 사본 GameUIDemo_GUI, HUD 에 놓을 곳 · 금색 카드 끌기 · 어두운 카드 -5° 기울임 추가, 스크립트에 21 · 22단계):
+  21 "drag begin Card1 at (318, 912)" → "dropped on DropZone at (1002, 912)" 통과, 22 는 "canceled" — 기대("returned, drop target none")와 다름.
+  원인: 에디터 SceneViewport 가 이미지 밖에서 뗀 프레임에 Leave 를 Up 보다 먼저 보냄(누름이 풀린 프레임에 bHovered · bDown 이 모두 false →
+  Leave 분기 → 그다음 버튼 고리에서 Up). 처음 구현이 "Leave 면 끌기 취소"였다. 검토서 §3.2 (d)(밖에서 떼면 끝, 놓은 곳 nullptr)와 어긋남 →
+  Leave 는 호버만 풀고 끌기는 잇게 고침. 게임 호스트(GP-C1)는 누르는 동안 Leave 를 보내지 않고, 뗌을 못 받는 경우는 CancelDrag(호스트) ·
+  다시 누름(이전 끌기 취소)이 막는다.
+- 검사 고침: Leave 검사 → "Leave 는 끌기를 잇는다 · 밖(1200,150)에서 떼면 놓은 곳 없이 끝(취소 아님)", "뗌을 놓친 채 다시 누르면 이전 끌기 취소 ·
+  새 누름은 클릭", "CancelDrag 뒤 뗌은 끝을 또 주지 않음" → 296/296.
+- 메인 반영 2차(10:32): GameUIManager.h/.cpp · GameUISelfTest.cpp 복사 → 메인 빌드 성공 → gameui 296/296 · input 34 · gmtest(GameViewport 28) 통과.
+- 화면 2차(데모 다시 빌드): 22 "returned, drop target none at (2400, 912)" 통과. 그 실행은 1단계 클릭이 빠짐(시작 직후 타이밍 흔들림 — 10-02 에도 25초 대기에서
+  한 번 겪음, 끌기와 무관) → -WaitSeconds 40 으로 다시 → 22단계 모두 기대대로:
+  1 턴 2 · 2 메뉴 · 3 · 4 막힘 · 5 Esc 닫힘 · 6 턴 3 · 7 월드 피킹 · 8 비활성 Draw · 9 · 10 Resume · 14 주소 192.168.0.10:4777 · 17 이름 홍길동ab ·
+  19 로그 없음 · 20 뒤로가기 처리 위젯 없음 ·
+  21 "SceneViewport Click (0.166, 0.844): game UI" + "drag begin Card1 at (318, 912)" + "drag end Card1: dropped on DropZone at (1002, 912) (moves 37)" ·
+  22 "Click (0.522, 0.844): game UI" + "drag begin Card1 at (1002, 912)" + "drag end Card1: returned, drop target none at (2400, 912) (moves 36)".
+  "HUD initialized: 11 root elements", [error] · [critical] 0, 경고 기존 1줄, live blocks 0, 종료 코드 0.
+  (moves = 끄는 동안 SceneViewport 가 매 프레임 보내는 이동 수. 실제 커서가 창 밖이라 보낸 이동마다 WM_MOUSELEAVE 가 따라와 중간 프레임 자리는 쓰레기 —
+  그래서 누름 · 뗌은 바로 앞 이동과 붙여 보내고, 결과는 로그로 본다.)
+- 캡처: 2026-10-03_gameui_gg15_before.png(어두운 카드 -5° 기울임 · 빈 놓을 곳), 2026-10-03_gameui_gg15_after.png(턴 3 · 금색 카드가 놓을 곳 오른쪽 안),
+  2026-10-03_gameui_gg15_cards_zoom.png(3배 — 기울인 카드는 GPU 에서도 변환된 사각형으로 그려짐. 가장자리 계단은 안티에일리어싱이 없는 텍스처 사각형이라
+  그대로 · 이미지 밉맵 없음 GG-H5).
+- 데모 스크립트 gameui_e2e.ps1 은 10:36 JGEditor 가 DPI 인식 처리(D-22 ② 대비, 지금 빌드는 인식 0 이라 동작 같음)를 더함 — 21 · 22단계와 겹치지 않음.
+- 알림: GameFrameWorks(GP-F1c 에 쓸 CancelDrag), JGEditor, 엔진 총괄, 게임 쪽 쓰는 법.

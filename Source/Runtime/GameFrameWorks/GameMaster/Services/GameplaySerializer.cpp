@@ -28,11 +28,13 @@ bool PGameplaySerializer::FromJsonText(const PString& text, HGameplayState& outI
 
 	uint32 version = 0;
 	json.GetData("SchemaVersion", &version);
-	if (version != HGameplayState::SchemaVersion)
+	// MinReadableSchemaVersion ~ SchemaVersion 은 그대로 읽는다 (1 → 2 는 비면 쓰지 않는 칸만 더했다, ER-027).
+	const bool bReadable = version >= HGameplayState::MinReadableSchemaVersion && version <= HGameplayState::SchemaVersion;
+	if (bReadable == false)
 	{
 		if (migrator == nullptr)
 		{
-			JG_LOG(GameMaster, ELogLevel::Error, "PGameplaySerializer: schema %u != %u and no migrator", version, HGameplayState::SchemaVersion);
+			JG_LOG(GameMaster, ELogLevel::Error, "PGameplaySerializer: schema %u is not in %u..%u and no migrator", version, HGameplayState::MinReadableSchemaVersion, HGameplayState::SchemaVersion);
 			return false;
 		}
 		if (migrator->Migrate(version, HGameplayState::SchemaVersion, json) == false)

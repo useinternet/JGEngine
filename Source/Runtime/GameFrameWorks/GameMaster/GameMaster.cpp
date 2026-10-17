@@ -216,6 +216,7 @@ EGameplaySubmitResult PGameMaster::Submit(const HGameplayCommand& command, HList
 
 	_snapshots.Push(_state);
 
+	const int32 firstEvent = (int32)outEvents.size();
 	EGameplaySubmitResult result = _engine.Execute(_state, command, outEvents, outReason);
 	if (result == EGameplaySubmitResult::Rejected)
 	{
@@ -224,7 +225,28 @@ EGameplaySubmitResult PGameMaster::Submit(const HGameplayCommand& command, HList
 	}
 
 	_log.Append(command);
-	notifyEvents(outEvents);
+
+	// 되감기(ER-027)가 들어간 명령: 되감기 앞의 일은 없던 일이라 연출에 보내지 않는다.
+	// 상태 교체 알림으로 바인딩을 지금 상태로 다시 만든 뒤 마지막 Rewound 부터 보낸다. outEvents 에는 모두 남는다.
+	int32 rewoundAt = INDEX_NONE;
+	PName rewound(HGameplayBuiltin::EventRewound);
+	for (int32 i = (int32)outEvents.size() - 1; i >= firstEvent; --i)
+	{
+		if (outEvents[i].Kind == rewound)
+		{
+			rewoundAt = i;
+			break;
+		}
+	}
+	if (rewoundAt == INDEX_NONE)
+	{
+		notifyEvents(outEvents);
+		return result;
+	}
+
+	notifyStateReplaced();
+	HList<HGameplayEvent> afterRewind(outEvents.begin() + rewoundAt, outEvents.end());
+	notifyEvents(afterRewind);
 	return result;
 }
 
