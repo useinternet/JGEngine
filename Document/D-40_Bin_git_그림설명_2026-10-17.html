@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D-40 그림 설명</title>
+<meta name="description" content="D-40 빌드 결과(Bin)를 공개 git 저장소에 계속 넣을지 — 그림 설명">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f1f0ec; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #d6d5ce; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6; --accent-soft: #dce8f8; --callout: #eef4fc;
+    --good: #0b8a0b; --good-soft: #e1f3e1; --warning: #b97c00; --warning-soft: #fdf1d6; --serious: #d0582b; --serious-soft: #fbe6dd;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #8f8d86;
+      --line: #3a3a37; --ring: rgba(255,255,255,0.10);
+      --accent: #5598e7; --accent-soft: #1b2c44; --callout: #14213a;
+      --good: #4cc24c; --good-soft: #15301a; --warning: #f2b23a; --warning-soft: #33280f; --serious: #f08a5d; --serious-soft: #3a1f15;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #8f8d86;
+    --line: #3a3a37; --ring: rgba(255,255,255,0.10);
+    --accent: #5598e7; --accent-soft: #1b2c44; --callout: #14213a;
+    --good: #4cc24c; --good-soft: #15301a; --warning: #f2b23a; --warning-soft: #33280f; --serious: #f08a5d; --serious-soft: #3a1f15;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--ink); font: 15.5px/1.7 "Segoe UI", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 22px 16px 80px; }
+  .crumb { font-size: 13px; color: var(--muted); }
+  .crumb a { color: var(--accent); }
+  h1 { font-size: 24px; line-height: 1.35; margin: 6px 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 19px; margin: 36px 0 6px; }
+  h2 .no { display: inline-block; min-width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; margin-right: 8px; }
+  p { margin: 6px 0; }
+  .sub { color: var(--ink-2); font-size: 14px; }
+  .lede { border: 1px solid var(--ring); border-left: 4px solid var(--accent); background: var(--callout); border-radius: 10px; padding: 12px 16px; margin: 14px 0 0; }
+  figure { margin: 12px 0 6px; padding: 12px; border: 1px solid var(--ring); border-radius: 12px; background: var(--surface); overflow-x: auto; }
+  figure svg { display: block; width: 100%; min-width: 640px; height: auto; }
+  figcaption { font-size: 13.5px; color: var(--ink-2); margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14.5px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { background: var(--surface-2); font-size: 13.5px; color: var(--ink-2); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  tr.rec td { background: var(--callout); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 0 8px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; background: var(--accent); color: #fff; }
+  .note { font-size: 13.5px; color: var(--ink-2); }
+  code { font: 12.5px Consolas, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .how { border: 1px dashed var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+  svg text { font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif; fill: var(--ink); }
+  svg .t-sm { font-size: 13px; fill: var(--ink-2); }
+  svg .t-xs { font-size: 12px; fill: var(--muted); }
+  svg .t-b { font-size: 15px; font-weight: 600; }
+  svg .t-h { font-size: 16px; font-weight: 700; }
+  svg .box { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; }
+  svg .box-w { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  svg .box-a { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  svg .box-g { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; }
+  svg .box-s { fill: var(--serious-soft); stroke: var(--serious); stroke-width: 2; }
+  svg .box-y { fill: var(--warning-soft); stroke: var(--warning); stroke-width: 1.5; }
+  svg .ln { stroke: var(--muted); stroke-width: 2; fill: none; }
+  svg .ln-s { stroke: var(--serious); stroke-width: 2.5; fill: none; stroke-dasharray: 6 5; }
+  svg .c-m { fill: var(--muted); }
+  svg .c-a { fill: var(--accent); }
+  svg .w { fill: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb"><a href="http://127.0.0.1:47770/#/team/JGEngine/decide">← 대시보드</a> · 결정할 것 · 엔진 총괄(+ DevOps)</div>
+  <h1>D-40 그림으로 보기 — 빌드 결과(Bin)를 공개 git 저장소에 계속 넣을지</h1>
+  <p class="sub">2026-10-17 엔진 총괄 · 커밋 · 푸시를 엔진 총괄이 묶어서 하게 되면서(보고함 H-001) 처음 쌓인 변경을 나누다 생긴 결정</p>
+
+  <div class="lede">
+    <strong>한 줄로:</strong> 엔진을 빌드하면 나오는 실행 파일 · DLL · 라이브러리(<code>Bin/DevelopEngine</code>)를 지금까지 git 에 같이 넣어 왔습니다. 이번에 바뀐 Bin 은 <strong>126MB</strong>이고, 그중 <code>Core.lib</code> 하나가 <strong>56MB</strong>라 새 커밋 검사기(50MB 한도)에 걸립니다.
+    권고는 <strong>② Bin 은 git 에서 빼고 소스에서 빌드</strong>입니다. 급하지 않습니다 — 답이 올 때까지 Bin 은 넣지 않고 소스 · 문서만 먼저 넣습니다.
+  </div>
+
+  <h2><span class="no">1</span>지금 생기는 일</h2>
+  <p>빌드할 때마다 Bin 의 큰 파일들이 통째로 바뀝니다. git 은 바뀐 파일을 통째로 새로 저장하므로, 넣을 때마다 저장소 기록이 그만큼 커지고 지워지지 않습니다. 저장소는 <strong>공개</strong>라 누구나 받아 갑니다.</p>
+  <figure>
+    <svg viewBox="0 0 880 230" role="img" aria-label="빌드할 때마다 Bin 126MB가 git 기록에 쌓이고 GitHub 한도에 걸리는 흐름">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="c-m"/></marker></defs>
+      <rect x="20" y="40" width="150" height="70" rx="10" class="box"/>
+      <text x="95" y="68" text-anchor="middle" class="t-b">엔진 빌드</text>
+      <text x="95" y="90" text-anchor="middle" class="t-sm">소스 → Bin</text>
+      <line x1="170" y1="75" x2="206" y2="75" class="ln" marker-end="url(#a1)"/>
+      <rect x="210" y="30" width="200" height="90" rx="10" class="box-y"/>
+      <text x="310" y="56" text-anchor="middle" class="t-b">Bin/DevelopEngine</text>
+      <text x="310" y="78" text-anchor="middle" class="t-sm">DLL · exe · lib 43개</text>
+      <text x="310" y="100" text-anchor="middle" class="t-sm">이번에 바뀐 것 126MB</text>
+      <line x1="410" y1="75" x2="446" y2="75" class="ln" marker-end="url(#a1)"/>
+      <rect x="450" y="30" width="200" height="90" rx="10" class="box"/>
+      <text x="550" y="56" text-anchor="middle" class="t-b">git 기록</text>
+      <text x="550" y="78" text-anchor="middle" class="t-sm">넣을 때마다 통째로 +</text>
+      <text x="550" y="100" text-anchor="middle" class="t-sm">지금 압축본 155MB</text>
+      <line x1="650" y1="75" x2="686" y2="75" class="ln" marker-end="url(#a1)"/>
+      <rect x="690" y="30" width="170" height="90" rx="10" class="box"/>
+      <text x="775" y="56" text-anchor="middle" class="t-b">GitHub (공개)</text>
+      <text x="775" y="78" text-anchor="middle" class="t-sm">누구나 받음</text>
+      <text x="775" y="100" text-anchor="middle" class="t-sm">50MB 경고 · 100MB 거부</text>
+      <rect x="210" y="150" width="650" height="56" rx="10" class="box-s"/>
+      <text x="535" y="174" text-anchor="middle" class="t-b">Core.lib 56MB — 새 커밋 검사기(50MB)에 걸림</text>
+      <text x="535" y="194" text-anchor="middle" class="t-sm">하루 한 번만 넣어도 한 달이면 기록이 몇 GB · Core.lib 가 100MB 를 넘으면 푸시가 거부됨</text>
+    </svg>
+    <figcaption>소스와 문서는 작고(글), Bin 은 크고 매번 통째로 바뀝니다(바이너리). 같은 기록에 두면 저장소가 금방 커집니다.</figcaption>
+  </figure>
+
+  <h2><span class="no">2</span>고를 것 — Bin 을 어떻게</h2>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="세 선택지: 계속 넣기, 빼고 소스에서 빌드, Git LFS로 넣기">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="c-m"/></marker></defs>
+      <!-- ① -->
+      <text x="20" y="26" class="t-h">① 계속 넣기(하루 한 번)</text>
+      <rect x="20" y="40" width="270" height="56" rx="10" class="box"/>
+      <text x="155" y="64" text-anchor="middle" class="t-sm">git: 소스 + 문서 + Bin</text>
+      <text x="155" y="84" text-anchor="middle" class="t-xs">검사기 한도를 Bin 의 lib 만 100MB 로</text>
+      <line x1="155" y1="96" x2="155" y2="126" class="ln" marker-end="url(#a2)"/>
+      <rect x="20" y="130" width="270" height="50" rx="10" class="box-g"/>
+      <text x="155" y="160" text-anchor="middle" class="t-sm">받으면 바로 실행 ✓</text>
+      <rect x="20" y="194" width="270" height="92" rx="10" class="box-s"/>
+      <text x="155" y="218" text-anchor="middle" class="t-sm">넣을 때마다 ~126MB 가 기록에 쌓임</text>
+      <text x="155" y="240" text-anchor="middle" class="t-sm">Core.lib 100MB 넘으면 푸시 거부</text>
+      <text x="155" y="262" text-anchor="middle" class="t-sm">빌드 결과도 공개됨</text>
+      <!-- ② -->
+      <text x="305" y="26" class="t-h">② 빼고 소스에서 빌드</text>
+      <rect x="560" y="12" width="44" height="20" rx="10" class="c-a"/>
+      <text x="582" y="27" text-anchor="middle" class="w" style="font-size:12px;font-weight:600">권고</text>
+      <rect x="305" y="40" width="270" height="56" rx="10" class="box-a"/>
+      <text x="440" y="64" text-anchor="middle" class="t-sm">git: 소스 + 문서만</text>
+      <text x="440" y="84" text-anchor="middle" class="t-xs">Bin 은 무시 목록 · 이 PC 파일은 그대로</text>
+      <line x1="440" y1="96" x2="440" y2="126" class="ln" marker-end="url(#a2)"/>
+      <rect x="305" y="130" width="270" height="50" rx="10" class="box-g"/>
+      <text x="440" y="152" text-anchor="middle" class="t-sm">저장소가 더 안 커짐 · 큰 파일 걱정 없음 ✓</text>
+      <text x="440" y="170" text-anchor="middle" class="t-sm">커밋이 소스 · 문서만이라 읽기 쉬움 ✓</text>
+      <rect x="305" y="194" width="270" height="92" rx="10" class="box-y"/>
+      <text x="440" y="218" text-anchor="middle" class="t-sm">다른 PC 에서 받으면 먼저 빌드</text>
+      <text x="440" y="240" text-anchor="middle" class="t-sm">(전체 빌드 약 1분)</text>
+      <text x="440" y="262" text-anchor="middle" class="t-sm">이미 올라간 옛 Bin 은 기록에 남음</text>
+      <!-- ③ -->
+      <text x="590" y="26" class="t-h">③ Git LFS 로 넣기</text>
+      <rect x="590" y="40" width="270" height="56" rx="10" class="box"/>
+      <text x="725" y="64" text-anchor="middle" class="t-sm">git: 소스 + 문서, Bin 은 LFS 창고</text>
+      <text x="725" y="84" text-anchor="middle" class="t-xs">큰 파일을 따로 두는 GitHub 기능</text>
+      <line x1="725" y1="96" x2="725" y2="126" class="ln" marker-end="url(#a2)"/>
+      <rect x="590" y="130" width="270" height="50" rx="10" class="box-g"/>
+      <text x="725" y="152" text-anchor="middle" class="t-sm">저장소 본체는 작음 ✓</text>
+      <text x="725" y="170" text-anchor="middle" class="t-sm">받으면 바로 실행 ✓</text>
+      <rect x="590" y="194" width="270" height="92" rx="10" class="box-s"/>
+      <text x="725" y="218" text-anchor="middle" class="t-sm">무료 한도 저장 · 전송 각 1GB(한 달)</text>
+      <text x="725" y="240" text-anchor="middle" class="t-sm">— 몇 번 넣으면 넘음, 넘으면 비용</text>
+      <text x="725" y="262" text-anchor="middle" class="t-sm">LFS 설치 · 설정이 더 필요</text>
+    </svg>
+    <figcaption>초록은 좋은 점, 노랑 · 주황은 대가입니다. 게임 프로젝트(ProjectAH)는 이 PC 의 엔진 폴더를 바로 쓰므로, 어느 쪽을 골라도 지금 게임 빌드는 그대로입니다.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th style="width:24%">선택지</th><th>좋은 점</th><th>대가</th><th style="width:12%">일</th></tr></thead>
+    <tbody>
+      <tr><td>① 계속 넣기(하루 한 번)</td><td>저장소만 받으면 바로 실행</td><td>넣을 때마다 ~126MB 가 기록에 쌓여 한 달이면 몇 GB. Core.lib 가 100MB 를 넘으면 푸시 거부. 빌드 결과도 공개</td><td>바로(검사기 예외 한 줄)</td></tr>
+      <tr class="rec"><td>② 빼고 소스에서 빌드 <span class="tag">권고</span></td><td>저장소가 더 안 커지고, 큰 파일 · 100MB 걱정이 없음. 커밋이 소스 · 문서만이라 무엇이 바뀌었는지 보기 쉬움</td><td>다른 PC 에서 받으면 먼저 빌드(약 1분). 2026-10-01 까지 올라간 옛 Bin 은 기록에 남음(지우려면 기록 다시 쓰기 — 하지 않음)</td><td>바로(<code>git rm --cached</code> + 무시 목록, 이 PC 파일은 그대로)</td></tr>
+      <tr><td>③ Git LFS 로 넣기</td><td>본체는 작고 받으면 바로 실행</td><td>GitHub 무료 LFS 는 저장 · 전송 각 1GB/월 — Bin 을 몇 번 넣으면 넘어 비용. LFS 설치 · 설정</td><td>반나절</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="no">3</span>권고와 까닭</h2>
+  <p><strong>② 빼고 소스에서 빌드.</strong> 혼자 개발하고 PC 가 하나라 받자마자 실행할 일이 거의 없고, 엔진 전체 빌드는 약 1분입니다. 반면 Bin 을 넣으면 공개 저장소가 빠르게 커지고 Core.lib 하나 때문에 언젠가 푸시가 막힙니다.</p>
+  <p class="note">고르지 않아도 정해 둔 것: 이번 첫 묶음(소스 · 문서 8 커밋)에는 Bin 을 넣지 않습니다. ① 이나 ③ 을 고르시면 그 방식으로 Bin 을 따로 한 커밋 넣습니다. 지금 이 PC 의 Bin 파일은 어느 쪽이든 그대로 남습니다.</p>
+
+  <div class="how">
+    <strong>고르는 법:</strong> 통합 대시보드 보고함의 D-40 에서 고르면 엔진 총괄이 받아 반영합니다.
+  </div>
+  <p class="note" style="margin-top:18px">근거: 프로젝트 총괄 검토 <code>C:/obsidian/ProjectJG/02. 위키/공통/git 커밋 푸시 검토.md</code>(큰 파일 · 저장소 크기), 엔진 총괄이 10-17 본 <code>git status</code>(Bin 변경 43개 · 126MB, Core.lib 56MB).</p>
+</div>
+</body>
+</html>
