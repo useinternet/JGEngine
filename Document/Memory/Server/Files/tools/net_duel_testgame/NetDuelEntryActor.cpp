@@ -7,6 +7,7 @@
 #include "GameMaster/GameMaster.h"
 #include "GameMaster/Agents/GameplayAgent.h"
 #include "Network/Session/GameplaySession.h"
+#include "Network/Session/GameplayHostSession.h"
 #include "Network/Session/GameplayClientSession.h"
 
 // Server Phase 5-6 검증용 게임 코드 (엔진 밖, 스크래치패드 프로젝트). 게임 콘텐츠가 아니라 검증 장치다.
@@ -24,6 +25,9 @@ namespace
 	constexpr int32   DuelUnitHp       = 6;
 	constexpr uint64  DuelSeed         = 20260930;
 	constexpr float32 DuelInputDelay   = 0.1f;
+	// 세션 공유 데이터(대기방 기능 묶음 D-38) 확인: 방장이 정하고 참가자는 Welcome 으로 받는다. 끝 줄에 room= 으로 남겨 양쪽을 비교한다.
+	const char* DuelRoomKey   = "netduel.room";
+	const char* DuelRoomValue = "duel2v2-seed20260930";
 
 	struct HNetDuelUnit : public IJsonable
 	{
@@ -286,9 +290,10 @@ namespace
 			});
 
 			PGameplayClientSession* client = dynamic_cast<PGameplayClientSession*>(&session);
-			JG_LOG(NetDuel, ELogLevel::Info, "NetDuel: finished mode=%s slot=%d seq=%u checksum=%llu winner=%d submitted=%d desyncs=%d",
+			const PString*          room   = session.FindSessionData(PName(DuelRoomKey));
+			JG_LOG(NetDuel, ELogLevel::Info, "NetDuel: finished mode=%s slot=%d seq=%u checksum=%llu winner=%d submitted=%d desyncs=%d room=%s",
 				PString(netModeName(session.GetMode())), session.GetLocalSlot(), gameMaster.GetState().Sequence, gameMaster.Checksum(), winner, _submitted,
-				client != nullptr ? client->GetDesyncCount() : 0);
+				client != nullptr ? client->GetDesyncCount() : 0, room != nullptr ? *room : PString("-"));
 		}
 	};
 }
@@ -306,11 +311,17 @@ void JGNetDuelEntryActor::OnEnterWorld()
 	registerDuelRules(*gameMaster);
 	gameMasterActor->SetGameMaster(gameMaster);
 
-	// 초기 상태 + 시작: 권한 쪽만 (클라는 호스트가 보낸 상태로 시작한다)
+	// 초기 상태 + 시작: 권한 쪽만 (클라는 호스트가 보낸 상태로 시작한다). 방 정보(세션 공유 데이터)도 권한 쪽이 정한다 — 규칙은 읽지 않는다.
 	if (GetGameInstance().IsAuthority() == true)
 	{
 		buildDuelInitialState(*gameMaster);
 		gameMasterActor->StartGame(DuelSeed);
+
+		PSharedPtr<PGameplayHostSession> host = RawDynamicCast<PGameplayHostSession>(GetGameInstance().GetSession());
+		if (host != nullptr)
+		{
+			host->SetSessionData(PName(DuelRoomKey), DuelRoomValue);
+		}
 	}
 
 	PSharedPtr<PNetDuelScriptActor> script = world->SpawnActor<PNetDuelScriptActor>(PName("DuelScript"));

@@ -141,8 +141,24 @@ bool PNetTcpTransport::Listen(uint16 port)
 	setNonBlocking(listenSocket);
 
 	_listenSocket = fromSocket(listenSocket);
-	JG_LOG(Network, ELogLevel::Info, "PNetTcpTransport: listening on port %u", (uint32)port);
+	JG_LOG(Network, ELogLevel::Info, "PNetTcpTransport: listening on port %u", (uint32)GetListenPort());
 	return true;
+}
+
+uint16 PNetTcpTransport::GetListenPort() const
+{
+	if (_listenSocket == InvalidSocketValue)
+	{
+		return 0;
+	}
+
+	sockaddr_in bound = {};
+	int boundLength = sizeof(bound);
+	if (getsockname(toSocket(_listenSocket), (sockaddr*)&bound, &boundLength) == SOCKET_ERROR)
+	{
+		return 0;
+	}
+	return ntohs(bound.sin_port);
 }
 
 HNetPeerId PNetTcpTransport::Connect(const PString& address, uint16 port)

@@ -1,0 +1,127 @@
+[:22640:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 7427227497074375101. pages are created on first request
+[:22640:][info][Core]: Active Thread: [992890521]
+[:22640:][info][Core]: Active Thread: [2630819779]
+[:22640:][info][Core]: Active Thread: [1924256004]
+[:22640:][info][Core]: Active Thread: [4270238159]
+[:22640:][info][Core]: Active Thread: [2306581309]
+[:22640:][info][Core]: Active Thread: [4260029490]
+[:22640:][info][Core]: Active Thread: [228057302]
+[:22640:][info][Core]: Active Thread: [2958923451]
+[:22640:][info][Core]: Active Thread: [3680185022]
+[:22640:][info][Core]: Active Thread: [2269170519]
+[:22640:][info][Core]: Active Thread: [2121749080]
+[:22640:][info][Core]: Active Thread: [581013102]
+[:22640:][info][Core]: Active Thread: [376626569]
+[:22640:][info][Core]: Active Thread: [2618315454]
+[:22640:][info][Core]: Active Thread: [2539656922]
+[:22640:][info][Core]: Active Thread: [1307313790]
+[:22640:][info][Core]: Active Thread: [304678885]
+[:22640:][info][Core]: Active Thread: [270922438]
+[:22640:][info][Core]: Active Thread: [628265180]
+[:22640:][info][Core]: Active Thread: [3859665090]
+[:22640:][info][Core]: Active Thread: [3341744409]
+[:22640:][info][Core]: Active Thread: [378480909]
+[:22640:][info][Core]: Active Thread: [3706708881]
+[:22640:][info][Core]: Active Thread: [2297574805]
+[:22640:][info][Core]: Active Thread: [3488200629]
+[:22640:][info][Core]: Active Thread: [3769154408]
+[:22640:][info][Core]: Active Thread: [1157359749]
+[:22640:][info][Core]: Active Thread: [2875225802]
+[:22640:][info][Core]: Active Thread: [3941482312]
+[:22640:][info][Core]: Active Thread: [3201631656]
+[:22640:][info][Core]: Active Thread: [1469250416]
+[:22640:][info][Core]: Active Thread: [2763047769]
+[:22640:][info][Core]: Active Thread Totoal Count: 32 
+[:22640:][info][Core]: Package NetDuel 0.1.0 (ReleaseGame, engine 0bd6356): C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/
+[:22640:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.62 MB)
+[:22640:][trace][Graphics]: DirectX12 Init Start
+[:22640:][trace][Graphics]: Success Create D3D12Device
+[:22640:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:22640:][info][Graphics]: VideoMemory : 16050  MB
+[:22640:][trace][Graphics]: Create DescriptorAllocator...
+[:22640:][trace][Graphics]: Create CommandQueue...
+[:22640:][trace][Graphics]: Create ResourceStagingManager...
+[:22640:][trace][Graphics]: Create FrameBuffer...
+[:22640:][trace][Graphics]: Create Default Resources...
+[:22640:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:22640:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:22640:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:22640:][info][Graphics]: Start Collect Shader in (C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGEngine/Shaders)
+[:22640:][trace][Graphics]: Collect compute_shader_template
+[:22640:][trace][Graphics]: Collect draw2d
+[:22640:][trace][Graphics]: Collect graphics_shader_template
+[:22640:][trace][Graphics]: Collect scene_shader
+[:22640:][info][Graphics]: Complete Collect Shader
+[:22640:][trace][Graphics]: DirectX12 Init End
+[:22640:][trace][Graphics]: Startup Graphics Module...
+[:22640:][trace][Asset]: Startup Asset Module...
+[:22640:][info][GameFrameWorks]: GameFrameWorks module startup
+[:22640:][info][GameFrameWorks]: JGGameInstance: joining 127.0.0.1:47812 as Guest
+[:22640:][info][NetDuel]: NetDuel entry actor entered world: mode=Client authority=0
+[:22640:][info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[:22640:][info][NetDuel]: Startup NetDuel Module...
+[:22640:][info][Graphics]: FrameBuffer : VSync on
+[:22640:][trace][Graphics]: Register GameHost_Output in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_Output   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_Display in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_Display   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_GBuffer_Albedo in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_Albedo   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_GBuffer_NormalMetallic in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_NormalMetallic   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_GBuffer_SpecularRoughness in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_SpecularRoughness   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_GBuffer_Depth in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_Depth   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_DepthStencil in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_DepthStencil   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_CompositeMaterial in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_CompositeMaterial   Ref : 1
+[:22640:][trace][Graphics]: Register GameHost_DisplayMaterial in ResourceRefMap
+[:22640:][trace][Graphics]: Add Counting Resource : GameHost_DisplayMaterial   Ref : 1
+[:22640:][info][GameHost]: GameHost: started "NetDuel" 1920x1080 Windowed, VSync on, game modules: NetDuel
+[:22640:][info][Core]: Recognized Class List...
+[:22640:][debug][Core]: - JGFBXAssetImporter
+[:22640:][debug][Core]: - JGAsset
+[:22640:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 0.81 MB)
+[:22640:][debug][Core]: - JGGameEntryActor
+[:22640:][debug][Core]: - JGNetDuelEntryActor
+[:22640:][debug][Core]: - JGStaticMeshComponent
+[:22640:][debug][Core]: - JGGameplayEntityComponent
+[:22640:][debug][Core]: - JGAssetImporter
+[:22640:][debug][Core]: - JGActor
+[:22640:][debug][Core]: - JGStaticMesh
+[:22640:][debug][Core]: - JGTexture
+[:22640:][debug][Core]: - JGCameraComponent
+[:22640:][debug][Core]: - JGCameraActor
+[:22640:][debug][Core]: - JGPickShapeComponent
+[:22640:][debug][Core]: - JGGameMasterActor
+[:22640:][debug][Core]: - JGGameplayControllerActor
+[:22640:][debug][Core]: - JGGameplayCue
+[:22640:][debug][Core]: - JGGameplayEntityActor
+[:22640:][debug][Core]: - JGActorComponent
+[:22640:][debug][Core]: - JGGameInstance
+[:22640:][debug][Core]: - JGDataTable
+[:22640:][debug][Core]: - JGGameplayCommandHandler
+[:22640:][debug][Core]: - JGGameplayEffect
+[:22640:][debug][Core]: - JGGameplayModifier
+[:22640:][debug][Core]: - JGGameplayTrigger
+[:22640:][debug][Core]: - JGGameWidget
+[:22640:][trace][Asset]: Start Load Assets in C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGEngine
+[:22640:][trace][Asset]: Start Load Assets in C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGGame
+[:22640:][info][GameLaunch]: Log file C:\Develop\JGEngine\Temp\Games\NetDuel\Package\ReleaseGame\Saved\Logs\NetDuel.log (process 15656)
+[:22640:][info][GameHost]: GameHost: nothing to draw yet (World NetDuel: no active camera)
+[:22640:][error][Network]: PGameplayClientSession: refused: protocol 2 != 1
+[:22640:][info][Network]: PGameplaySession: closed (refused: protocol 2 != 1)
+[:22640:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:22640:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:22640:][info][NetDuel]: Shutdown NetDuel Module...
+[:22640:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetDuel)
+[:22640:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:22640:][trace][Asset]: Shutdown Asset Module...
+[:22640:][trace][Graphics]: Shutdown Graphics Module...
+[:22640:][info][GameHost]: GameHost: shutdown
+[:22640:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 13, committed 0.81 MB, live blocks 0, remote pending 0 (total 0), large live 0

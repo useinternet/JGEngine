@@ -3,7 +3,7 @@
 #include "Network/Transport/NetTransport.h"
 
 // 참가자 자리. 조작 주체(팀) 번호 목록으로 이 자리의 플레이어가 어떤 행동자를 조작하는지 정한다.
-// 공개 정보(번호 · 조작 주체 · 이름 · 접속 여부)만 직렬화한다. 피어 · 토큰 · 마지막 수신 시각은 호스트 내부용이다.
+// 공개 정보(번호 · 조작 주체 · 이름 · 접속 여부 · 준비)만 직렬화한다. 피어 · 토큰 · 마지막 수신 시각은 호스트 내부용이다.
 struct GAMEFRAMEWORKS_API HGameplayPlayerSlot : public IJsonable
 {
 	int32        Slot            = INDEX_NONE;
@@ -11,6 +11,7 @@ struct GAMEFRAMEWORKS_API HGameplayPlayerSlot : public IJsonable
 	bool         bAllControllers = false;   // 모든 조작 주체 (Standalone 의 로컬 플레이어)
 	bool         bConnected      = false;
 	PString      Name;
+	bool         bReady          = false;   // 대기방 준비 표시. 판이 시작되거나 연결이 끊기면 지워진다
 
 	// 호스트 내부용. 직렬화하지 않는다.
 	HNetPeerId   Peer      = NetPeerNone;

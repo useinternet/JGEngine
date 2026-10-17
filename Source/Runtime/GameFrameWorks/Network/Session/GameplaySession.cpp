@@ -94,6 +94,29 @@ int32 PGameplaySession::GetLocalSlot() const
 	return _localSlot;
 }
 
+bool PGameplaySession::IsLocalReady() const
+{
+	const HGameplayPlayerSlot* local = FindSlot(_localSlot);
+	return local != nullptr && local->bReady == true;
+}
+
+const PString* PGameplaySession::FindSessionData(const PName& key) const
+{
+	for (const HGameplaySessionDataEntry& entry : _sessionData)
+	{
+		if (entry.Key == key)
+		{
+			return &entry.Value;
+		}
+	}
+	return nullptr;
+}
+
+const HList<HGameplaySessionDataEntry>& PGameplaySession::GetSessionData() const
+{
+	return _sessionData;
+}
+
 bool PGameplaySession::IsLocallyControlled(const HGameplayEntityId& actor) const
 {
 	const HGameplayPlayerSlot* local = FindSlot(_localSlot);
@@ -150,4 +173,91 @@ void PGameplaySession::setClosed(const PString& reason)
 	_closeReason = reason;
 	JG_LOG(Network, ELogLevel::Info, "PGameplaySession: closed (%s)", reason);
 	OnClosed.BroadCast(reason);
+}
+
+bool PGameplaySession::putSessionData(const PName& key, const PString& value)
+{
+	for (HGameplaySessionDataEntry& entry : _sessionData)
+	{
+		if (entry.Key != key)
+		{
+			continue;
+		}
+		if (entry.Value == value)
+		{
+			return false;
+		}
+		entry.Value = value;
+		return true;
+	}
+
+	HGameplaySessionDataEntry entry;
+	entry.Key   = key;
+	entry.Value = value;
+	_sessionData.push_back(entry);
+	return true;
+}
+
+bool PGameplaySession::dropSessionData(const PName& key)
+{
+	for (auto iter = _sessionData.begin(); iter != _sessionData.end(); ++iter)
+	{
+		if ((*iter).Key == key)
+		{
+			_sessionData.erase(iter);
+			return true;
+		}
+	}
+	return false;
+}
+
+HList<PName> PGameplaySession::replaceSessionData(const HList<HGameplaySessionDataEntry>& entries)
+{
+	HList<PName> changed;
+	for (const HGameplaySessionDataEntry& entry : entries)
+	{
+		if (entry.Key == NAME_NONE)
+		{
+			continue;
+		}
+		const PString* before = FindSessionData(entry.Key);
+		if (before == nullptr || *before != entry.Value)
+		{
+			changed.push_back(entry.Key);
+		}
+	}
+	for (const HGameplaySessionDataEntry& entry : _sessionData)
+	{
+		bool bKept = false;
+		for (const HGameplaySessionDataEntry& next : entries)
+		{
+			if (next.Key == entry.Key)
+			{
+				bKept = true;
+				break;
+			}
+		}
+		if (bKept == false)
+		{
+			changed.push_back(entry.Key);
+		}
+	}
+
+	_sessionData.clear();
+	for (const HGameplaySessionDataEntry& entry : entries)
+	{
+		if (entry.Key != NAME_NONE)
+		{
+			_sessionData.push_back(entry);
+		}
+	}
+	return changed;
+}
+
+void PGameplaySession::notifySessionData(const HList<PName>& keys)
+{
+	for (const PName& key : keys)
+	{
+		OnSessionDataChanged.BroadCast(key);
+	}
 }

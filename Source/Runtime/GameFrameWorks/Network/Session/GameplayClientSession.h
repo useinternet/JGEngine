@@ -45,14 +45,18 @@ public:
 	virtual void Tick(float32 deltaSeconds) override;
 	virtual void Close(const PString& reason) override;
 	virtual bool HasPendingSends() const override;
+	virtual bool SetLocalReady(bool bReady) override;
 
-	// 끊긴 뒤 같은 토큰으로 다시 접속한다. 호스트가 같은 슬롯을 돌려주고 문서를 보낸다.
+	// 끊긴 뒤 같은 토큰으로 다시 접속한다. 판 중이면 호스트가 같은 슬롯을 돌려주고 문서를 보낸다(판 시작 전에 끊겼으면 자리가 비워져 빈 자리를 받는다).
+	// 끊긴 동안 세션 공유 데이터는 마지막 값 그대로이고, Welcome 의 표로 따라잡는다.
 	bool Reconnect();
 
 	int32  GetDesyncCount() const;
 	uint32 GetLastAppliedSeq() const;
 	bool   HasPendingLocalCommand() const;
 	uint64 GetHostFingerprint() const;
+	// 이 세션이 Hello 에 싣는 재접속 토큰. 게임이 저장해 두면 창을 다시 띄워도 설정 ReconnectToken 으로 같은 자리로 돌아온다(ER-026).
+	const PString& GetReconnectToken() const;
 
 protected:
 	virtual void onBound() override;

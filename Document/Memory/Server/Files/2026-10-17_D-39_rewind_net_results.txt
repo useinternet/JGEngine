@@ -1,0 +1,100 @@
+# 규칙 효과 안 상태 되돌리기(D-39, ProjectAH ER-027) — 같이 하기 시험 net.test rewind 결과
+# 2026-10-17 13:17~13:33 Server. 엔진 총괄 배정(사용자 대시보드 명령 12:51 "권고대로 진행" = A (가) + B (다)). 검토서 GameFrameWorks/Files/ER-027_되감기지점_검토_2026-10-17.md 5절 6단계
+# 설계 Server/Files/D-39_되감기_같이하기시험_설계_2026-10-17.md, 되감기 전 기준값 Server/Files/2026-10-17_D-39_net_baseline.txt
+
+== 0. 요약
+- 고친 파일: Source/Runtime/GameFrameWorks/Network/GameplayNetSelfTest.cpp(+545 · 시험 규칙 NetMark · NetRewind · NetClear · 효과 NetRewindNow, 각본 판 · 무작위 판, 'rewind' 절) · GameplayNetSelfTest.h(주석 1줄). GameMaster · 세션 코드는 고치지 않음. 프로토콜 버전 2 그대로. 새 파일 없음(PreBuild 불필요)
+- net.test rewind 26/26 · net.test all 180/180(기존 154 + 26) · gmtest OK · 2 프로세스 kernel OK — 작업 폴더와 메인 둘 다(2 프로세스는 메인)
+- 고친 줄을 뺀 빌드: 세대 바닥을 문서에서 빼면 3 FAIL(5단계 되감은 뒤 소환에서 나중 참가자 어긋남), 지점을 문서에서 빼면 9 FAIL(4단계 입장부터)
+- 대조 빌드: 상태 형식 버전만 1로 두면 net.test session 최종 체크섬 = 되감기 전 기준값 2316966530336481447. 실제 빌드(버전 2)는 1090303488494245564
+  → 지점을 쓰지 않는 판의 상태 JSON 은 버전 번호 말고 그대로다. 체크섬 값은 버전 번호 때문에 한 번 바뀐다(GFW 알림과 같음 — 검토서 6절 6 '체크섬 그대로'는 버전 번호를 뺀 뜻으로 읽어야 함)
+
+== 1. 작업 폴더 Temp/wt/d39 (메인 스냅숏 1343201, 13:2x — GFW 13:15 메인 반영분 포함, 임시 인덱스라 메인 인덱스 · 작업 트리 그대로)
+GenerateProjectFiles 2회 종료 0 · 기준 빌드 65 s 종료 0 · 메인의 GameplayNetSelfTest.cpp/.h 는 GFW 가 고치지 않았음(9e287e8 대비 diff 없음)
+
+== 2. 쓴 API (GFW 13:15 메인 반영, 미커밋)
+HGameplayContext::MarkRewindPoint · ClearRewindPoint · RewindTo(name, EGameplayRewindRandom::RestorePoint|KeepCurrent), HGameplayState::FindRewindPoint(name)
+
+== 3. net.test rewind (작업 폴더 최종 빌드)
+== Network self test (rewind) ==
+-- rewind: a rule effect rewinds to a marked point on every machine (scripted, join after the rewind)
+  [PASS] host starts the game
+  [PASS] A's unit gets the turn (seq 11)
+  [PASS] A marks the point: every machine has it and matches (seq 12)
+  [PASS] after the point A summons token E5.2 and strikes the enemy (Hp 38 -> 36); every machine matches
+  [PASS] A sends a rewind (in an effect, keep random) and queues a strike on the token behind it
+  [PASS] the rewind is one more command on every machine: sequence 14 -> 15, not rewound
+  [PASS] the queued strike is validated again after the rewind and rejected locally (1, invalid target)
+  [PASS] token E5.2 made after the point is a dead id on every machine
+  [PASS] state is the point plus the kept change (A Hp 30 -> 29, enemy Hp back to 38)
+  [PASS] the point stays after the rewind on every machine
+  [PASS] C joins right after the rewind and matches from the document (seq 15, document 25553 bytes)
+  [PASS] C's replica has the point and sees the token as a dead id
+  [PASS] the next token is E5.3, not the dead E5.2, on every machine including C
+  [PASS] every machine matches after the spawn, no desync
+  [PASS] A rewinds again (in the handler, restore random): every machine including C matches and token E5.3 is dead
+  [PASS] the token after the second rewind is E5.4 (neither dead id) on every machine
+  [PASS] B's tampered replica is caught once and recovers from a resync document that carries the point (1)
+  [PASS] A clears the point on every machine
+  [INFO] join document 25553 bytes with the point, 20715 bytes after clearing it
+  [PASS] a rewind without a point is rejected locally (no rewind point)
+  [PASS] everyone plays on to seq 101 and matches (no other desync)
+-- rewind: random play with marks, rewinds and clears (1 host + 3 clients, join in progress)
+  [PASS] host starts the game
+  [PASS] C starts joining at seq 330 while a point exists and matches once in (seq 330)
+  [PASS] host reached seq 600
+  [PASS] players and AI marked 39, rewound 20 and cleared 19 times
+  [PASS] every replica matches the host at seq 600 with no desync (checksum 4945199234206048523)
+  [PASS] C sends its own commands after joining (32)
+== Network self test: 26 passed, 0 failed ==
+net.test: OK (0 failures)
+
+== 4. 고친 줄을 뺀 빌드 (작업 폴더에서만, 확인 뒤 git checkout 으로 되돌림)
+-- 4a. GameplayEntityRegistry::WriteJson 의 GenerationFloors 쓰기를 뺌 (문서 · 체크섬에 세대 바닥이 안 실림)
+== Network self test (rewind) ==
+  [FAIL] every machine matches after the spawn, no desync
+  [FAIL] the token after the second rewind is E5.4 (neither dead id) on every machine
+  [FAIL] everyone plays on to seq 101 and matches (no other desync)
+== Network self test: 23 passed, 3 failed ==
+-- 4b. HGameplayState::writeState 의 Full 모드 RewindPoints 쓰기를 뺌 (입장 · 재동기 문서에 지점이 안 실림, 체크섬 해시는 그대로)
+== Network self test (rewind) ==
+  [FAIL] C joins right after the rewind and matches from the document (seq 15, document 18421 bytes)
+  [FAIL] C's replica has the point and sees the token as a dead id
+  [FAIL] every machine matches after the spawn, no desync
+  [FAIL] A rewinds again (in the handler, restore random): every machine including C matches and token E5.3 is dead
+  [FAIL] the token after the second rewind is E5.4 (neither dead id) on every machine
+  [FAIL] B's tampered replica is caught once and recovers from a resync document that carries the point (1)
+  [FAIL] everyone plays on to seq 101 and matches (no other desync)
+  [FAIL] C starts joining at seq 330 while a point exists and matches once in (seq 330)
+  [FAIL] every replica matches the host at seq 600 with no desync (checksum 4945199234206048523)
+== Network self test: 17 passed, 9 failed ==
+
+== 5. 대조 빌드: HGameplayState::SchemaVersion 2 → 1 만 바꿈 (확인 뒤 되돌림)
+== Network self test (session) ==
+  [PASS] slot 1 final checksum equals host (2316966530336481447)
+  [PASS] slot 2 final checksum equals host (2316966530336481447)
+  [PASS] slot 3 final checksum equals host (2316966530336481447)
+== Network self test: 33 passed, 0 failed ==
+-- 실제 빌드(버전 2)
+== Network self test (session) ==
+  [PASS] slot 1 final checksum equals host (1090303488494245564)
+  [PASS] slot 2 final checksum equals host (1090303488494245564)
+  [PASS] slot 3 final checksum equals host (1090303488494245564)
+== Network self test: 33 passed, 0 failed ==
+
+== 6. 작업 폴더 회귀
+== Network self test: 180 passed, 0 failed ==
+gmtest: OK (0 failures)
+
+== 7. 메인 반영 13:31:53 ~ 13:33 (MainTree.cmd -name=Server hold → 2파일 복사(메인 == 스냅숏) → build 16 s 종료 0 → 회귀 → release)
+== Network self test: 180 passed, 0 failed ==
+net.test: OK (0 failures)
+gmtest: OK (0 failures)
+[ID: 0] Memory Chunk Shutdown. pages 148, committed 17.85 MB, live blocks 0, remote pending 0 (total 0), large live 0
+-- 2 프로세스 kernel (메인 Bin, 포트 47781, 1000 명령)
+net.join: name=Client1 slot=2 seq=1000 checksum=88153869653994592 desyncs=0 sent=266 data=12903016603267889822 keys=2 ready=0 reason=host closed the connection (exit 0)
+net.join: name=Client2 slot=1 seq=1000 checksum=88153869653994592 desyncs=0 sent=230 data=12903016603267889822 keys=2 ready=0 reason=host closed the connection (exit 0)
+two-process: OK (kernel, clients 2, guests 0, rejoin 0, seq 1000, checksum 88153869653994592, data 12903016603267889822)
+(kernel 체크섬은 접속 순서에 따라 달라진다 — 세 프로세스가 같은지만 본다. 이번 실행은 Client1 이 slot 2 였다)
+-- 13:3x 다시 두 번 (hold 안, 포트 47783 · 47784): 둘 다 Client1 slot 1 · Client2 slot 2 → checksum 4263525636384988999 · desyncs 0 · two-process: OK
+   = GFW 가 적은 값(GameFrameWorks/Files/2026-10-17_D-39_rewind_verify.txt)과 같다. 위 88153869653994592 와 다른 것은 접속 순서(어느 클라가 slot 1) 차이로 확인

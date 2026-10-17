@@ -1,0 +1,248 @@
+[:44588:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 265329306182133495. pages are created on first request
+[:44588:][info][Core]: Active Thread: [3945475786]
+[:44588:][info][Core]: Active Thread: [2101855645]
+[:44588:][info][Core]: Active Thread: [745977983]
+[:44588:][info][Core]: Active Thread: [2377224643]
+[:44588:][info][Core]: Active Thread: [1070503410]
+[:44588:][info][Core]: Active Thread: [1746080286]
+[:44588:][info][Core]: Active Thread: [2644682791]
+[:44588:][info][Core]: Active Thread: [3257264150]
+[:44588:][info][Core]: Active Thread: [1522011177]
+[:44588:][info][Core]: Active Thread: [3821758647]
+[:44588:][info][Core]: Active Thread: [807432204]
+[:44588:][info][Core]: Active Thread: [3104803594]
+[:44588:][info][Core]: Active Thread: [2686582708]
+[:44588:][info][Core]: Active Thread: [2172498979]
+[:44588:][info][Core]: Active Thread: [3074755827]
+[:44588:][info][Core]: Active Thread: [44190292]
+[:44588:][info][Core]: Active Thread: [963521016]
+[:44588:][info][Core]: Active Thread: [1033329566]
+[:44588:][info][Core]: Active Thread: [2378346384]
+[:44588:][info][Core]: Active Thread: [1636382681]
+[:44588:][info][Core]: Active Thread: [2704934847]
+[:44588:][info][Core]: Active Thread: [1546054608]
+[:44588:][info][Core]: Active Thread: [1134490233]
+[:44588:][info][Core]: Active Thread: [2560332967]
+[:44588:][info][Core]: Active Thread: [2833508494]
+[:44588:][info][Core]: Active Thread: [2016723211]
+[:44588:][info][Core]: Active Thread: [3045047191]
+[:44588:][info][Core]: Active Thread: [3150412191]
+[:44588:][info][Core]: Active Thread: [706034591]
+[:44588:][info][Core]: Active Thread: [2698591380]
+[:44588:][info][Core]: Active Thread: [4262040352]
+[:44588:][info][Core]: Active Thread: [1201766181]
+[:44588:][info][Core]: Active Thread Totoal Count: 32 
+[:44588:][info][Core]: Project NetDuel: project C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/games5/NetDuel/, engine C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt5/
+[:44588:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.62 MB)
+[:44588:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.69 MB)
+[:44588:][trace][Graphics]: DirectX12 Init Start
+[:44588:][trace][Graphics]: Success Create D3D12Device
+[:44588:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:44588:][info][Graphics]: VideoMemory : 16050  MB
+[:44588:][trace][Graphics]: Create DescriptorAllocator...
+[:44588:][trace][Graphics]: Create CommandQueue...
+[:44588:][trace][Graphics]: Create ResourceStagingManager...
+[:44588:][trace][Graphics]: Create FrameBuffer...
+[:44588:][trace][Graphics]: Create Default Resources...
+[:44588:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.75 MB)
+[:44588:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:44588:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:44588:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:44588:][info][Graphics]: Start Collect Shader in (C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt5/Source/Shader)
+[:44588:][trace][Graphics]: Collect compute_shader_template
+[:44588:][trace][Graphics]: Collect draw2d
+[:44588:][trace][Graphics]: Collect graphics_shader_template
+[:44588:][trace][Graphics]: Collect scene_shader
+[:44588:][info][Graphics]: Complete Collect Shader
+[:44588:][trace][Graphics]: DirectX12 Init End
+[:44588:][trace][Graphics]: Startup Graphics Module...
+[:44588:][trace][Asset]: Startup Asset Module...
+[:44588:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:44588:][info][GameFrameWorks]: GameFrameWorks module startup
+[:44588:][info][NetDuel]: NetDuel entry actor entered world: mode=Standalone authority=1
+[:44588:][info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[:44588:][info][NetDuel]: Startup NetDuel Module...
+[:44588:][info][NetDuelEditor]: Startup NetDuelEditor Module...
+[:44588:][trace][Graphics]: Register SceneViewport_Output in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_Output   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_Display in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_Display   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_GBuffer_Albedo in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_GBuffer_Albedo   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_GBuffer_NormalMetallic in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_GBuffer_NormalMetallic   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_GBuffer_SpecularRoughness in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_GBuffer_SpecularRoughness   Ref : 1
+[:44588:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:44588:][trace][Graphics]: Register SceneViewport_GBuffer_Depth in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_GBuffer_Depth   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_DepthStencil in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_DepthStencil   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_CompositeMaterial in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_CompositeMaterial   Ref : 1
+[:44588:][trace][Graphics]: Register SceneViewport_DisplayMaterial in ResourceRefMap
+[:44588:][trace][Graphics]: Add Counting Resource : SceneViewport_DisplayMaterial   Ref : 1
+[:44588:][trace][JGEditor]: Startup JGEditor Module...
+[:44588:][info][Core]: Recognized Class List...
+[:44588:][debug][Core]: - JGNetDuelEntryActor
+[:44588:][debug][Core]: - JGStaticMeshComponent
+[:44588:][debug][Core]: - JGGameplayEntityComponent
+[:44588:][debug][Core]: - JGAssetImporter
+[:44588:][debug][Core]: - JGGameplayEffect
+[:44588:][debug][Core]: - JGGameplayDevView
+[:44588:][debug][Core]: - JGMemoryStatistcs
+[:44588:][debug][Core]: - JGGameplayEntityActor
+[:44588:][debug][Core]: - JGDevConsole
+[:44588:][debug][Core]: - JGSceneViewport
+[:44588:][debug][Core]: - JGDataTableEditor
+[:44588:][debug][Core]: - JGSessionLobby
+[:44588:][debug][Core]: - JGAsset
+[:44588:][debug][Core]: - JGDevFeature
+[:44588:][debug][Core]: - JGDevScene
+[:44588:][debug][Core]: - JGDevSettings
+[:44588:][debug][Core]: - JGStaticMesh
+[:44588:][debug][Core]: - JGTexture
+[:44588:][debug][Core]: - JGFBXAssetImporter
+[:44588:][debug][Core]: - JGActor
+[:44588:][debug][Core]: - JGCameraComponent
+[:44588:][debug][Core]: - JGCameraActor
+[:44588:][debug][Core]: - JGGameEntryActor
+[:44588:][debug][Core]: - JGPickShapeComponent
+[:44588:][debug][Core]: - JGGameMasterActor
+[:44588:][debug][Core]: - JGGameplayControllerActor
+[:44588:][debug][Core]: - JGGameplayCue
+[:44588:][debug][Core]: - JGActorComponent
+[:44588:][debug][Core]: - JGGameInstance
+[:44588:][debug][Core]: - JGWidget
+[:44588:][debug][Core]: - JGDataTable
+[:44588:][debug][Core]: - JGGameplayCommandHandler
+[:44588:][debug][Core]: - JGGameplayModifier
+[:44588:][debug][Core]: - JGGameplayTrigger
+[:44588:][debug][Core]: - JGGameWidget
+[:44588:][debug][Core]: - JGWidgetComponent
+[:44588:][trace][Asset]: Start Load Assets in C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt5/Content
+[:44588:][trace][Asset]: Start Load Assets in C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/games5/NetDuel/Content
+[:44588:][info][GUI]: Layout: reopened JGGameplayDevView JGSessionLobby 
+[:44588:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:44588:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:39376:][info][Memory]: [ID: 1] Memory Chunk Initialize. thread 15722376671737583090. pages are created on first request
+[:39376:][warning][Asset]: NOT Support Asset Path
+[:39376:][info][Memory]: [ID: 1] class 1048576 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.88 MB)
+[:39376:][info][Memory]: [ID: 1] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.38 MB)
+[:39376:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Surface in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Surface   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Surface_UploadStaging in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Surface_UploadStaging   Ref : 1
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Surface_UploadStaging   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Surface_UploadStaging in ResourceRefMap
+[:39376:][info][Memory]: [ID: 1] class 1048576 B grew to 3 pages (3 blocks, growth #2, chunk committed 4.63 MB)
+[:39376:][info][Memory]: [ID: 1] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 4.88 MB)
+[:39376:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Joints in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Joints   Ref : 1
+[:39376:][trace][Graphics]: Register Beta_Joints_UploadStaging in ResourceRefMap
+[:39376:][trace][Graphics]: Add Counting Resource : Beta_Joints_UploadStaging   Ref : 1
+[:39376:][trace][Core]: Success Load at C:/Users/jgeng/AppData/Local/Temp/claude/C--Develop-JGEngine/372829cf-ca7d-4660-bc1a-34b81a6846b3/scratchpad/wt5/Content/TempAsset/Sample.jgasset
+[:39376:][trace][Graphics]: JGStaticMesh : no saved bounds (saved before 5-26), computed from vertices
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Joints_UploadStaging   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Joints_UploadStaging in ResourceRefMap
+[:44588:][trace][Asset]: /JGEngine/TempAsset/Sample.jgasset : Success Load Asset
+[:44588:][info][NetDuel]: NetDuel: finished mode=Standalone slot=0 seq=10 checksum=13884515259415892894 winner=0 submitted=10 desyncs=0
+[:44588:][info][Network]: PGameplaySession: closed (session replaced)
+[:44588:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+[:44588:][info][Network]: PGameplayClientSession: joined as slot 1 (game in progress)
+[:44588:][info][Network]: PGameplayClientSession: document applied at seq 10
+[:44588:][info][GameFrameWorks]: JGGameInstance: following the host to world NetDuel
+[:44588:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetDuel)
+[:44588:][info][NetDuel]: NetDuel entry actor entered world: mode=Client authority=0
+[:44588:][info][Network]: PGameplayClientSession: game started (seed 20260930)
+[:44588:][info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[:44588:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.12 MB)
+[:44588:][info][NetDuel]: NetDuel: finished mode=Client slot=1 seq=15 checksum=10057767511302857797 winner=1 submitted=7 desyncs=0
+[:44588:][info][Network]: PGameplaySession: closed (session replaced)
+[:44588:][info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 15)
+[:44588:][info][NetDuelEditor]: Shutdown NetDuelEditor Module...
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Joints   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Joints in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : Beta_Surface   Ref : 0
+[:44588:][trace][Graphics]: UnRegister Beta_Surface in ResourceRefMap
+[:44588:][info][NetDuel]: Shutdown NetDuel Module...
+[:44588:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetDuel)
+[:44588:][info][Network]: PGameplaySession: closed (shutdown)
+[:44588:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:44588:][trace][Asset]: Shutdown Asset Module...
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_Display   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_Display in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_GBuffer_SpecularRoughness   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_GBuffer_SpecularRoughness in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_DepthStencil   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_DepthStencil in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_Output   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_Output in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_GBuffer_Albedo   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_GBuffer_Albedo in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_GBuffer_NormalMetallic   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_GBuffer_NormalMetallic in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_GBuffer_Depth   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_GBuffer_Depth in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_CompositeMaterial   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_CompositeMaterial in ResourceRefMap
+[:44588:][trace][Graphics]: Remove Counting Resource : SceneViewport_DisplayMaterial   Ref : 0
+[:44588:][trace][Graphics]: UnRegister SceneViewport_DisplayMaterial in ResourceRefMap
+[:44588:][trace][Graphics]: Shutdown Graphics Module...
+[:44588:][trace][JGEditor]: Shutdown JGEditor Module...
+[:44588:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 18, committed 1.12 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[:44588:][info][Memory]: [ID: 1] Memory Chunk Shutdown. pages 10, committed 3.13 MB, live blocks 0, remote pending 44 (total 55), large live 0
+DLL unloaded at 000001C1C5910000
+DLL unloaded at 00007FF8DE6C0000
+DLL unloaded at 00007FF8D66F0000
+DLL unloaded at 00007FF87DF90000
+DLL unloaded at 00007FFFF1BB0000
+DLL unloaded at 00007FF8D66F0000
+DLL unloaded at 00007FF87DF90000
+DLL unloaded at 00007FF8E3270000
+DLL unloaded at 00007FF8E3270000
+DLL unloaded at 00007FF8D1910000
+DLL unloaded at 00007FFFF6080000
+DLL unloaded at 00007FFFF2BD0000
+DLL unloaded at 00007FF8CB810000
+DLL unloaded at 00007FF8C7B60000
+DLL unloaded at 00007FF8C9890000
+DLL unloaded at 00007FF8E3270000
+DLL unloaded at 00007FFFF94C0000
+DLL unloaded at 00007FF8CDAD0000
+DLL unloaded at 00007FF8D6810000
+DLL unloaded at 00007FF87DF70000
+DLL unloaded at 00007FF8D1910000
+DLL unloaded at 00007FF8D84C0000
+DLL unloaded at 00007FFFD8640000
+DLL unloaded at 00007FF8C66A0000
+DLL unloaded at 00007FF8D1910000
+DLL unloaded at 00007FF8D1910000
+DLL unloaded at 00007FF8D84C0000
+DLL unloaded at 00007FF8D6810000
+DLL unloaded at 00007FF8CDAD0000
+DLL unloaded at 00007FF8D8840000
+DLL unloaded at 00007FF8DDC40000
+DLL unloaded at 00007FFFCC410000
+DLL unloaded at 00007FFFD0890000
+DLL unloaded at 00007FF874BD0000
+Process exited with code 0 (0x00000000)

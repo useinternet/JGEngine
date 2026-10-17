@@ -21,6 +21,27 @@ namespace
 		default:                            return "disconnected";
 		}
 	}
+
+	constexpr size_t MaxReconnectTokenBytes = 128;
+
+	// 게임이 저장해 둔 재접속 토큰을 쓸 수 있는가: 1~128 바이트의 보이는 ASCII(공백 · 제어 문자 · 비ASCII 없음).
+	// 깨진 저장 값이 이상한 신원이 되지 않게 클라에서만 본다. 호스트는 지금처럼 빈 토큰만 거부한다.
+	bool isUsableReconnectToken(const PString& token)
+	{
+		const HRawString& raw = token.GetRawString();
+		if (raw.empty() == true || raw.size() > MaxReconnectTokenBytes)
+		{
+			return false;
+		}
+		for (char c : raw)
+		{
+			if (c < 0x21 || c > 0x7E)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 PGameplayClientSession::~PGameplayClientSession()
@@ -46,6 +67,19 @@ PSharedPtr<PGameplayClientSession> PGameplayClientSession::Create(PSharedPtr<INe
 	session->_address   = address;
 	session->_port      = port;
 	session->_token     = HGuid::New().ToString();
+
+	// 게임이 저장해 둔 토큰으로 들어가면 판 중 같은 자리로 돌아온다(ER-026). 쓸 수 없는 값이면 새 토큰 — 새 사람으로 들어간다.
+	if (config.ReconnectToken.Empty() == false)
+	{
+		if (isUsableReconnectToken(config.ReconnectToken) == true)
+		{
+			session->_token = config.ReconnectToken;
+		}
+		else
+		{
+			JG_LOG(Network, ELogLevel::Warning, "PGameplayClientSession: the reconnect token is not usable (1..%u visible ASCII characters), joining with a new token", (uint32)MaxReconnectTokenBytes);
+		}
+	}
 
 	session->_hostPeer = transport->Connect(address, port);
 	if (session->_hostPeer == NetPeerNone)
@@ -154,6 +188,22 @@ bool PGameplayClientSession::HasPendingSends() const
 	return _transport != nullptr && _transport->HasPendingSends();
 }
 
+bool PGameplayClientSession::SetLocalReady(bool bReady)
+{
+	// 판 시작 전(대기방)에만 보낸다. 호스트가 받아 슬롯 표로 돌려준다.
+	if (_state != EGameplaySessionState::Ready || _hostPeer == NetPeerNone)
+	{
+		return false;
+	}
+
+	HGameplayNetSetReady request;
+	request.bReady = bReady;
+	HList<uint8> bytes;
+	HGameplayNetCodec::EncodeMessage(EGameplayNetMessage::SetReady, request, bytes);
+	send(bytes);
+	return true;
+}
+
 bool PGameplayClientSession::Reconnect()
 {
 	if (_state != EGameplaySessionState::Closed || _transport == nullptr)
@@ -196,6 +246,11 @@ bool PGameplayClientSession::HasPendingLocalCommand() const
 uint64 PGameplayClientSession::GetHostFingerprint() const
 {
 	return _hostFingerprint;
+}
+
+const PString& PGameplayClientSession::GetReconnectToken() const
+{
+	return _token;
 }
 
 void PGameplayClientSession::onBound()
@@ -290,8 +345,11 @@ void PGameplayClientSession::handleMessage(EGameplayNetMessage type, const HRawS
 		{
 			_state = EGameplaySessionState::Ready;
 		}
-		JG_LOG(Network, ELogLevel::Info, "PGameplayClientSession: joined as slot %d (game %s)", _localSlot, welcome.bStarted ? "in progress" : "not started");
+		// 세션 공유 데이터는 통째로 바꾼다(재접속이면 끊긴 사이 바뀐 · 지워진 키까지).
+		HList<PName> changedKeys = replaceSessionData(welcome.SessionData);
+		JG_LOG(Network, ELogLevel::Info, "PGameplayClientSession: joined as slot %d (game %s, %d session data keys)", _localSlot, welcome.bStarted ? "in progress" : "not started", (int32)_sessionData.size());
 		OnSlotsChanged.BroadCast();
+		notifySessionData(changedKeys);
 		if (welcome.World != NAME_NONE)
 		{
 			OnTravelRequested.BroadCast(welcome.World);
@@ -312,6 +370,22 @@ void PGameplayClientSession::handleMessage(EGameplayNetMessage type, const HRawS
 		{
 			_slots = slots.Slots;
 			OnSlotsChanged.BroadCast();
+		}
+		break;
+	}
+	case EGameplayNetMessage::SessionData:
+	{
+		// 게임 메시지가 아니다 — GameMaster 와 상관없이 바로 적용한다.
+		HGameplayNetSessionData change;
+		if (HGameplayNetCodec::DecodeMessage(text, &change) == false || change.Key == NAME_NONE)
+		{
+			JG_LOG(Network, ELogLevel::Warning, "PGameplayClientSession: bad SessionData");
+			break;
+		}
+		bool bChanged = change.bRemoved == true ? dropSessionData(change.Key) : putSessionData(change.Key, change.Value);
+		if (bChanged == true)
+		{
+			OnSessionDataChanged.BroadCast(change.Key);
 		}
 		break;
 	}

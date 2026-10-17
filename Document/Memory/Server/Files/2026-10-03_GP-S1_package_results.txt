@@ -1,0 +1,53 @@
+GP-S1 패키지 네트워크 확인 (D-23 게임 빌드 파이프라인) — 2026-10-03 10:18 ~ 10:24
+지시: 엔진 총괄(10-03) — 검증만, 코드 변경 없음. 선행 GP-D4 쿠킹은 DevOps 가 10-03 10:1x 메인 반영(미커밋)
+
+---- 준비 ----
+다른 세션 cl · link · 런처 · 콘솔 · 게임 프로세스 없음 확인(쉬는 MSBuild 노드만). 포트 47771 · 47811 비어 있음
+검증 게임: 메인 엔진 Build\BatchFiles\CreateGameProject.bat → C:\Develop\JGEngine\Temp\Games\NetDuel (지침서 3절: Temp/Games)
+  Source\NetDuel\NetDuelEntryActor.cpp ← Document/Memory/Server/Files/tools/net_duel_testgame (5-6 결투 게임). 템플릿 module.json 의존 Core · Asset · Graphics · GameFrameWorks, .jgproject Package 섹션 있음
+  배치 2(GenerateProjectFiles.bat) 종료 0 → Temp\CodeGen\runtime_module_info.json 생성
+
+---- 쿠킹 ----
+메인 Bin\DevelopEngine\JGConsole.exe -runCook -project=C:\Develop\JGEngine\Temp\Games\NetDuel → 종료 0, 135 s
+[info][JGConsole]: cook.run: OK C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame (133.9 s, 11 binaries, 5 content files, 10.6 MB, 1 warning(s)) - report C:/Develop/JGEngine/Temp/Games/NetDuel/Temp/Cook/ReleaseGame/report.txt
+경고 1 = assimp DLL 복사(알려진 것). 스모크 5.5 s: Package NetDuel 0.1.0 (ReleaseGame, engine 0bd6356), 엔트리 Standalone authority=1, [error]/[critical] 0
+패키지: NetDuel.exe · Bin(Asset · GameFrameWorks · GameHost · Graphics · JGGameLaunch · NetDuel · assimp · msvcp140 · vcruntime140 · vcruntime140_1 · JGPackage.json) · Content
+
+---- 실행 (Document/Memory/Server/Files/tools/net_duel_testgame/run_net_duel_package.sh) ----
+호스트: Package\ReleaseGame\NetDuel.exe -host=47811 -bind=127.0.0.1 -name=Host (crashwalk 60 s)
+참가자: 같은 패키지를 Package\ReleaseGame_B 로 복사(로그 Saved\Logs\NetDuel.log 분리) → NetDuel.exe -join=127.0.0.1:47811 -name=Guest — 호스트 로그에 'hosting on port' 가 보인 뒤 실행
+방화벽 확인 창: 뜨지 않음(루프백에만 열었다). PC 보안 설정은 건드리지 않았다
+[호스트 run1]
+[info][Core]: Package NetDuel 0.1.0 (ReleaseGame, engine 0bd6356): C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/
+[info][Network]: PGameplayHostSession: listen server on port 47811, 4 slots
+[info][GameFrameWorks]: JGGameInstance: hosting on port 47811 as Host
+[info][NetDuel]: NetDuel entry actor entered world: mode=ListenServer authority=1
+[info][Network]: PGameplayHostSession: slot 1 joined (Guest)
+[info][Network]: PGameplayHostSession: sent document to slot 1 at seq 7
+[info][NetDuel]: NetDuel: finished mode=ListenServer slot=0 seq=13 checksum=14727258992400026585 winner=0 submitted=10 desyncs=0
+[info][Network]: PGameplaySession: closed (shutdown)
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 13, committed 0.81 MB, live blocks 0, remote pending 0 (total 0), large live 0
+  [error]/[critical]: 0
+Process exited with code 0 (0x00000000)
+[참가자 run1]
+[info][Core]: Package NetDuel 0.1.0 (ReleaseGame, engine 0bd6356): C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame_B/
+[info][GameFrameWorks]: JGGameInstance: joining 127.0.0.1:47811 as Guest
+[info][NetDuel]: NetDuel entry actor entered world: mode=Client authority=0
+[info][Network]: PGameplayClientSession: joined as slot 1 (game in progress)
+[info][Network]: PGameplayClientSession: document applied at seq 7
+[info][NetDuel]: NetDuel: finished mode=Client slot=1 seq=13 checksum=14727258992400026585 winner=0 submitted=3 desyncs=0
+[info][Network]: PGameplaySession: closed (host closed the connection)
+[info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 13, committed 0.81 MB, live blocks 0, remote pending 0 (total 0), large live 0
+  [error]/[critical]: 0
+Process exited with code 0 (0x00000000)
+결과 run1: package-duel: OK (seq 13, checksum 14727258992400026585, winner team 0)
+결과 run2 (포트 47812): 같은 결과 — 두 쪽 seq 13 · checksum 14727258992400026585 · 종료 0 · 오류 0
+원문 로그: 2026-10-03_GP-S1_package_host.log · 2026-10-03_GP-S1_package_client.log (run1)
+
+---- 판정 ----
+GP-S1 완료 기준(두 쪽 seq · 체크섬 같음, 종료 0) 충족. 패키지 구성(ReleaseGame, JG_WITH_EDITOR 0)에서 실행 인자 -host · -bind · -join · -name, 진행 중 입장(문서), 승인 중계, 정상 종료가 개발 빌드와 같다. 엔진 쪽 문제 없음
+
+---- 방화벽 안내 초안 (DevOps 생성 가이드 8절에 넣을 문장, DevOps 에 전달) ----
+멀티플레이 확인(한 PC): 호스트 MyGame.exe -host -bind=127.0.0.1, 참가자 MyGame.exe -join=127.0.0.1. 같은 패키지를 두 번 띄우면 로그(Saved\Logs\MyGame.log)가 섞이므로 패키지 폴더를 하나 복사해 두 번째를 띄운다.
+다른 PC 와: 호스트는 -bind 없이 MyGame.exe -host[=포트](기본 47771, TCP). 처음 열 때 Windows 방화벽 확인 창이 뜨면 '허용'을 눌러야 다른 PC 가 들어올 수 있다. 참가자는 MyGame.exe -join=<호스트 IP>[:포트].
+참가자는 호스트가 포트를 연 뒤에 띄운다(접속은 한 번만 시도한다). 공유기 밖(인터넷)에서는 호스트 쪽 공유기에서 포트를 열어야 한다 — 엔진은 중계 서버를 두지 않는다.

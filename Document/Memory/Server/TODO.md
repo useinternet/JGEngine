@@ -1,8 +1,8 @@
 # Server(네트워크 · 리슨 서버) TODO
 
-작성 2026-09-30, 갱신 10-02 11:1x (5-5 최소 로비). `Files/Network_TODO.md`(09-29 작성 · 09-30 11:45 갱신)를 통합 · 최신화한 것. 항목 ID 는 그대로 쓴다(Phase-번호). 현황은 `현황.md`.
+작성 2026-09-30, 갱신 10-17 13:3x (규칙 효과 안 상태 되돌리기 D-39 같이 하기 시험 `net.test rewind` 완료 · 메인 반영. 그 전 10-12 21:2x 같은 자리로 재접속 ER-026). `Files/Network_TODO.md`(09-29 작성 · 09-30 11:45 갱신)를 통합 · 최신화한 것. 항목 ID 는 그대로 쓴다(Phase-번호). 현황은 `현황.md`.
 결정(09-29, 사용자): 방안 A(호스트 권한 명령 중계 + 결정론 복제) · 위치 `GameFrameWorks/Network/` · 전송 Winsock TCP(`INetTransport` 뒤) · 이름 `PGameplaySession` · `INetTransport` · `PNet*`.
-규칙: 한 항목이 끝나면 완료 이력으로 옮기고 `현황.md` §4 에 한 줄. 커밋은 사용자가 한다. Phase 5 는 사용자 지시(09-30 22:1x "페이즈 5 시작해줘")로 착수했다.
+규칙: 한 항목이 끝나면 완료 이력으로 옮기고 `현황.md` §4 에 한 줄. 커밋 · 푸시는 엔진 총괄이 묶어서 한다(2026-10-17 14:49 전체 필수 지침 8 · 지침서 2절 5번 — 그 전에는 사용자). Server 는 커밋 체크리스트에 파일을 적고 엔진 총괄에 알린다. Phase 5 는 사용자 지시(09-30 22:1x "페이즈 5 시작해줘")로 착수했다.
 
 ---
 
@@ -10,10 +10,12 @@
 
 | 순서 | ID | 항목 | 착수 조건 | 완료 기준 |
 |---|---|---|---|---|
-| 1 | 5-8 | **5-5 최소 로비 · 검사 포트 수정 커밋** (사용자) — 아래 "커밋 체크리스트 (5-5)" | `JGEditor.cpp` 의 DevConsole D-7 미커밋 변경과 같은 파일 → 함께 | 커밋 뒤 엔진 런처 30 초 종료 0, 게임 프로젝트 에디터에서 `Windows/Session Lobby` 가 열린다 |
-| — | ER-006 | ProjectAH 요청: 시작 전 퇴장 슬롯 해제 · 준비 상태 · 강퇴 — **사용자 결정 전, 착수하지 않음** | 사용자 결정 | 요청 문서 완료 기준(4명 방에 들어왔다 나가기 4번 뒤 5번째가 들어온다) · 관찰은 `현황.md` §5 |
+| 1 | 5-8 | **5-5 최소 로비 · 검사 포트 수정 · 대기방 기능 묶음(D-38) · 같은 자리로 재접속(ER-026) · 규칙 효과 안 상태 되돌리기 같이 하기 시험(D-39) 커밋** (엔진 총괄, 10-17 14:49 부터) — 아래 "커밋 체크리스트 (5-5 · D-38)" | `JGEditor.cpp` 의 DevConsole D-7 미커밋 변경과 같은 파일 → 함께. `SessionLobby.*` 는 10-07 부터 JGEditor 담당 파일. D-39 시험은 GFW 되감기 API(10-17 13:15 메인 반영, 미커밋)와 같이 커밋해야 빌드된다 | 커밋 뒤 엔진 런처 30 초 종료 0, 게임 프로젝트 에디터에서 `Windows/Session Lobby` 가 열린다, `net.test all` 180 |
+| — | D39-S | ~~규칙 효과 안 상태 되돌리기(D-39) 같이 하기 시험~~ — **완료 · 메인 반영 10-17 13:33(미커밋)**, 완료 이력 D39-S · 커밋 체크리스트 | — | `Files/2026-10-17_D-39_rewind_net_results.txt` |
+| 2 | — | 게임 쪽 반영 확인(게임 로직 구현 · 게임 총괄): **10-12 게임 로직 구현 반영 알림 — 게임 DLL 다시 빌드 · 자체 테스트 실패 0, 방장이 캠페인 기록을 `SetSessionData("campaign")` 로(기록이 바뀔 때 · 메뉴 월드로 돌아올 때), 참가자 방 화면 `FindSessionData`, 규칙 코드는 읽지 않음.** 준비 표시 · 방장 선택 화면은 게임 연출 쪽. 패키지 다시 쿠킹(프로토콜 2)은 게임 몫 | 게임 쪽 | 질문이 오면 답한다 |
+| — | ER-026 | ~~창을 다시 띄워도 같은 자리로 재접속~~ — **완료 · 메인 반영 10-12 21:18(미커밋)**, 완료 이력 ER26-1 · 커밋 체크리스트 | — | `Files/2026-10-12_ER-026_rejoin_results.txt` |
 
-Phase 5(5-1 ~ 5-7)는 끝났다. 엔진 범위로 남은 Server 항목은 없다(보류 표는 조건이 생길 때).
+Phase 5(5-1 ~ 5-7) · 대기방 기능 묶음(D-38) · D-39 같이 하기 시험은 끝났다. 엔진 범위로 남은 Server 항목은 없다(보류 표는 조건이 생길 때).
 
 ---
 
@@ -21,20 +23,28 @@ Phase 5(5-1 ~ 5-7)는 끝났다. 엔진 범위로 남은 Server 항목은 없다
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| 5-8 | 5-5 커밋 | 상 | 사용자 | — | 위 표 | |
+| 5-8 | 5-5 · D-38 커밋 | 상 | 사용자 | — | 위 표 | |
 
-### 커밋 체크리스트 (5-5)
+### 커밋 체크리스트 (5-5 · D-38)
 
-10-02 11:0x(5-5) · 11:5x(검사 포트) 메인 트리 반영분. 모두 미커밋(새 파일은 미추적).
+10-02 11:0x(5-5) · 11:5x(검사 포트) · 10-12 00:10(D-38) · 21:14(ER-026) · 10-17 13:31(D-39 시험) 메인 트리 반영분. 모두 미커밋(새 파일은 미추적). 커밋은 엔진 총괄(아래 "사용자" 표기는 10-17 14:49 전 규칙).
+**검사기 주의(10-17 14:49 규칙 — 로그는 커밋 전 검사기가 막음):** 증적 `Files/` 의 `.log` 8개(`2026-10-03_GP-S1_package_{host,client}.log` · `2026-10-12_D-38_package_{host,client}.log` · `2026-10-12_D-38_version_*_{host,client}.log` 4개)는 빼도 된다 — 같은 결과가 결과 txt(`2026-10-03_GP-S1_package_results.txt` · `2026-10-12_D-38_lobby_results.txt`)에 요약돼 있다. 코드 · 문서는 영향 없음.
 
 | 분류 | 파일 | 섞인 다른 트랙 변경 |
 |---|---|---|
 | 창 (신규) | `Source/Editor/JGEditor/Widgets/SessionLobby.h` · `SessionLobby.cpp` | 없음 |
 | 검사 포트 (10-02 11:4x) | `Source/Runtime/GameFrameWorks/Network/Transport/NetTcpTransport.h/.cpp`(`GetListenPort`) · `Network/GameplayNetSelfTest.cpp`(TCP 절 빈 포트) · `Files/2026-10-02_net_test_port_results.txt` | 없음 |
+| GP-S1 증적 (10-03) | `Document/Memory/Server/Files/2026-10-03_GP-S1_*`(결과 txt · 두 로그) · `Files/tools/net_duel_testgame/run_net_duel_package.sh` | 없음 (코드 변경 없음) |
 | 메뉴 | `Source/Editor/JGEditor/JGEditor.cpp` — include 1줄 + `Windows/Session Lobby` 블록 | DevConsole D-7(엔진 모듈 목록에 `GameFrameWorks` · 주석) |
 | 도구 · 증적 (신규) | `Document/Memory/Server/Files/tools/net_lobby_check/`(4) · `Document/Memory/Server/Files/2026-10-02_5-5_lobby_*`(결과 txt · 두 로그 · 캡처 4) · Server 문서 | — |
 | 바이너리 | `Bin/DevelopEngine/JGEditor.dll/.exp/.lib` (11:0x 메인 빌드) | 다른 트랙 재빌드와 같은 파일 |
-| 넣지 않는 것 | `Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp` 의 UI 검사 훅 — 워크트리에만 적용했다. 메인에는 없다 | — |
+| D-38 엔진 (10-12 00:10, 새 파일 없음) | `Source/Runtime/GameFrameWorks/Network/Messages/GameplayNetMessage.h/.cpp` · `GameplayPlayerSlot.h/.cpp` · `Network/Session/GameplaySession.h/.cpp` · `GameplayHostSession.h/.cpp` · `GameplayClientSession.h/.cpp` · `Network/GameplayNetSelfTest.h/.cpp` · `Source/Programs/JGConsole/NetCommands.cpp` | `GameplayNetSelfTest.cpp` 는 위 검사 포트 수정과 같은 파일 |
+| D-38 창 | `Source/Editor/JGEditor/Widgets/SessionLobby.h/.cpp`(위 5-5 새 파일에 준비 · 세션 데이터) | JGEditor 화면 배율(D-22 ②, 10-03)이 같은 파일에 들어 있다 |
+| D-38 도구 · 증적 | `Document/Memory/tools/net_two_process/run_two_process.sh` · `Files/tools/net_duel_testgame/{NetDuelEntryActor.cpp, run_net_duel.sh, run_net_duel_package.sh, run_net_duel_version_check.sh(새)}` · `Files/tools/net_lobby_check/{run_net_lobby_room.sh, net_lobby_room_driver.ps1, imgui_room.ini}`(새) · `Files/2026-10-12_D-38_*`(결과 txt · 캡처 8 · 로그 8) · `Files/ER-025_세션공유데이터_검토_2026-10-11.md` · Server 문서 | — |
+| D-38 바이너리 | `Bin/DevelopEngine/*`(00:10 `MainTree.cmd -name=Server build` — 세션 헤더라 GameFrameWorks · JGEditor · JGConsole 등) | 다른 트랙 재빌드와 같은 파일 |
+| ER-026 (10-12 21:14, 새 파일 없음) | `Network/Session/GameplaySession.h`(설정 `ReconnectToken`) · `GameplayClientSession.h/.cpp`(`GetReconnectToken` · 토큰 검사) · `GameplayHostSession.cpp`(이어받기 로그) · `Network/GameplayNetSelfTest.h/.cpp`(rejoin 절 · 2 프로세스 옵션) · `Source/Programs/JGConsole/NetCommands.cpp`(`-token` · `-leave-at` · `-rejoin-grace`) · `Document/Memory/tools/net_two_process/run_two_process.sh`(재접속 인자) · `Files/2026-10-12_ER-026_rejoin_results.txt` · 재빌드 Bin(21:14) | 모두 D-38 과 같은 파일 — 한 커밋으로 |
+| D-39 같이 하기 시험 (10-17 13:31, 새 파일 없음) | `Source/Runtime/GameFrameWorks/Network/GameplayNetSelfTest.cpp`(`rewind` 절 · 시험 규칙) · `GameplayNetSelfTest.h`(주석 1줄) · `Files/D-39_되감기_같이하기시험_설계_2026-10-17.md` · `Files/2026-10-17_D-39_net_baseline.txt` · `Files/2026-10-17_D-39_rewind_net_results.txt` · 재빌드 Bin(13:31) | `GameplayNetSelfTest.cpp` 는 D-38 · ER-026 과 같은 파일. **GFW 되감기 API(GameMaster/ 상태 · 등록부 · ctx · 규칙 엔진, 10-17 13:15 메인)를 쓰므로 그 변경과 함께 커밋** |
+| 넣지 않는 것 | `Source/Runtime/GUI/Imgui/imgui_impl_win32.cpp` 의 UI 검사 훅 — 워크트리에만 적용했다(5-5 · D-38). 메인에는 없다. D-39 의 고친 줄을 뺀 빌드 · 대조 빌드 수정(GFW 파일)도 작업 폴더에서 되돌렸다 | — |
 
 ---
 
@@ -65,7 +75,10 @@ Phase 5(5-1 ~ 5-7)는 끝났다. 엔진 범위로 남은 Server 항목은 없다
 | 세션 상태에 `Lobby` · `Traveling` 분리(구조설계 §8) | 구현은 `Ready` · `OnTravelRequested` + 보관 메시지로 충분했다. 월드 이동 중 상태 질의가 필요해질 때 |
 | PCH 맨 앞 `winsock2.h`(증적 `Files/2026-09-29_winsock_include_probe.txt`) | `WIN32_LEAN_AND_MEAN` 도입 등 PCH 를 어차피 바꿀 때 — 코드는 이미 `_WINSOCKAPI_` 분기로 대비 |
 | 명령 스트림 직렬화 규약 문서화(GFW 백로그) | 외부 도구가 프로토콜을 읽어야 할 때. 지금은 `GameplayNetMessage.h` 주석이 규약 |
-| 로비 "준비" 표시(클라 → 호스트 메시지 + 슬롯 필드) | 게임이 전원 준비 뒤 시작을 요구할 때(ProjectAH ER-006 의 "있으면 좋음" 과 같은 항목, 사용자 결정 전). 지금은 호스트가 시작 시점을 정한다(5-5 창의 Reload World) |
+| 강퇴 `KickSlot(slot, reason)` (ER-006 있으면 좋음) | 게임의 방 관리가 강퇴를 요구할 때(D-29 ② → D-38 에서 "나중"). 방식: 기존 `Refuse` 를 보내고 Close → 자리 비움(토큰 삭제, `releaseSlot`) → 슬롯 표 방송 · `OnPeerDisconnected`. 프로토콜 변경 없음, 약 0.2일 |
+| 참가자가 정하는 값(슬롯마다 키 → 값) | 방에서 참가자가 각자 고르는 것(조사자 · 색 등)을 판 시작 전에 모두에게 보여야 할 때. 지금 게임은 판 안 첫 단계에서 고른다. 준비 표시와 같은 길(클라 → 호스트 → 슬롯 표), 세션 공유 데이터와 같은 모양 — 프로토콜 버전을 또 올린다 |
+| 세션 교체 때 세션 공유 데이터 옮기기 | 게임이 싱글(Standalone)에서 정한 값을 방을 열 때 그대로 쓰고 싶다고 할 때. 지금은 새 세션 = 빈 표(참가자 Leave 때 방장 값이 남지 않게 한 규칙) |
+| 세션 공유 데이터 여러 키를 한 메시지로 | 함께 바뀌어야 하는 값을 키 여러 개로 나눠 써야 할 때. 지금은 한 키(JSON 하나)에 넣으라고 안내 |
 | `-join` 자동 재시도 | 호스트보다 먼저 띄우는 사용 방식이 필요해질 때. 지금은 한 번 접속하고 거부되면 Closed(게임이 `OnClosed` 로 처리) |
 | 세션 알림을 게임 인스턴스가 다시 내보내기(세션 교체에도 구독 유지) | 게임이 `OnLocalCommandRejected` 등을 구독하면서 Host · Join · Leave 로 세션을 바꿀 때. 지금은 세션 객체에 직접 구독 |
 
@@ -117,6 +130,14 @@ Phase 5(5-1 ~ 5-7)는 끝났다. 엔진 범위로 남은 Server 항목은 없다
 | 5-7 | Phase 5 커밋 (사용자 일괄 커밋) | 10-01 12:16 | `736ddbe` "엔진 구현" — 5-1 ~ 5-4 · 5-6 · N-1 · 도구 전부. 문서의 "미커밋" 표기는 10-02 에 git log 기준으로 정리 |
 | 5-5 | 최소 로비 = JGEditor 개발용 창 `JGSessionLobby`(`Windows/Session Lobby`): 고정 버튼 줄 Host(포트 · 이 기계에서만) · Join(주소 · 포트) · Leave · Reload World(권한 쪽, 지금 참가자로 새 판), 이름 · 포트 · 주소 칸, 세션 상태, 슬롯 표. "준비" 없음. 엔진 변경 없음 | 10-02 11:0x (미커밋) | `Files/2026-10-02_5-5_lobby_results.txt` — NetDuel 런처 두 개(싱글로 시작)를 창으로만: Host → Join(진행 중 입장 · 문서) → Reload World(이동 알림 · 새 판) → 두 쪽 seq 15 · checksum `10057767511302857797` 같음 → Leave(싱글로 이어받기). 양쪽 종료 0 · 오류 0. 메인 반영 뒤 PreBuild · JGEditor 빌드 오류 0 · 엔진 런처 30 초 종료 0 |
 | P5-b | `net.test transport` 고정 포트(47790 · 47791) 충돌 — TCP 절이 `Listen(0)` + `PNetTcpTransport::GetListenPort()` 로 빈 포트를 쓰고, 거부 검사는 받았다 닫은 포트로 | 10-02 11:5x (미커밋) | 다른 프로세스가 47790 을 듣는 채로 transport 19/19 · `net.test all` 101/101 · `gmtest` 174 · 2 프로세스 kernel · world OK (`Files/2026-10-02_net_test_port_results.txt`) |
+| GP-S1 | 게임 빌드 파이프라인 패키지 네트워크 확인(D-23, 검증만 · 코드 변경 없음) | 10-03 10:24 | `Files/2026-10-03_GP-S1_package_results.txt` — 메인 엔진으로 `Temp/Games/NetDuel` 쿠킹 135 s 종료 0, 패키지 exe 두 개 `-host -bind=127.0.0.1` / `-join=127.0.0.1` 두 쪽 seq 13 · 체크섬 같음 · 종료 0 · 오류 0(두 번). 실행기 `Files/tools/net_duel_testgame/run_net_duel_package.sh`. 방화벽 안내는 DevOps 가 생성 가이드 8절 "멀티플레이 확인 (패키지)" 에 반영(10-03 10:2x) |
+| ER-025 검토 | ProjectAH 세션 공유 데이터(방 정보) 검토(코드 변경 없음, 엔진 총괄 배정) → D-38 | 10-11 23:39 | `Files/ER-025_세션공유데이터_검토_2026-10-11.md` — 요청서 현황은 코드와 맞음, 설계 · 묶기 판단 · 일수 · 위험 · 다시 빌드 · 검증 계획. 진행현황 D-38(D-29 합침) |
+| D38-1 | 세션 공유 데이터(방 정보, ER-025): `SetSessionData` · `RemoveSessionData` · `ClearSessionData` · `FindSessionData` · `GetSessionData` · `OnSessionDataChanged`, `SessionData` 메시지 · `Welcome` 전체 표, 64 KB | 10-12 00:21 (미커밋) | `Files/2026-10-12_D-38_lobby_results.txt` — lobby 데이터 17 · 2 프로세스 data 같음 · 창 run2 · 패키지 진행 중 입장 room 같음 |
+| D38-2 | 판 시작 전 나간 사람 자리 바로 비우기(ER-006 필수, D-29 ①) + 대기방으로 돌아오면 판 중에 끊긴 자리 비우기 | 10-12 00:21 (미커밋) | lobby 자리 12(고친 줄을 뺀 빌드 FAIL), 2 프로세스 손님 3 → 클라 3, 창 Leave → 자리 빔 |
+| D38-3 | 준비 표시(ER-006, D-29 ③): `bReady` · `SetLocalReady` · `IsLocalReady` · `SetReady` | 10-12 00:21 (미커밋) | lobby 준비 11, 2 프로세스 모두 준비 뒤 시작 · `ready=0`, 창 두 쪽 ready |
+| D38-4 | 프로토콜 버전 2 · Session Lobby 창(준비 · 세션 데이터) · 도구(2 프로세스 클라 수 · 손님, NetDuel room, 버전 확인, 대기방 창 드라이버) | 10-12 00:21 (미커밋) | 옛 패키지(1)와 두 방향 거절 · 종료 0, 메인 회귀 `net.test all` 144 · `gmtest` · console 64 · 에디터 30 s · 런처 · 쿠킹 · 패키지 결투 |
+| D39-S | 규칙 효과 안 상태 되돌리기(D-39, ProjectAH ER-027) 같이 하기 시험(엔진 총괄 배정, 사용자 A (가) + B (다)): `net.test rewind` — 각본 판(표시 → 소환 · 공격 → 효과 안 되감기 + 줄 선 공격 거절 → 되감은 직후 입장 → 소환 → 핸들러 안 되감기 → 소환 → 재동기 → 지우기)과 무작위 판(1+3, 지점이 있을 때 입장). 시험 규칙은 이 절에서만 등록 | 10-17 13:33 (미커밋) | `Files/2026-10-17_D-39_rewind_net_results.txt` — rewind 26 · `net.test all` 180 · `gmtest` · 2 프로세스 kernel, 고친 줄을 뺀 빌드 2종(세대 바닥 3 FAIL · 지점 9 FAIL), 버전만 1 로 둔 대조 빌드에서 `net.test session` 체크섬 = 되감기 전 기준값 |
+| ER26-1 | 창을 다시 띄워도 같은 자리로 재접속(ER-026, 엔진 총괄 배정 — 사용자 결정 없이): 설정 `HGameplaySessionConfig::ReconnectToken`(비면 새 GUID) · `PGameplayClientSession::GetReconnectToken()`, 클라 토큰 검사(1~128 바이트 보이는 ASCII, 아니면 경고 + 새 토큰), 호스트 이어받기 로그. 프로토콜 그대로 | 10-12 21:18 (미커밋) | `Files/2026-10-12_ER-026_rejoin_results.txt` — rejoin 절 10(고친 줄을 뺀 빌드 4 FAIL), `net.test all` 154, 2 프로세스 kernel 3 + 재접속(seq 333 에서 나간 Client1 이 새 프로세스로 slot 1 에 돌아와 끝까지 같은 결과, `rejoins=1`), 회귀 3종 · 에디터 30 s |
 
 ---
 

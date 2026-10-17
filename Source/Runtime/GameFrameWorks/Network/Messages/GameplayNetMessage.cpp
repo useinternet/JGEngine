@@ -20,27 +20,39 @@ namespace
 		return (uint32)bytes[0] | ((uint32)bytes[1] << 8) | ((uint32)bytes[2] << 16) | ((uint32)bytes[3] << 24);
 	}
 
-	// 월드 이름. PName 을 그대로 쓰면 NAME_NONE 이 문자열 테이블의 "(null)" 로 나가고, 받는 쪽이 그 문자열을 등록해 NAME_NONE 이 아니게 된다.
+	// 이름 필드(월드 · 세션 데이터 키). PName 을 그대로 쓰면 NAME_NONE 이 문자열 테이블의 "(null)" 로 나가고, 받는 쪽이 그 문자열을 등록해 NAME_NONE 이 아니게 된다.
 	// 없음은 빈 문자열로 주고받는다.
-	PString worldNameText(const PName& world)
+	PString nameText(const PName& name)
 	{
-		if (world == NAME_NONE)
+		if (name == NAME_NONE)
 		{
 			return PString();
 		}
-		return world.ToString();
+		return name.ToString();
 	}
 
-	PName readWorldName(const PJsonData& json)
+	PName readName(const PJsonData& json, const char* member)
 	{
 		PString text;
-		json.GetData("World", &text);
+		json.GetData(member, &text);
 		if (text.Empty() == true)
 		{
 			return PName();
 		}
 		return PName(text);
 	}
+}
+
+void HGameplaySessionDataEntry::WriteJson(PJsonData& json) const
+{
+	json.AddMember("Key", nameText(Key));
+	json.AddMember("Value", Value);
+}
+
+void HGameplaySessionDataEntry::ReadJson(const PJsonData& json)
+{
+	Key = readName(json, "Key");
+	json.GetData("Value", &Value);
 }
 
 // ---- 메시지 ------------------------------------------------------------------
@@ -65,20 +77,23 @@ void HGameplayNetWelcome::WriteJson(PJsonData& json) const
 {
 	json.AddMember("Slot", Slot);
 	json.AddMember("Fingerprint", Fingerprint);
-	json.AddMember("World", worldNameText(World));
+	json.AddMember("World", nameText(World));
 	json.AddMember("Started", bStarted);
 	json.AddMember("Slots", Slots);
+	json.AddMember("SessionData", SessionData);
 }
 
 void HGameplayNetWelcome::ReadJson(const PJsonData& json)
 {
 	Slots.clear();
+	SessionData.clear();
 
 	json.GetData("Slot", &Slot);
 	json.GetData("Fingerprint", &Fingerprint);
-	World = readWorldName(json);
+	World = readName(json, "World");
 	json.GetData("Started", &bStarted);
 	json.GetData("Slots", &Slots);
+	json.GetData("SessionData", &SessionData);
 }
 
 void HGameplayNetRefuse::WriteJson(PJsonData& json) const
@@ -170,12 +185,36 @@ void HGameplayNetResyncRequest::ReadJson(const PJsonData& json)
 
 void HGameplayNetTravel::WriteJson(PJsonData& json) const
 {
-	json.AddMember("World", worldNameText(World));
+	json.AddMember("World", nameText(World));
 }
 
 void HGameplayNetTravel::ReadJson(const PJsonData& json)
 {
-	World = readWorldName(json);
+	World = readName(json, "World");
+}
+
+void HGameplayNetSessionData::WriteJson(PJsonData& json) const
+{
+	json.AddMember("Key", nameText(Key));
+	json.AddMember("Value", Value);
+	json.AddMember("Removed", bRemoved);
+}
+
+void HGameplayNetSessionData::ReadJson(const PJsonData& json)
+{
+	Key = readName(json, "Key");
+	json.GetData("Value", &Value);
+	json.GetData("Removed", &bRemoved);
+}
+
+void HGameplayNetSetReady::WriteJson(PJsonData& json) const
+{
+	json.AddMember("Ready", bReady);
+}
+
+void HGameplayNetSetReady::ReadJson(const PJsonData& json)
+{
+	json.GetData("Ready", &bReady);
 }
 
 // ---- 코덱 --------------------------------------------------------------------
@@ -266,6 +305,8 @@ const char* HGameplayNetCodec::ToString(EGameplayNetMessage type)
 	case EGameplayNetMessage::Document:        return "Document";
 	case EGameplayNetMessage::Travel:          return "Travel";
 	case EGameplayNetMessage::Ping:            return "Ping";
+	case EGameplayNetMessage::SessionData:     return "SessionData";
+	case EGameplayNetMessage::SetReady:        return "SetReady";
 	default:                                   return "None";
 	}
 }

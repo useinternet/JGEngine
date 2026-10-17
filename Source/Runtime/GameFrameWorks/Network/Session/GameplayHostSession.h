@@ -31,6 +31,14 @@ public:
 	virtual void Tick(float32 deltaSeconds) override;
 	virtual void Close(const PString& reason) override;
 	virtual bool HasPendingSends() const override;
+	virtual bool SetLocalReady(bool bReady) override;
+
+	// 세션 공유 데이터 쓰기(권한 쪽만). 바뀌면 연결된 참가자에게 보내고 OnSessionDataChanged 를 부른다. 같은 값이면 아무것도 하지 않는다.
+	// 빈 키 · 크기 초과(설정 MaxSessionDataBytes)면 false + Warning 이고 이전 값은 그대로다. 함께 바뀌어야 하는 값은 한 키(JSON 하나)에 넣는다.
+	bool SetSessionData(const PName& key, const PString& value);
+	// 지웠으면 true (없던 키면 false).
+	bool RemoveSessionData(const PName& key);
+	void ClearSessionData();
 
 	// 슬롯이 조작할 조작 주체. 입장 전에 정해 두면 그 슬롯에 들어온 플레이어가 받는다. 기본은 { 슬롯 번호 }.
 	void SetSlotControllers(int32 slot, const HList<int32>& controllers);
@@ -54,6 +62,10 @@ private:
 	void handleSlotMessage(HGameplayPlayerSlot& slot, EGameplayNetMessage type, const HRawString& text);
 	void refuse(HNetPeerId peer, const PString& reason);
 	void markDisconnected(HGameplayPlayerSlot& slot);
+	void releaseSlot(HGameplayPlayerSlot& slot);
+	bool releaseDisconnectedSlots();
+	bool clearReady();
+	void sendSessionData(const PName& key, const PString& value, bool bRemoved);
 
 	void sendTo(HNetPeerId peer, const HList<uint8>& bytes);
 	void broadcast(const HList<uint8>& bytes);

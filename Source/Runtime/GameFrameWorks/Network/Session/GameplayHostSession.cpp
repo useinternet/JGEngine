@@ -125,6 +125,12 @@ bool PGameplayHostSession::StartGame(uint64 seed)
 		HGameplayNetCodec::EncodeMessage(EGameplayNetMessage::StartGame, start, bytes);
 		broadcast(bytes);
 	}
+
+	// 판이 시작되면 준비 표시를 지운다. 판이 끝나 대기방으로 돌아오면 다시 정한다.
+	if (clearReady() == true)
+	{
+		broadcastSlots();
+	}
 	return true;
 }
 
@@ -187,6 +193,78 @@ bool PGameplayHostSession::HasPendingSends() const
 	return _transport != nullptr && _transport->HasPendingSends();
 }
 
+bool PGameplayHostSession::SetLocalReady(bool bReady)
+{
+	HGameplayPlayerSlot* local = findSlotMutable(_localSlot);
+	if (_state != EGameplaySessionState::Ready || local == nullptr)
+	{
+		return false;
+	}
+	if (local->bReady != bReady)
+	{
+		local->bReady = bReady;
+		broadcastSlots();
+	}
+	return true;
+}
+
+bool PGameplayHostSession::SetSessionData(const PName& key, const PString& value)
+{
+	if (key == NAME_NONE)
+	{
+		JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession::SetSessionData: empty key");
+		return false;
+	}
+
+	// 크기 = 키 + 값 바이트 합. 같은 키는 새 값으로 바꿔 센다.
+	const PString keyText = key.ToString();
+	int64 total = (int64)keyText.GetRawString().size() + (int64)value.GetRawString().size();
+	for (const HGameplaySessionDataEntry& entry : _sessionData)
+	{
+		if (entry.Key != key)
+		{
+			total += (int64)entry.Key.ToString().GetRawString().size() + (int64)entry.Value.GetRawString().size();
+		}
+	}
+	if (total > (int64)_config.MaxSessionDataBytes)
+	{
+		JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession::SetSessionData: %s would make the session data %lld bytes (limit %d)", keyText, total, _config.MaxSessionDataBytes);
+		return false;
+	}
+
+	// 참가자에게 먼저 보내고 알린다. 알림을 받은 화면 코드가 다른 키를 바꿔도 보낸 순서가 표를 바꾼 순서와 같다.
+	if (putSessionData(key, value) == true)
+	{
+		sendSessionData(key, value, false);
+		OnSessionDataChanged.BroadCast(key);
+	}
+	return true;
+}
+
+bool PGameplayHostSession::RemoveSessionData(const PName& key)
+{
+	if (dropSessionData(key) == false)
+	{
+		return false;
+	}
+	sendSessionData(key, PString(), true);
+	OnSessionDataChanged.BroadCast(key);
+	return true;
+}
+
+void PGameplayHostSession::ClearSessionData()
+{
+	HList<PName> keys;
+	for (const HGameplaySessionDataEntry& entry : _sessionData)
+	{
+		keys.push_back(entry.Key);
+	}
+	for (const PName& key : keys)
+	{
+		RemoveSessionData(key);
+	}
+}
+
 void PGameplayHostSession::SetSlotControllers(int32 slot, const HList<int32>& controllers)
 {
 	HGameplayPlayerSlot* entry = findSlotMutable(slot);
@@ -245,6 +323,12 @@ void PGameplayHostSession::onUnbound()
 		_state = EGameplaySessionState::Ready;
 	}
 	_bGameAnnounced = false;
+
+	// 대기방으로 돌아왔다: 판 중에 끊긴 채 남겨 둔 자리(재접속용)를 비운다.
+	if (_state == EGameplaySessionState::Ready && releaseDisconnectedSlots() == true)
+	{
+		broadcastSlots();
+	}
 }
 
 // 게임이 세션을 거치지 않고 PGameMaster::Start 를 불렀으면(붙기 전에 시작 · 세션 이전 코드) 그 게임을 이어받는다.
@@ -269,6 +353,12 @@ void PGameplayHostSession::adoptStartedGameMaster()
 				sendDocument(slot.Peer);
 			}
 		}
+	}
+
+	// 판이 시작됐다: 준비 표시를 지운다(StartGame 과 같다).
+	if (clearReady() == true)
+	{
+		broadcastSlots();
 	}
 }
 
@@ -445,6 +535,7 @@ void PGameplayHostSession::handleHello(HNetPeerId peer, const HRawString& text)
 	welcome.World       = _world;
 	welcome.bStarted    = _state == EGameplaySessionState::Playing;
 	welcome.Slots       = _slots;
+	welcome.SessionData = _sessionData;
 
 	HList<uint8> bytes;
 	HGameplayNetCodec::EncodeMessage(EGameplayNetMessage::Welcome, welcome, bytes);
@@ -508,6 +599,23 @@ void PGameplayHostSession::handleSlotMessage(HGameplayPlayerSlot& slot, EGamepla
 		sendDocument(slot.Peer);
 		break;
 	}
+	case EGameplayNetMessage::SetReady:
+	{
+		HGameplayNetSetReady request;
+		if (HGameplayNetCodec::DecodeMessage(text, &request) == false)
+		{
+			JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession: bad SetReady from slot %d", slot.Slot);
+			break;
+		}
+		// 준비 표시는 대기방(판 시작 전)에서만 받는다. 판 중에 온 것은 버린다.
+		if (_state != EGameplaySessionState::Ready || slot.bReady == request.bReady)
+		{
+			break;
+		}
+		slot.bReady = request.bReady;
+		broadcastSlots();
+		break;
+	}
 	case EGameplayNetMessage::Ping:
 	{
 		break;
@@ -550,11 +658,76 @@ void PGameplayHostSession::markDisconnected(HGameplayPlayerSlot& slot)
 	}
 	slot.bConnected = false;
 	slot.Peer       = NetPeerNone;
+	slot.bReady     = false;
 
-	JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession: slot %d disconnected", slot.Slot);
+	// 판 시작 전(대기방)에 나간 사람의 자리는 바로 비운다 — 목록에서 사라지고 새 사람이 그 자리에 들어온다.
+	// 판 중에 나간 사람의 자리는 같은 토큰으로 돌아오도록 남긴다(대기방으로 돌아오면 onUnbound 가 비운다).
+	const bool bRelease = _state != EGameplaySessionState::Playing;
+	JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession: slot %d disconnected%s", slot.Slot, bRelease == true ? " (released: game not started)" : "");
+	if (bRelease == true)
+	{
+		releaseSlot(slot);
+	}
 	int32 slotIndex = slot.Slot;
 	broadcastSlots();
 	OnPeerDisconnected.BroadCast(slotIndex);
+}
+
+// 빈 자리로 되돌린다: 토큰 · 이름 · 준비를 지운다. 번호와 조작 주체(게임이 SetSlotControllers 로 정한 배정)는 둔다.
+void PGameplayHostSession::releaseSlot(HGameplayPlayerSlot& slot)
+{
+	slot.bConnected = false;
+	slot.Peer       = NetPeerNone;
+	slot.Token      = PString();
+	slot.Name       = PString();
+	slot.bReady     = false;
+	slot.LastHeard  = 0.0f;
+}
+
+bool PGameplayHostSession::releaseDisconnectedSlots()
+{
+	bool bReleased = false;
+	for (HGameplayPlayerSlot& slot : _slots)
+	{
+		if (slot.Slot == _localSlot || slot.bConnected == true || slot.IsFree() == true)
+		{
+			continue;
+		}
+		JG_LOG(Network, ELogLevel::Info, "PGameplayHostSession: released slot %d (%s, left during the game)", slot.Slot, slot.Name);
+		releaseSlot(slot);
+		bReleased = true;
+	}
+	return bReleased;
+}
+
+bool PGameplayHostSession::clearReady()
+{
+	bool bCleared = false;
+	for (HGameplayPlayerSlot& slot : _slots)
+	{
+		if (slot.bReady == true)
+		{
+			slot.bReady = false;
+			bCleared    = true;
+		}
+	}
+	return bCleared;
+}
+
+void PGameplayHostSession::sendSessionData(const PName& key, const PString& value, bool bRemoved)
+{
+	if (_mode != EGameplayNetMode::ListenServer)
+	{
+		return;
+	}
+
+	HGameplayNetSessionData change;
+	change.Key      = key;
+	change.Value    = value;
+	change.bRemoved = bRemoved;
+	HList<uint8> bytes;
+	HGameplayNetCodec::EncodeMessage(EGameplayNetMessage::SessionData, change, bytes);
+	broadcast(bytes);
 }
 
 void PGameplayHostSession::sendTo(HNetPeerId peer, const HList<uint8>& bytes)
@@ -698,6 +871,8 @@ HGameplayPlayerSlot* PGameplayHostSession::reserveSlot(const PString& token)
 		}
 		if (slot.bConnected == true && slot.Peer != NetPeerNone && _transport != nullptr)
 		{
+			// 창을 다시 띄워 옛 연결이 아직 끊기지 않았거나, 두 창이 한 토큰을 같이 쓴다(앞 창은 끊긴다 — 창마다 다른 토큰).
+			JG_LOG(Network, ELogLevel::Warning, "PGameplayHostSession: slot %d joined again with the same reconnect token, closing its previous connection", slot.Slot);
 			_transport->Close(slot.Peer);
 		}
 		slot.bConnected = false;

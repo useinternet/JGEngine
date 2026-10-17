@@ -29,6 +29,7 @@ void HGameplayPlayerSlot::WriteJson(PJsonData& json) const
 	json.AddMember("AllControllers", bAllControllers);
 	json.AddMember("Connected", bConnected);
 	json.AddMember("Name", Name);
+	json.AddMember("Ready", bReady);
 }
 
 void HGameplayPlayerSlot::ReadJson(const PJsonData& json)
@@ -40,4 +41,5 @@ void HGameplayPlayerSlot::ReadJson(const PJsonData& json)
 	json.GetData("AllControllers", &bAllControllers);
 	json.GetData("Connected", &bConnected);
 	json.GetData("Name", &Name);
+	json.GetData("Ready", &bReady);
 }

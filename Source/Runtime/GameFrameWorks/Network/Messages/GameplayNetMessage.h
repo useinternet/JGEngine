@@ -5,14 +5,15 @@
 namespace HGameplayNetProtocol
 {
 	// 메시지 형식이 바뀌면 올린다. 핸드셰이크에서 다르면 입장을 거부한다.
-	constexpr uint32 Version = 1;
+	// 2: 세션 공유 데이터(SessionData · Welcome 의 표) · 준비 표시(SetReady · 슬롯 Ready) — 대기방 기능 묶음(D-38)
+	constexpr uint32 Version = 2;
 }
 
 enum class EGameplayNetMessage : uint8
 {
 	None = 0,
 	Hello,             // 클라 → 호스트: 프로토콜 · 스키마 · 이름 · 재접속 토큰
-	Welcome,           // 호스트 → 클라: 슬롯 · 규칙 지문 · 월드 · 진행 여부 · 슬롯 표
+	Welcome,           // 호스트 → 클라: 슬롯 · 규칙 지문 · 월드 · 진행 여부 · 슬롯 표 · 세션 공유 데이터 표
 	Refuse,            // 호스트 → 클라: 입장 거부 사유
 	SlotChanged,       // 호스트 → 전원: 슬롯 표
 	StartGame,         // 호스트 → 전원: 시드 · 규칙 지문 · 초기 상태
@@ -23,7 +24,20 @@ enum class EGameplayNetMessage : uint8
 	Document,          // 호스트 → 클라: 저장 문서(초기 + 현재 + 로그). 압축
 	Travel,            // 호스트 → 전원: 월드 변경
 	Ping,              // 양방향: 생존 확인
+	SessionData,       // 호스트 → 전원: 세션 공유 데이터 한 키의 변경(값 · 지움)
+	SetReady,          // 클라 → 호스트: 로컬 슬롯의 준비 표시
 	Count,
+};
+
+// 세션 공유 데이터(방 정보) 한 항목: 방장이 정한 키 → 값(보통 JSON 글). 게임 상태 밖이다 — 체크섬 · 문서 · 순번에 들어가지 않는다.
+struct GAMEFRAMEWORKS_API HGameplaySessionDataEntry : public IJsonable
+{
+	PName   Key;
+	PString Value;
+
+protected:
+	virtual void WriteJson(PJsonData& json) const override;
+	virtual void ReadJson(const PJsonData& json) override;
 };
 
 struct GAMEFRAMEWORKS_API HGameplayNetHello : public IJsonable
@@ -45,6 +59,7 @@ struct GAMEFRAMEWORKS_API HGameplayNetWelcome : public IJsonable
 	PName                      World;
 	bool                       bStarted    = false;  // 진행 중이면 곧 Document 가 온다
 	HList<HGameplayPlayerSlot> Slots;
+	HList<HGameplaySessionDataEntry> SessionData;    // 그 순간의 전체 표. 클라는 이것으로 표를 통째로 바꾼다
 
 protected:
 	virtual void WriteJson(PJsonData& json) const override;
@@ -125,6 +140,27 @@ protected:
 struct GAMEFRAMEWORKS_API HGameplayNetTravel : public IJsonable
 {
 	PName World;
+
+protected:
+	virtual void WriteJson(PJsonData& json) const override;
+	virtual void ReadJson(const PJsonData& json) override;
+};
+
+// 바뀐 키 하나. 같은 키는 보낸 순서대로 도착하므로 마지막 값이 남는다.
+struct GAMEFRAMEWORKS_API HGameplayNetSessionData : public IJsonable
+{
+	PName   Key;
+	PString Value;
+	bool    bRemoved = false;
+
+protected:
+	virtual void WriteJson(PJsonData& json) const override;
+	virtual void ReadJson(const PJsonData& json) override;
+};
+
+struct GAMEFRAMEWORKS_API HGameplayNetSetReady : public IJsonable
+{
+	bool bReady = false;
 
 protected:
 	virtual void WriteJson(PJsonData& json) const override;

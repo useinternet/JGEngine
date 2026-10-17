@@ -39,6 +39,11 @@ struct GAMEFRAMEWORKS_API HGameplaySessionConfig
 	float32 PingInterval        = 1.0f;
 	float32 TimeoutSeconds      = 10.0f;
 	PString DesyncDumpDirectory = "NetDesync";   // 비우면 불일치 덤프를 쓰지 않는다
+	int32   MaxSessionDataBytes = 64 * 1024;     // 호스트: 세션 공유 데이터 전체(키 + 값 바이트 합). 넘는 SetSessionData 는 거부
+	// 클라: 재접속 토큰(ER-026). 비우면 세션마다 새로 만든다. 창(프로세스)을 다시 띄워도 판 중 같은 자리로 돌아오려면
+	// 게임이 PGameplayClientSession::GetReconnectToken() 을 저장했다가 여기에 넣는다. 1~128 바이트의 보이는 ASCII 만 쓴다(아니면 새 토큰).
+	// 창마다 다른 토큰을 쓴다 — 같은 토큰으로 두 창이 들어오면 나중 창이 그 자리를 이어받고 앞 창은 끊긴다.
+	PString ReconnectToken;
 };
 
 // 권한 경로의 유일한 입구. PGameMaster::Submit 은 세션만 부른다 (자체 테스트 제외).
@@ -57,6 +62,7 @@ protected:
 	int32                      _localSlot = INDEX_NONE;
 	float32                    _time      = 0.0f;
 	PString                    _closeReason;
+	HList<HGameplaySessionDataEntry> _sessionData;   // 넣은 순서. 키가 몇 개뿐이라 선형으로 찾는다
 
 public:
 	HMulticastDelegate<const HGameplayCommand&, const PString&> OnLocalCommandRejected;
@@ -65,6 +71,7 @@ public:
 	HMulticastDelegate<int32>                                   OnPeerDisconnected;   // 호스트: 끊긴 슬롯
 	HMulticastDelegate<const PString&>                          OnClosed;
 	HMulticastDelegate<const PName&>                            OnTravelRequested;    // 클라: 호스트가 월드를 바꿨다
+	HMulticastDelegate<const PName&>                            OnSessionDataChanged; // 세션 공유 데이터의 바뀐 키(지움 포함). 호스트도 자기가 바꾼 키를 받는다
 
 public:
 	PGameplaySession() = default;
@@ -96,6 +103,17 @@ public:
 	const HGameplayPlayerSlot*        FindSlot(int32 slot) const;
 	int32                             GetLocalSlot() const;
 
+	// 대기방 준비 표시. 판 시작 전(Ready)에만 된다 — 아니면 false. 클라는 호스트로 보내고, 바뀐 슬롯 표(OnSlotsChanged)로 돌아온다.
+	// 판이 시작되거나 연결이 끊기면 지워진다. "전원 준비면 시작" 판단은 게임이 한다.
+	virtual bool SetLocalReady(bool bReady) = 0;
+	bool         IsLocalReady() const;
+
+	// 세션 공유 데이터(방 정보): 호스트가 정한 키 → 값(PGameplayHostSession::SetSessionData). 클라는 Welcome(전체) · SessionData(바뀐 키)로 받는다.
+	// 호스트 · 클라 · 싱글이 같은 함수로 읽는다. 월드 이동에도 남고, 새 세션(Host · Join · Leave)은 빈 표로 시작한다.
+	// 게임 상태 밖이다(체크섬 · 문서 · 순번에 들어가지 않는다). 기계마다 도착 시점이 달라 규칙 코드는 읽지 않는다 — 판에 쓰는 값은 초기 상태에 넣는다.
+	const PString*                          FindSessionData(const PName& key) const;   // 없으면 nullptr
+	const HList<HGameplaySessionDataEntry>& GetSessionData() const;
+
 	// 이 행동자를 로컬 플레이어가 조작하는가 (AI 가 맡은 조작 주체는 아니다).
 	bool IsLocallyControlled(const HGameplayEntityId& actor) const;
 	// 지금 입력을 받는 첫 행동자 (HGameplayState::FirstInputActor): 선택 대기 중이면 선택자, 아니면 흐름이 정한 Turn.Actors 의 첫 행동자.
@@ -108,4 +126,11 @@ protected:
 	bool slotControls(const HGameplayPlayerSlot& slot, const HGameplayEntityId& actor) const;
 	HGameplayPlayerSlot* findSlotMutable(int32 slot);
 	void setClosed(const PString& reason);
+
+	// 세션 공유 데이터 표 고치기. 바뀌었으면 true. 알리지 않는다 — 부른 쪽이 (호스트는 참가자에게 보낸 뒤) OnSessionDataChanged 로 알린다.
+	bool putSessionData(const PName& key, const PString& value);
+	bool dropSessionData(const PName& key);
+	// 표를 통째로 바꾸고(Welcome) 값이 달라진 · 생긴 · 없어진 키를 돌려준다.
+	HList<PName> replaceSessionData(const HList<HGameplaySessionDataEntry>& entries);
+	void notifySessionData(const HList<PName>& keys);
 };

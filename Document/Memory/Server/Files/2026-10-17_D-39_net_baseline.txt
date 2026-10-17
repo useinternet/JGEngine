@@ -1,0 +1,206 @@
+# D-39 규칙 효과 안 상태 되돌리기 — 같이 하기 시험 기준값 (되감기 들어가기 전)
+# 2026-10-17 12:5x Server. 메인 Bin(10-12 21:15 빌드, GameFrameWorks 소스는 GFW 작업 폴더 Temp/wt/er027 스냅숏 9e287e8 과 같음)
+# 명령: MainTree.cmd -name=Server exec Bin\DevelopEngine\JGConsole.exe net.test session (두 번, 두 번 다 같은 값)
+# 쓰임: GFW 변경 뒤 같은 명령의 최종 체크섬이 같으면 '지점을 쓰지 않는 판은 체크섬 그대로'(검토서 6절 6)를 같이 하기 길에서 확인한다
+
+## run 1
+[MainTree] exec JGConsole.exe net.test session - lock taken after 1s
+[:42980:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 7539842237060206620. pages are created on first request
+[:42980:][info][Core]: Active Thread: [2224268434]
+[:42980:][info][Core]: Active Thread: [3506865812]
+[:42980:][info][Core]: Active Thread: [2306737831]
+[:42980:][info][Core]: Active Thread: [1975945035]
+[:42980:][info][Core]: Active Thread: [3004477711]
+[:42980:][info][Core]: Active Thread: [4170068798]
+[:42980:][info][Core]: Active Thread: [1160544526]
+[:42980:][info][Core]: Active Thread: [1035129569]
+[:42980:][info][Core]: Active Thread: [396676526]
+[:42980:][info][Core]: Active Thread: [2900471398]
+[:42980:][info][Core]: Active Thread: [282461544]
+[:42980:][info][Core]: Active Thread: [2694284862]
+[:42980:][info][Core]: Active Thread: [2625441531]
+[:42980:][info][Core]: Active Thread: [3321537930]
+[:42980:][info][Core]: Active Thread: [2612937206]
+[:42980:][info][Core]: Active Thread: [3559287442]
+[:42980:][info][Core]: Active Thread: [4255566450]
+[:42980:][info][Core]: Active Thread: [10827313]
+[:42980:][info][Core]: Active Thread: [1571456726]
+[:42980:][info][Core]: Active Thread: [3385498666]
+[:42980:][info][Core]: Active Thread: [933473249]
+[:42980:][info][Core]: Active Thread: [1155009756]
+[:42980:][info][Core]: Active Thread: [292513691]
+[:42980:][info][Core]: Active Thread: [3339890069]
+[:42980:][info][Core]: Active Thread: [3098616649]
+[:42980:][info][Core]: Active Thread: [3494518009]
+[:42980:][info][Core]: Active Thread: [251918124]
+[:42980:][info][Core]: Active Thread: [4061701630]
+[:42980:][info][Core]: Active Thread: [2936366979]
+[:42980:][info][Core]: Active Thread: [4288746820]
+[:42980:][info][Core]: Active Thread: [1748404192]
+[:42980:][info][Core]: Active Thread: [945168877]
+[:42980:][info][Core]: Active Thread Totoal Count: 32 
+[:42980:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.56 MB)
+[:42980:][info][Memory]: [ID: 0] class 256 B grew to 2 pages (480 blocks, growth #1, chunk committed 0.69 MB)
+[:42980:][info][Core]: Recognized Class List...
+[:42980:][debug][Core]: - JGStaticMeshComponent
+[:42980:][debug][Core]: - JGGameplayEntityComponent
+[:42980:][debug][Core]: - JGAssetImporter
+[:42980:][debug][Core]: - JGGameplayEffect
+[:42980:][debug][Core]: - JGGameplayDevView
+[:42980:][debug][Core]: - JGMemoryStatistcs
+[:42980:][debug][Core]: - JGGameplayEntityActor
+[:42980:][debug][Core]: - JGDevConsole
+[:42980:][debug][Core]: - JGSceneViewport
+[:42980:][debug][Core]: - JGDataTableEditor
+[:42980:][debug][Core]: - JGSessionLobby
+[:42980:][debug][Core]: - JGAsset
+[:42980:][debug][Core]: - JGDevFeature
+[:42980:][debug][Core]: - JGDevScene
+[:42980:][debug][Core]: - JGDevSettings
+[:42980:][debug][Core]: - JGActor
+[:42980:][debug][Core]: - JGCameraComponent
+[:42980:][debug][Core]: - JGCameraActor
+[:42980:][debug][Core]: - JGGameEntryActor
+[:42980:][debug][Core]: - JGPickShapeComponent
+[:42980:][debug][Core]: - JGGameMasterActor
+[:42980:][debug][Core]: - JGGameplayControllerActor
+[:42980:][debug][Core]: - JGGameplayCue
+[:42980:][debug][Core]: - JGActorComponent
+[:42980:][debug][Core]: - JGGameInstance
+[:42980:][debug][Core]: - JGWidget
+[:42980:][debug][Core]: - JGDataTable
+[:42980:][debug][Core]: - JGGameplayCommandHandler
+[:42980:][debug][Core]: - JGGameplayModifier
+[:42980:][debug][Core]: - JGGameplayTrigger
+[:42980:][debug][Core]: - JGGameWidget
+[:42980:][debug][Core]: - JGStaticMesh
+[:42980:][debug][Core]: - JGTexture
+[:42980:][debug][Core]: - JGFBXAssetImporter
+[:42980:][debug][Core]: - JGWidgetComponent
+[:42980:][info][GameFrameWorks]: GameFrameWorks module startup
+[:42980:][trace][Audio]: Startup Audio Module...
+[:42980:][info][Audio]: Audio: silent mode (no window) - sounds play on the null device
+[:42980:][info][ConsoleCommand]: > net.test session
+== Network self test (session) ==
+-- session: handshake
+[:42980:][info][Memory]: [ID: 0] class 256 B grew to 3 pages (720 blocks, growth #2, chunk committed 0.88 MB)
+[:42980:][info][Network]: PGameplayHostSession: listen server on port 7102, 2 slots
+[:42980:][warning][Network]: PGameplayHostSession: refused peer 1: protocol 102 != 2
+  [PASS] different protocol is refused and closed (protocol 102 != 2)
+[:42980:][info][Network]: PGameplayHostSession: slot 1 joined (Mismatch)
+[:42980:][info][Memory]: [ID: 0] class 1024 B grew to 2 pages (124 blocks, growth #1, chunk committed 0.94 MB)
+[:42980:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started, 0 session data keys)
+  [PASS] client with different rules joins slot 1 before start
+[:42980:][warning][Network]: PGameplayHostSession: refused peer 3: session full
+[:42980:][error][Network]: PGameplayClientSession: refused: session full
+[:42980:][info][Network]: PGameplaySession: closed (refused: session full)
+  [PASS] full session refuses a new client (refused: session full)
+  [PASS] host starts the game
+[:42980:][error][Network]: PGameplayClientSession: rules fingerprint mismatch (host 4170579408105395565, local 9956721507365775360)
+[:42980:][info][Network]: PGameplaySession: closed (rules fingerprint mismatch (host 4170579408105395565, local 9956721507365775360))
+[:42980:][warning][Network]: PGameplayHostSession: slot 1 disconnected
+  [PASS] client with different rules closes on StartGame (rules fingerprint mismatch (host 4170579408105395565, local 9956721507365775360))
+  [PASS] host sees the mismatched client leave
+-- session: 1 host + 3 clients, 1000 commands
+[:42980:][info][Network]: PGameplayHostSession: listen server on port 7101, 5 slots
+  [PASS] listen server created
+  [PASS] binding a network session disables local Undo
+[:42980:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 1.00 MB)
+[:42980:][info][Network]: PGameplayHostSession: slot 1 joined (Client1)
+[:42980:][info][Network]: PGameplayHostSession: slot 2 joined (Client2)
+[:42980:][info][Memory]: [ID: 0] class 2048 B grew to 2 pages (62 blocks, growth #1, chunk committed 1.06 MB)
+[:42980:][info][Network]: PGameplayHostSession: slot 3 joined (Client3)
+[:42980:][info][Network]: PGameplayClientSession: joined as slot 1 (game not started, 0 session data keys)
+[:42980:][info][Network]: PGameplayClientSession: joined as slot 2 (game not started, 0 session data keys)
+[:42980:][info][Network]: PGameplayClientSession: joined as slot 3 (game not started, 0 session data keys)
+  [PASS] 3 clients joined
+  [PASS] clients got slots 1, 2, 3
+[:42980:][info][Network]: PGameplayHostSession: slot 4 joined (Forger)
+  [PASS] raw client handshake gets Welcome
+[:42980:][info][Memory]: [ID: 0] class 8192 B grew to 2 pages (14 blocks, growth #1, chunk committed 1.12 MB)
+  [PASS] host StartGame
+[:42980:][info][Network]: PGameplayClientSession: game started (seed 4242)
+[:42980:][info][Network]: PGameplayClientSession: game started (seed 4242)
+[:42980:][info][Memory]: [ID: 0] class 4096 B grew to 2 pages (30 blocks, growth #1, chunk committed 1.19 MB)
+[:42980:][info][Network]: PGameplayClientSession: game started (seed 4242)
+  [PASS] all clients started from StartGame
+  [PASS] every replica starts with the host checksum
+  [PASS] host rejects a command for another slot's actor (not your actor)
+[:42980:][warning][Network]: PGameplayHostSession: slot 4 disconnected
+[:42980:][info][Memory]: [ID: 0] class 2048 B grew to 3 pages (93 blocks, growth #2, chunk committed 1.25 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 2 pages (4092 blocks, growth #1, chunk committed 1.31 MB)
+[:42980:][info][Memory]: [ID: 0] class 4096 B grew to 3 pages (45 blocks, growth #2, chunk committed 1.38 MB)
+[:42980:][info][Memory]: [ID: 0] class 2048 B grew to 4 pages (124 blocks, growth #3, chunk committed 1.44 MB)
+[:42980:][info][Memory]: [ID: 0] class 16384 B grew to 2 pages (6 blocks, growth #1, chunk committed 1.56 MB)
+[:42980:][info][Memory]: [ID: 0] class 32768 B grew to 2 pages (2 blocks, growth #1, chunk committed 1.63 MB)
+[:42980:][info][Memory]: [ID: 0] class 32768 B grew to 3 pages (3 blocks, growth #2, chunk committed 1.66 MB)
+[:42980:][info][Memory]: [ID: 0] class 32768 B grew to 4 pages (4 blocks, growth #3, chunk committed 1.69 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 3 pages (6138 blocks, growth #2, chunk committed 1.75 MB)
+[:42980:][info][Memory]: [ID: 0] class 65536 B grew to 2 pages (2 blocks, growth #1, chunk committed 1.88 MB)
+[:42980:][info][Memory]: [ID: 0] class 65536 B grew to 3 pages (3 blocks, growth #2, chunk committed 1.94 MB)
+[:42980:][info][Memory]: [ID: 0] class 65536 B grew to 4 pages (4 blocks, growth #3, chunk committed 2.00 MB)
+[:42980:][info][Memory]: [ID: 0] class 65536 B grew to 5 pages (5 blocks, growth #4, chunk committed 2.06 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 4 pages (8184 blocks, growth #3, chunk committed 2.13 MB)
+[:42980:][info][Memory]: [ID: 0] class 131072 B grew to 2 pages (2 blocks, growth #1, chunk committed 2.38 MB)
+[:42980:][info][Memory]: [ID: 0] class 131072 B grew to 3 pages (3 blocks, growth #2, chunk committed 2.50 MB)
+[:42980:][info][Memory]: [ID: 0] class 131072 B grew to 4 pages (4 blocks, growth #3, chunk committed 2.63 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 5 pages (10230 blocks, growth #4, chunk committed 2.69 MB)
+[:42980:][info][Memory]: [ID: 0] class 131072 B grew to 5 pages (5 blocks, growth #4, chunk committed 2.81 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 6 pages (12276 blocks, growth #5, chunk committed 2.88 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 7 pages (14322 blocks, growth #6, chunk committed 2.94 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 8 pages (16368 blocks, growth #7, chunk committed 3.25 MB)
+[:42980:][info][Memory]: [ID: 0] class 262144 B grew to 2 pages (2 blocks, growth #1, chunk committed 3.50 MB)
+[:42980:][info][Memory]: [ID: 0] class 262144 B grew to 3 pages (3 blocks, growth #2, chunk committed 3.75 MB)
+[:42980:][info][Memory]: [ID: 0] class 262144 B grew to 4 pages (4 blocks, growth #3, chunk committed 4.00 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 9 pages (18414 blocks, growth #8, chunk committed 4.06 MB)
+[:42980:][info][Memory]: [ID: 0] class 1024 B grew to 3 pages (186 blocks, growth #2, chunk committed 4.13 MB)
+[:42980:][info][Memory]: [ID: 0] class 512 B grew to 2 pages (248 blocks, growth #1, chunk committed 4.19 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 10 pages (20460 blocks, growth #9, chunk committed 4.25 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 11 pages (22506 blocks, growth #10, chunk committed 4.81 MB)
+[:42980:][info][Memory]: [ID: 0] class 524288 B grew to 2 pages (2 blocks, growth #1, chunk committed 5.31 MB)
+[:42980:][info][Memory]: [ID: 0] class 524288 B grew to 3 pages (3 blocks, growth #2, chunk committed 5.81 MB)
+[:42980:][info][Memory]: [ID: 0] class 524288 B grew to 4 pages (4 blocks, growth #3, chunk committed 6.31 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 12 pages (24552 blocks, growth #11, chunk committed 6.38 MB)
+[:42980:][info][Memory]: [ID: 0] class 16 B grew to 13 pages (26598 blocks, growth #12, chunk committed 6.44 MB)
+  [PASS] host reached 1000 commands (1001)
+  [INFO] played 1001 commands in 5.74 s (debug build, 4 replicas in one process)
+  [PASS] slot 1: no desync over every accepted command
+  [PASS] slot 1 applied every command (1001)
+  [PASS] slot 1 final checksum equals host (2316966530336481447)
+  [PASS] slot 1 sent 224 commands of its own
+  [PASS] slot 2: no desync over every accepted command
+  [PASS] slot 2 applied every command (1001)
+  [PASS] slot 2 final checksum equals host (2316966530336481447)
+  [PASS] slot 2 sent 149 commands of its own
+  [PASS] slot 3: no desync over every accepted command
+  [PASS] slot 3 applied every command (1001)
+  [PASS] slot 3 final checksum equals host (2316966530336481447)
+  [PASS] slot 3 sent 226 commands of its own
+  [PASS] host AI played the enemy (202 commands)
+  [PASS] pending choices were resolved over the network (112)
+  [PASS] spawn and shuffle commands were played
+  [PASS] host player sent 200 commands
+  [INFO] checksum cost: 5 entities 0.422 ms, 301 entities 9.021 ms (debug build)
+  [PASS] checksum cost measured
+[:42980:][info][Network]: PGameplaySession: closed (test done)
+[:42980:][info][Network]: PGameplaySession: closed (test done)
+[:42980:][info][Network]: PGameplaySession: closed (test done)
+[:42980:][info][Network]: PGameplaySession: closed (test done)
+== Network self test: 33 passed, 0 failed ==
+[:42980:][info][NetSelfTest]: Network self test: 33 passed, 0 failed
+net.test: OK (0 failures)
+[:42980:][trace][Audio]: Shutdown Audio Module...
+[:42980:][info][Network]: PGameplaySession: closed (shutdown)
+[:42980:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:42980:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 60, committed 6.44 MB, live blocks 0, remote pending 0 (total 0), large live 0
+[MainTree] exec JGConsole.exe net.test session - exit 0 after 8s
+
+## run 2 (요약)
+== Network self test (session) ==
+  [INFO] played 1001 commands in 5.70 s (debug build, 4 replicas in one process)
+  [PASS] slot 1 final checksum equals host (2316966530336481447)
+  [PASS] slot 2 final checksum equals host (2316966530336481447)
+  [PASS] slot 3 final checksum equals host (2316966530336481447)
+  [PASS] host AI played the enemy (202 commands)
+  [PASS] spawn and shuffle commands were played
+== Network self test: 33 passed, 0 failed ==

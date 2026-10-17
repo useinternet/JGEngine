@@ -52,11 +52,14 @@ echo "client: $C_LINE | $C_CODE | errors $C_ERRORS (crashwalk exit $CLIENT_EXIT)
 
 HS=$(field "$H_LINE" seq); HC=$(field "$H_LINE" checksum); HW=$(field "$H_LINE" winner)
 CS=$(field "$C_LINE" seq); CC=$(field "$C_LINE" checksum); CW=$(field "$C_LINE" winner); CD=$(field "$C_LINE" desyncs)
+# 세션 공유 데이터(D-38): 방장이 정한 방 정보를 참가자도 같은 값으로 가졌는가
+HR=$(echo "$H_LINE" | sed -n "s/.* room=\([^ ]*\).*/\1/p"); CR=$(echo "$C_LINE" | sed -n "s/.* room=\([^ ]*\).*/\1/p")
 
 if [ -n "$HS" ] && [ "$HS" = "$CS" ] && [ "$HC" = "$CC" ] && [ "$HW" = "$CW" ] && [ "$CD" = "0" ] \
+	&& [ -n "$HR" ] && [ "$HR" != "-" ] && [ "$HR" = "$CR" ] \
 	&& [ "$H_CODE" = "Process exited with code 0" ] && [ "$C_CODE" = "Process exited with code 0" ] \
 	&& [ "$H_ERRORS" = "0" ] && [ "$C_ERRORS" = "0" ]; then
-	echo "net-duel: OK (seq $HS, checksum $HC, winner team $HW)"
+	echo "net-duel: OK (seq $HS, checksum $HC, winner team $HW, room $HR)"
 	exit 0
 fi
 echo "net-duel: FAILED"

@@ -1,0 +1,148 @@
+[:37676:][info][Memory]: [ID: 0] Memory Chunk Initialize. thread 10597924955950987336. pages are created on first request
+[:37676:][info][Core]: Active Thread: [3033038519]
+[:37676:][info][Core]: Active Thread: [1474941708]
+[:37676:][info][Core]: Active Thread: [2140570785]
+[:37676:][info][Core]: Active Thread: [2815991139]
+[:37676:][info][Core]: Active Thread: [637115162]
+[:37676:][info][Core]: Active Thread: [4124929767]
+[:37676:][info][Core]: Active Thread: [3956023586]
+[:37676:][info][Core]: Active Thread: [4106447193]
+[:37676:][info][Core]: Active Thread: [3216172930]
+[:37676:][info][Core]: Active Thread: [1113135926]
+[:37676:][info][Core]: Active Thread: [2280866147]
+[:37676:][info][Core]: Active Thread: [2247972734]
+[:37676:][info][Core]: Active Thread: [3529604893]
+[:37676:][info][Core]: Active Thread: [70088063]
+[:37676:][info][Core]: Active Thread: [2101386079]
+[:37676:][info][Core]: Active Thread: [458600313]
+[:37676:][info][Core]: Active Thread: [2357800774]
+[:37676:][info][Core]: Active Thread: [1036488256]
+[:37676:][info][Core]: Active Thread: [2719632643]
+[:37676:][info][Core]: Active Thread: [1673086959]
+[:37676:][info][Core]: Active Thread: [2584037267]
+[:37676:][info][Core]: Active Thread: [4072012484]
+[:37676:][info][Core]: Active Thread: [1251524774]
+[:37676:][info][Core]: Active Thread: [3536574448]
+[:37676:][info][Core]: Active Thread: [1790486718]
+[:37676:][info][Core]: Active Thread: [270426785]
+[:37676:][info][Core]: Active Thread: [2311044349]
+[:37676:][info][Core]: Active Thread: [2260477059]
+[:37676:][info][Core]: Active Thread: [598556544]
+[:37676:][info][Core]: Active Thread: [2110392583]
+[:37676:][info][Core]: Active Thread: [3476974567]
+[:37676:][info][Core]: Active Thread: [2487209205]
+[:37676:][info][Core]: Active Thread Totoal Count: 32 
+[:37676:][info][Core]: Package NetDuel 0.1.0 (ReleaseGame, engine 0bd6356): C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/
+[:37676:][info][Memory]: [ID: 0] class 128 B grew to 2 pages (908 blocks, growth #1, chunk committed 0.62 MB)
+[:37676:][trace][Graphics]: DirectX12 Init Start
+[:37676:][trace][Graphics]: Success Create D3D12Device
+[:37676:][info][Graphics]: Description : NVIDIA GeForce RTX 4090 Laptop GPU
+[:37676:][info][Graphics]: VideoMemory : 16050  MB
+[:37676:][trace][Graphics]: Create DescriptorAllocator...
+[:37676:][trace][Graphics]: Create CommandQueue...
+[:37676:][trace][Graphics]: Create ResourceStagingManager...
+[:37676:][trace][Graphics]: Create FrameBuffer...
+[:37676:][trace][Graphics]: Create Default Resources...
+[:37676:][trace][Graphics]: Register DefaultTexture in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : DefaultTexture   Ref : 1
+[:37676:][trace][Graphics]: Register DefaultTexture_UploadStaging in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : DefaultTexture_UploadStaging   Ref : 1
+[:37676:][trace][Graphics]: Register DefaultMaterial in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : DefaultMaterial   Ref : 1
+[:37676:][info][Graphics]: Start Collect Shader in (C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGEngine/Shaders)
+[:37676:][trace][Graphics]: Collect compute_shader_template
+[:37676:][trace][Graphics]: Collect draw2d
+[:37676:][trace][Graphics]: Collect graphics_shader_template
+[:37676:][trace][Graphics]: Collect scene_shader
+[:37676:][info][Graphics]: Complete Collect Shader
+[:37676:][trace][Graphics]: DirectX12 Init End
+[:37676:][trace][Graphics]: Startup Graphics Module...
+[:37676:][trace][Asset]: Startup Asset Module...
+[:37676:][info][GameFrameWorks]: GameFrameWorks module startup
+[:37676:][info][Network]: PNetTcpTransport: listening on port 47811
+[:37676:][info][Network]: PGameplayHostSession: listen server on port 47811, 4 slots
+[:37676:][info][GameFrameWorks]: JGGameInstance: hosting on port 47811 as Host
+[:37676:][info][NetDuel]: NetDuel entry actor entered world: mode=ListenServer authority=1
+[:37676:][info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[:37676:][info][NetDuel]: Startup NetDuel Module...
+[:37676:][info][Graphics]: FrameBuffer : VSync on
+[:37676:][trace][Graphics]: Register GameHost_Output in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_Output   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_Display in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_Display   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_GBuffer_Albedo in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_Albedo   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_GBuffer_NormalMetallic in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_NormalMetallic   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_GBuffer_SpecularRoughness in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_SpecularRoughness   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_GBuffer_Depth in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_GBuffer_Depth   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_DepthStencil in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_DepthStencil   Ref : 1
+[:37676:][info][Memory]: [ID: 0] class 128 B grew to 3 pages (1362 blocks, growth #2, chunk committed 0.81 MB)
+[:37676:][trace][Graphics]: Register GameHost_CompositeMaterial in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_CompositeMaterial   Ref : 1
+[:37676:][trace][Graphics]: Register GameHost_DisplayMaterial in ResourceRefMap
+[:37676:][trace][Graphics]: Add Counting Resource : GameHost_DisplayMaterial   Ref : 1
+[:37676:][info][GameHost]: GameHost: started "NetDuel" 1920x1080 Windowed, VSync on, game modules: NetDuel
+[:37676:][info][Core]: Recognized Class List...
+[:37676:][debug][Core]: - JGFBXAssetImporter
+[:37676:][debug][Core]: - JGAsset
+[:37676:][debug][Core]: - JGGameEntryActor
+[:37676:][debug][Core]: - JGNetDuelEntryActor
+[:37676:][debug][Core]: - JGStaticMeshComponent
+[:37676:][debug][Core]: - JGGameplayEntityComponent
+[:37676:][debug][Core]: - JGAssetImporter
+[:37676:][debug][Core]: - JGActor
+[:37676:][debug][Core]: - JGStaticMesh
+[:37676:][debug][Core]: - JGTexture
+[:37676:][debug][Core]: - JGCameraComponent
+[:37676:][debug][Core]: - JGCameraActor
+[:37676:][debug][Core]: - JGPickShapeComponent
+[:37676:][debug][Core]: - JGGameMasterActor
+[:37676:][debug][Core]: - JGGameplayControllerActor
+[:37676:][debug][Core]: - JGGameplayCue
+[:37676:][debug][Core]: - JGGameplayEntityActor
+[:37676:][debug][Core]: - JGActorComponent
+[:37676:][debug][Core]: - JGGameInstance
+[:37676:][debug][Core]: - JGDataTable
+[:37676:][debug][Core]: - JGGameplayCommandHandler
+[:37676:][debug][Core]: - JGGameplayEffect
+[:37676:][debug][Core]: - JGGameplayModifier
+[:37676:][debug][Core]: - JGGameplayTrigger
+[:37676:][debug][Core]: - JGGameWidget
+[:37676:][trace][Asset]: Start Load Assets in C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGEngine
+[:37676:][trace][Asset]: Start Load Assets in C:/Develop/JGEngine/Temp/Games/NetDuel/Package/ReleaseGame/Content/JGGame
+[:37676:][info][GameHost]: GameHost: nothing to draw yet (World NetDuel: no active camera)
+[:37676:][trace][Graphics]: Remove Counting Resource : DefaultTexture_UploadStaging   Ref : 0
+[:37676:][trace][Graphics]: UnRegister DefaultTexture_UploadStaging in ResourceRefMap
+[:37676:][info][Network]: PGameplayHostSession: slot 1 joined (Guest)
+[:37676:][info][Network]: PGameplayHostSession: sent document to slot 1 at seq 7
+[:37676:][info][NetDuel]: NetDuel: finished mode=ListenServer slot=0 seq=13 checksum=14727258992400026585 winner=0 submitted=10 desyncs=0
+[:37676:][info][NetDuel]: Shutdown NetDuel Module...
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_Display   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_Display in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_GBuffer_SpecularRoughness   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_GBuffer_SpecularRoughness in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_DepthStencil   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_DepthStencil in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_Output   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_Output in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_GBuffer_Albedo   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_GBuffer_Albedo in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_GBuffer_NormalMetallic   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_GBuffer_NormalMetallic in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_GBuffer_Depth   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_GBuffer_Depth in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_CompositeMaterial   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_CompositeMaterial in ResourceRefMap
+[:37676:][trace][Graphics]: Remove Counting Resource : GameHost_DisplayMaterial   Ref : 0
+[:37676:][trace][Graphics]: UnRegister GameHost_DisplayMaterial in ResourceRefMap
+[:37676:][info][GameFrameWorks]: JGGameInstance: world unloaded (NetDuel)
+[:37676:][info][Network]: PGameplaySession: closed (shutdown)
+[:37676:][info][GameFrameWorks]: GameFrameWorks module shutdown
+[:37676:][trace][Asset]: Shutdown Asset Module...
+[:37676:][trace][Graphics]: Shutdown Graphics Module...
+[:37676:][info][GameHost]: GameHost: shutdown
+[:37676:][info][Memory]: [ID: 0] Memory Chunk Shutdown. pages 13, committed 0.81 MB, live blocks 0, remote pending 0 (total 0), large live 0

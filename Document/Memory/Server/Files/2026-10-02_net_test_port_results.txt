@@ -1,0 +1,24 @@
+net.test transport 고정 포트 충돌 수정 — 2026-10-02 11:4x ~ 11:5x
+계기: DevOps 세션 알림 — 11:3x 엔진 회귀에서 net.test transport 5건이 bind 실패(WSA 10048). 같은 기계의 ProjectAH 도구(feedback_server.pl)가 127.0.0.1:47790 을 듣고 있었다. 엔진 결함 아님.
+원인: TCP 절이 수신 포트 47790 을 박아 두었고, '닫힌 포트로 접속 → 거부' 검사는 47791 에 아무도 없다고 가정했다(47791 은 NetDuel 런처 검증도 쓰는 포트).
+
+---- 수정 ----
+PNetTcpTransport::GetListenPort() 추가 — 듣고 있는 실제 포트(getsockname). 멤버를 늘리지 않아 객체 크기는 그대로(JGEditor 로비 창이 이 클래스를 직접 만든다).
+Listen 로그가 실제 포트를 찍는다(Listen(0) 이면 운영체제가 고른 포트).
+GameplayNetSelfTest TCP 절: Listen(0) → GetListenPort() 로 받은 포트로 접속. 거부 검사는 빈 포트를 하나 받아 바로 닫은 포트로 접속.
+
+---- 검증 (메인 트리, 47790 을 PID 15840 이 계속 LISTENING 인 채로) ----
+빌드: GameFrameWorks 오류 0 · 경고 0 (D-20 PCH 변경으로 전체 다시 컴파일, 19 s) · JGConsole 오류 0
+  [PASS] tcp listen on 127.0.0.1:58128 (port chosen by the OS)
+  [PASS] tcp connect starts
+  [PASS] tcp both sides see Connected
+  [PASS] tcp small message arrives intact
+  [PASS] tcp 1 MB message arrives intact (1048576 bytes)
+  [PASS] tcp close is seen as Disconnected(Closed)
+  [PASS] tcp connect to a closed port is refused
+transport: == Network self test: 19 passed, 0 failed ==
+net.test all: == Network self test: 101 passed, 0 failed ==
+gmtest: 174 PASS, 0 FAIL, exit 0
+two-process kernel (포트 47801): OK, seq 1000, checksum 18289831599570610680
+two-process world  (포트 47802): OK, seq 500, checksum 2608759924318437380 (세 프로세스 worlds=2)
+  (체크섬 절댓값은 09-30 과 다르다 — GFW 2-7 흐름 교체로 상태 필드가 늘었다. 세 프로세스 일치만 본다)

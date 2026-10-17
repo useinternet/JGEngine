@@ -1,0 +1,67 @@
+Server 5-5 최소 로비 (JGEditor 개발용 창 Windows/Session Lobby) 검증 — 2026-10-02 10:3x ~ 11:0x
+사용자 결정(10-02, 총괄 세션 전달 D-19 ①): 권고대로 JGEditor 개발용 창. 세션 상태 · 슬롯 표 · Host · Join · Leave · 호스트 Reload World. "준비" 와 ProjectAH ER-006 은 범위 밖
+
+---- 구현 ----
+신규 Source/Editor/JGEditor/Widgets/SessionLobby.h/.cpp (JGSessionLobby, 제목 "Session Lobby"), JGEditor.cpp 에 include 1줄 + 메뉴 Windows/Session Lobby 블록
+엔진(GFW) 변경 없음 — 게임 인스턴스 API(GetSession · HostSession · JoinSession · LeaveSession · LoadWorld)와 세션 조회만 쓴다
+버튼 줄을 창 맨 위 고정 자리에 둔다(상태에 따라 움직이지 않음, 쓸 수 없는 버튼은 흐리게 · 누르면 이유)
+
+---- 검증 환경 ----
+스크래치 워크트리 wt5 (HEAD efba16a, 메인 소스와 같음) + 워크트리 전용 ImGui 훅(Etc/Files/tools/datatable_uitest_hook.patch.txt, 메인 트리에 넣지 않음)
+PreBuild 2회 + JGEngine.sln 빌드 오류 0 (432 s), JGEditor Rebuild 오류 0
+NetDuel 게임 프로젝트(Files/tools/net_duel_testgame, wt5 엔진) 생성 · 빌드 오류 0 (457 s)
+실행: Files/tools/net_lobby_check/run_net_lobby.sh — 런처 두 개를 인자 없이(싱글) crashwalk 아래, 클릭은 PostMessage 만
+
+---- probe 1: 창이 안 보임 ----
+imgui.ini 에 Session Lobby 를 (1200,30) 710x560 로 두었더니 메인 창 클라이언트(약 1711x1029) 밖으로 나가 멀티 뷰포트가 별도 OS 창으로 띄웠다(저장된 ini: ViewportPos=1208,61).
+  → 메인 창 캡처 · 클릭에 잡히지 않음. 배치를 안쪽으로(Lobby (900,30) 800x560) 바꿈. 로그는 'Layout: reopened JGGameplayDevView JGSessionLobby' 로 정상이었다
+probe 2: 로비 창 캡처 정상. 좌표(창 캡처 픽셀) Host (933,98) · Join (977,98) · Leave (1024,98) · Reload World (1100,98) · 'Host on this machine only' (925,144)
+
+---- 실행 (run2, 최종 코드) ----
+순서: A 'this machine only' + Host → B Join → A Reload World → 15 초 → B Leave → 둘 다 WM_CLOSE
+[A]
+[info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[info][NetDuel]: NetDuel: finished mode=Standalone slot=0 seq=10 checksum=13884515259415892894 winner=0 submitted=10 desyncs=0
+[info][Network]: PGameplayHostSession: listen server on port 47771, 4 slots
+[info][Network]: PGameplaySession: closed (session replaced)
+[info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 10)
+[info][Network]: PGameplayHostSession: slot 1 joined (Player)
+[info][Network]: PGameplayHostSession: sent document to slot 1 at seq 10
+[info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[info][NetDuel]: NetDuel: finished mode=ListenServer slot=0 seq=15 checksum=10057767511302857797 winner=1 submitted=8 desyncs=0
+[warning][Network]: PGameplayHostSession: slot 1 disconnected
+[info][Network]: PGameplaySession: closed (shutdown)
+Process exited with code 0 (0x00000000)
+  [error]/[critical]: 0
+[B]
+[info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[info][NetDuel]: NetDuel: finished mode=Standalone slot=0 seq=10 checksum=13884515259415892894 winner=0 submitted=10 desyncs=0
+[info][Network]: PGameplaySession: closed (session replaced)
+[info][Network]: PGameplayClientSession: joined as slot 1 (game in progress)
+[info][Network]: PGameplayClientSession: document applied at seq 10
+[info][GameFrameWorks]: JGGameInstance: following the host to world NetDuel
+[info][Network]: PGameplayClientSession: game started (seed 20260930)
+[info][GameFrameWorks]: JGGameInstance: world loaded (NetDuel)
+[info][NetDuel]: NetDuel: finished mode=Client slot=1 seq=15 checksum=10057767511302857797 winner=1 submitted=7 desyncs=0
+[info][Network]: PGameplaySession: closed (session replaced)
+[info][Network]: PGameplayHostSession: adopted a game started outside the session (seq 15)
+[info][Network]: PGameplaySession: closed (shutdown)
+Process exited with code 0 (0x00000000)
+  [error]/[critical]: 0
+결과: 두 런처의 네트워크 판 끝 줄이 같다 — seq 15 · checksum 10057767511302857797 · 승자 팀 1 · 클라 desyncs 0. 양쪽 종료 코드 0, [error]/[critical] 0
+  (run1 도 같은 결과. run2 는 결과 줄에 'Last action:' 을 붙인 최종 코드)
+캡처: 2026-10-02_5-5_lobby_A2_joined.png (ListenServer · peers 1 · 슬롯 0 Player yes 0 / 1 Player yes 1, DevView 'Undo … (disabled by session)')
+      2026-10-02_5-5_lobby_A3_match.png · B3_match.png (둘 다 seq 15 · 같은 체크섬, B 는 Client · slot 1 · Desyncs 0)
+      2026-10-02_5-5_lobby_A4_left.png (B 가 떠난 뒤 peers 0, 슬롯 1 은 'Player · no' 로 남음)
+
+---- ER-006 관련 관찰 (기록만, 범위 밖) ----
+- 이 흐름에서 호스트는 Host 를 누르는 순간 이미 Playing 이다(게임이 월드 로드 때 시작, 세션이 이어받음). 그래서 ER-006 의 '시작 전(Ready) 퇴장' 상황이 생기지 않는다.
+  시작 전 로비를 쓰려면 게임이 월드 로드 때 바로 시작하지 않아야 한다 — 그 경우에만 ER-006 의 슬롯 해제가 문제 된다.
+- 진행 중(Playing)에 떠난 클라의 슬롯은 이름 · 토큰이 남은 채 Connected=no 로 보인다(재접속용, 설계대로). 표에는 그 사람이 계속 보인다 — ER-006 '목록에서 나간 사람이 사라진다' 요구와 맞닿는 표시.
+- 두 런처 모두 기본 이름 'Player' 라 표에 같은 이름이 둘 보인다(이름 칸에서 바꿀 수 있다).
+
+---- 메인 트리 반영 (11:0x) ----
+Source/Editor/JGEditor/Widgets/SessionLobby.h/.cpp 복사, JGEditor.cpp 는 Edit 로 추가분만(같은 파일의 DevConsole D-7 변경 유지)
+PreBuild(Build/BatchFiles/PreBuild.bat) 종료 0 — Temp/CodeGen/JGEditor/SessionLobby.generation.h/.cpp 생성, JGEditor.vcxproj 에 들어감. 추적 생성물(sln · lua) 변화 없음
+JGEditor 빌드(-p:BuildProjectReferences=false) 오류 0 · 경고 0 (SessionLobby.cpp · JGEditor.cpp 컴파일)
+엔진 런처 30 초(crashwalk, 프로젝트 없음): 종료 0, [error]/[critical] 0, GameFrameWorks 연결(D-7) · JGSessionLobby 등록, live blocks 0

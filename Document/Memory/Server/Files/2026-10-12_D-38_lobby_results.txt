@@ -1,0 +1,85 @@
+대기방 기능 묶음(D-38) 구현 · 검증 결과 — Server, 2026-10-11 23:44 ~ 2026-10-12 00:21
+
+결정: 사용자 2026-10-11 23:42 대시보드 명령 "다로 해줘" → (다), 엔진 총괄 전달.
+범위: ① 방 정보 = 세션 공유 데이터(ProjectAH ER-025) ② 판 시작 전 대기방에서 나간 사람 자리 바로 비우기(ER-006 필수, D-29 ①)
+      ③ 각자 준비 완료 표시(ER-006 있으면 좋음, D-29 ③). 프로토콜 버전 1 → 2 한 번. 범위 밖: 방장이 사람 내보내기(D-29 ②).
+설계 근거: Files/ER-025_세션공유데이터_검토_2026-10-11.md §3 · Files/ER-006_세션로비보강_검토_2026-10-02.md §4 · §5.
+
+== 1. 작업 폴더 (Temp/wt/d38)
+메인 작업 트리 스냅숏 커밋 fbc3a6e(임시 인덱스, 메인 인덱스 · 작업 트리 그대로) → git worktree. PreBuild 2회 종료 0.
+기준선: JGEngine.sln DevelopEngine x64 빌드 종료 0(45 s), net.test all 101/101.
+
+== 2. 엔진 변경 (모두 Server 의 Network/ + 검사 · 콘솔 명령, 새 파일 없음)
+Messages/GameplayNetMessage.h/.cpp
+  - HGameplayNetProtocol::Version 2. 새 종류 SessionData(호스트 → 전원, 바뀐 키 하나) · SetReady(클라 → 호스트), Ping 뒤 · Count 앞(기존 번호 그대로)
+  - HGameplaySessionDataEntry{Key, Value}, HGameplayNetSessionData{Key, Value, bRemoved}, HGameplayNetSetReady{bReady}, Welcome.SessionData(전체 표)
+  - 이름 필드는 nameText/readName 으로(빈 이름 = NAME_NONE, "(null)" 왕복 함정)
+Messages/GameplayPlayerSlot.h/.cpp: bReady 직렬화("Ready")
+Session/GameplaySession.h/.cpp
+  - HGameplaySessionConfig::MaxSessionDataBytes = 64 KB
+  - FindSessionData(key) · GetSessionData() · OnSessionDataChanged(key) · SetLocalReady(bool)(가상) · IsLocalReady()
+  - 보호: putSessionData · dropSessionData · replaceSessionData(달라진 키 목록) · notifySessionData
+Session/GameplayHostSession.h/.cpp
+  - SetSessionData(빈 키 · 크기 초과 false + Warning, 같은 값이면 아무것도 안 함, 참가자에게 먼저 보내고 알림) · RemoveSessionData · ClearSessionData
+  - Welcome 에 전체 표. SetLocalReady(Ready 상태만) · SetReady 받기(Ready 상태만, 판 중에 온 것은 버림)
+  - markDisconnected: 준비 지움 + Playing 이 아니면 자리 비움(토큰 · 이름 · 준비, 번호 · 조작 주체는 둠) "slot N disconnected (released: game not started)"
+  - onUnbound(대기방으로 돌아옴): 판 중에 끊긴 채 남은 자리 비우고 슬롯 표 방송 "released slot N (..., left during the game)"
+  - StartGame · adoptStartedGameMaster: 준비 표시 모두 지우고 방송
+Session/GameplayClientSession.h/.cpp: Welcome 으로 표 통째로 바꾸기(달라진 키 알림, OnSlotsChanged 뒤), SessionData 바로 적용(보관 안 함), SetLocalReady(Ready 상태만 보냄)
+GameplayNetSelfTest.h/.cpp: codec 3검사 + lobby 절(데이터 17 · 자리 12 · 준비 11 = 40), 2 프로세스 러너(데이터 · 준비 대기 · 손님), net.test [..|lobby|..]
+Source/Programs/JGConsole/NetCommands.cpp: net.join -leave-after-welcome
+JGEditor Widgets/SessionLobby.h/.cpp(5-5 창 — 10-07 부터 JGEditor 담당 파일, 알림): Ready/Not Ready 버튼, 세션 데이터 줄(키 · 값 · Set Data · Remove Data, 권한 쪽만), 슬롯 표 Ready 열, 세션 데이터 표
+도구: tools/net_two_process/run_two_process.sh([클라 수] [손님 수], data · ready 비교) · Server/Files/tools/net_duel_testgame(NetDuel room 값 · run_net_duel*.sh room 비교 · run_net_duel_version_check.sh) · Server/Files/tools/net_lobby_check(run_net_lobby_room.sh · net_lobby_room_driver.ps1 · imgui_room.ini)
+
+== 3. 작업 폴더 검증
+net.test lobby (첫 실행) 40/40.
+고친 줄을 뺀 빌드(markDisconnected 비우기 · onUnbound 비우기를 끈 빌드): net.test lobby 31 passed, 9 failed — 자리 검사 8 + 준비한 채 나간 사람 1 이 FAIL → 검사가 회귀를 잡는다. 되돌린 뒤 40/40.
+net.test all 144/144(101 + codec 3 + lobby 40), gmtest OK(실패 0).
+2 프로세스(작업 폴더 Bin): kernel 2 · world 2 · kernel 3+손님 3 · world 3+손님 3 모두 OK — 손님 3명이 차례로 모두 slot 1 을 받았다(나갈 때마다 비워짐).
+
+Session Lobby 창(실제 에디터 두 개, 작업 폴더 전용 ImGui 훅 JG_UITEST=1 — 메인에는 넣지 않음):
+  프로젝트 없이 띄운 엔진 에디터 A · B(B 는 Bin 복사본), 창 배치 imgui_room.ini, PostMessage 클릭 · WM_CHAR 입력만(사용자 커서 · 포커스 안 건드림).
+  포트 47795(같은 PC 에서 ProjectAH 런처 두 개가 127.0.0.1:47771 로 시험 중이어서 피함 — 그 시험에 접속하지 않음).
+  첫 실행: 클릭이 하나도 먹지 않음 — 에디터가 DPI 인식(125%, D-22 ②)인데 드라이버가 DPI 비인식이라 창 좌표가 논리 픽셀 → 드라이버에 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 를 넣어 해결(DevOps gamehost_e2e.ps1 · JGEditor 도구와 같은 방식).
+  run2 순서와 결과(캡처 Files/2026-10-12_D-38_room_*.png, 로그 _room_A.txt · _room_B.txt):
+    A 포트 47795 · 이 기계에서만 · Host → 값 v1 Set Data (A1_hosted_data)
+    B Join → "joined as slot 1 (game not started, 1 session data keys)", B 표 room = v1 (B2_joined)
+    B Ready → A Ready → 양쪽 슬롯 표 0 · 1 모두 ready (A3_ready · B3_ready)
+    A 값 v2 Set Data → B 표 room = v2 (B4_changed)
+    B Leave → A "slot 1 disconnected (released: game not started)", A 표 slot 1 = "- / no / -" (A5_left)
+    B 다시 Join → slot 1, 준비 아님, 표 room = v2 (B6_rejoined)
+    A Remove Data → B "Session data: 0 keys" (B7_removed)
+  두 에디터 종료 0 · [error]/[critical] 0.
+
+== 4. 메인 반영 (MainTree.cmd -name=Server hold 00:10 → release 00:21)
+메인 == 스냅숏 확인(22개 파일 모두 스냅숏 뒤 다른 세션 변경 없음) → 복사(ImGui 훅 파일 제외 — 메인 imgui_impl_win32.cpp 에 훅 0). 새 파일 없음 → PreBuild 안 함(SessionLobby 생성 코드 작업 폴더와 같음).
+build: JGEngine.sln DevelopEngine x64 종료 0, 14 s, 오류 0 · 경고 C 0.
+net.test all: 144 passed, 0 failed. gmtest: OK (0 failures). console.selftest: OK (64/64).
+2 프로세스 (메인 Bin, 포트 47781~47784):
+  kernel 2:     net.host seq=1000 checksum=4414354277814441307 data=12903016603267889822 keys=2 ready=0 / 클라 2 같음 · desyncs 0
+  world 2:      seq=250 checksum=11074026865397103710 data=15120424472788106480 worlds=2 / 클라 2 같음
+  kernel 3+3:   손님 1~3 모두 slot=1 "left after welcome (data keys 1)" → 클라 1~3 slot 1·2·3, seq=1000 checksum=8869355962123695595 data=11311012833766891927 ready=0
+  world 3+3:    손님 1~3 모두 slot=1 → 클라 1~3, seq=251 checksum=17517410658260667937 data=2587234264511311087 worlds=2 ready=0
+  (kernel 값은 작업 폴더 실행과 체크섬 · data 모두 같음)
+에디터 30 초(메인 Bin, 프로젝트 없음): 종료 0, [error] 0, live blocks 0. 사용자 imgui.ini 는 실행 전 백업 → 실행이 바꿔 백업으로 되돌림.
+검증 게임 NetDuel(Temp/Games/NetDuel, 메인 엔진): 새 NetDuelEntryActor.cpp 복사 → 배치 2 종료 0 → NetDuel.sln 빌드 종료 0(83 s)
+  런처 결투 run_net_duel.sh (포트 47791): 두 쪽 seq 13 checksum 14727258992400026585 winner 0 room=duel2v2-seed20260930, 종료 0 · 오류 0
+    → net-duel: OK (seq 13, checksum 14727258992400026585, winner team 0, room duel2v2-seed20260930)
+    (체크섬은 10-03 GP-S1 과 같은 값 — 판 결과 그대로)
+  쿠킹: MainTree exec JGConsole -runCook -project=…/NetDuel → cook.run: OK (90.3 s, 11 binaries, 5 content files, 10.9 MB, 1 warning — assimp DLL 복사, GP-H2 그대로)
+  패키지 결투 run_net_duel_package.sh (포트 47811): 호스트 "listen server on port 47811" → 참가자 "joined as slot 1 (game in progress, 1 session data keys)" → "document applied at seq 7"
+    → 두 쪽 seq 13 · 체크섬 같음 · room 같음, 종료 0 · 오류 0 → package-duel: OK (seq 13, checksum 14727258992400026585, winner team 0, room duel2v2-seed20260930)
+  옛 · 새 버전 run_net_duel_version_check.sh (옛 = 10-03 GP-S1 패키지 사본 Temp/Games/NetDuel_v1pkg, 프로토콜 1):
+    새 호스트 + 옛 참가자: 호스트 "refused peer 1: protocol 1 != 2", 참가자 "refused: protocol 1 != 2", 둘 다 종료 0
+    옛 호스트 + 새 참가자: 호스트 "refused peer 1: protocol 2 != 1", 참가자 "refused: protocol 2 != 1", 둘 다 종료 0
+    → version-check: OK (both directions refused at join, exit 0). 로그 Files/2026-10-12_D-38_version_*.log
+  패키지 로그 Files/2026-10-12_D-38_package_host.log · _client.log
+
+== 5. 완료 기준 대조 (엔진 총괄 10-11)
+방 정보가 지금 · 나중 참가자 · 재접속 · 진행 중 입장 모두에 가고 바뀌면 알림     → lobby 데이터 절 17 · 2 프로세스 data 같음 · 창 run2 · 패키지 진행 중 입장 room
+4명 방에 세 사람이 들어왔다 나가도 새 사람이 들어옴                               → lobby 자리 절(손님 4명 뒤 2명 입장 · 5번째 거절) · 2 프로세스 손님 3 + 클라 3 · 창 run2 Leave/Join
+준비 표시가 모두에게 보임                                                         → lobby 준비 절 11 · 2 프로세스(호스트가 모두 준비 뒤 시작, 시작 뒤 ready=0) · 창 run2
+옛 버전은 "버전이 다름"으로 거절(멈춤 · 어긋남 없음)                             → lobby 절 프로토콜 1 거절 · 패키지 두 방향 거절 · 종료 0
+net.test all · 2 · 4 프로세스 · 회귀 · 체크섬 그대로                             → 144/144 · gmtest · console 64 · 2 프로세스 4종 · 런처 · 패키지 체크섬 10-03 과 같음
+JGEditor Session Lobby 창에서도 확인                                              → 3절 run2(작업 폴더 빌드 — 훅이 필요해 메인 Bin 이 아님. 창 코드는 메인과 같은 파일)
+패키지 쿠킹 확인                                                                  → 4절 쿠킹 · 패키지 결투 · 버전 확인

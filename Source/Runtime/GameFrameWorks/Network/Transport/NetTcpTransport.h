@@ -39,6 +39,8 @@ public:
 	void SetListenAddress(const PString& address);
 
 	virtual bool       Listen(uint16 port) override;
+	// 듣고 있는 실제 포트. Listen(0) 이면 운영체제가 고른 빈 포트다(검사가 다른 프로그램의 포트와 부딪히지 않게). 듣고 있지 않으면 0.
+	uint16             GetListenPort() const;
 	virtual HNetPeerId Connect(const PString& address, uint16 port) override;
 	virtual bool       Send(HNetPeerId peer, const HList<uint8>& data) override;
 	virtual void       Poll(HList<HNetEvent>& outEvents) override;
