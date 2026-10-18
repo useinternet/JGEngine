@@ -1,0 +1,29 @@
+HSizeClass → HPagePool 이름 바꾸기 — 검증 기록 (Core 세션, 2026-10-18 09:03~09:06)
+
+근거: 사용자 결정 보고함 q-hsizeclass-name (10-18 09:01:42) "HPagePool(권고)", 엔진 총괄 배정.
+까닭: 블록이 아니라 같은 크기 HPage 를 받아 두고(64KB 추가 · 빈 페이지 보관 · 오래된 페이지 반환) 다시 쓰는 페이지 풀.
+
+바꾼 것 (타입 이름 · 주석만, 동작 · 크기 · 레이아웃 그대로)
+- Source/Runtime/Core/Memory/MemoryPool.h   : 앞선 선언 struct HPagePool, moveToEmpty 인자형, 머리 주석 "같은 크기 페이지 풀(HPagePool)"  (HSizeClass 2곳)
+- Source/Runtime/Core/Memory/MemoryPool.cpp : 구조체 정의와 쓰는 곳, 정의 위 주석 "같은 크기 페이지 풀 하나(크기 클래스마다 하나)"  (HSizeClass 21곳)
+- 바꾸지 않은 것(범위 밖): HMemoryChunk::Classes, ClassIndex, classIndexFor*, HMemoryClassStatInfo, ClassCount, DevStatistics 공개 이름, 지역 변수 cls
+- 남은 HSizeClass: 소스 0곳(grep). 보관 문서(Files/Memory_TODO.md, Files/Memory_풀재설계_설계_2026-09-28.md)는 당시 기록이라 그대로
+
+빌드 (메인 트리, MainTree.cmd -name=Core hold 09:03:26 → release 09:06)
+- MainTree.cmd -name=Core build -v:minimal → exit 0, 26초, error 0, MemoryPool.cpp 다시 컴파일, 프로젝트 20개 링크
+
+자체 시험 (MainTree.cmd -name=Core exec Bin\DevelopEngine\JGConsole.exe <명령>) — 모두 종료 0, Memory Chunk Shutdown live blocks 0
+- console.selftest   OK (64/64)   [error] 12줄 = 시험이 일부러 내는 등록 실패 · 모르는 명령
+- delegate.selftest  OK (34/34)
+- input.selftest     OK (34/34)
+- audio.selftest     OK (49/49)   ogg 없이. [error] 2줄 = 없는 파일 · Content 밖 경로 시험
+- datatable.selftest OK (127/127) [error] 5줄 = 열 없음 · 범위 넘침 · 형 불일치 시험
+- gameui.selftest    OK (461/461)
+- gmtest             OK (0 failures) [error] 3줄 = 규칙 엔진 거절 · 단계 상한 · 스키마 시험
+
+에디터 60초 (crashwalk JGLauncher.exe 60)
+- 종료 코드 0, [error]/[critical] 0
+- Memory Chunk Shutdown: [ID 0] pages 20, committed 1.25 MB, live blocks 0, large live 0 / [ID 1] pages 10, committed 3.13 MB, live blocks 0, large live 0
+- 성장 로그 12줄은 모두 시작 · 에셋 로드 구간(Sample.jgasset 로드 직후까지), 정상 상태에서는 없음
+
+위키 글 · 그림의 이름은 엔진 총괄이 맞춘다. 커밋은 엔진 총괄.

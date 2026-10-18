@@ -2,7 +2,7 @@
 #include "CoreDefines.h"
 
 // 메모리 풀 (Memory_TODO Phase 2 재설계, 2026-09-28). 상세: Document/Memory_풀재설계_설계_2026-09-28.md
-//  - 스레드마다 청크 하나. 청크는 크기 클래스(8B~1MB, 2의 제곱 18개)마다 페이지 목록을 갖고, 클래스가 비면 페이지를 하나 더 만든다(고갈 없음).
+//  - 스레드마다 청크 하나. 청크는 크기 클래스(8B~1MB, 2의 제곱 18개)마다 같은 크기 페이지 풀(HPagePool)을 갖고, 풀에 빈 블록이 없으면 페이지를 하나 더 만든다(고갈 없음).
 //  - 1MB 초과 또는 정렬 16 초과 요청은 요청 크기 그대로 잡는 대형 블록(청크가 소유하는 블록 하나짜리 페이지)이다.
 //    놓으면 풀 전체 대형 캐시에 두어 비슷한 크기의 요청에 재사용한다(용량 ≤ 요청 × 1.25, 총량 64MB, 유휴 10초).
 //  - 모든 블록의 payload 바로 앞 16B 는 HMemoryHeader 이고 OwnerChunkID(청크 테이블 인덱스)로 소유 청크를 찾는다. 대형 블록은 MemorySize = Large.
@@ -123,7 +123,7 @@ struct HMemoryPoolStatInfo
 };
 
 class  HMemoryChunk;
-struct HSizeClass;
+struct HPagePool;
 struct HPage;
 struct HLargeCacheNode;
 
@@ -170,7 +170,7 @@ private:
 
 	HPage* takeEmptyOrGrow(HMemoryChunk& InChunk, uint32 InClassIndex);
 	HPage* growClass(HMemoryChunk& InChunk, uint32 InClassIndex);
-	void   moveToEmpty(HMemoryChunk& InChunk, HSizeClass& InClass, HPage* InPage);
+	void   moveToEmpty(HMemoryChunk& InChunk, HPagePool& InClass, HPage* InPage);
 	void   releaseIdlePages(double InNow);
 	void   freeBlockLocal(HMemoryChunk& InChunk, void* InBlock);
 	void   drainRemoteFrees(HMemoryChunk& InChunk);

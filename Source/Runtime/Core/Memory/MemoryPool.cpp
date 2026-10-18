@@ -162,8 +162,8 @@ struct HPage
 };
 static_assert(sizeof(HPage) == HMemoryPoolConfig::PageHeaderSize, "HPage must be 64 bytes (first block starts right after it, 16B aligned)");
 
-// 크기 클래스 하나. 블록 목록(PartialHead)은 소유 스레드만 만진다. Empty·All 목록과 PageCount·EmptyCount 갱신은 PageListMutex 아래에서.
-struct HSizeClass
+// 같은 크기 페이지 풀 하나(크기 클래스마다 하나). 블록 목록(PartialHead)은 소유 스레드만 만진다. Empty·All 목록과 PageCount·EmptyCount 갱신은 PageListMutex 아래에서.
+struct HPagePool
 {
 	uint32 BlockSize     = 0;    // 8 .. MaxClassBytes
 	uint32 Stride        = 0;    // BlockSize + 16
@@ -196,7 +196,7 @@ public:
 	std::thread::id OwnerThread;
 	ThreadID        OwnerThreadHash = 0;    // std::hash<std::thread::id>. 통계·로그용
 
-	HSizeClass Classes[HConfig::ClassCount];
+	HPagePool Classes[HConfig::ClassCount];
 
 	std::atomic<void*>  RemoteFreeHead    = nullptr;    // 타 스레드 반납 스택 (lock-free push / 소유자 pop-all)
 	std::atomic<uint32> RemoteFreePending = 0;
@@ -233,7 +233,7 @@ struct HLargeCacheNode
 
 namespace
 {
-	uint64 pageBytesOf(const HSizeClass& InClass)
+	uint64 pageBytesOf(const HPagePool& InClass)
 	{
 		if (InClass.BlocksPerPage > 1)
 		{
@@ -242,7 +242,7 @@ namespace
 		return HConfig::PageHeaderSize + InClass.Stride;
 	}
 
-	HPage* pageOf(void* InBlock, const HSizeClass& InClass)
+	HPage* pageOf(void* InBlock, const HPagePool& InClass)
 	{
 		if (InClass.BlocksPerPage > 1)
 		{
@@ -253,7 +253,7 @@ namespace
 
 	// 여러 블록을 담는 페이지는 VirtualAlloc 으로 잡는다. 시작 주소가 할당 단위(64KB)로 정렬되므로 블록 주소 마스크로 페이지를 찾을 수 있고,
 	// _aligned_malloc(64KB, 64KB) 처럼 정렬 여유 64KB 를 더 쓰지 않는다. 블록 하나짜리 페이지는 정렬이 필요 없어 malloc.
-	HPage* allocPageMemory(const HSizeClass& InClass)
+	HPage* allocPageMemory(const HPagePool& InClass)
 	{
 		if (InClass.BlocksPerPage > 1)
 		{
@@ -262,7 +262,7 @@ namespace
 		return static_cast<HPage*>(malloc(pageBytesOf(InClass)));
 	}
 
-	void freePageMemory(const HSizeClass& InClass, HPage* InPage)
+	void freePageMemory(const HPagePool& InClass, HPage* InPage)
 	{
 		if (InClass.BlocksPerPage > 1)
 		{
@@ -279,7 +279,7 @@ namespace
 
 	// ---- 페이지 목록 (Prev/Next 이중 연결. Partial 은 소유 스레드 전용, Empty 는 PageListMutex) ----
 
-	void listPushPartial(HSizeClass& InClass, HPage* InPage)
+	void listPushPartial(HPagePool& InClass, HPage* InPage)
 	{
 		JG_CHECK(InPage->ListKind == EPageList::None);
 		InPage->Prev = nullptr;
@@ -292,7 +292,7 @@ namespace
 		InPage->ListKind = EPageList::Partial;
 	}
 
-	void listUnlinkPartial(HSizeClass& InClass, HPage* InPage)
+	void listUnlinkPartial(HPagePool& InClass, HPage* InPage)
 	{
 		JG_CHECK(InPage->ListKind == EPageList::Partial);
 		if (InPage->Prev != nullptr)
@@ -312,7 +312,7 @@ namespace
 		InPage->ListKind = EPageList::None;
 	}
 
-	void listAppendEmpty(HSizeClass& InClass, HPage* InPage)
+	void listAppendEmpty(HPagePool& InClass, HPage* InPage)
 	{
 		JG_CHECK(InPage->ListKind == EPageList::None);
 		InPage->Next = nullptr;
@@ -329,7 +329,7 @@ namespace
 		InPage->ListKind = EPageList::Empty;
 	}
 
-	void listUnlinkEmpty(HSizeClass& InClass, HPage* InPage)
+	void listUnlinkEmpty(HPagePool& InClass, HPage* InPage)
 	{
 		JG_CHECK(InPage->ListKind == EPageList::Empty);
 		if (InPage->Prev != nullptr)
@@ -354,7 +354,7 @@ namespace
 	}
 
 	// All 목록은 단일 연결. O(페이지 수)지만 회수 때만 걷고 클래스의 페이지는 보통 몇 개다.
-	void listUnlinkAll(HSizeClass& InClass, HPage* InPage)
+	void listUnlinkAll(HPagePool& InClass, HPage* InPage)
 	{
 		HPage** link = &InClass.AllHead;
 		while (*link != nullptr)
@@ -416,7 +416,7 @@ void HMemoryPool::Shutdown()
 		uint32 pages      = 0;
 		for (uint32 i = 0; i < HConfig::ClassCount; ++i)
 		{
-			HSizeClass& cls = chunk->Classes[i];
+			HPagePool& cls = chunk->Classes[i];
 			liveBlocks += cls.Live.load(std::memory_order_relaxed);
 			pages      += cls.PageCount.load(std::memory_order_relaxed);
 
@@ -528,7 +528,7 @@ uint32 HMemoryPool::createChunkLocked(const std::thread::id& InThreadID)
 
 	for (uint32 i = 0; i < HConfig::ClassCount; ++i)
 	{
-		HSizeClass& cls = chunk->Classes[i];
+		HPagePool& cls = chunk->Classes[i];
 		cls.BlockSize = 1u << (i + MinClassLog2);
 		cls.Stride    = cls.BlockSize + static_cast<uint32>(HConfig::HeaderSize);
 
@@ -549,7 +549,7 @@ uint32 HMemoryPool::createChunkLocked(const std::thread::id& InThreadID)
 
 HPage* HMemoryPool::growClass(HMemoryChunk& InChunk, uint32 InClassIndex)
 {
-	HSizeClass&  cls       = InChunk.Classes[InClassIndex];
+	HPagePool&  cls       = InChunk.Classes[InClassIndex];
 	const uint64 pageBytes = pageBytesOf(cls);
 
 	HPage* page = allocPageMemory(cls);
@@ -616,7 +616,7 @@ HPage* HMemoryPool::growClass(HMemoryChunk& InChunk, uint32 InClassIndex)
 
 HPage* HMemoryPool::takeEmptyOrGrow(HMemoryChunk& InChunk, uint32 InClassIndex)
 {
-	HSizeClass& cls = InChunk.Classes[InClassIndex];
+	HPagePool& cls = InChunk.Classes[InClassIndex];
 
 	// 빈 페이지가 없으면 락을 잡지 않는다.
 	if (cls.EmptyCount.load(std::memory_order_relaxed) > 0)
@@ -642,7 +642,7 @@ HPage* HMemoryPool::takeEmptyOrGrow(HMemoryChunk& InChunk, uint32 InClassIndex)
 	return growClass(InChunk, InClassIndex);
 }
 
-void HMemoryPool::moveToEmpty(HMemoryChunk& InChunk, HSizeClass& InClass, HPage* InPage)
+void HMemoryPool::moveToEmpty(HMemoryChunk& InChunk, HPagePool& InClass, HPage* InPage)
 {
 	listUnlinkPartial(InClass, InPage);    // Partial 은 소유 스레드 전용이라 락 없음
 	InPage->EmptySince = nowSeconds();
@@ -665,7 +665,7 @@ void HMemoryPool::releaseIdlePages(double InNow)
 
 		for (uint32 i = 0; i < HConfig::ClassCount; ++i)
 		{
-			HSizeClass& cls = chunk->Classes[i];
+			HPagePool& cls = chunk->Classes[i];
 
 			// 정상 상태의 거의 모든 프레임: 빈 페이지가 없으면 락 없이 건너뛴다.
 			if (cls.EmptyCount.load(std::memory_order_relaxed) == 0)
@@ -721,7 +721,7 @@ void* HMemoryPool::Allocate(uint64 InMemorySize, uint64 InAlignment)
 
 	HMemoryChunk& chunk      = thisThreadChunk();
 	const uint32  classIndex = classIndexForRequest(InMemorySize);
-	HSizeClass&   cls        = chunk.Classes[classIndex];
+	HPagePool&   cls        = chunk.Classes[classIndex];
 
 	// 원격 반납이 많이 쌓였으면 먼저 회수한다.
 	if (chunk.RemoteFreePending.load(std::memory_order_relaxed) >= HConfig::RemoteFreeDrainThreshold)
@@ -798,7 +798,7 @@ void HMemoryPool::Deallocate(void* InMemory)
 	header->MemeoryState = EMemoryState::None;
 
 	const uint32 classIndex = classIndexForBlockSize(static_cast<uint64>(header->MemorySize));
-	HSizeClass&  cls        = owner->Classes[classIndex];
+	HPagePool&  cls        = owner->Classes[classIndex];
 	cls.Live.fetch_sub(1, std::memory_order_relaxed);
 	debugFill(InMemory, cls.BlockSize, 0xDD);
 
@@ -853,7 +853,7 @@ void HMemoryPool::Deallocate(void* InMemory)
 void HMemoryPool::freeBlockLocal(HMemoryChunk& InChunk, void* InBlock)
 {
 	HMemoryHeader* header = GetMemoryHeader(InBlock);
-	HSizeClass&    cls    = InChunk.Classes[classIndexForBlockSize(static_cast<uint64>(header->MemorySize))];
+	HPagePool&    cls    = InChunk.Classes[classIndexForBlockSize(static_cast<uint64>(header->MemorySize))];
 	HPage*         page   = pageOf(InBlock, cls);
 
 	const bool bWasFull = (page->FreeHead == nullptr);
@@ -1115,7 +1115,7 @@ void HMemoryPool::GetStatInfo(HMemoryPoolStatInfo& OutStatInfo)
 
 		for (uint32 i = 0; i < HConfig::ClassCount; ++i)
 		{
-			const HSizeClass&     cls = chunk->Classes[i];
+			const HPagePool&     cls = chunk->Classes[i];
 			HMemoryClassStatInfo& out = info.Classes[i];
 			out.BlockSize     = cls.BlockSize;
 			out.BlocksPerPage = cls.BlocksPerPage;

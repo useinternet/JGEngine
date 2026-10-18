@@ -23,6 +23,12 @@
 
 콘솔 명령 시스템 구현 현황 · 함정 · 검증은 `Etc/현황.md` §1(DevConsole 창과 함께 적힘), 명령 선언 방법은 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h` 상단 주석, 자체 검사 `console.selftest`.
 
+**커밋 체크리스트 (HSizeClass → HPagePool 이름 바꾸기, 2026-10-18 — 커밋은 엔진 총괄)**
+- 수정 `Source/Runtime/Core/Memory/MemoryPool.h` · `MemoryPool.cpp`(타입 이름 23곳 · 주석 2곳, +25/−25). 다른 트랙과 겹치는 소스 없음
+- 재빌드 Bin(10-18 09:04 — `MemoryPool.cpp` 를 쓰는 Core.lib 와 링크된 DLL · exe). 다른 트랙의 미커밋 Bin 과 같은 파일
+- 문서 `Core/{현황.md, TODO.md, Files/2026-10-18_HPagePool_rename_verify.txt}` · `진행현황.md` 7절
+- 검증: 빌드 26초 오류 0, `JGConsole` 자체 시험 7종 통과, 에디터 60초 종료 0 · live 0(증적 파일)
+
 **커밋 체크리스트 (10-17 문서만 — 코드 변경 없음, 커밋은 엔진 총괄)**
 - 사람이 듣는 확인 닫음(D-37, 10-17 14:24): `Core/{현황.md, TODO_Audio.md}` · `진행현황.md`(1절 Core 행 · 3절 D-37 행 · 7절)
 - Core 아키텍처 그림 설명(10-17 14:51): 저장소 밖 위키 `C:/obsidian/ProjectJG/02. 위키/JGEngine/모듈/Core 그림 설명.md`(새) · `모듈/Core.md`(링크 한 줄), 저장소 안 `Core/{현황.md, TODO.md}`(보류 한 줄) · `진행현황.md` 7절
