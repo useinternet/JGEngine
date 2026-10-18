@@ -11,35 +11,19 @@
 
 | 항목 | 상태 | 비고 |
 |---|---|---|
-| 델리게이트 AddLambda 가 왼값을 참조로 저장(ER-023) — 이름 있는 람다 · `std::function` 변수를 `AddLambda` · `CreateLambda` · `BindLambda` 로 걸면 참조로 저장돼, 원래 변수가 사라진 뒤 부르면 매달린 참조로 죽음 | **완료 2026-10-11 14:31 메인 반영, 미커밋** — 게임 쪽 결함 보고, 엔진 총괄 배정(사용자 결정 없이) | `CreateLambda` 가 `std::decay_t` 값 형으로 저장(왼값 복사 · 오른값 이동), `PLambdaDelegate` 생성자 복사 · 이동 둘, `operator+=` 의 `std::move` → `std::forward`(왼값을 옮겨 가 비우던 것). 부르는 쪽 모양 그대로, 게임 UI 움직임 `Call` 도 같이 사본. `delegate.selftest` 람다 저장 9 검사 추가 → 34/34(고치기 전 7 실패 + abort), 회귀 · 에디터 종료 0 · live 0. 참조 저장에 기대던 사용처 없음(엔진 · ProjectAH). 복사할 수 없는 람다를 왼값으로 넘기면 이제 컴파일 오류(사용처 없음). 증적 `Files/2026-10-11_ER-023_lambda_storage_verify.txt`, 커밋 목록은 표 아래(이벤트 구독 버그와 같은 두 파일) |
-| Core 이벤트 구독이 객체를 지워도 안 빠지는 버그 — `PSPDelegate::GetOwner` 조건이 뒤집힘(`Misc/Delegate.h:255`) | **완료 2026-10-11 00:19, 미커밋** — 사용자 대시보드 "지금 진행해줘"(00:01) | GUI 세션 발견(10-03). `GetOwner` = 살아 있는 주인 주소(죽었으면 nullptr) → AddSP 구독도 주인 기준 해제(`RemoveObject` · `IsBoundTo` · `ClearIfBoundTo`)로 빠진다. 같은 파일에서 함께 고침: `RemoveObject` 가 바꿔 온 구독을 건너뛰어 같은 주인 구독이 하나 남던 것, 방송 중 해제가 콜백만 지우고 핸들을 남겨 같은 방송에서 빈 콜백 실행 assert 가 나던 것(이제 핸들 무효 → 가장 바깥 방송이 끝날 때 지움). 새 `delegate.selftest` 25/25(고치기 전 8 실패 + assert), 회귀 7종 · 에디터 종료 0 · live 0, 메인은 `MainTree.cmd -name=Core` 로 반영 · 빌드 · 회귀. 기존 사용처(GameHost · ProjectAH 의 `RemoveObject` 는 AddRaw 1개씩, GUI 백엔드 AddSP 는 `RemoveAll`) 결과 같음. 증적 `Files/2026-10-11_delegate_unsubscribe_fix_verify.txt`, 커밋 목록은 표 아래 |
+| 델리게이트 AddLambda 가 왼값을 참조로 저장(ER-023) — 이름 있는 람다 · `std::function` 변수를 `AddLambda` · `CreateLambda` · `BindLambda` 로 걸면 참조로 저장돼, 원래 변수가 사라진 뒤 부르면 매달린 참조로 죽음 | **완료 2026-10-11 14:31 메인 반영, 커밋 `ee36bb1`(10-17)** — 게임 쪽 결함 보고, 엔진 총괄 배정(사용자 결정 없이) | `CreateLambda` 가 `std::decay_t` 값 형으로 저장(왼값 복사 · 오른값 이동), `PLambdaDelegate` 생성자 복사 · 이동 둘, `operator+=` 의 `std::move` → `std::forward`(왼값을 옮겨 가 비우던 것). 부르는 쪽 모양 그대로, 게임 UI 움직임 `Call` 도 같이 사본. `delegate.selftest` 람다 저장 9 검사 추가 → 34/34(고치기 전 7 실패 + abort), 회귀 · 에디터 종료 0 · live 0. 참조 저장에 기대던 사용처 없음(엔진 · ProjectAH). 복사할 수 없는 람다를 왼값으로 넘기면 이제 컴파일 오류(사용처 없음). 증적 `Files/2026-10-11_ER-023_lambda_storage_verify.txt`, 커밋 목록은 표 아래(이벤트 구독 버그와 같은 두 파일) |
+| Core 이벤트 구독이 객체를 지워도 안 빠지는 버그 — `PSPDelegate::GetOwner` 조건이 뒤집힘(`Misc/Delegate.h:255`) | **완료 2026-10-11 00:19, 커밋 `ee36bb1`(10-17)** — 사용자 대시보드 "지금 진행해줘"(00:01) | GUI 세션 발견(10-03). `GetOwner` = 살아 있는 주인 주소(죽었으면 nullptr) → AddSP 구독도 주인 기준 해제(`RemoveObject` · `IsBoundTo` · `ClearIfBoundTo`)로 빠진다. 같은 파일에서 함께 고침: `RemoveObject` 가 바꿔 온 구독을 건너뛰어 같은 주인 구독이 하나 남던 것, 방송 중 해제가 콜백만 지우고 핸들을 남겨 같은 방송에서 빈 콜백 실행 assert 가 나던 것(이제 핸들 무효 → 가장 바깥 방송이 끝날 때 지움). 새 `delegate.selftest` 25/25(고치기 전 8 실패 + assert), 회귀 7종 · 에디터 종료 0 · live 0, 메인은 `MainTree.cmd -name=Core` 로 반영 · 빌드 · 회귀. 기존 사용처(GameHost · ProjectAH 의 `RemoveObject` 는 AddRaw 1개씩, GUI 백엔드 AddSP 는 `RemoveAll`) 결과 같음. 증적 `Files/2026-10-11_delegate_unsubscribe_fix_verify.txt`, 커밋 목록은 표 아래 |
 | 방송 중 같은 이벤트에 구독을 더하면 실행 중인 콜백이 옮겨질 수 있음 — 목록 용량이 넘쳐 다시 잡히면 32B 이하 콜백(대리자 안에 저장, 이동 = 바이트 복사)이 있던 옛 목록 메모리가 풀에 반납된다. 그 콜백이 `Add` 뒤에 캡처를 읽으면 해제된 메모리 | 보류 | 위 버그 작업 중 발견(10-11), 기존 동작. 32B 초과(힙 저장)는 객체 주소가 그대로라 안전. 다시 볼 조건: 콜백 안에서 같은 이벤트에 구독을 더하는 코드가 생길 때. 고치는 길 예: 방송 중 추가는 대기 목록에 두고 `Unlock` 에서 붙이기 |
 | 주인이 죽은 SP 구독이 목록에 남음 — 주인 기준 해제로는 못 찾고 `RemoveAll`(또는 핸들 `Remove`) 전까지 남는다 | 보류 | 위 버그 작업 중 발견(10-11). 실행해도 아무 일이 없어 안전, 비용은 방송마다 한 칸. 다시 볼 조건: 짧게 사는 객체가 SP 로 구독하고 빼지 않아 목록이 자라는 사용처가 보일 때 |
 | `HMulticastDelegate::Compress()` 논리 오류 — 무효 구독을 앞으로 모은 뒤 뒤에서 잘라 유효 구독을 지운다 | 보류 | 위 버그 작업 중 발견(10-11). 호출자 0(`C:\Develop` 전체 검색). 다시 볼 조건: 부르는 코드가 생길 때 — 그때 고치거나 지운다 |
-| 오디오 재생(효과음 · 배경음) 검토(ER-022) — 엔진에 오디오 모듈이 없음, 새 런타임 모듈 `Audio` | **완료 2026-10-11 14:02 메인 반영, 미커밋** — 사용자 결정 오디오 재생(D-37) "권고대로 진행"(12:51, 엔진 총괄 전달). 할 일 · 보류 · 커밋 목록은 `TODO_Audio.md`(AU-1~4 완료, 보류 AU-H1~H10), 현황 §3-5, 기록 `Files/2026-10-11_audio_D-37_verify.txt`. 검토 01시 | 권고: miniaudio 0.11.25(퍼블릭 도메인 또는 MIT-0)를 감싼 새 Audio 모듈(의존 Core 만), 1차 = 요청서 필수 전부 약 2.5~3일, 담당 Core. 쿠킹 · 게임 UI 움직임 · 에디터 · GameHost 변경 없음, JGConsole 엔진 목록 한 줄(DevOps). 수락하면 `TODO_Audio.md`(AU-1~4)를 새로 만든다. 검토서 `Files/ER-022_검토_2026-10-11.md` |
+| 오디오 재생(효과음 · 배경음) 검토(ER-022) — 엔진에 오디오 모듈이 없음, 새 런타임 모듈 `Audio` | **완료 2026-10-11 14:02 메인 반영, 커밋 `ee36bb1`(10-17)** — 사용자 결정 오디오 재생(D-37) "권고대로 진행"(12:51, 엔진 총괄 전달). 할 일 · 보류 · 커밋 목록은 `TODO_Audio.md`(AU-1~4 완료, 보류 AU-H1~H10), 현황 §3-5, 기록 `Files/2026-10-11_audio_D-37_verify.txt`. 검토 01시 | 권고: miniaudio 0.11.25(퍼블릭 도메인 또는 MIT-0)를 감싼 새 Audio 모듈(의존 Core 만), 1차 = 요청서 필수 전부 약 2.5~3일, 담당 Core. 쿠킹 · 게임 UI 움직임 · 에디터 · GameHost 변경 없음, JGConsole 엔진 목록 한 줄(DevOps). 수락하면 `TODO_Audio.md`(AU-1~4)를 새로 만든다. 검토서 `Files/ER-022_검토_2026-10-11.md` |
 | 리플렉션 작은 결함 묶음 — ① `JGEnum::GetValueByEnumName` 이 순번을 값처럼 돌려줌(값이 0 부터 이어질 때만 맞음) ② `GetIndexByEnumName` 이 못 찾으면 -1 대신 항목 수 ③ `JGObject::GetClass()` 가 공유 클래스 정보에 마지막으로 부른 오브젝트의 속성 주소를 덮어씀(오브젝트마다 따로가 아님 · 스레드 안전 아님) ④ `GetChildClasses(true)` 가 자식이 있는 중간 클래스를 결과에서 빠뜨림 | 보류 | Core 아키텍처 그림 설명 문서를 쓰며 찾음(10-17, 조사 에이전트 보고 → 코드 직접 확인 `ObjectGlobals.cpp:288-308 · 331-351`, `ObjectGlobals.h:258-286`). 지금 쓰는 곳: Graphics `Texture.cpp:96-110`(열거형 값이 0 부터 이어져 맞음), GFW `DataTableView.h:171-184`(①② 를 알고 우회), `GameMaster.cpp:495`(`false` 라 ④ 무관), `DevelopUnit.cpp:95`(`GetClass`). 다시 볼 조건: 값이 띄엄띄엄인 열거형을 이름으로 읽을 때, 여러 오브젝트의 `GetClass()` 속성을 함께 쓰거나 다른 스레드에서 부를 때, 손자 클래스까지 `GetChildClasses(true)` 로 찾을 때 |
 | 잘못된 GUID 예외(DT-H16) — 손으로 고친 잘못된 `_guid` 를 읽으면 `HGuid::FromString` 이 예외 | 보류 | 쿠킹 검사(GP-A1)가 패키징 전에 잡는다. 다시 볼 조건: 에디터에서 손으로 고친 에셋을 열다 죽는 일이 실제로 생길 때 |
 | 런처 실행 인자로 명령 실행(B-1, 옛 DevConsole — `JGLauncher.exe -exec="…"` 류) | 보류 | 다시 볼 조건: Graphics 5-25 를 콘솔 명령으로 바꿔 자동 검증 루프가 리드백 PNG 를 잃을 때. 원문 `Etc/TODO_DevConsole.md` 보류 표 |
 
 콘솔 명령 시스템 구현 현황 · 함정 · 검증은 `Etc/현황.md` §1(DevConsole 창과 함께 적힘), 명령 선언 방법은 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h` 상단 주석, 자체 검사 `console.selftest`.
 
-**커밋 체크리스트 (HSizeClass → HPagePool 이름 바꾸기, 2026-10-18 — 커밋은 엔진 총괄)**
-- 수정 `Source/Runtime/Core/Memory/MemoryPool.h` · `MemoryPool.cpp`(타입 이름 23곳 · 주석 2곳, +25/−25). 다른 트랙과 겹치는 소스 없음
-- 재빌드 Bin(10-18 09:04 — `MemoryPool.cpp` 를 쓰는 Core.lib 와 링크된 DLL · exe). 다른 트랙의 미커밋 Bin 과 같은 파일
-- 문서 `Core/{현황.md, TODO.md, Files/2026-10-18_HPagePool_rename_verify.txt}` · `진행현황.md` 7절
-- 검증: 빌드 26초 오류 0, `JGConsole` 자체 시험 7종 통과, 에디터 60초 종료 0 · live 0(증적 파일)
-
-**커밋 체크리스트 (10-17 문서만 — 코드 변경 없음, 커밋은 엔진 총괄)**
-- 사람이 듣는 확인 닫음(D-37, 10-17 14:24): `Core/{현황.md, TODO_Audio.md}` · `진행현황.md`(1절 Core 행 · 3절 D-37 행 · 7절)
-- Core 아키텍처 그림 설명(10-17 14:51): 저장소 밖 위키 `C:/obsidian/ProjectJG/02. 위키/JGEngine/모듈/Core 그림 설명.md`(새) · `모듈/Core.md`(링크 한 줄), 저장소 안 `Core/{현황.md, TODO.md}`(보류 한 줄) · `진행현황.md` 7절
-- 주의: `Document/Memory/Core/` 폴더 전체가 아직 **미추적**이다(10-11 `Memory/` → `Core/` 이름 바꾼 뒤 커밋 전) — 옛 `Document/Memory/Memory/` 지움과 한 묶음으로 넣어야 한다
-
-**커밋 체크리스트 (Core 이벤트 구독 버그 + 람다 저장(ER-023), 미커밋 — 커밋은 엔진 총괄. 두 일이 같은 두 파일을 고쳐 한 묶음)**
-- 수정 `Source/Runtime/Core/Misc/Delegate.h`(HEAD 대비 +74/−32 = 이벤트 구독 +62/−29 + ER-023 +12/−3)
-- 새 **미추적** `Source/Programs/JGConsole/DelegateSelfTest.cpp` — GenerateProjectFiles 돌림(JGConsole 은 폴더 단위라 `jgengine.lua` · `JGEngine.sln` 내용 변화 없음)
-- 재빌드 Bin(10-11 00:17) — Core 헤더라 엔진 DLL · exe 거의 전부. 다른 트랙의 미커밋 Bin 과 같은 파일이다
-- 문서 `Core/{TODO.md, 현황.md, Files/2026-10-11_delegate_unsubscribe_fix_verify.txt, Files/2026-10-11_ER-023_lambda_storage_verify.txt}` · `진행현황.md`. 재빌드 Bin 은 10-11 14:29(ER-023 — Core 헤더라 엔진 DLL · exe 거의 전부)가 마지막
-- 다른 트랙과 겹치는 소스 파일 없음. 검사가 기대는 헤더(`ConsoleCommandGlobalSystem.h` · `Core.h` · PCH)는 HEAD 그대로라 커밋 순서와 무관하다(빌드로 확인한 것은 메인 미커밋 전체 상태)
+**커밋 상태 (2026-10-18 확인)**: Core 몫은 모두 커밋됐다 — 오디오 모듈(D-37) · 대리자 고침(이벤트 구독 버그 · ER-023) · 문서 폴더 `Memory/` → `Core/` = `ee36bb1`(10-17 15:03), `HSizeClass` → `HPagePool` 이름 바꾸기 = `84d7574`(10-18 09:11), 위키 그림 원본(`Files/tools/wiki_svg`) = `0c318b9` 외. 커밋 · 푸시는 엔진 총괄이 묶어서 한다(H-001). 빌드 결과(Bin)는 D-40 으로 추적하지 않는다.
 
 ---
 
