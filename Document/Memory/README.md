@@ -29,7 +29,6 @@ Document/
   아컴호러/                            레퍼런스 게임 자료(요구사항 확인용, 이동하지 않음)
   Memory/
     README.md        이 문서(인덱스)
-    지침서.md        (옮김) 팀 지침은 저장소 맨 위 CLAUDE.md
     진행현황.md      전체 진행 보드
     tools/           공용 도구 3개(crashwalk, net_two_process, capture_devscene.ps1)
     <분야>/          Core · GameFrameWorks · Graphics · DevOps · Server · Etc(GUI · JGEditor · 참고자료)
@@ -111,6 +110,7 @@ Etc 참고자료(레퍼런스 게임 정리)는 맡은 세션이 없다.
 | `Document/Memory/Memory/` (분야 Memory, 2026-10-11) | `Document/Memory/Core/` — Core 모듈 담당 Core 세션의 문서(2026-10-07 세션 통합). 안의 파일 이름 · 항목 ID 는 그대로. TODO 첫 표 = Core 공용 · 콘솔 명령 시스템 |
 | `Etc/TODO_DataTable.md` · `Etc/현황.md` §7 · `Etc/Files/` 의 데이터 테이블 파일 13개 + `Etc/Files/tools/datatable_*` 2개 (2026-10-11) | `GameFrameWorks/TODO_DataTable.md` · `GameFrameWorks/현황.md` §11 · `GameFrameWorks/Files/`(tools 포함). 항목 ID(DT-*)는 그대로 |
 | `Etc/TODO_DevConsole.md` · `Etc/현황.md` §1 (2026-10-11) | 그대로 — DevConsole 창은 JGEditor 담당. 콘솔 명령 항목(보류 B-1)만 `Core/TODO.md` 로 |
+| `Document/Memory/지침서.md` (2026-10-18 지움) | 저장소 맨 위 `CLAUDE.md`. 옛 기록의 “지침서 N절” → CLAUDE.md: 0 · 1절 → 맨 위 · 1, 2절 → 2(5번 → 4, 6번 → 5), 3절 → 3, 4절 → 6, 5절 → 7, 7절 → 8 |
 
 ## 7. 유지 규칙 (요약, 상세는 CLAUDE.md 2 · 4절)
 

@@ -175,7 +175,7 @@ R4 적용 뒤 알림(09-30): 메인 트리 엔진을 `EngineRoot` 로 쓰는 게
 | 구분 | 파일 | 비고 |
 |---|---|---|
 | 빌드 설정 (BS-1 · BS-2) | `Source/Programs/JGBuildTool/Template/BuildTemplate.lua`, `Source/PCH/PCH.h`, 재생성 `jgengine.lua` · `Source/Programs/JGBuildTool/jgengine.lua`(템플릿 4줄씩), 재빌드 `Bin/DevelopEngine/*`(PCH 가 바뀌어 모든 DLL · exe · lib · `Core.idb`) | 실행 부산물(`jg_log.txt` · `imgui.ini`)은 각 트랙 규칙대로 |
-| 지침 (BS-3) | `Document/Memory/지침서.md` §3 · 변경 이력 | |
+| 지침 (BS-3) | `CLAUDE.md` 3절 | |
 | 증적 | `DevOps/Files/2026-10-02_BS1-BS2-BS3_적용_검증.txt` | |
 | 템플릿 (C-1) | `Build/Templates/GameProject/Source/{PROJECT_NAME}/{PROJECT_NAME}.module.json`, `Source/{PROJECT_NAME}Editor/{PROJECT_NAME}Editor.module.json`, `Source/{PROJECT_NAME}/{PROJECT_NAME}Module.cpp`(주석) | 이미 만든 게임 프로젝트(ProjectAH 등)는 템플릿을 다시 읽지 않는다 — 같은 헤더를 쓰려면 각자 `module.json` 에 직접 |
 | 문서 (이동) | `Document/Memory/GameModule/**` → `Document/Memory/DevOps/**` | `git add -A` 로 이름 변경이 잡힌다 |
