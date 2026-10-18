@@ -16,7 +16,7 @@ module.exports = {
   GUI: M + '/GUI.md',
   GameFrameWorks: M + '/GameFrameWorks.md',
   GameHost: M + '/GameHost.md',
-  Graphics: M + '/Graphics.md',
+  Graphics: M + '/01.Graphics.md',
   JGEditor: M + '/JGEditor와 도구 창.md',
   Server: M + '/네트워크(Server).md',
   엔진프로그램: M + '/엔진 프로그램.md'
