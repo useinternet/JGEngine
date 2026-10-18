@@ -455,7 +455,7 @@ function renderSeq(spec) {
 
 // ── class ──────────────────────────────────────────────
 // spec: { file, type:'class', w, h, groups?: (flow 와 같음), nodes?: (flow 와 같은 상자),
-//   classes: [{ id, x, y, w, name, stereo?, members?:[], color? }], edges: (flow 와 같음 — start/end 에 triangle · diamond · open) }
+//   classes: [{ id, x, y, w, name, stereo?, members?:[], color?, stack?, badge? }], edges: (flow 와 같음 — start/end 에 triangle · diamond · open) }
 //   stereo = 이름 아래 작은 한글 설명(역할 · 차례)
 function renderClass(spec) {
   const byId = {};
@@ -465,6 +465,11 @@ function renderClass(spec) {
     const m = c.members || [];
     const head = c.stereo ? 44 : 30;
     c.h = head + (m.length ? m.length * 18 + 10 : 0);
+    // stack = 뒤에 겹쳐 그릴 카드 수(같은 클래스 객체가 여러 개임을 보여 줌), badge = 머리 오른쪽 작은 글(예: '× 18')
+    const stack = c.stack || 0;
+    for (let k = stack; k >= 1; k--) {
+      parts.push(`<rect x="${c.x + k * 6}" y="${c.y + k * 6}" width="${c.w}" height="${c.h}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="${SW}" opacity="${(1 - k * 0.25).toFixed(2)}"/>`);
+    }
     parts.push(`<rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" rx="8" fill="#ffffff" stroke="${stroke}" stroke-width="${SW}"/>`);
     parts.push(`<path d="M${c.x + 8},${c.y} H${c.x + c.w - 8} A8,8 0 0 1 ${c.x + c.w},${c.y + 8} V${c.y + head} H${c.x} V${c.y + 8} A8,8 0 0 1 ${c.x + 8},${c.y} Z" fill="${fill}" stroke="${stroke}" stroke-width="${SW}"/>`);
     // 클래스 이름이 위, 한글 설명(stereo)은 그 아래 작게(2026-10-17 사용자 피드백 "클래스이름 / 한글 설명")
@@ -474,7 +479,10 @@ function renderClass(spec) {
     }
     m.forEach((t, i) => parts.push(`<text x="${c.x + 12}" y="${c.y + head + 18 + i * 18}" text-anchor="start" font-size="11.5" fill="${MEMBER}">${esc(t)}</text>`));
     byId[c.id] = c;
-    boxes.push({ id: c.id, x: c.x, y: c.y, w: c.w, h: c.h });
+    if (c.badge) {
+      parts.push(`<text x="${c.x + c.w - 10}" y="${c.y + 20}" text-anchor="end" font-size="12"${W600} fill="#A32D2D">${esc(c.badge)}</text>`);
+    }
+    boxes.push({ id: c.id, x: c.x, y: c.y, w: c.w + stack * 6, h: c.h + stack * 6 });
     if (textWidth(c.name, 13) > c.w - 8 || (c.stereo && textWidth(c.stereo, 11) > c.w - 8) || m.some(t => textWidth(t, 11.5) > c.w - 20)) {
       WARN.push(`클래스 ${c.id}: 글이 폭을 넘침 — w 를 키우기`);
     }
