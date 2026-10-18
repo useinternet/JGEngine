@@ -7,9 +7,9 @@ const kids = [
   { id: 'TEX', name: 'IRawTexture', stereo: '텍스처' },
   { id: 'VB', name: 'IVertexBuffer · IIndexBuffer', stereo: '정점 · 인덱스 버퍼' },
   { id: 'CB', name: 'IConstantBuffer · IStructuredBuffer', stereo: '상수 · 구조화 버퍼' },
-  { id: 'MAT', name: 'IRawMaterial', stereo: '머터리얼 (4번)' },
-  { id: 'MESH', name: 'IMesh', stereo: '렌더 메시 (7번)' },
-  { id: 'FB', name: 'IFrameBuffer', stereo: '프레임 버퍼 (8번)' }
+  { id: 'MAT', name: 'IRawMaterial', stereo: '머터리얼' },
+  { id: 'MESH', name: 'IMesh', stereo: '렌더 메시' },
+  { id: 'FB', name: 'IFrameBuffer', stereo: '프레임 버퍼' }
 ].map((c, i) => Object.assign({
   x: i < 3 ? 180 : 560,
   y: 600 + (i % 3) * 70,
@@ -26,7 +26,7 @@ module.exports = {
   classes: [
     { id: 'MOD', x: 40, y: 30, w: 330, name: 'HJGGraphicsModule', stereo: 'Graphics 모듈 클래스', color: 'blue', members: ['-_graphicsAPI : PJGGraphicsAPI', '#StartupModule()  // API 생성 · 초기화', '#ShutdownModule()', '-BeginFrame()  // GraphicsBegin 단계', '-EndFrame()  // GraphicsEnd 단계'] },
     { id: 'API', x: 460, y: 30, w: 480, name: 'PJGGraphicsAPI', stereo: '그래픽스 API · 추상 클래스', color: 'blue', members: ['#Initialize() · Destroy()', '#BeginFrame() · EndFrame()', '#OnWindowResized(w, h)', '+CreateRawTexture() · CreateVertexBuffer() · CreateIndexBuffer()', '+CreateRawMaterial()', '+CreateStaticMesh() · CreateTexture()  // 에셋', '+GetGraphicsCommand()', '+RequestTextureReadback() · ReadbackTextureImmediate()', '+SubmitFinalTexture() · SetVSyncEnabled()'] },
-    { id: 'DX', x: 560, y: 300, w: 280, name: 'PDirectX12API', stereo: 'DX12 백엔드 구현 · 2번', color: 'yellow' },
+    { id: 'DX', x: 560, y: 300, w: 280, name: 'PDirectX12API', stereo: 'DX12 백엔드 구현', color: 'yellow' },
     { id: 'OBJ', x: 355, y: 470, w: 320, name: 'IJGGraphicsObject', stereo: 'GPU 리소스 기반 인터페이스 · IMemoryObject 상속', color: 'purple', members: ['+GetName() · SetName()'] }
   ].concat(kids),
   nodes: [

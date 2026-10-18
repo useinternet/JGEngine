@@ -11,29 +11,29 @@ module.exports = {
   groups: [
     { x: 20, y: 20, w: 1040, h: 110, label: 'Graphics를 사용하는 모듈', color: 'purple' },
     { x: 20, y: 170, w: 1040, h: 750, label: 'Graphics 모듈 (Graphics.dll)' },
-    { x: 40, y: 210, w: 1000, h: 130, label: '장면 · 에셋 (5번 · 7번)', dash: true },
-    { x: 40, y: 380, w: 1000, h: 290, label: '그래픽스 API · 인터페이스 (1번 · 4번 · 6번)', dash: true },
-    { x: 40, y: 710, w: 1000, h: 190, label: 'DX12 백엔드 (2번 · 3번 · 8번)', dash: true },
+    { x: 40, y: 210, w: 1000, h: 130, label: '장면 · 에셋', dash: true },
+    { x: 40, y: 380, w: 1000, h: 290, label: '그래픽스 API · 인터페이스', dash: true },
+    { x: 40, y: 710, w: 1000, h: 190, label: 'DX12 백엔드', dash: true },
     { x: 20, y: 960, w: 700, h: 110, label: 'Graphics가 의존하는 모듈' }
   ],
   classes: [
     // 장면 · 에셋
-    { id: 'SCN', x: 60, y: 248, w: 210, name: 'PScene', stereo: '장면 데이터 · 5번', color: 'green', members: ['+CreateMesh() 등'] },
-    { id: 'SR', x: 310, y: 248, w: 240, name: 'PSceneRenderer', stereo: '장면 렌더러 · 5번', color: 'green', members: ['+Render(scene, camera)'] },
-    { id: 'AST', x: 590, y: 248, w: 210, name: 'JGStaticMesh · JGTexture', stereo: '메시 · 텍스처 에셋 · 7번', color: 'green', members: ['+GetMesh() · GetRawTexture()'] },
-    { id: 'IMP', x: 840, y: 248, w: 180, name: 'JGFBXAssetImporter', stereo: 'FBX 임포터 · 7번', color: 'green', members: ['+Import(args)'] },
+    { id: 'SCN', x: 60, y: 248, w: 210, name: 'PScene', stereo: '장면 데이터', color: 'green', members: ['+CreateMesh() 등'] },
+    { id: 'SR', x: 310, y: 248, w: 240, name: 'PSceneRenderer', stereo: '장면 렌더러', color: 'green', members: ['+Render(scene, camera)'] },
+    { id: 'AST', x: 590, y: 248, w: 210, name: 'JGStaticMesh · JGTexture', stereo: '메시 · 텍스처 에셋', color: 'green', members: ['+GetMesh() · GetRawTexture()'] },
+    { id: 'IMP', x: 840, y: 248, w: 180, name: 'JGFBXAssetImporter', stereo: 'FBX 임포터', color: 'green', members: ['+Import(args)'] },
     // 그래픽스 API · 인터페이스
     { id: 'MOD', x: 60, y: 420, w: 210, name: 'HJGGraphicsModule', stereo: '모듈 클래스', color: 'blue', members: ['#StartupModule()', '-BeginFrame() · EndFrame()'] },
-    { id: 'API', x: 310, y: 420, w: 240, name: 'PJGGraphicsAPI', stereo: '그래픽스 API · 추상 클래스 · 1번', color: 'blue', members: ['+CreateRawTexture() 등', '+GetGraphicsCommand()', '+SubmitFinalTexture()'] },
-    { id: 'CMD', x: 590, y: 420, w: 210, name: 'IJGGraphicsCommand', stereo: '그리기 명령 · 6번', color: 'blue', members: ['+SetRenderTarget()', '+Draw()  // 메시 · 화면 · 2D'] },
-    { id: 'MAT', x: 840, y: 420, w: 180, name: 'IRawMaterial', stereo: '머터리얼 · 4번', color: 'blue', members: ['+Set*() · Compile()'] },
-    { id: 'RES', x: 60, y: 560, w: 210, name: 'IRawTexture · IMesh 등', stereo: 'GPU 리소스 인터페이스', color: 'blue', members: ['IJGGraphicsObject 상속', '구현: PDX12Texture 등'] },
-    { id: 'SHL', x: 840, y: 560, w: 180, name: 'GShaderLibrary', stereo: '셰이더 템플릿 · 4번', color: 'blue', members: ['+GetShaderCode(name)'] },
+    { id: 'API', x: 310, y: 420, w: 240, name: 'PJGGraphicsAPI', stereo: '그래픽스 API · 추상 클래스', color: 'blue', members: ['+CreateRawTexture() 등', '+GetGraphicsCommand()', '+SubmitFinalTexture()'] },
+    { id: 'CMD', x: 590, y: 420, w: 210, name: 'IJGGraphicsCommand', stereo: '그리기 명령', color: 'blue', members: ['+SetRenderTarget()', '+Draw()  // 메시 · 화면 · 2D'] },
+    { id: 'MAT', x: 840, y: 420, w: 180, name: 'IRawMaterial', stereo: '머터리얼', color: 'blue', members: ['+Set*() · Compile()'] },
+    { id: 'RES', x: 60, y: 560, w: 210, name: 'IRawTexture · IMesh 등', stereo: 'GPU 리소스 인터페이스', color: 'blue', members: ['IJGGraphicsObject 상속'] },
+    { id: 'SHL', x: 840, y: 560, w: 180, name: 'GShaderLibrary', stereo: '셰이더 템플릿', color: 'blue', members: ['+GetShaderCode(name)'] },
     // DX12 백엔드
-    { id: 'CQ', x: 60, y: 750, w: 210, name: 'PCommandQueue', stereo: '커맨드 큐 · 2번', color: 'yellow', members: ['+RequestCommandList()', '+Begin() · End()'] },
-    { id: 'DX', x: 310, y: 750, w: 240, name: 'PDirectX12API', stereo: 'DX12 백엔드 · 2번', color: 'yellow', members: ['-_dx12Device', '+CreateCommittedResource()', '+DestroyCommittedResource()'] },
-    { id: 'STG', x: 590, y: 750, w: 210, name: 'PResourceStagingManager', stereo: '리소스 전송 · 3번', color: 'yellow', members: ['+RequestTextureUpload() 등'] },
-    { id: 'FB', x: 840, y: 750, w: 180, name: 'PDX12FrameBuffer', stereo: '스왑체인 · 8번', color: 'yellow', members: ['+Present()'] }
+    { id: 'CQ', x: 60, y: 750, w: 210, name: 'PCommandQueue', stereo: '커맨드 큐', color: 'yellow', members: ['+RequestCommandList()', '+Begin() · End()'] },
+    { id: 'DX', x: 310, y: 750, w: 240, name: 'PDirectX12API', stereo: 'DX12 백엔드', color: 'yellow', members: ['-_dx12Device', '+CreateCommittedResource()', '+DestroyCommittedResource()'] },
+    { id: 'STG', x: 590, y: 750, w: 210, name: 'PResourceStagingManager', stereo: '리소스 전송', color: 'yellow', members: ['+RequestTextureUpload() 등'] },
+    { id: 'FB', x: 840, y: 750, w: 180, name: 'PDX12FrameBuffer', stereo: '스왑체인', color: 'yellow', members: ['+Present()'] }
   ],
   nodes: [
     { id: 'U1', x: 40, y: 56, w: 230, h: 56, color: 'purple', title: 'GameFrameWorks', lines: ['PWorld · PGameViewport · 게임 UI'] },

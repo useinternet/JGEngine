@@ -14,10 +14,10 @@ module.exports = {
     { id: 'A3', x: 580, y: 400, w: 300, name: 'H2DDrawArguments', stereo: '2D 그리기 인자 · 내장 2D 셰이더', color: 'orange', members: ['Vertices · Indices', 'Commands : 텍스처 · 시저 영역'] }
   ],
   nodes: [
-    { id: 'O1', x: 40, y: 30, w: 250, h: 56, color: 'gray', title: 'PSceneRenderer (5번)', lines: ['메시 · 화면 그리기'] },
+    { id: 'O1', x: 40, y: 30, w: 250, h: 56, color: 'gray', title: 'PSceneRenderer', lines: ['메시 · 화면 그리기'] },
     { id: 'O2', x: 320, y: 30, w: 300, h: 56, color: 'gray', title: 'PGameUIRenderer', lines: ['GameFrameWorks 게임 UI · 2D 그리기'] },
     { id: 'KEY', x: 660, y: 30, w: 340, h: 90, color: 'white', shape: 'note', title: '범례', lines: ['—▷ 상속 · → 호출 · 기록', '- - → 인자', '+ public · - private'] },
-    { id: 'GCL', x: 700, y: 300, w: 300, h: 56, color: 'gray', title: 'PGraphicsCommandList (2번)', lines: ['현재 프레임의 커맨드 리스트'] }
+    { id: 'GCL', x: 700, y: 300, w: 300, h: 56, color: 'gray', title: 'PGraphicsCommandList', lines: ['현재 프레임의 커맨드 리스트'] }
   ],
   edges: [
     { from: 'O1', to: 'CMD', fs: 'b', ts: 't', fo: 0, to_off: -165, label: 'Draw(메시 · 화면)' },

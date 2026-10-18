@@ -16,7 +16,7 @@ module.exports = {
   ],
   nodes: [
     { id: 'CS', x: 40, y: 470, w: 380, h: 64, color: 'yellow', shape: 'cyl', title: 'Content/Shaders', lines: ['HLSL 템플릿 · 내장 2D 셰이더'] },
-    { id: 'PSO', x: 560, y: 550, w: 400, h: 60, color: 'gray', title: 'PSO (6번)', lines: ['그릴 때 PDX12GraphicsCommand가 구성 · 전역 캐시'] },
+    { id: 'PSO', x: 560, y: 550, w: 400, h: 60, color: 'gray', title: 'PSO', lines: ['그릴 때 PDX12GraphicsCommand가 구성 · 전역 캐시'] },
     { id: 'KEY', x: 40, y: 580, w: 380, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 소유 · —▷ 상속 · → 생성 · 사용', '+ public · - private'] }
   ],
   edges: [

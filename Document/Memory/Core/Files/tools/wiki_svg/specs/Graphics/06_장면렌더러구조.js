@@ -11,13 +11,13 @@ module.exports = {
     { id: 'SR', x: 600, y: 150, w: 400, name: 'PSceneRenderer', stereo: '장면 렌더러', color: 'blue', members: ['-_gbufferTextures · _depthStencilTexture', '-_outputTexture · _displayTexture', '-_compositeMaterial · _displayMaterial', '+Initialize() · Resize(w, h)', '+Render(scene, cameraID)', '+GetDisplayTexture()'] },
     { id: 'MESH', x: 40, y: 380, w: 200, name: 'HSceneMesh', stereo: '메시 배치', color: 'green', stack: 1, members: ['Mesh : IMesh', 'Materials', 'WorldMatrix'] },
     { id: 'CAM', x: 260, y: 380, w: 200, name: 'HSceneCamera', stereo: '카메라', color: 'green', stack: 1, members: ['ViewMatrix · Position', 'FovY · NearZ · FarZ', '+SetLookAt()'] },
-    { id: 'CMD', x: 600, y: 380, w: 400, name: 'IJGGraphicsCommand', stereo: '그리기 명령 · 6번', color: 'purple' }
+    { id: 'CMD', x: 600, y: 380, w: 400, name: 'IJGGraphicsCommand', stereo: '그리기 명령', color: 'purple' }
   ],
   nodes: [
     { id: 'O1', x: 40, y: 30, w: 200, h: 56, color: 'gray', title: 'PWorld', lines: ['GameFrameWorks 월드'] },
     { id: 'O2', x: 270, y: 30, w: 300, h: 56, color: 'gray', title: 'StaticMeshComponent · CameraComponent', lines: ['번호(HSceneMeshID · HSceneCameraID) 보관'] },
     { id: 'O3', x: 640, y: 30, w: 360, h: 56, color: 'gray', title: 'PGameViewport · JGDevScene', lines: ['렌더러 소유 · 결과 표시'] },
-    { id: 'RES', x: 40, y: 540, w: 420, h: 56, color: 'gray', title: 'IMesh · IRawMaterial', lines: ['에셋의 GPU 리소스 — 참조만 함 (7번)'] },
+    { id: 'RES', x: 40, y: 540, w: 420, h: 56, color: 'gray', title: 'IMesh · IRawMaterial', lines: ['에셋의 GPU 리소스 — 참조만 함'] },
     { id: 'KEY', x: 600, y: 470, w: 400, h: 96, color: 'white', shape: 'note', title: '범례', lines: ['◇— 소유 · → 사용 · 참조', '겹친 카드 = 여러 개', '+ public · - private'] }
   ],
   edges: [

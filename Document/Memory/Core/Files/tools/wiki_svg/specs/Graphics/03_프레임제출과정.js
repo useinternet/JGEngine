@@ -24,7 +24,7 @@ module.exports = {
     { id: 'D1', x: 260, y: 344, w: 260, h: 70, color: 'purple', title: '업로드 → 백 버퍼 → 리드백', lines: ['각 우선순위 리스트에 기록', '백 버퍼: 텍스처 복사 · ImGui'] },
     { id: 'D2', x: 550, y: 344, w: 220, h: 70, color: 'purple', title: 'PCommandQueue::End', lines: ['우선순위 순 제출 · Signal'] },
     { id: 'D3', x: 800, y: 344, w: 120, h: 70, color: 'blue', title: 'Present', lines: ['화면 표시'] },
-    { id: 'E', x: 80, y: 488, w: 400, h: 56, color: 'gray', title: '메시지 펌프', lines: ['WM_SIZE → 스왑체인 크기 변경 (8번)'] },
+    { id: 'E', x: 80, y: 488, w: 400, h: 56, color: 'gray', title: '메시지 펌프', lines: ['WM_SIZE → 스왑체인 크기 변경'] },
     { id: 'P', x: 20, y: 590, w: 920, h: 50, color: 'white', shape: 'note', title: '제출 순서 (ECommandListPriority)', lines: ['Upload(업로드) → Default(그리기) → Readback(리드백) → Present(백 버퍼)'] }
   ],
   edges: [

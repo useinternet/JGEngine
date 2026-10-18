@@ -13,7 +13,7 @@ module.exports = {
     { id: 'TEX', x: 780, y: 170, w: 280, name: 'JGTexture', stereo: '텍스처 에셋', color: 'green', members: ['-_texture : IRawTexture', '+GetRawTexture()'] },
     { id: 'SUB', x: 40, y: 380, w: 400, name: 'HStaticSubMesh', stereo: '서브메시 · 직렬화 대상', color: 'green', stack: 1, members: ['Vertices · Indices  // CPU 사본', 'VertexBuffer · IndexBuffer  // GPU 버퍼', 'Material'] },
     { id: 'PSM', x: 480, y: 380, w: 260, name: 'PStaticMesh', stereo: '렌더 메시 · IMesh 구현', color: 'blue', members: ['HRenderSubMesh[]  // GPU 버퍼 · 머터리얼'] },
-    { id: 'RT', x: 780, y: 380, w: 280, name: 'IRawTexture', stereo: 'GPU 텍스처 · 1번', color: 'blue' }
+    { id: 'RT', x: 780, y: 380, w: 280, name: 'IRawTexture', stereo: 'GPU 텍스처', color: 'blue' }
   ],
   nodes: [
     { id: 'KEY', x: 480, y: 500, w: 580, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 소유 · —▷ 상속 · → 생성', '겹친 카드 = 여러 개 · + public · - private'] }

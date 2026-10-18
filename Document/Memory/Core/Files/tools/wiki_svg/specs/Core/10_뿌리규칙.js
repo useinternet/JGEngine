@@ -9,7 +9,7 @@ module.exports = {
     { id: 'BAD', x: 320, y: 20, w: 320, h: 40, color: 'red', title: '두 부모가 모두 IMemoryObject를 상속한 클래스' },
     { id: 'R', x: 350, y: 130, w: 260, h: 60, color: 'blue', title: 'IMemoryObject', lines: ['메모리 시스템이 관리하는 모든 객체의 루트'] },
     { id: 'A1', x: 30, y: 250, w: 300, h: 60, color: 'green', title: 'PString · PName', lines: ['PSharedPtr · PWeakPtr'] },
-    { id: 'A2', x: 370, y: 250, w: 220, h: 60, color: 'green', title: 'JGObject', lines: ['리플렉션 객체 (3번)'] },
+    { id: 'A2', x: 370, y: 250, w: 220, h: 60, color: 'green', title: 'JGObject', lines: ['리플렉션 객체'] },
     { id: 'A4', x: 630, y: 250, w: 270, h: 60, color: 'green', title: 'PJWindow · 스케줄 작업', lines: ['대리자 내부 콜백 등'] },
     { id: 'A3', x: 355, y: 350, w: 250, h: 50, color: 'purple', title: 'JGActor · JGWidget · 게임 클래스 등' }
   ],

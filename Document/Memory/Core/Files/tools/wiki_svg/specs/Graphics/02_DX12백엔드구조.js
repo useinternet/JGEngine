@@ -7,7 +7,7 @@ module.exports = {
   w: 1000,
   h: 740,
   classes: [
-    { id: 'DX', x: 40, y: 30, w: 380, name: 'PDirectX12API', stereo: 'DX12 백엔드 · PJGGraphicsAPI 구현', color: 'yellow', members: ['-_dx12Device · _dx12Factory', '-_commandQueue : PCommandQueue', '-_resourceStagingManager  // 3번', '-_csuAllocator · _rtvAllocator · _dsvAllocator', '-_rootSignatureCache · _graphicsPSOCache', '-_frameBuffer : PDX12FrameBuffer  // 8번', '+CreateCommittedResource()', '+DestroyCommittedResource()  // 미룬 해제', '+RequestGraphicsCommandList()'] },
+    { id: 'DX', x: 40, y: 30, w: 380, name: 'PDirectX12API', stereo: 'DX12 백엔드 · PJGGraphicsAPI 구현', color: 'yellow', members: ['-_dx12Device · _dx12Factory', '-_commandQueue : PCommandQueue', '-_resourceStagingManager', '-_csuAllocator · _rtvAllocator · _dsvAllocator', '-_rootSignatureCache · _graphicsPSOCache', '-_frameBuffer : PDX12FrameBuffer', '+CreateCommittedResource()', '+DestroyCommittedResource()  // 미룬 해제', '+RequestGraphicsCommandList()'] },
     { id: 'HDX', x: 40, y: 300, w: 380, name: 'HDirectXAPI', stereo: '정적 접근 클래스 · DX12 내부 클래스가 사용', color: 'yellow', members: ['+GetDevice() · GetCommandQueue()', '+RequestGraphicsCommandList()', '+DestroyCommittedResource()'] },
     { id: 'CQ', x: 560, y: 30, w: 400, name: 'PCommandQueue', stereo: '커맨드 큐 · 프레임 제출', color: 'blue', members: ['-_frames : HFrameContext[]', '-_deferredReleases : 미룬 해제 목록', '+RequestCommandList(type, priority)', '+Begin()  // 같은 인덱스의 이전 프레임 완료 대기', '+End()  // 우선순위 순 제출 · Signal', '+DeferRelease(resource)'] },
     { id: 'FC', x: 560, y: 250, w: 400, name: 'HFrameContext', stereo: '프레임 인덱스별 컨텍스트', color: 'blue', stack: 1, members: ['우선순위별 커맨드 리스트 · 펜스 값'] },
