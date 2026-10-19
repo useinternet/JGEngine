@@ -30,7 +30,7 @@ Document/
   Memory/
     README.md        이 문서(인덱스)
     진행현황.md      전체 진행 보드
-    tools/           공용 도구 3개(crashwalk, net_two_process, capture_devscene.ps1)
+    tools/           공용 도구 4개(crashwalk, net_two_process, capture_devscene.ps1, compaction_watch.js)
     <분야>/          Core · GameFrameWorks · Graphics · DevOps · Server · Etc(GUI · JGEditor · 참고자료)
       현황.md        역할·구현 상태·세션 마지막 상태·함정·검증 방법
       TODO.md        다음 할 일 Top N, 미완료 표, 완료 이력   (Etc 는 TODO_GUI.md · TODO_JGEditor.md · TODO_DevConsole.md(DevConsole 창, JGEditor 담당). GameFrameWorks 는 TODO.md + TODO_GameUI.md + TODO_DataTable.md)
@@ -62,6 +62,7 @@ Document/
 | `crashwalk/` (crashwalk.exe, build.bat) | 실행 파일을 띄우고 종료 코드·로그를 stdout으로 받는 검증 러너. 동시 세션이 `jg_log.txt`를 덮어쓰므로 증적은 이 stdout으로 남긴다. 사용: `crashwalk.exe "<exe> <인자>" <작업 폴더> <닫기 초> [멈춤 초=30]`. 2026-10-02 판부터 제한 시간을 매 루프 확인해 D3D12 디버그 레이어 아래에서도 제때 WM_CLOSE 를 보낸다(그 전 판은 닫지 못했다 — `GameFrameWorks/Files/2026-10-02_D-19_crashwalk_C26_verify.txt`). 다시 빌드는 `build.bat`(VS 2022 Community) | 전체 |
 | `net_two_process/run_two_process.sh` | 호스트·클라이언트 2프로세스 결정론 검사 | Server, GameFrameWorks |
 | `capture_devscene.ps1` | 런처 메인 창 PrintWindow 캡처. 저장소 위치는 스크립트 자리 기준(2026-10-11 옛 `C:\JG\JGEngine` 경로 고침). 사용: `Build\BatchFiles\MainTree.cmd -name=<세션> exec Document\Memory\tools\capture_devscene.ps1 -WaitSeconds 30 -WorkDir <JGDevFeature=1 imgui.ini 를 둔 폴더> -OutPath <png>`(기본 저장 `Temp\Capture\`, 런처 · 작업 폴더가 없으면 종료 1) | Graphics, GUI, JGEditor, DevOps |
+| `compaction_watch.js` | 대화 압축 감시 — 분야 세션 일곱의 가장 새 대화 기록에서 대화 압축 수를 세어, 3번 이상이 되거나 늘 때 "교체 대상: <세션> — 대화 압축 N번" 한 줄(CLAUDE.md 5절 교체). 켤 때는 지금 3번 이상인 세션을 한 번씩 알린다. 엔진 총괄이 Monitor 로 띄운다: `node C:/Develop/JGEngine/Document/Memory/tools/compaction_watch.js`(30분마다 다시), 지금 수만 보기 `--list` | 엔진 총괄 |
 
 분야 전용 스크립트는 각 `<분야>/Files/tools/`에 있다.
 
