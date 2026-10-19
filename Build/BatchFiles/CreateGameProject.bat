@@ -9,6 +9,11 @@ set "JG_PROJECT_DIR=%~f1"
 if "%JG_PROJECT_DIR:~-1%"=="\" set "JG_PROJECT_DIR=%JG_PROJECT_DIR:~0,-1%"
 
 pushd "%~dp0"
+if not exist "..\..\Bin\DevelopEngine\JGBuildTool.exe" (
+	echo [CreateGameProject] the engine build tools are missing ^(Bin\ is not in git^). Run GenerateProjectFiles.bat in the engine root first.
+	popd
+	exit /b 1
+)
 if "%~2"=="" (
 	"..\..\Bin\DevelopEngine\JGBuildTool.exe" -newproject="%JG_PROJECT_DIR%"
 ) else (
