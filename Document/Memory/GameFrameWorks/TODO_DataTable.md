@@ -1,6 +1,6 @@
 # DataTable TODO (JSON 데이터 테이블 에셋 · 에디터 스프레드시트 편집)
 
-갱신 2026-10-17 14:22 — 다음 할 일 3번(Data Table Editor 사용자 손 확인)을 닫음: 사용자 건너뜀(10-17 14:21, 통합 대시보드 결정함 "건너뜀" — 엔진 총괄 전달) — 지금 구현 그대로. 보류 DT-H12 는 그대로. 이전: 2026-10-02 밤 — DT-0 ~ DT-4 는 **커밋됨**(사용자 일괄 커밋 `efba16a`, 10-01 16:58). 10-02 밤 **게임 빌드 파이프라인 D-23 의 GP-A1 쿠킹 검사**(엔진 총괄 배정)를 구현 · 메인 반영 — 미커밋(DT-C2). 증적 `Files/2026-10-02_GP-A1_cookcheck_verify.txt`.
+갱신 2026-10-19 20:45 — **커밋 상태 정정(10-17 묶음 커밋, 엔진 총괄 배정)**: DT-C2(GP-A1 쿠킹 검사 커밋)를 닫음 — 엔진 총괄 묶음 커밋(10-17 15:03)에 들어갔다: 입구 GFW `Data/ContentCookCheck*` · 증적은 `a1e3253`, 검사 본체 Asset `Cook/AssetCookValidator.*` 는 `cb02ed3`, 부르는 쪽 DevOps `JGConsole/Cook/` 는 `7b8ee6e`. 이 아래 이전 기록의 "미커밋"은 그때 상태다. 이전: 2026-10-17 14:22 — 다음 할 일 3번(Data Table Editor 사용자 손 확인)을 닫음: 사용자 건너뜀(10-17 14:21, 통합 대시보드 결정함 "건너뜀" — 엔진 총괄 전달) — 지금 구현 그대로. 보류 DT-H12 는 그대로. 이전: 2026-10-02 밤 — DT-0 ~ DT-4 는 **커밋됨**(사용자 일괄 커밋 `efba16a`, 10-01 16:58). 10-02 밤 **게임 빌드 파이프라인 D-23 의 GP-A1 쿠킹 검사**(엔진 총괄 배정)를 구현 · 메인 반영 — 미커밋(DT-C2). 증적 `Files/2026-10-02_GP-A1_cookcheck_verify.txt`.
 설계 · 결과 `Files/DataTable_설계_2026-10-01.md`(§14 결과 · §15 사용 안내) · 증적 `Files/2026-10-01_datatable_verify.txt` · 캡처 `Files/2026-10-01_datatable_v2_*.png` · 현황 `현황.md` §11 · 사용자 보고서 `Document/DataTable_설계보고_2026-10-01.html`.
 범위: 행(고유 키) × 열(타입) 정적 데이터를 `.jgasset`(JSON) 에셋으로 저장하고, 런타임은 읽기 전용 조회 · C++ 바인딩, 에디터는 엑셀처럼 편집하는 엔진 시스템. 코드는 Core(JSON 보강 · 원자적 저장) · **GameFrameWorks `Data/`**(런타임 · 편집 모델) · GUI(그리드 컨트롤 · 한글 글꼴) · JGEditor(창)에 나뉜다.
 기준: 엔진 기반 구축 · 과설계 금지. 어떤 테이블을 만들고 무슨 열을 둘지는 게임 영역이다(지침서 1절).
@@ -22,16 +22,14 @@
 
 | 순서 | 항목 | 착수 조건 | 완료 기준 |
 |---|---|---|---|
-| 1 | **DT-C2 커밋 (사용자)** — GP-A1 새 파일 5개 | 없음 | 아래 커밋 체크리스트(DT-C2). DevOps 의 `JGConsole/Cook/CookCommand.cpp` 가 `__has_include` 로 이 헤더를 찾아 부르므로 같은 커밋이 좋다 |
+| 1 | ~~DT-C2 커밋~~ — GP-A1 새 파일 5개 | — | **닫음 — 커밋됨(10-17 15:03 엔진 총괄 묶음 커밋)**: GFW 입구 · 증적 `a1e3253`, Asset 검사 본체 `cb02ed3`, 부르는 쪽 DevOps `JGConsole/Cook/` `7b8ee6e`. 아래 커밋 체크리스트(DT-C2, 기록용) |
 | 2 | GP-A1 실제 쿠킹 확인 — DevOps 가 GP-D4 쿠킹을 메인에서 돌린 결과를 받는다 | DevOps 쿠킹 실행 | 검사 단계 통과 · 실패 메시지 형식이 쓸 만한지. GP-G4 전에는 셰이더(Source/Shader)를 검사 입력에서 빼기로 DevOps 와 정했다 |
 | 3 | ~~사용자 손 확인(선택): 실제 마우스 · 키보드 · 한글 IME 로 셀 입력~~ | — | **닫음 — 사용자 건너뜀(10-17 14:21, 통합 대시보드 결정함 "건너뜀" — 엔진 총괄 전달) — 지금 구현 그대로**. 10-01 V2 는 메시지 주입이라 IME 조합은 못 봤다. 쓰다가 첫 글자가 어색하면 보류 DT-H12 |
 | 4 | 게임 프로젝트 에디터에서 `/JGGame/` 테이블 한 번 만들기 · 묶기(설계 §15) | 게임 쪽에서 테이블이 필요할 때 | 생성 · 저장 · `HDataTableView<T>` 바인드 · 재시작 뒤 로드 |
 
 ## 미완료 항목
 
-| ID | 항목 | 상태 | 선행조건 | 완료 기준 |
-|---|---|---|---|---|
-| DT-C2 | GP-A1 커밋 (사용자) | 대기 | 없음 | 커밋 체크리스트(DT-C2) |
+없음 — DT-C2(GP-A1 커밋)는 10-17 15:03 엔진 총괄 묶음 커밋으로 끝났다(완료 이력).
 
 ## 보류 (다시 볼 조건이 오면 착수)
 
@@ -71,9 +69,12 @@
 | DT-4-1 | V2 실제 입력 · V3 회귀 · 1만 행 측정, 메인 트리 반영 · 빌드 · 회귀 | 2026-10-01 | `Files/2026-10-01_datatable_verify.txt` |
 | DT-4-2 | 사용 안내(게임 모듈에서 테이블을 만들고 묶는 법) · 보고서 | 2026-10-01 | 설계 §15, `Document/DataTable_설계보고_2026-10-01.html` 결과 절 |
 | DT-C1 | DT-0 ~ DT-4 커밋 | 2026-10-01 16:58 | 사용자 일괄 커밋 `efba16a` "게임 구현"(DataTable 소스 · 문서 · 증적 포함 — `git log` 로 확인) |
-| GP-A1 | **쿠킹 검사(게임 빌드 파이프라인 D-23, 엔진 총괄 배정)** — 검사 본체 Asset `Cook/AssetCookValidator.*`(`ValidateAssetsForCook`: ① 파싱 · JGObjectType · JGObject · `_guid` ② GUID 두 마운트 통틀어 하나 ③ 마운트 토큰 문자열 참조가 쿠킹 대상 안 — HAssetPath 규칙 · 대소문자 구분 · 자기 경로 칸 제외 + 타입별 검사 자리), 입구 GFW `Data/ContentCookCheck.*`(`ValidateContentForCook(files, mounts, errors, warnings)` — ④ 데이터 테이블 검사를 끼움, 헤더는 Core 형식만 + 토큰 매크로), 자체 검사 `cookcheck.selftest`. 지시서(Asset 모듈)와 달리 입구가 GFW 인 이유: 데이터 테이블이 GFW(D3)라 Asset 이 못 부르고, JGConsole 은 Core · GFW 헤더만 본다 | 2026-10-02 밤 (미커밋) | `Files/2026-10-02_GP-A1_cookcheck_verify.txt`: 워크트리 · 메인 `cookcheck.selftest` 26/26(정상 통과 · 깨진 참조 · 대소문자 · GUID 중복 · 잘못된 GUID · 파싱 오류 · 마운트 밖 · 키 중복 · 읽을 수 없는 테이블 실패, 36MB 실제 에셋 통과 1.9 s), `datatable.selftest` 127/127, 메인 빌드(DevOps 확인 exit 0). DevOps `cook.run` 7단계가 부른다 |
+| GP-A1 | **쿠킹 검사(게임 빌드 파이프라인 D-23, 엔진 총괄 배정)** — 검사 본체 Asset `Cook/AssetCookValidator.*`(`ValidateAssetsForCook`: ① 파싱 · JGObjectType · JGObject · `_guid` ② GUID 두 마운트 통틀어 하나 ③ 마운트 토큰 문자열 참조가 쿠킹 대상 안 — HAssetPath 규칙 · 대소문자 구분 · 자기 경로 칸 제외 + 타입별 검사 자리), 입구 GFW `Data/ContentCookCheck.*`(`ValidateContentForCook(files, mounts, errors, warnings)` — ④ 데이터 테이블 검사를 끼움, 헤더는 Core 형식만 + 토큰 매크로), 자체 검사 `cookcheck.selftest`. 지시서(Asset 모듈)와 달리 입구가 GFW 인 이유: 데이터 테이블이 GFW(D3)라 Asset 이 못 부르고, JGConsole 은 Core · GFW 헤더만 본다 | 2026-10-02 밤 (커밋 10-17 15:03 — `a1e3253` · `cb02ed3`) | `Files/2026-10-02_GP-A1_cookcheck_verify.txt`: 워크트리 · 메인 `cookcheck.selftest` 26/26(정상 통과 · 깨진 참조 · 대소문자 · GUID 중복 · 잘못된 GUID · 파싱 오류 · 마운트 밖 · 키 중복 · 읽을 수 없는 테이블 실패, 36MB 실제 에셋 통과 1.9 s), `datatable.selftest` 127/127, 메인 빌드(DevOps 확인 exit 0). DevOps `cook.run` 7단계가 부른다 |
+| DT-C2 | GP-A1 커밋 | 2026-10-17 15:03 | 엔진 총괄 묶음 커밋(10-19 `git show --name-status` 로 확인) — 입구 GFW `Data/ContentCookCheck.h/.cpp` · `ContentCookCheckSelfTest.cpp` · 증적 `Files/2026-10-02_GP-A1_cookcheck_verify.txt` 는 `a1e3253`, 검사 본체 Asset `Cook/AssetCookValidator.h/.cpp` 는 `cb02ed3`, 부르는 쪽 DevOps `JGConsole/Cook/` 는 `7b8ee6e` |
 
-## 커밋 체크리스트 (DT-C2 — GP-A1)
+## 커밋 체크리스트 (DT-C2 — GP-A1, 10-17 15:03 커밋됨, 기록용)
+
+커밋: GFW `Data/` 3파일 · 증적은 `a1e3253`, Asset `Cook/` 2파일은 `cb02ed3`, 같이 들어가면 좋다던 DevOps `JGConsole/Cook/` 는 `7b8ee6e`(모두 10-17 15:03). `Bin/` 은 D-40(`6b9d212`) 부터 git 이 추적하지 않아 아래 "재빌드된 Bin" 은 커밋 대상이 아니다.
 
 새 파일(`git add` 필요):
 - `Source/Runtime/Asset/Cook/AssetCookValidator.h/.cpp`

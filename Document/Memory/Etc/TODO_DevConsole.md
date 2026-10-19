@@ -2,9 +2,9 @@
 
 > 2026-10-11 문서 정리: 콘솔 명령 시스템 항목(보류 B-1)은 `Core/TODO.md` 첫 표로 옮겼다. JGConsole 프로그램 항목(7-2 커밋 · 보류 B-12)은 DevOps 담당. 항목 ID 는 그대로.
 
-갱신 2026-10-03 10시(7-1 JGConsole 앞 옵션 `-game` 구현 · 검증 — 사용자 결정 D-30 (나)). 이전: 2026-10-02 23시(7-0 ProjectAH ER-005 검토 — D-27, 결정 D-30). 이전: 2026-10-02 11시(5-1 사용자 결정 (a) 구현 · 검증, 6-3 · 6-7 커밋 확인). 이전: 2026-10-01 11시(UI 보강 6-5 · 카테고리 드롭다운 6-6 추가), 2026-09-30 22시(로그 필터 · 명령 미리보기 6-1 · 6-2 추가, 1-7 · 2-5 · 3-5 커밋 확인). 구 TODO(`Files/DevConsole_TODO.md`, 2026-09-29 작성 · 09-30 갱신)를 통합·최신화했다. **항목 번호는 구 TODO 그대로**(다른 트랙 문서가 참조: `Document/Memory/Graphics/Files/Graphics_TODO.md` 5-25·5-31, `Document/Memory/Server/Files/Network_TODO.md`, 게임모듈 분석 R8, GFW TODO B-3). 현황·구조·함정·검증 방법은 `현황.md` §1.
+갱신 2026-10-19 20:5x(커밋 상태 정정 — 엔진 총괄 배정: 5-1 은 `26ac012`, 7-1 은 `7b8ee6e` 로 10-17 15:03 엔진 총괄 묶음 커밋에 들어갔다 → 5-2 · 7-2 끝, 완료 이력으로 옮김). 이전: 2026-10-03 10시(7-1 JGConsole 앞 옵션 `-game` 구현 · 검증 — 사용자 결정 D-30 (나)), 2026-10-02 23시(7-0 ProjectAH ER-005 검토 — D-27, 결정 D-30). 이전: 2026-10-02 11시(5-1 사용자 결정 (a) 구현 · 검증, 6-3 · 6-7 커밋 확인). 이전: 2026-10-01 11시(UI 보강 6-5 · 카테고리 드롭다운 6-6 추가), 2026-09-30 22시(로그 필터 · 명령 미리보기 6-1 · 6-2 추가, 1-7 · 2-5 · 3-5 커밋 확인). 구 TODO(`Files/DevConsole_TODO.md`, 2026-09-29 작성 · 09-30 갱신)를 통합·최신화했다. **항목 번호는 구 TODO 그대로**(다른 트랙 문서가 참조: `Document/Memory/Graphics/Files/Graphics_TODO.md` 5-25·5-31, `Document/Memory/Server/Files/Network_TODO.md`, 게임모듈 분석 R8, GFW TODO B-3). 현황·구조·함정·검증 방법은 `현황.md` §1.
 기준: 엔진 기반 구축 · 과설계 금지. 지금 구체적 문제가 있는 항목만 미완료 표에 두고, "나중에 필요할지도"는 보류 표에 다시 볼 조건과 함께 둔다. `결정 필요`는 착수 전 사용자 확인. 항목이 끝나면 완료 이력 표로 옮기고 근거를 적는다.
-**Phase 0~4 는 `4c8ac73`, 6-1 로그 필터 · 6-2 명령 미리보기 · 6-5 UI 보강 · 6-6 카테고리 드롭다운은 `736ddbe`(10-01 12:16, `GUI.h/.cpp` 최종본은 `efba16a` 16:58)에 커밋됐다**(2026-10-02 `git log -- <파일>` 확인). 5-1 은 사용자 결정 (a)(2026-10-02, 진행현황 D-19 ④)로 프로젝트 없이 띄운 에디터도 GameFrameWorks 를 연결하게 했다 — 구현 · 검증 완료, 미커밋(`JGEditor.cpp` 한 파일). ProjectAH ER-005("JGConsole 에서 게임 모듈 명령 실행")는 검토(7-0, D-27) 뒤 사용자 결정 D-30 (나)로 JGConsole 앞 옵션 `-game` 을 구현 · 검증했다(7-1, 10-03, 미커밋 — `Main.cpp` 한 파일). 남은 것은 커밋(5-2 · 7-2, 사용자)과 다른 트랙이 만들 명령이다.
+**Phase 0~4 는 `4c8ac73`, 6-1 로그 필터 · 6-2 명령 미리보기 · 6-5 UI 보강 · 6-6 카테고리 드롭다운은 `736ddbe`(10-01 12:16, `GUI.h/.cpp` 최종본은 `efba16a` 16:58)에 커밋됐다**(2026-10-02 `git log -- <파일>` 확인). 5-1 은 사용자 결정 (a)(2026-10-02, 진행현황 D-19 ④)로 프로젝트 없이 띄운 에디터도 GameFrameWorks 를 연결하게 했다 — 구현 · 검증 완료, 10-17 `26ac012` 로 커밋(`JGEditor.cpp` 한 파일). ProjectAH ER-005("JGConsole 에서 게임 모듈 명령 실행")는 검토(7-0, D-27) 뒤 사용자 결정 D-30 (나)로 JGConsole 앞 옵션 `-game` 을 구현 · 검증했다(7-1, 10-03, 10-17 `7b8ee6e` 로 커밋 — `Main.cpp` 한 파일). 남은 것은 다른 트랙이 만들 명령이다(5-2 · 7-2 커밋은 10-17 에 끝났다).
 
 ---
 
@@ -12,27 +12,11 @@
 
 | 순서 | 항목 | 착수 조건 | 완료 기준 |
 |---|---|---|---|
-| 1 | **5-2 커밋(5-1 변경)** — 사용자 | (선택) 프로젝트 없이 런처를 띄워 `Windows/DevConsole` 에서 `gmtest` → `gmtest: OK (0 failures)` | 아래 커밋 묶음. `JGEditor.cpp` 는 Server 5-5(로비 창 메뉴)도 고칠 수 있는 파일 → 같이 커밋하거나 순서만 맞춘다 |
-| 2 | **7-2 커밋(7-1 변경)** — 사용자 | (선택) 게임 Bin(`<Project>/Bin/DevelopEngine`)에서 `JGConsole.exe -game <게임 명령>` → 결과대로 0/1, `-game` 없이 부르면 "-game 을 붙이세요" 안내 | 아래 커밋 묶음(7-2). `Main.cpp` 에는 DevOps GP-D4 의 `-runCook` 별칭 4줄(미커밋)도 함께 있다 — 문자열 비교뿐이라 `Cook/` 없이 커밋해도 빌드된다 |
-| 3 | **B-1 승격 판단(조건부)** — 런처 실행 인자로 명령 실행 | Graphics 5-25가 리드백 덤프를 콘솔 명령으로 바꾸기로 하면(그때 자동 검증 루프가 PNG를 잃는다) | 그 시점에 B-1을 미완료 표로 올리고 문법(`JGLauncher.exe -exec="..."` 류)과 실행 시점(첫 프레임 뒤 `Submit`)을 정한다. 그 전에는 하지 않는다 |
+| 1 | **B-1 승격 판단(조건부)** — 런처 실행 인자로 명령 실행 | Graphics 5-25가 리드백 덤프를 콘솔 명령으로 바꾸기로 하면(그때 자동 검증 루프가 PNG를 잃는다) | 그 시점에 B-1을 미완료 표로 올리고 문법(`JGLauncher.exe -exec="..."` 류)과 실행 시점(첫 프레임 뒤 `Submit`)을 정한다. 그 전에는 하지 않는다 |
 
 **다른 트랙 후속(5-1 로 낡은 주석 — 알림만, 동작 무관)**: ① 게임 템플릿 `Build/Templates/GameProject/Source/{PROJECT_NAME}/{PROJECT_NAME}Module.cpp:15` "런처는 GameFrameWorks 를 연결하지 않으므로 게임 모듈이 연결한다" → 에디터는 이제 미리 연결해 두고(이때 `ConnectModule` 은 true 만 돌려준다), 에디터 없이 게임만 띄울 때를 위해 게임 모듈의 연결은 그대로 필요하다는 뜻으로 고친다(DevOps) ② `Source/Runtime/GameFrameWorks/Core/GameFrameWorksModule.cpp:13` `gmtest` 주석 "프로젝트 모드 에디터(게임 모듈이 연결)" → "에디터(엔진 모듈로 연결)"(GameFrameWorks, `gmtest` 공동 파일). 같은 내용의 문서 줄: `GameFrameWorks/현황.md` 102 · 130 · 244(결정 4 — 이제 결정됨), `DevOps/현황.md` 56("엔진 모듈 6개").
 
-**커밋 묶음(5-2 = 5-1 변경)** — 새 파일이 없어 PreBuild 는 필요 없다:
-
-| 구분 | 파일 |
-|---|---|
-| 소스 | `Source/Editor/JGEditor/JGEditor.cpp`(엔진 모듈 목록 끝 `"GameFrameWorks"` · `openSceneViewport` 조건 · 주석 2곳) |
-| 바이너리 | `Bin/DevelopEngine/JGEditor.{dll,exp,lib}`(10-02 10:40 메인 트리 JGEditor 빌드). 커밋 직전 다시 빌드했다면 그 산출물 |
-| 문서 | `Document/Memory/Etc/TODO_DevConsole.md` · `현황.md`(§1 · §5) · `TODO_JGEditor.md`, `Files/2026-10-02_devconsole_5-1_verify.txt`, `Files/2026-10-02_devconsole_5-1_{noproject,project}.png`, `Document/Memory/진행현황.md` |
-
-**커밋 묶음(7-2 = 7-1 변경)** — 새 파일이 없어 PreBuild 는 필요 없다:
-
-| 구분 | 파일 |
-|---|---|
-| 소스 | `Source/Programs/JGConsole/Main.cpp`(앞 옵션 `-game` · 게임 모듈 연결 · 모르는 명령 안내, +84/-6. DevOps GP-D4 `-runCook` 별칭 4줄 포함) |
-| 바이너리 | `Bin/DevelopEngine/JGConsole.exe`(10-03 10:01 · 10:05 다른 세션이 돌린 메인 빌드 — 둘 다 이 변경이 들어 있음을 문자열로 확인). 커밋 직전 다시 빌드했다면 그 산출물 |
-| 문서 | `Document/Memory/Etc/TODO_DevConsole.md` · `현황.md`(§1), `Files/ER-005_JGConsole게임모듈명령_검토_2026-10-02.md`, `Files/2026-10-03_jgconsole_game_option_verify.txt`, `Document/Memory/진행현황.md` |
+(5-2 · 7-2 커밋 묶음은 끝났다 — 10-17 15:03 엔진 총괄 묶음 커밋, 10-19 `git log -1 -- <파일>` 확인: 5-2 의 `JGEditor.cpp` · `Files/2026-10-02_devconsole_5-1_{verify.txt, noproject.png, project.png}` 는 `26ac012`, 7-2 의 JGConsole `Main.cpp`(DevOps GP-D4 `-runCook` 별칭 포함)는 `7b8ee6e`, 검토서 `Files/ER-005_JGConsole게임모듈명령_검토_2026-10-02.md` · `Files/2026-10-03_jgconsole_game_option_verify.txt` 는 `26ac012`. 바이너리(`Bin/`)는 D-40(`6b9d212`)으로 추적을 그만둬 넣지 않았다.)
 
 (6-3 · 6-7 커밋 묶음은 끝났다: DevConsole 5파일 · Core `ConsoleCommandGlobalSystem.h/.cpp` · `GUIDefines.h` · `ConsoleCommandSelfTest.cpp` 는 `736ddbe`, `GUI.h/.cpp` 는 `736ddbe` 다음 `efba16a` 가 마지막. 묶음 목록과 대조용 패치 위치는 완료 이력 6-3 · 6-7 과 `Files/2026-10-01_DevConsole_UI보강_카테고리필터.md`.)
 
@@ -42,8 +26,7 @@
 
 | ID | 항목 | 우선순위 | 상태 | 선행조건 | 완료 기준 | 비고 |
 |---|---|---|---|---|---|---|
-| 5-2 | 커밋 "프로젝트 없이 띄운 에디터도 GameFrameWorks 연결"(5-1) | 높음 | 대기(사용자) | 없음 | 위 커밋 묶음 | `JGEditor.cpp` 는 Server 5-5 와 같은 파일일 수 있다 |
-| 7-2 | 커밋 "JGConsole 앞 옵션 -game(게임 모듈 명령)"(7-1) | 높음 | 대기(사용자) | 없음 | 위 커밋 묶음(7-2) | `Main.cpp` 에 DevOps GP-D4 별칭 줄이 함께 있다 — 같이 커밋하거나 그대로 두어도 빌드 무관 |
+| — | 없음 — 5-2 · 7-2(커밋)는 10-17 에 끝나 완료 이력으로 옮겼다 | — | — | — | — | — |
 
 **다른 트랙이 구현할 명령**(이 트랙 항목이 아님 — 사용법 연결은 4-1에서 끝났다. 선언 방법은 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h` 상단 주석):
 
@@ -113,10 +96,12 @@
 | 6-8 | 6-5 · 6-6 메인 트리 적용 · 확인 | 2026-10-01 11:05 | 5파일 복사(스냅샷 뒤 변경 없음 확인, 다른 세션 빌드가 끝난 뒤) → 메인 트리 전체 빌드 159초 오류 0 · 경고 0 → 메인 Bin `console.selftest` 64/64 · `gmtest` OK → 레이아웃 복원으로 콘솔을 연 런처에서 새 화면 · 미리보기 · Usage 확인, 종료 0 · live 0. `Files/2026-10-01_devconsole_ui_maintree.png`, 검증 기록 5절 |
 | 6-4 | 메인 트리 적용 · 확인 | 2026-09-30 22:18 | 소스 적용 22:08(5개 파일 워크트리본과 바이트 동일, `GUI.h/.cpp` 는 다른 세션 추가분만 차이), 바뀐 .cpp 5개 컴파일 확인. 22:09 다른 세션 전체 빌드 산출물에 이 변경이 들어간 것을 바이너리 문자열로 확인 → 메인 Bin `console.selftest` 64/64 · `gmtest` OK · 런처 60초 종료 0 · `[error]` 0 · live 0. 콘솔 창 UI 는 메인 트리에서 자동 확인하지 않음(임시 코드가 필요, 같은 소스로 워크트리에서 확인) |
 | 6-3 · 6-7 | 커밋(6-1·6-2 · 6-5·6-6) | 2026-10-01 (`736ddbe` "엔진 구현" 12:16, `GUI.h/.cpp` 는 `efba16a` "게임 구현" 16:58 이 마지막) | 10-02 `git log -- <파일>` 확인: `ConsoleCommandGlobalSystem.h/.cpp` · `GUIDefines.h` · `DevConsole.h/.cpp` · `ConsoleCommandSelfTest.cpp` 는 `736ddbe`, `GUI.h/.cpp` 는 `736ddbe` · `efba16a`. 해당 소스의 작업 트리 변경 없음. 사용자가 여러 트랙을 한 번에 커밋했다 |
-| 5-1 | 프로젝트 없이 띄운 에디터도 GameFrameWorks 를 연결(사용자 결정 (a), 2026-10-02 — 진행현황 D-7 · D-19 ④): `JGEditor.cpp` `EDITOR_ENGINE_MODULES` 끝에 `"GameFrameWorks"`(게임 모듈이 연결하던 때와 같은 시작 · 종료 순서), `openSceneViewport` 는 게임 모듈을 연결했을 때만(GFW 가 늘 있어 `HasInstance()` 로는 못 가름). 결과: 에디터 콘솔에 GFW 명령 5개(`gmtest` · `gameui.selftest` · `datatable.selftest` · `datatable.validate` · `net.test`)가 프로젝트 없이도 보인다 | 2026-10-02 10:5x (미커밋 → 5-2) | `Files/2026-10-02_devconsole_5-1_verify.txt`: 메인 JGEditor 빌드 경고 0 · 오류 0. 프로젝트 없는 에디터 — `help` 6개에 `gmtest`, `gmtest: OK (0 failures)`, "not unregistered" 0, live 0, 종료 0, 씬 뷰포트 자동 열림 없음(저장된 ini 에 `JGSceneViewport=1` 없음). 검증 게임 DcCheck 에디터 — `Fail Connect` 0, 씬 뷰포트 자동 열림(`JGSceneViewport=1`), `gmtest` OK, GFW 시작 · 종료 각 1번, 종료 0 · live 0. `[error]` 는 gmtest 의 의도된 거부 검사 2줄뿐(JGConsole 과 같음). 캡처 `Files/2026-10-02_devconsole_5-1_{noproject,project}.png` |
+| 5-1 | 프로젝트 없이 띄운 에디터도 GameFrameWorks 를 연결(사용자 결정 (a), 2026-10-02 — 진행현황 D-7 · D-19 ④): `JGEditor.cpp` `EDITOR_ENGINE_MODULES` 끝에 `"GameFrameWorks"`(게임 모듈이 연결하던 때와 같은 시작 · 종료 순서), `openSceneViewport` 는 게임 모듈을 연결했을 때만(GFW 가 늘 있어 `HasInstance()` 로는 못 가름). 결과: 에디터 콘솔에 GFW 명령 5개(`gmtest` · `gameui.selftest` · `datatable.selftest` · `datatable.validate` · `net.test`)가 프로젝트 없이도 보인다 | 2026-10-02 10:5x (커밋 `26ac012` 10-17 — 5-2) | `Files/2026-10-02_devconsole_5-1_verify.txt`: 메인 JGEditor 빌드 경고 0 · 오류 0. 프로젝트 없는 에디터 — `help` 6개에 `gmtest`, `gmtest: OK (0 failures)`, "not unregistered" 0, live 0, 종료 0, 씬 뷰포트 자동 열림 없음(저장된 ini 에 `JGSceneViewport=1` 없음). 검증 게임 DcCheck 에디터 — `Fail Connect` 0, 씬 뷰포트 자동 열림(`JGSceneViewport=1`), `gmtest` OK, GFW 시작 · 종료 각 1번, 종료 0 · live 0. `[error]` 는 gmtest 의 의도된 거부 검사 2줄뿐(JGConsole 과 같음). 캡처 `Files/2026-10-02_devconsole_5-1_{noproject,project}.png` |
 | B-2 | (Server 트랙) `net.test` 를 GameFrameWorks `Network/GameplayNetSelfTest.cpp` 로 이동 | 2026-10-01 (커밋 `736ddbe`) | 10-02 확인: `NetCommands.cpp` 에는 `net.host` · `net.join` 만, 에디터 `help` 에 `net.test` 가 보인다 |
 | 7-0 | ProjectAH ER-005 "JGConsole 에서 게임 모듈 명령 실행" 검토(사용자 결정 D-27 — 검토만, 코드 변경 없음) | 2026-10-02 23시 | `Files/ER-005_JGConsole게임모듈명령_검토_2026-10-02.md`: 요청서 "엔진 현황" 4줄 모두 HEAD `0bd6356` 과 맞음. 선택지 4개 비교 — 늘 연결은 `module.test <게임>` 을 빈 검사로 만들고 게임 Bin 의 `gmtest` · `net.test` 월드 절을 건너뛰게 함 → 권고 `-game`(반나절). 겹침: DevOps GP-D4 `-runCook` 별칭(같은 함수) · GP-D5 런타임 모듈 목록, GFW B-3. 결정 항목 진행현황 D-30 |
-| 7-1 | JGConsole 앞 옵션 **`-game`**(ProjectAH ER-005, 사용자 결정 D-30 (나)): `JGConsole.exe [-game] <명령>` — 게임 Bin 에서 `.jgproject` `GameModules` 를 GameFrameWorks 다음에 연결(에디터 모듈 제외)한 뒤 실행. 엔진 Bin 이면 오류 · 게임 모듈 연결 실패면 명령을 돌리지 않고 종료 1. `-game` 없이 모르는 명령이면 "Commands of game modules need -game" 안내(결과 · 종료 코드 그대로). DevOps `-runCook` 별칭은 옵션 뒤 첫 토큰에 그대로 적용 | 2026-10-03 10:0x (미커밋 → 7-2) | `Files/2026-10-03_jgconsole_game_option_verify.txt`: worktree `Temp/wt/er005` 빌드 48초 오류 0 → 메인 반영(다른 세션 메인 전체 빌드에 포함, `JGConsole.exe` 문자열 확인). 엔진 Bin(worktree · 메인): `console.selftest` 64/64 · `gmtest` OK · `-game gmtest` 1 · `-runCook` 별칭 그대로 · `module.test GameFrameWorks` OK. 검증 게임 2개(`Temp/Games/Er005Chk` worktree 엔진 · `Er005Main` 메인 엔진, 임시 명령은 게임 소스에만): `-game` 성공 0 · 실패 1 · help 에 게임 명령, `-game` 없으면 Unknown + 안내 1, `module.test <게임>` · `gmtest`(World 64) · `console.selftest` 그대로, `-game gmtest` World 50(검토서대로), DLL 없으면 명령 안 돌고 1, 에디터 모듈 미연결 · live 0. 게임 세션에 쓰는 법을 보냄 |
+| 7-1 | JGConsole 앞 옵션 **`-game`**(ProjectAH ER-005, 사용자 결정 D-30 (나)): `JGConsole.exe [-game] <명령>` — 게임 Bin 에서 `.jgproject` `GameModules` 를 GameFrameWorks 다음에 연결(에디터 모듈 제외)한 뒤 실행. 엔진 Bin 이면 오류 · 게임 모듈 연결 실패면 명령을 돌리지 않고 종료 1. `-game` 없이 모르는 명령이면 "Commands of game modules need -game" 안내(결과 · 종료 코드 그대로). DevOps `-runCook` 별칭은 옵션 뒤 첫 토큰에 그대로 적용 | 2026-10-03 10:0x (커밋 `7b8ee6e` 10-17 — 7-2) | `Files/2026-10-03_jgconsole_game_option_verify.txt`: worktree `Temp/wt/er005` 빌드 48초 오류 0 → 메인 반영(다른 세션 메인 전체 빌드에 포함, `JGConsole.exe` 문자열 확인). 엔진 Bin(worktree · 메인): `console.selftest` 64/64 · `gmtest` OK · `-game gmtest` 1 · `-runCook` 별칭 그대로 · `module.test GameFrameWorks` OK. 검증 게임 2개(`Temp/Games/Er005Chk` worktree 엔진 · `Er005Main` 메인 엔진, 임시 명령은 게임 소스에만): `-game` 성공 0 · 실패 1 · help 에 게임 명령, `-game` 없으면 Unknown + 안내 1, `module.test <게임>` · `gmtest`(World 64) · `console.selftest` 그대로, `-game gmtest` World 50(검토서대로), DLL 없으면 명령 안 돌고 1, 에디터 모듈 미연결 · live 0. 게임 세션에 쓰는 법을 보냄 |
+| 5-2 | 커밋 "프로젝트 없이 띄운 에디터도 GameFrameWorks 연결"(5-1) | 2026-10-17 15:03 (엔진 총괄 묶음 커밋 `26ac012`, 푸시 `efba16a..e111df8`) | 커밋 전 메인 빌드 오류 0 · 자체 테스트 9가지 통과(진행현황 7절 10-17 15:0x). 10-19 `git log -1 -- <파일>`: `Source/Editor/JGEditor/JGEditor.cpp`(커밋 안 엔진 모듈 목록에 `"GameFrameWorks"`) · `Files/2026-10-02_devconsole_5-1_{verify.txt, noproject.png, project.png}` = `26ac012`. 작업 트리 변경 없음. `Bin/` 은 D-40(`6b9d212`)으로 추적하지 않음 |
+| 7-2 | 커밋 "JGConsole 앞 옵션 -game(게임 모듈 명령)"(7-1) | 2026-10-17 15:03 (엔진 총괄 묶음 커밋 `7b8ee6e` — DevOps 커밋) | 10-19 `git log -1 -- <파일>`: `Source/Programs/JGConsole/Main.cpp`(커밋 안 `-game` 안내 글 · DevOps GP-D4 `-runCook` 별칭 포함) = `7b8ee6e`, 검토서 `Files/ER-005_JGConsole게임모듈명령_검토_2026-10-02.md` · `Files/2026-10-03_jgconsole_game_option_verify.txt` = `26ac012`. 작업 트리 변경 없음 |
 
 ---
 

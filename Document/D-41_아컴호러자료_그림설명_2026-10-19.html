@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D-41 그림 설명</title>
+<meta name="description" content="D-41 작업 폴더에서 지워진 아컴호러 자료 247파일 — 공개 저장소에서도 뺄지, 되살릴지 — 그림 설명">
+<style>
+  :root {
+    --page: #f9f9f7; --surface: #fcfcfb; --surface-2: #f1f0ec; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --line: #d6d5ce; --ring: rgba(11,11,11,0.10);
+    --accent: #2a78d6; --accent-soft: #dce8f8; --callout: #eef4fc;
+    --good: #0b8a0b; --good-soft: #e1f3e1; --warning: #b97c00; --warning-soft: #fdf1d6; --serious: #d0582b; --serious-soft: #fbe6dd;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #8f8d86;
+      --line: #3a3a37; --ring: rgba(255,255,255,0.10);
+      --accent: #5598e7; --accent-soft: #1b2c44; --callout: #14213a;
+      --good: #4cc24c; --good-soft: #15301a; --warning: #f2b23a; --warning-soft: #33280f; --serious: #f08a5d; --serious-soft: #3a1f15;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #262624; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #8f8d86;
+    --line: #3a3a37; --ring: rgba(255,255,255,0.10);
+    --accent: #5598e7; --accent-soft: #1b2c44; --callout: #14213a;
+    --good: #4cc24c; --good-soft: #15301a; --warning: #f2b23a; --warning-soft: #33280f; --serious: #f08a5d; --serious-soft: #3a1f15;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--ink); font: 15.5px/1.7 "Segoe UI", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 22px 16px 80px; }
+  .crumb { font-size: 13px; color: var(--muted); }
+  .crumb a { color: var(--accent); }
+  h1 { font-size: 24px; line-height: 1.35; margin: 6px 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 19px; margin: 36px 0 6px; }
+  h2 .no { display: inline-block; min-width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; margin-right: 8px; }
+  p { margin: 6px 0; }
+  .sub { color: var(--ink-2); font-size: 14px; }
+  .lede { border: 1px solid var(--ring); border-left: 4px solid var(--accent); background: var(--callout); border-radius: 10px; padding: 12px 16px; margin: 14px 0 0; }
+  figure { margin: 12px 0 6px; padding: 12px; border: 1px solid var(--ring); border-radius: 12px; background: var(--surface); overflow-x: auto; }
+  figure svg { display: block; width: 100%; min-width: 640px; height: auto; }
+  figcaption { font-size: 13.5px; color: var(--ink-2); margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14.5px; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { background: var(--surface-2); font-size: 13.5px; color: var(--ink-2); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  tr.rec td { background: var(--callout); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 0 8px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; background: var(--accent); color: #fff; }
+  .note { font-size: 13.5px; color: var(--ink-2); }
+  code { font: 12.5px Consolas, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  .how { border: 1px dashed var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+  svg text { font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif; fill: var(--ink); }
+  svg .t-sm { font-size: 13px; fill: var(--ink-2); }
+  svg .t-xs { font-size: 12px; fill: var(--muted); }
+  svg .t-b { font-size: 15px; font-weight: 600; }
+  svg .t-h { font-size: 16px; font-weight: 700; }
+  svg .box { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; }
+  svg .box-a { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  svg .box-g { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; }
+  svg .box-s { fill: var(--serious-soft); stroke: var(--serious); stroke-width: 2; }
+  svg .box-y { fill: var(--warning-soft); stroke: var(--warning); stroke-width: 1.5; }
+  svg .ln { stroke: var(--muted); stroke-width: 2; fill: none; }
+  svg .ln-d { stroke: var(--muted); stroke-width: 1.5; fill: none; stroke-dasharray: 5 5; }
+  svg .c-m { fill: var(--muted); }
+  svg .c-a { fill: var(--accent); }
+  svg .w { fill: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="crumb"><a href="http://127.0.0.1:47770/#/team/JGEngine/decide">← 대시보드</a> · 결정할 것 · 엔진 총괄</div>
+  <h1>D-41 그림으로 보기 — 지워진 아컴호러 자료 247파일, 공개 저장소에서도 뺄지 되살릴지</h1>
+  <p class="sub">2026-10-19 엔진 총괄 · 분야 세션들(DevOps · GUI)이 문서를 정리하다 찾음</p>
+
+  <div class="lede">
+    <strong>한 줄로:</strong> 엔진 저장소의 레퍼런스 게임 자료 <code>Document/아컴호러/</code>(247파일, 24.2MB — 카드 그림 229 · 자료 7 · 도구 4 · 문서 7)가 10-19 20:41 쯤 <strong>이 PC 의 작업 폴더에서만</strong> 지워졌습니다. git 기록과 GitHub(공개)에는 그대로 있습니다.
+    권고는 <strong>(나) 공개 저장소에서도 빼기</strong>입니다(지우신 게 맞다면). 급하지 않습니다 — 답이 올 때까지 이 지움은 커밋에 넣지 않습니다.
+  </div>
+
+  <h2><span class="no">1</span>지금 생기는 일</h2>
+  <p>작업 폴더에서 파일이 사라졌지만, 커밋하지 않았으니 git 기록과 GitHub 에는 아직 있습니다. 엔진 · 게임 세션들의 오늘 명령 기록에서는 이 폴더를 지운 명령을 찾지 못했습니다 — 탐색기 등 세션 밖에서 지워진 것으로 보입니다.</p>
+  <figure>
+    <svg viewBox="0 0 880 250" role="img" aria-label="이 PC 작업 폴더에서는 지워졌고, git 기록과 GitHub 에는 247파일이 남아 있으며, 게임 팀은 같은 자료를 ProjectAH/AHRawData 에 따로 갖고 있다">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="c-m"/></marker></defs>
+      <rect x="20" y="30" width="230" height="96" rx="10" class="box-s"/>
+      <text x="135" y="58" text-anchor="middle" class="t-b">이 PC 작업 폴더</text>
+      <text x="135" y="82" text-anchor="middle" class="t-sm">Document/아컴호러 없음</text>
+      <text x="135" y="104" text-anchor="middle" class="t-xs">10-19 20:41 쯤 지워짐</text>
+      <line x1="250" y1="78" x2="316" y2="78" class="ln-d" marker-end="url(#a1)"/>
+      <text x="283" y="68" text-anchor="middle" class="t-xs">커밋하면</text>
+      <rect x="320" y="30" width="230" height="96" rx="10" class="box"/>
+      <text x="435" y="58" text-anchor="middle" class="t-b">git 기록(이 PC)</text>
+      <text x="435" y="82" text-anchor="middle" class="t-sm">247파일 있음</text>
+      <text x="435" y="104" text-anchor="middle" class="t-xs">지금 커밋 기준</text>
+      <line x1="550" y1="78" x2="616" y2="78" class="ln-d" marker-end="url(#a1)"/>
+      <text x="583" y="68" text-anchor="middle" class="t-xs">푸시하면</text>
+      <rect x="620" y="30" width="240" height="96" rx="10" class="box-y"/>
+      <text x="740" y="58" text-anchor="middle" class="t-b">GitHub (공개)</text>
+      <text x="740" y="82" text-anchor="middle" class="t-sm">247파일 있음 · 누구나 받음</text>
+      <text x="740" y="104" text-anchor="middle" class="t-xs">카드 그림 229개 포함</text>
+      <rect x="20" y="158" width="840" height="70" rx="10" class="box-g"/>
+      <text x="440" y="186" text-anchor="middle" class="t-b">게임 팀 사본: ProjectAH/AHRawData — 같은 카드 그림 · 규칙 요약 · 카드 자료(그림 2,427개)</text>
+      <text x="440" y="208" text-anchor="middle" class="t-sm">엔진은 이 자료를 쓰지 않는다(요구사항 확인용 참고) — 게임 쪽 일은 게임 팀 사본으로 한다</text>
+    </svg>
+    <figcaption>점선 화살표는 아직 일어나지 않은 일입니다. 커밋 · 푸시를 하지 않았으니 지금은 왼쪽 한 곳만 다릅니다.</figcaption>
+  </figure>
+
+  <h2><span class="no">2</span>고를 것 — 지워진 247파일을 어떻게</h2>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="세 선택지: 되살리기, 공개 저장소에서도 빼기, 그대로 두기">
+      <!-- 가 -->
+      <text x="20" y="26" class="t-h">(가) 되살리기</text>
+      <rect x="20" y="40" width="270" height="70" rx="10" class="box"/>
+      <text x="155" y="64" text-anchor="middle" class="t-sm">git 에서 247파일을 다시 꺼냄</text>
+      <text x="155" y="86" text-anchor="middle" class="t-xs">이 PC = git = GitHub, 모두 있음</text>
+      <rect x="20" y="124" width="270" height="56" rx="10" class="box-g"/>
+      <text x="155" y="148" text-anchor="middle" class="t-sm">지금 규칙(H-002 “이미 올라간 것은</text>
+      <text x="155" y="168" text-anchor="middle" class="t-sm">그대로”)과 같음 · 몇 초 ✓</text>
+      <rect x="20" y="194" width="270" height="92" rx="10" class="box-y"/>
+      <text x="155" y="220" text-anchor="middle" class="t-sm">공개 저장소에 FFG 카드 그림이</text>
+      <text x="155" y="242" text-anchor="middle" class="t-sm">계속 남음</text>
+      <!-- 나 -->
+      <text x="305" y="26" class="t-h">(나) 공개 저장소에서도 빼기</text>
+      <rect x="532" y="12" width="44" height="20" rx="10" class="c-a"/>
+      <text x="554" y="27" text-anchor="middle" class="w" style="font-size:12px;font-weight:600">권고</text>
+      <rect x="305" y="40" width="270" height="70" rx="10" class="box-a"/>
+      <text x="440" y="64" text-anchor="middle" class="t-sm">다음 커밋에 지움을 넣고 푸시</text>
+      <text x="440" y="86" text-anchor="middle" class="t-xs">이 PC · git 최신 · GitHub 최신에서 빠짐</text>
+      <rect x="305" y="124" width="270" height="56" rx="10" class="box-g"/>
+      <text x="440" y="148" text-anchor="middle" class="t-sm">공개 저장소 최신 판에 게임 자료 없음 ✓</text>
+      <text x="440" y="168" text-anchor="middle" class="t-sm">엔진은 쓰지 않는 자료 · 10분 ✓</text>
+      <rect x="305" y="194" width="270" height="92" rx="10" class="box-y"/>
+      <text x="440" y="220" text-anchor="middle" class="t-sm">옛 커밋에는 남음(기록까지 지우려면</text>
+      <text x="440" y="242" text-anchor="middle" class="t-sm">기록 다시 쓰기 — 되돌리기 어려워 안 함)</text>
+      <text x="440" y="264" text-anchor="middle" class="t-sm">엔진 문서의 가리킴 몇 곳 고침</text>
+      <!-- 다 -->
+      <text x="590" y="26" class="t-h">(다) 그대로 두기</text>
+      <rect x="590" y="40" width="270" height="70" rx="10" class="box"/>
+      <text x="725" y="64" text-anchor="middle" class="t-sm">이 PC 에서만 지운 채, 커밋에 안 넣음</text>
+      <text x="725" y="86" text-anchor="middle" class="t-xs">git · GitHub 에는 계속 있음</text>
+      <rect x="590" y="124" width="270" height="56" rx="10" class="box-g"/>
+      <text x="725" y="158" text-anchor="middle" class="t-sm">할 일 없음 ✓</text>
+      <rect x="590" y="194" width="270" height="92" rx="10" class="box-s"/>
+      <text x="725" y="220" text-anchor="middle" class="t-sm">git 상태에 지운 파일 247줄이 계속 보임</text>
+      <text x="725" y="242" text-anchor="middle" class="t-sm">묶음 커밋 때마다 골라 빼야 함</text>
+      <text x="725" y="264" text-anchor="middle" class="t-sm">— 실수로 섞일 위험</text>
+    </svg>
+    <figcaption>초록은 좋은 점, 노랑 · 주황은 대가입니다. 어느 쪽이든 게임 팀 사본(ProjectAH/AHRawData)과 게임 빌드는 그대로입니다.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th style="width:24%">선택지</th><th>좋은 점</th><th>대가</th><th style="width:12%">일</th></tr></thead>
+    <tbody>
+      <tr><td>(가) 되살리기</td><td>지금 규칙(H-002 “이미 올라간 것은 사용자가 다시 말할 때까지 그대로”)과 같음. 이 PC · git · GitHub 가 다시 같아짐</td><td>공개 저장소에 FFG 카드 그림 · 자료가 계속 남음</td><td>몇 초(<code>git checkout</code>)</td></tr>
+      <tr class="rec"><td>(나) 공개 저장소에서도 빼기 <span class="tag">권고</span></td><td>공개 저장소 최신 판에서 게임 자료가 빠짐. 엔진은 이 자료를 쓰지 않고, 게임 팀은 같은 자료를 따로 가짐</td><td>옛 커밋에는 남음(기록까지 지우려면 git 기록 다시 쓰기 — 되돌리기 어려워 하지 않음). 엔진 팀 지침(CLAUDE.md) · README 의 가리킴 몇 곳을 고침</td><td>10분(커밋 하나 · 푸시)</td></tr>
+      <tr><td>(다) 그대로 두기</td><td>할 일 없음</td><td>git 상태에 지운 파일 247줄이 계속 보여, 묶음 커밋 때마다 골라 빼야 함</td><td>없음</td></tr>
+    </tbody>
+  </table>
+
+  <h2><span class="no">3</span>권고와 까닭</h2>
+  <p><strong>(나) 공개 저장소에서도 빼기</strong> — 지우신 게 맞다면. 엔진은 게임 엔진이라 특정 게임의 카드 그림 · 규칙 자료를 쓰지 않습니다(요구사항 확인용 참고). 게임 팀은 같은 자료를 ProjectAH/AHRawData 에 따로 갖고 있습니다. 공개 저장소의 최신 판에 다른 회사의 카드 그림이 없는 편이 안전합니다.</p>
+  <p>지우신 기억이 없다면 <strong>(가) 되살리기</strong>를 고르세요 — git 에서 그대로 다시 꺼냅니다.</p>
+  <p class="note">고르지 않아도 정해 둔 것: 답이 올 때까지 이 지움은 커밋에 넣지 않습니다((다)와 같음). 다른 묶음 커밋은 고친 파일만 골라 넣으므로 섞이지 않습니다.</p>
+
+  <div class="how">
+    <strong>고르는 법:</strong> 통합 대시보드 보고함의 D-41 에서 고르면 엔진 총괄이 받아 반영합니다.
+  </div>
+  <p class="note" style="margin-top:18px">근거: 엔진 총괄이 10-19 본 <code>git status</code>(지움 247 — 이 대화가 시작된 20:2x 에는 없었음), <code>Document</code> 폴더가 마지막으로 바뀐 시각 20:41:41, 그 앞뒤 모든 세션의 명령 기록, 커밋 전 검사기(<code>.git/hooks/pre-commit</code> — 지우는 커밋은 막지 않음), ProjectAH/AHRawData 의 같은 그림(예: <code>01001.png</code>).</p>
+</div>
+</body>
+</html>
