@@ -9,8 +9,8 @@ class JGCameraComponent;
 struct HGUIImageInput;
 enum class EGameViewportInputTarget : uint8;
 
-// 씬 뷰포트. 게임 화면(GameFrameWorks PGameViewport — 활성 월드 + 게임 UI)을 ImGui 창에 보여 주는 에디터 호스트다(GP-E1, D-23).
-// 게임 모듈을 만들면서 게임 월드를 보는 창이다. GameFrameWorks 가 돌지 않으면(프로젝트 없이 띄운 에디터) 안내 문구만 그린다.
+// 씬 뷰포트. 게임 화면(GameFrameWork PGameViewport — 활성 월드 + 게임 UI)을 ImGui 창에 보여 주는 에디터 호스트다(GP-E1, D-23).
+// 게임 모듈을 만들면서 게임 월드를 보는 창이다. GameFrameWork 가 돌지 않으면(프로젝트 없이 띄운 에디터) 안내 문구만 그린다.
 //   OnUpdate(열려 있는 동안 매 프레임, GUI 생성 뒤 · GUI 드로우 앞) → PGameViewport::Render (월드 → 디스플레이 텍스처 → 게임 UI)
 //   OnGenerateGUI → 텍스처를 16:9 로 창에 맞춰 보여 주고, ImGui 입력을 엔진 입력 이벤트(HInputEvent, 뷰포트 픽셀)로 바꿔 PGameViewport::HandleInput 에 넘긴다.
 //     무엇을 게임이 받는지는 게임 뷰포트가 정한다: 게임 UI 먼저(입력 모드 Menu 위젯이면 빈 곳도 UI), 남은 왼쪽 누름 → 활성 카메라 광선 → 컨트롤러 HandleClick,

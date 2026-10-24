@@ -2,7 +2,7 @@
 #include "Core.h"
 #include "JGGraphicsDefine.h"
 
-class HJGGraphicsHelper
+class GRAPHICS_API HJGGraphicsHelper
 {
 public:
 	static uint64 GetShaderDataTypeSize(EShaderDataType dataType);

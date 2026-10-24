@@ -1,7 +1,7 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
-    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GameFrameWorks" ],
+    "ModuleDependencies": [ "Core", "Graphics", "GameFrameWork" ],
     "ModuleName": "GameHost",
     "ModulePath": "Source/Runtime/GameHost/",
     "Defines": [

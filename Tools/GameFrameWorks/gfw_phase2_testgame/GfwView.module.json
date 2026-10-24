@@ -1,7 +1,7 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
-    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GUI", "GameFrameWorks" ],
+    "ModuleDependencies": [ "Core", "Graphics", "GUI", "GameFrameWork" ],
     "ModuleName": "GfwView",
     "ModulePath": "Source/GfwView/",
     "Defines": [

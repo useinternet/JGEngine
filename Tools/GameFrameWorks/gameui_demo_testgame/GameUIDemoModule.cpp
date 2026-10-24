@@ -14,10 +14,10 @@ JGType HGameUIDemoModule::GetModuleType() const
 
 void HGameUIDemoModule::StartupModule()
 {
-	// 런처는 GameFrameWorks 를 연결하지 않으므로 게임 모듈이 연결한다. 게임 UI 는 GameFrameWorks 안에 있다.
-	if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWorks") == false)
+	// 런처는 GameFrameWork 를 연결하지 않으므로 게임 모듈이 연결한다. 게임 UI 는 GameFrameWork 안에 있다.
+	if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWork") == false)
 	{
-		JG_LOG(GameUIDemo, ELogLevel::Critical, "Fail Connect GameFrameWorks Module...");
+		JG_LOG(GameUIDemo, ELogLevel::Critical, "Fail Connect GameFrameWork Module...");
 		return;
 	}
 

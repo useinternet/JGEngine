@@ -5,7 +5,7 @@
 #include "Core.h"
 #include "Misc/Module.h"
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
-#include "Network/GameplayNetSelfTest.h"
+#include "SelfTest/GameplayNetSelfTest.h"
 
 // 리슨 서버 2 프로세스 검증 명령 (Server TODO Phase 4 · 5-6). 문법은 DevConsole_TODO 0-3 (`-이름=값`).
 //   JGConsole.exe net.host [-world] -bind=127.0.0.1 -port=47771 -clients=2 -commands=1000 -seed=12345 [-rejoin-grace=30]
@@ -14,16 +14,16 @@
 //   호스트는 세션 공유 데이터를 정하고 클라 모두가 준비를 켜면 시작한다. -leave-after-welcome 클라는 Welcome 만 받고 나간다(시작 전 나간 자리 비우기 확인).
 //   창을 다시 띄워 같은 자리로(ER-026, kernel 모드만): -leave-at=N 클라는 순번 N 을 적용한 뒤 창을 닫듯 나가고, -token= 으로 새 프로세스가 같은 토큰을 쓴다.
 //   호스트 -rejoin-grace=초 는 판 도중 나간 클라가 돌아오기를 그만큼 기다린다(없으면 나가는 즉시 실패).
-// 호스트 · 클라 루프가 명령이 끝날 때까지 돌아 에디터 콘솔에서는 쓰지 않는다. 한 프로세스 검사 net.test 는 GameFrameWorks 모듈이 선언한다.
+// 호스트 · 클라 루프가 명령이 끝날 때까지 돌아 에디터 콘솔에서는 쓰지 않는다. 한 프로세스 검사 net.test 는 GameFrameWork 모듈이 선언한다.
 // 잘못된 숫자는 예외 없이 거부한다 (핸들러가 false → 레지스트리가 사용법을 출력하고 종료 코드 1).
 
 namespace
 {
-	bool connectGameFrameWorks()
+	bool connectGameFrameWork()
 	{
-		if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWorks") == false)
+		if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWork") == false)
 		{
-			std::cout << "net: fail to connect GameFrameWorks module" << std::endl;
+			std::cout << "net: fail to connect GameFrameWork module" << std::endl;
 			return false;
 		}
 		return true;
@@ -99,7 +99,7 @@ namespace
 			std::cout << "-rejoin-grace is for the kernel mode (no -world)" << std::endl;
 			return false;
 		}
-		if (connectGameFrameWorks() == false)
+		if (connectGameFrameWork() == false)
 		{
 			return false;
 		}
@@ -139,7 +139,7 @@ namespace
 			std::cout << "-token and -leave-at are for the kernel mode (no -world)" << std::endl;
 			return false;
 		}
-		if (connectGameFrameWorks() == false)
+		if (connectGameFrameWork() == false)
 		{
 			return false;
 		}

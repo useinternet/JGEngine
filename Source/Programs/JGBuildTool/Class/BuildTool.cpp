@@ -12,7 +12,7 @@ namespace
 	const char* const GAME_HOST_MODULE = "GameHost";
 
 	// ImGui 기반 개발용 런타임 모듈. 게임 쪽이 의존하면 경고만 한다(패키지에는 들어간다).
-	const char* const DEVELOPMENT_RUNTIME_MODULES[] = { "GUI", "Devkit" };
+	const char* const DEVELOPMENT_RUNTIME_MODULES[] = { "GUI" };
 }
 
 const PString& PBuildTool::BuildToolDirectory()

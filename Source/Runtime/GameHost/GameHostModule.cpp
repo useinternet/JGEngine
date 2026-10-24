@@ -13,8 +13,8 @@ JG_MODULE_IMPL(HGameHostModule, GAMEHOST_C_API)
 
 namespace
 {
-	// JGEditor 의 엔진 모듈 순서에서 에디터 · 개발 모듈(GUI · DevStatistics · DevConsole · Devkit)을 뺀 것.
-	const char* const GAME_HOST_ENGINE_MODULES[] = { "Graphics", "Asset", "GameFrameWorks" };
+	// JGEditor 의 엔진 모듈 순서에서 에디터 · 개발 모듈(GUI)를 뺀 것.
+	const char* const GAME_HOST_ENGINE_MODULES[] = { "Graphics", "GameFrameWork" };
 
 	// 창 크기 변경이 이만큼 프레임 동안 멈추면 뷰포트(렌더 텍스처) 크기를 맞춘다(끄는 동안 매 프레임 다시 만들지 않게).
 	const int32 RESIZE_SETTLE_FRAMES = 10;
@@ -177,7 +177,7 @@ void HGameHostModule::ShutdownModule()
 		globalValues.WindowCallBacks->OnInput.RemoveObject(this);
 	}
 
-	// 뷰포트는 GPU 텍스처 · 게임 인스턴스를 들고 있으므로 게임 모듈 · GameFrameWorks · Graphics 보다 먼저 놓는다.
+	// 뷰포트는 GPU 텍스처 · 게임 인스턴스를 들고 있으므로 게임 모듈 · GameFrameWork · Graphics 보다 먼저 놓는다.
 	_viewport = nullptr;
 
 	// 게임 모듈은 엔진 모듈을 쓰므로 먼저 내린다(JGEditor 와 같은 규칙).

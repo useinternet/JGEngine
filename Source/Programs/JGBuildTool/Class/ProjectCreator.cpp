@@ -47,7 +47,7 @@ namespace
 
 	// 엔진 모듈과 이름이 같으면 DLL 이 같은 Bin 에서 부딪히고 premake 가 두 프로젝트를 하나로 합친다.
 	// JG 로 시작하는 이름은 엔진 몫이다. <Name>Editor 가 JGEditor 가 되는 경우("JG")도 이것으로 막힌다.
-	// Game 이면 템플릿의 엔트리 액터(JG<Name>EntryActor, <Name>EntryActor.h)가 GameFrameWorks 의 JGGameEntryActor 와 같아진다.
+	// Game 이면 템플릿의 엔트리 액터(JG<Name>EntryActor, <Name>EntryActor.h)가 GameFrameWork 의 JGGameEntryActor 와 같아진다.
 	bool isReservedProjectName(const PString& projectName)
 	{
 		if (PString::ToUpper(projectName).StartWidth("JG") == true)
@@ -58,7 +58,7 @@ namespace
 
 		if (PString::ToUpper(projectName) == "GAME")
 		{
-			JG_LOG(BuildTool, ELogLevel::Critical, "%s is reserved: the template entry actor would collide with JGGameEntryActor (GameFrameWorks/Actors/GameEntryActor.h). Choose another project name", projectName);
+			JG_LOG(BuildTool, ELogLevel::Critical, "%s is reserved: the template entry actor would collide with JGGameEntryActor (GameFrameWork/Actors/GameEntryActor.h). Choose another project name", projectName);
 			return true;
 		}
 

@@ -9,10 +9,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/PickShapeComponent.h"
 #include "GameMaster/GameMaster.h"
-#include "Classes/StaticMesh.h"
+#include "Asset/StaticMeshAsset.h"
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
-// GameFrameWorks Phase 2 검증용 게임 코드 (엔진 밖, 스크래치패드 프로젝트).
+// GameFrameWork Phase 2 검증용 게임 코드 (엔진 밖, 스크래치패드 프로젝트).
 // 6x6 사각 보드, 엔티티 4개(X Bot 메시 + 메시 경계 상자 판정), 칸 타일, 궤도 카메라, 컨트롤러.
 namespace
 {

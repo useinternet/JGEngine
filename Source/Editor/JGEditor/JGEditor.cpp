@@ -5,12 +5,13 @@
 #include "FileIO/ProjectDescriptor.h"
 #include "GUIModule.h"
 #include "Menu/MenuTree.h"
-#include "Devkit.h"
 #include "Core/GameInstance.h"
 #include "Widgets/SceneViewport.h"
 #include "Widgets/GameplayDevView.h"
 #include "Widgets/DataTableEditor.h"
 #include "Widgets/SessionLobby.h"
+#include "Widgets/DevConsole.h"
+#include "Widgets/MemoryStatistics.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -21,10 +22,11 @@ JG_MODULE_IMPL(HJGEditorModule, JGEDITOR_C_API)
 namespace
 {
 	// 에디터가 쓰는 엔진 모듈. 연결은 이 순서, 종료는 역순이다(JGDev_Graphics 에서 옮긴 순서 그대로).
-	// GameFrameWorks 는 프로젝트 없이 띄운 에디터에서도 그 모듈의 콘솔 명령(gmtest)을 쓰게 연결한다(DevConsole 5-1, 사용자 결정 2026-10-02).
+	// GameFrameWork 는 프로젝트 없이 띄운 에디터에서도 그 모듈의 콘솔 명령(gmtest)을 쓰게 연결한다(DevConsole 5-1, 사용자 결정 2026-10-02).
 	// 맨 뒤에 두어 게임 모듈이 연결하던 때와 같은 순서를 지킨다: 다른 엔진 모듈이 모두 올라간 뒤 시작하고, 게임 모듈 다음 · 다른 엔진 모듈보다 먼저 내린다.
-	// 게임 모듈의 ConnectModule("GameFrameWorks") 는 이미 연결돼 있으면 true 만 돌려준다(참조 카운트 없음).
-	const char* const EDITOR_ENGINE_MODULES[] = { "Graphics", "GUI", "Asset", "DevStatistics", "DevConsole", "Devkit", "GameFrameWorks" };
+	// 게임 모듈의 ConnectModule("GameFrameWork") 는 이미 연결돼 있으면 true 만 돌려준다(참조 카운트 없음).
+	// 에셋 DB 는 GameFrameWork 가 시작할 때 Graphics 가 이미 켜져 있으면 켠다 — 그래서 Graphics 가 맨 앞이다.
+	const char* const EDITOR_ENGINE_MODULES[] = { "Graphics", "GUI", "GameFrameWork" };
 }
 
 JGType HJGEditorModule::GetModuleType() const
@@ -88,6 +90,31 @@ void HJGEditorModule::openDefaultWidgets()
 		return;
 	}
 	
+	// 메모리 통계 · 콘솔 창. 메뉴는 넣은 차례대로 보이므로, 따로 된 모듈(DevStatistics · DevConsole)이 달던 때와 같은 순서가 되게 맨 앞에 둔다.
+	HMainMenuItem MemoryStatisticsItem;
+	MemoryStatisticsItem.MenuPath = "Windows/Statistics/Memory";
+	MemoryStatisticsItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGMemoryStatistcs>();
+			}
+		});
+	GUIModule->AddMainMenuItem(MemoryStatisticsItem);
+
+	HMainMenuItem DevConsoleItem;
+	DevConsoleItem.MenuPath = "Windows/DevConsole";
+	DevConsoleItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGDevConsole>();
+			}
+		});
+	GUIModule->AddMainMenuItem(DevConsoleItem);
+
 	// 게임 월드 창. 월드가 없으면(프로젝트 없이 띄운 에디터) 창은 안내 문구만 그린다.
 	HMainMenuItem SceneViewportItem;
 	SceneViewportItem.MenuPath = "Windows/Scene Viewport";
@@ -143,7 +170,7 @@ void HJGEditorModule::openDefaultWidgets()
 void HJGEditorModule::openSceneViewport()
 {
 	// 프로젝트 모드에서 게임 모듈을 연결했을 때만 연다(프로젝트 없이 띄운 에디터에 빈 월드 창이 저절로 뜨지 않게).
-	// GameFrameWorks 는 엔진 모듈로 늘 연결돼 게임 인스턴스가 있으므로 게임 인스턴스 유무만으로는 가를 수 없다.
+	// GameFrameWork 는 엔진 모듈로 늘 연결돼 게임 인스턴스가 있으므로 게임 인스턴스 유무만으로는 가를 수 없다.
 	// 게임 모듈은 openDefaultWidgets 뒤에 연결되므로 여기서 본다.
 	if (_connectedProjectModules.empty() || JGGameInstance::HasInstance() == false)
 	{
@@ -198,7 +225,7 @@ void HJGEditorModule::disconnectProjectModules()
 		_connectedProjectModules.pop_back();
 	}
 
-	// GameFrameWorks 는 게임 모듈 바로 뒤, 창을 내리기 전에 내린다(게임 모듈이 연결하던 때의 순서). 엔진 모듈 목록에도 있어
+	// GameFrameWork 는 게임 모듈 바로 뒤, 창을 내리기 전에 내린다(게임 모듈이 연결하던 때의 순서). 엔진 모듈 목록에도 있어
 	// 역순 해제가 한 번 더 부르지만, 이미 내려간 모듈이면 DisconnectModule 은 아무 일도 하지 않고 true 를 돌려준다.
-	GModuleGlobalSystem::GetInstance().DisconnectModule("GameFrameWorks");
+	GModuleGlobalSystem::GetInstance().DisconnectModule("GameFrameWork");
 }

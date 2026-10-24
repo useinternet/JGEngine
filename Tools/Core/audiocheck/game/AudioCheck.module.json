@@ -1,7 +1,7 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
-    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GameFrameWorks", "Audio" ],
+    "ModuleDependencies": [ "Core", "Graphics", "GameFrameWork" ],
     "ModuleName": "AudioCheck",
     "ModulePath": "Source/AudioCheck/",
     "Defines": [

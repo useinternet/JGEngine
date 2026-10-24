@@ -20,7 +20,7 @@ param(
 )
 
 # Lobby (room) check of the Session Lobby window — D-38 session data, seats released before the game, ready marks.
-# Two engine editors without a project (A, B): GameFrameWorks runs with no world, so the session stays in the lobby (Ready).
+# Two engine editors without a project (A, B): GameFrameWork runs with no world, so the session stays in the lobby (Ready).
 #   A: this machine only + Host -> A: value "v1" + Set Data -> B: Join (B reads room = v1)
 #   -> B: Ready -> A: Ready (both ready on both) -> A: value "v2" + Set Data (B reads v2)
 #   -> B: Leave (A: slot 1 freed) -> B: Join again (late joiner reads v2) -> A: Remove Data (B: 0 keys)

@@ -10,7 +10,7 @@
 #include <ctime>
 #include <fstream>
 
-// 7단계 콘텐츠 검사(Data 세션 GP-A1 — GameFrameWorks Data/ContentCookCheck).
+// 7단계 콘텐츠 검사(Data 세션 GP-A1 — GameFrameWork Data/ContentCookCheck).
 #include "Data/ContentCookCheck.h"
 
 // 게임 쿠킹 · 패키징(DevOps GP-D4, 2026-10-02 — 사용자 요청 "언리얼 쿠킹 및 패키징처럼").
@@ -36,7 +36,7 @@ namespace
 	const int32       DEFAULT_SMOKE_FRAMES  = 300;
 	const uint32      SMOKE_TIMEOUT_MS      = 120000;
 
-	// 엔진 Content 기본 제외: 가져오기 원본 · Devkit 테스트 메시(DevScene.cpp 만 씀). 공통: 임시 파일.
+	// 엔진 Content 기본 제외: 가져오기 원본 · 시험 메시(TempAsset — cookcheck.selftest 가 읽음). 공통: 임시 파일.
 	const char* const ENGINE_CONTENT_EXCLUDES[] = { "rawresources/", "tempasset/" };
 	const char* const COMMON_EXCLUDES[]         = { "*.tmp", "*.bak", "~*", "thumbs.db", "desktop.ini" };
 
@@ -738,8 +738,8 @@ namespace
 			files.push_back(HCookPlatform::FromPath(file.Source));
 		}
 
-		// 토큰은 Asset/AssetDefines.h 의 JG_ASSET_ENGINE/GAME_PATH_RECOGNITION_TOEKN 과 같은 값이다. JGConsole 은 Asset 헤더를 include 하지 않는다
-		// (include 경로는 직접 의존 Core · GameFrameWorks 만 — DevOps C1-H1).
+		// 토큰은 GameFrameWork Asset/AssetDefines.h 의 JG_ASSET_ENGINE/GAME_PATH_RECOGNITION_TOEKN 과 같은 값이다. JGConsole 은 Asset 헤더를 include 하지 않는다
+		// (include 경로는 직접 의존 Core · GameFrameWork 만 — DevOps C1-H1).
 		HList<HPair<PString, PString>> mounts;
 		mounts.push_back(HPair<PString, PString>(PString("/JGEngine/"), HCookPlatform::NormalizedAbsolute(context.EngineDirectory + "/Content") + "/"));
 		mounts.push_back(HPair<PString, PString>(PString("/JGGame/"), HCookPlatform::NormalizedAbsolute(context.ProjectDirectory + "/Content") + "/"));

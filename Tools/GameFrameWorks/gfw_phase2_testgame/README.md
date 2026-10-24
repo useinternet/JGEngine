@@ -6,7 +6,7 @@
 |---|---|
 | `GfwViewEntryActor.cpp` | 6x6 사각 보드, 엔티티 4개(X Bot 메시 + 메시 경계 상자 판정, 컴포넌트 `GfwViewUnit`), 칸 타일 36개(절차 생성 메시), 궤도 카메라(칸 (3, 3) 중심), 컨트롤러. 검증 스크립트 액터: 3초 뒤 EndTurn, 5초 뒤 에디터 안에서 `gmtest` |
 | `GfwViewModule.cpp` | 템플릿 그대로(GFW 연결 → 엔트리 액터 → 월드 로드). 창은 에디터가 가진다 — 게임 모듈은 에디터 위젯을 참조하지 않는다 |
-| `GfwView.module.json` | 템플릿 의존성(`Core`, `GameFrameWorks`)에 `Asset`, `Graphics`, `GUI` 추가. GFW 카메라 · 메시 컴포넌트 헤더가 이 모듈들 헤더를 include 하고 JGBuildTool 은 include 경로를 전이하지 않기 때문 |
+| `GfwView.module.json` | 템플릿 의존성(`Core`, `GameFrameWork`)에 `Asset`, `Graphics`, `GUI` 추가. GFW 카메라 · 메시 컴포넌트 헤더가 이 모듈들 헤더를 include 하고 JGBuildTool 은 include 경로를 전이하지 않기 때문 |
 | `imgui.ini` | 창 배치 (씬 뷰포트 왼쪽 1300x810, DevView 오른쪽) + 열린 위젯 목록 `[JGWidget][Open]` `JGGameplayDevView=1`(DevView 를 시작부터 연다, 2026-10-03). 게임 `Bin/DevelopEngine/` 에 둔다 |
 
 ## 재현

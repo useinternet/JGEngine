@@ -9,7 +9,7 @@
 #include "Actors/GameplayCue.h"
 #include "Actors/GameMasterActor.h"
 
-// GameFrameWorks 리뷰(2026-09-28) 재현 코드. JGConsole.exe simreview 로 실행한다.
+// GameFrameWork 리뷰(2026-09-28) 재현 코드. JGConsole.exe simreview 로 실행한다.
 // 각 항목은 "버그가 재현되면 [REPRODUCED]" 를 찍는다. 실패 수를 돌려주지 않는다 (관찰용).
 // 사용법: 이 파일을 Source/Programs/JGConsole/ 에 복사, Main.cpp 에 simreview 분기 추가, PreBuild 후 JGConsole 빌드.
 // 2026-09-29 GFW TODO Phase 1 에 맞춰 고친 곳: 트리거 React 는 효과 적재만 되므로(HGameplayTriggerContext) R4 · R8 은
@@ -944,7 +944,7 @@ namespace
 
 // R16: 기본 스냅샷 한도(256)로 엔티티 2 개짜리 상태를 계속 진행한다. HEAD 의 고정 풀에서는 이 수준에서 크래시한다.
 // 프로세스가 죽으므로 별도 명령(simreview256)으로 실행한다.
-int32 GameFrameWorksReviewSnapshotLimit()
+int32 GameFrameWorkReviewSnapshotLimit()
 {
 	HGameplayEntityId a;
 	HGameplayEntityId b;
@@ -965,9 +965,9 @@ int32 GameFrameWorksReviewSnapshotLimit()
 	return 0;
 }
 
-int32 GameFrameWorksReviewRepro()
+int32 GameFrameWorkReviewRepro()
 {
-	std::cout << "== GameFrameWorks review repro ==" << std::endl;
+	std::cout << "== GameFrameWork review repro ==" << std::endl;
 	reproStaleEntityId();
 	reproTriggerChoice();
 	reproHandlerChoice();
@@ -985,7 +985,7 @@ int32 GameFrameWorksReviewRepro()
 
 // R10 은 새 프로세스에서 따로 잰다 (simreviewperf). JGConsole 은 GCoreSystem::Update 를 부르지 않아 GC 가 돌지 않으므로,
 // 앞 시나리오의 GC 객체가 종료 때까지 남아 HEAD 의 고정 풀을 먼저 채우기 때문이다.
-int32 GameFrameWorksReviewSnapshotCost()
+int32 GameFrameWorkReviewSnapshotCost()
 {
 	reproSnapshotCost();
 	return 0;

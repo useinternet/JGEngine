@@ -14,18 +14,11 @@ JGType HAudioCheckModule::GetModuleType() const
 
 void HAudioCheckModule::StartupModule()
 {
-	// 에디터(JGEditor)와 JGConsole 은 GameFrameWorks 를 먼저 연결한다 — 이미 연결돼 있으면 true 만 돌려준다.
+	// 에디터(JGEditor)와 JGConsole 은 GameFrameWork 를 먼저 연결한다 — 이미 연결돼 있으면 true 만 돌려준다.
 	// 다른 호스트(예: 게임 단독 실행)에서도 돌도록 게임 모듈이 직접 연결해 둔다.
-	if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWorks") == false)
+	if (GModuleGlobalSystem::GetInstance().ConnectModule("GameFrameWork") == false)
 	{
-		JG_LOG(AudioCheck, ELogLevel::Critical, "Fail Connect GameFrameWorks Module...");
-		return;
-	}
-
-	// 소리(오디오 재생, D-37): module.json 의존 + 연결
-	if (GModuleGlobalSystem::GetInstance().ConnectModule("Audio") == false)
-	{
-		JG_LOG(AudioCheck, ELogLevel::Critical, "Fail Connect Audio Module...");
+		JG_LOG(AudioCheck, ELogLevel::Critical, "Fail Connect GameFrameWork Module...");
 		return;
 	}
 

@@ -34,7 +34,7 @@ protected:
 //     "Name": "MyGame", "Version": "0.1.0", "BuildConfig": "ReleaseGame",
 //     "EngineCommit": "0bd6356", "CookedAt": "2026-10-02T16:20:00+09:00",
 //     "LaunchModule": "GameHost",
-//     "RuntimeModules": [ "Asset", "Graphics", "GameFrameWorks", "GameHost", "MyGame" ],
+//     "RuntimeModules": [ "Graphics", "GameFrameWork", "GameHost", "MyGame" ],
 //     "GameModules": [ "MyGame" ],
 //     "Window": { "Title": "MyGame", "Width": 1920, "Height": 1080, "Mode": "Windowed", "VSync": true }
 //   }

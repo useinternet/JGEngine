@@ -23,13 +23,9 @@ class IIndexBuffer;
 class IVertexBuffer;
 class IJGGraphicsCommand;
 class IRawMaterial;
-class JGStaticMesh;
-class JGTexture;
 struct HRawMaterialConstructArguments;
 struct HVertexBufferConstructArguments;
 struct HIndexBufferConstructArguments;
-struct HStaticMeshConstructArguments;
-struct HTextureConstructArguments;
 
 // 리드백 완료 콜백. 실패해도 한 번은 불리며 그때는 HTexturePixels::IsValid()가 false다.
 JG_DECLARE_DELEGATE(HOnTextureReadbackComplete, const HTexturePixels&)
@@ -80,8 +76,5 @@ public:
 	// 결과는 GPU가 마지막으로 완료한 내용(렌더 타깃이면 지난 프레임)이고, 같은 텍스처의 대기 업로드는 먼저 반영된다. 메인 스레드 전용.
 	virtual bool ReadbackTextureImmediate(PSharedPtr<IRawTexture> inTexture, HTexturePixels& outPixels) = 0;
 
-	// -- Asset Data --
-
-	virtual PSharedPtr<JGStaticMesh> CreateStaticMesh(const HStaticMeshConstructArguments& inArgs);
-	virtual PSharedPtr<JGTexture> CreateTexture(const HTextureConstructArguments& inArgs);
+	// 메시 · 텍스처 에셋(JGStaticMesh · JGTexture)은 GameFrameWork 에 있고, 위 GPU 자원 함수로 만든다(JGStaticMesh::Create · JGTexture::Create).
 };

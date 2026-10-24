@@ -1,7 +1,7 @@
 #pragma once
 #include "AudioCheckDefines.h"
 #include "UI/GameWidget.h"
-#include "Audio.h"
+#include "Audio/Audio.h"
 #include "AudioCheckHUD.generation.h"
 
 class PGameUIText;

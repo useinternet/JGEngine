@@ -5,11 +5,11 @@
 #include "ConsoleCommand/ConsoleCommandGlobalSystem.h"
 
 // 모듈이 창 없이 연결·해제되는지 확인한다 (GameModule R8).
-//   JGConsole.exe module.test GameFrameWorks    엔진 Bin
+//   JGConsole.exe module.test GameFrameWork    엔진 Bin
 //   JGConsole.exe module.test MyGame            게임 프로젝트 Bin(<Project>/Bin/<구성>). 게임 모듈의 StartupModule(월드 로드)까지 돈다
 // 이 명령이 연결한 모듈은 끝날 때 역순으로 해제해 ShutdownModule 도 확인한다.
 // 연결·해제하는 동안 [error]/[critical] 로그가 한 줄이라도 나오면 실패다(종료 코드 1).
-// 이미 연결된 모듈(JGConsole 이 시작할 때 연결하는 GameFrameWorks)은 연결 상태만 확인한다.
+// 이미 연결된 모듈(JGConsole 이 시작할 때 연결하는 GameFrameWork)은 연결 상태만 확인한다.
 // 모듈 이름은 DLL 이름 그대로 쓴다(대소문자 포함). 에디터 모듈(<Name>Editor)은 GUI 가 없어 실패하는 것이 정상이다.
 
 namespace

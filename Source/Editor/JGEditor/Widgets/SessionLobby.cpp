@@ -114,7 +114,7 @@ void JGSessionLobby::OnGenerateGUI()
 {
 	if (JGGameInstance::HasInstance() == false)
 	{
-		HGUI::Text("GameFrameWorks is not running");
+		HGUI::Text("GameFrameWork is not running");
 		return;
 	}
 

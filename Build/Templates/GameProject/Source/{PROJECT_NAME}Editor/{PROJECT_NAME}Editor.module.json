@@ -1,7 +1,7 @@
 {
   "ModuleInfo": {
     "ModuleFormat": "SharedLib",
-    "ModuleDependencies": [ "Core", "Asset", "Graphics", "GUI", "GameFrameWorks", "{PROJECT_NAME}" ],
+    "ModuleDependencies": [ "Core", "Graphics", "GUI", "GameFrameWork", "{PROJECT_NAME}" ],
     "ModuleName": "{PROJECT_NAME}Editor",
     "ModulePath": "Source/{PROJECT_NAME}Editor/",
     "Defines": [

@@ -3,10 +3,8 @@
     "ModuleFormat": "SharedLib",
     "ModuleDependencies": [
       "Core",
-      "GameFrameWorks",
+      "GameFrameWork",
       "Graphics",
-      "Asset",
-      "Devkit",
       "GUI"
     ],
     "ModuleName": "JGEditor",

@@ -5,7 +5,7 @@
 
 class HDataTableEditorTab;
 
-// 데이터 테이블 편집 창("Data Table Editor", 메뉴 Windows/Data Table Editor). GameFrameWorks Data/ 의 편집 모델(PDataTableDocument)을
+// 데이터 테이블 편집 창("Data Table Editor", 메뉴 Windows/Data Table Editor). GameFrameWork Data/ 의 편집 모델(PDataTableDocument)을
 // 스프레드시트 그리드(GUI PGUIGrid)로 보여 준다. 열린 테이블마다 탭 하나.
 //   위: 테이블 열기 · 새 테이블 · 저장 · 다시 읽기 · 실행 취소 / 다시 실행 · 행 · 열 추가 · 필터
 //   가운데: 그리드(키 열 · 머리 행 고정) + 오른쪽 열 속성(열 머리를 누르면)

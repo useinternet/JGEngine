@@ -192,7 +192,7 @@ namespace
 
 		check(commands.IsRegistered("help"), "auto: help is built in");
 		check(commands.IsRegistered("console.selftest"), "auto: EXE global command (this one) is registered");
-		check(commands.IsRegistered("gmtest"), "auto: module command is registered (JGConsole connects GameFrameWorks at startup)");
+		check(commands.IsRegistered("gmtest"), "auto: module command is registered (JGConsole connects GameFrameWork at startup)");
 		check(registerTestCommand("gmtest", &executeEcho) == false, "auto: Register cannot take a declared name");
 		check(commands.Execute(PString("help")) && commands.Execute(PString("help gmtest")), "auto: help list and help <command>");
 		check(commands.Execute(PString("help test.selftest.nosuch")) == false, "auto: help <unknown> fails");

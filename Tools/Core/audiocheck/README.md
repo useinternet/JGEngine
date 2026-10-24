@@ -1,11 +1,11 @@
 # 오디오 재생 검증 도구 (AudioCheck)
 
-오디오 재생(D-37, 요청 ER-022)의 엔진 밖 검증 장치다(게임 콘텐츠가 아니다). 새 `Audio` 모듈을 게임 모듈이 연결해 효과음 · 배경음 · 묶음 크기 · 창 비활성 처리를 실제 장치로 내고, 기본 출력 장치의 실제 소리 크기를 loopback 으로 재어 단계별로 판정한다.
+오디오 재생(D-37, 요청 ER-022)의 엔진 밖 검증 장치다(게임 콘텐츠가 아니다). GameFrameWork 의 소리(`Audio/`)로 효과음 · 배경음 · 묶음 크기 · 창 비활성 처리를 실제 장치로 내고, 기본 출력 장치의 실제 소리 크기를 loopback 으로 재어 단계별로 판정한다.
 
 | 파일 | 내용 |
 |---|---|
-| `game/AudioCheck.module.json` | 템플릿 의존에 `Audio` 를 더한 것(빌드 · 패키지에 Audio.dll 이 들어간다) |
-| `game/AudioCheckModule.cpp` | GameFrameWorks · Audio 연결 → 엔트리 액터 → 월드 → `JGAudioCheckHUD` 를 Game 레이어에 |
+| `game/AudioCheck.module.json` | 템플릿 의존 그대로(소리는 GameFrameWork 안 — Audio 모듈 · Audio.dll 은 없다) |
+| `game/AudioCheckModule.cpp` | GameFrameWork 연결 → 엔트리 액터 → 월드 → `JGAudioCheckHUD` 를 Game 레이어에 |
 | `game/AudioCheckHUD.h/.cpp` | 검증 화면: 왼쪽 단추 11개(효과음 · 8번 겹치기 · 곡 A(wav) · 곡 B(ogg) · 음악 멈춤 · 음악 일시 멈춤 · 분위기 소리 · 효과음/음악/전체 크기 100→50→0 · 창이 뒤로 가면 Keep→Lower→Mute), 위 글자(장치 · 재생 수 · 묶음 크기). `-audiocheck` 면 자동 순서(1~27.5초: 겹치기 → 곡 B → 곡 A 교체 → 음악 묶음 0.25 → 분위기 소리 → 전체 0 → 멈춤 페이드 → 효과음 묶음 0.5 → 창 비활성 Mute · Lower(주 창에 `WM_ACTIVATEAPP`))를 돌며 단계마다 `AUDIOCHECK <epoch ms> t=<초> <단계> playing=…` 를 남기고 끝나면 종료 0 |
 | `make_sounds.py` | 시험 소리를 만든다(표준 라이브러리만): `Effect.wav`(0.2초 880Hz) · `MusicA.wav`(6초 아르페지오, 2초 주기) · `Rain.wav`(4초 잡음) |
 | `audio_loopback_rms.cpp` · `build.bat` | 기본 출력 장치의 실제 소리 크기(WASAPI loopback RMS)를 50ms 마다 `RMS <epoch ms> <경과 초> <rms>` 로 쓴다. 소리는 저장하지 않는다(수치만). 다른 앱 소리도 섞이므로 판정 전 바닥값을 본다 |

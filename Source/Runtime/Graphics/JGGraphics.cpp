@@ -2,6 +2,7 @@
 #include "JGGraphics.h"
 #include "JGGraphicsAPI.h"
 #include "Classes/ShaderLibrary.h"
+#include "SelfTest/RenderSelfTest.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -61,6 +62,8 @@ void HJGGraphicsModule::ShutdownModule()
 		globalValues.WindowCallBacks->OnResize.Remove(_windowResizeHandle);
 	}
 	GCoreSystem::GetInstance().UnRegisterSystemInstance<GShaderLibrary>();
+	// 시험이 든 GPU 리소스를 API 보다 먼저 놓는다.
+	_renderSelfTest = nullptr;
 	if (_graphicsAPI != nullptr)
 	{
 		_graphicsAPI->Destroy();
@@ -103,6 +106,25 @@ void HJGGraphicsModule::OnWindowResize(uint32 inWidth, uint32 inHeight)
 PSharedPtr<PJGGraphicsAPI> HJGGraphicsModule::GetGraphicsAPI() const
 {
 	return _graphicsAPI;
+}
+
+bool HJGGraphicsModule::StartRenderSelfTest(bool bExitWhenDone)
+{
+	if (_graphicsAPI == nullptr)
+	{
+		JG_LOG(GraphicsSelfTest, ELogLevel::Error, "graphics.selftest: GraphicsAPI is not available");
+		return false;
+	}
+
+	if (_renderSelfTest != nullptr && _renderSelfTest->IsRunning())
+	{
+		JG_LOG(GraphicsSelfTest, ELogLevel::Error, "graphics.selftest: already running");
+		return false;
+	}
+
+	// 지난 시험을 놓으면 그 tick 예약도 스케줄러에서 빠진다(CreateSP).
+	_renderSelfTest = Allocate<PRenderSelfTest>();
+	return _renderSelfTest->Start(bExitWhenDone);
 }
 
 

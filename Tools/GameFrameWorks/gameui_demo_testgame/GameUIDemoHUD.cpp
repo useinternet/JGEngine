@@ -56,7 +56,7 @@ void JGGameUIDemoHUD::OnInitialize()
 	hint->SetFontSize(28.0f);
 	hint->SetColor(HLinearColor(0.72f, 0.80f, 0.92f, 1.0f));
 	hint->SetAlignment(EGameUIHorizontalAlign::Right, EGameUIVerticalAlign::Middle);
-	hint->SetText(PString("JGGameWidget (GameFrameWorks)\n게임 전용 UI · CommonUI식"));
+	hint->SetText(PString("JGGameWidget (GameFrameWork)\n게임 전용 UI · CommonUI식"));
 
 	// Menu 버튼: 관리자 기본 버튼 스타일(정하지 않음)
 	PSharedPtr<PGameUIButton> menu = topBar->AddChild<PGameUIButton>(PName("Menu"));

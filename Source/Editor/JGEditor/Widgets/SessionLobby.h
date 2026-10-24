@@ -15,7 +15,7 @@ class PGameplayHostSession;
 //   상태: 모드 · 세션 상태 · 로컬 슬롯 · 월드 · 붙은 GameMaster(순번 · 체크섬) · 닫힌 이유
 //   슬롯 표: 번호 · 이름 · 접속 · 준비 · 조작 주체 / 세션 공유 데이터 표: 키 · 값
 // 판을 만드는 일은 게임의 엔트리 액터 몫이고 이 창은 게임 인스턴스 · 세션 API 만 부른다.
-// GameFrameWorks 가 돌지 않으면 안내 문구만 그린다.
+// GameFrameWork 가 돌지 않으면 안내 문구만 그린다.
 JGCLASS()
 class JGEDITOR_API JGSessionLobby : public JGWidget
 {

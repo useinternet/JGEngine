@@ -142,7 +142,7 @@ bool JGSceneViewport::findView(PSharedPtr<PWorld>& outWorld, PSharedPtr<JGCamera
 	{
 		if (outProblem != nullptr)
 		{
-			*outProblem = "GameFrameWorks is not running";
+			*outProblem = "GameFrameWork is not running";
 		}
 		return false;
 	}
