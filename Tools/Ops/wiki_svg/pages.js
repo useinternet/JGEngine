@@ -9,8 +9,8 @@ module.exports = {
   JGEngine전체구조: W + '/JGEngine.md',
   JGEngine프로젝트구성도: W + '/JGEngine.md',
   JGEngine팀구성및운영: W + '/JGEngine 팀 구성 및 운영.md',
-  Core: M + '/00. Core.md',
-  Graphics: M + '/01. Graphics.md',
+  Core: M + '/00. Core/00. Core.md',
+  Graphics: M + '/01. Graphics/01. Graphics.md',
   GameFrameWork: G + '/GameFrameWork 개요.md',
   GameFrameWork_World: G + '/01. 월드와 액터.md',
   GameFrameWork_GameMaster: G + '/02. 규칙 커널(GameMaster).md',
@@ -21,7 +21,7 @@ module.exports = {
   GameFrameWork_Audio: G + '/06. 오디오.md',
   GameFrameWork_SelfTest: G + '/07. 자체 시험.md',
   GameFrameWork_GameHost: G + '/08. GameHost 모듈.md',
-  GUI: M + '/03. GUI.md',
-  JGEditor: M + '/04. JGEditor.md',
+  GUI: M + '/03. GUI/03. GUI.md',
+  JGEditor: M + '/04. JGEditor/04. JGEditor.md',
   Programs: M + '/05. Programs.md'
 };
