@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1300 560" width="1300" height="560" font-family="'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif" role="img" aria-label="지금 렌더링 파이프라인 — 호스트가 매 프레임 PGameViewport::Render 를 호출하면 PSceneRenderer 가 PScene 을 지오메트리 · 합성 · 디스플레이 패스로 그리고, 게임 UI 2D 를 디스플레이 텍스처 위에 그린 뒤 GameHost 는 백 버퍼로 제출하고 에디터는 ImGui 이미지로 보여 준다">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#ffffff" stroke="#888780" stroke-width="1.2" stroke-linejoin="round"/></marker>
+<marker id="diamond" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#ffffff" stroke="#888780" stroke-width="1.2"/></marker>
+<marker id="diamondFill" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#888780"/></marker>
+</defs>
+<rect x="0" y="0" width="1300" height="560" fill="#ffffff"/>
+<rect x="620" y="36" width="640" height="132" rx="12" fill="#FAF9F6" stroke="#D3D1C7" stroke-width="1"/>
+<path d="M260,76 L295,76 L295,100 L330,100" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M260,186 L295,186 L295,124 L330,124" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M560,112 L640,112" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="600" y="104.0" text-anchor="middle" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">①</text>
+<path d="M560,132 L600,132 L600,372 L640,372" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="592" y="324.0" text-anchor="end" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">②</text>
+<path d="M560,252 L640,252" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="620" y="244.0" text-anchor="middle" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">갱신</text>
+<path d="M730,220 L730,152" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="738" y="190.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">읽기</text>
+<path d="M820,116 L860,116" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1040,116 L1080,116" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1160,152 L1160,220" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M820,372 L860,372" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M960,404 L960,460" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="968" y="436.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">패스 · 2D Draw 기록</text>
+<path d="M1060,372 L1160,372 L1160,284" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1168" y="334.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">위에 그림</text>
+<path d="M1240,252 L1280,252 L1280,496 L1260,496" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1272" y="424.0" text-anchor="end" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">SubmitFinalTexture</text>
+<rect x="40" y="40" width="220" height="72" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="150" y="65.5" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">GameHost</text>
+<text x="150" y="82" text-anchor="middle" font-size="11.5" fill="#5F5E5A">게임 실행 · 매 프레임 Render</text>
+<text x="150" y="98.5" text-anchor="middle" font-size="11.5" fill="#5F5E5A">→ SubmitFinalTexture</text>
+<rect x="40" y="150" width="220" height="72" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="150" y="175.5" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">JGSceneViewport</text>
+<text x="150" y="192" text-anchor="middle" font-size="11.5" fill="#5F5E5A">에디터 · 매 프레임 Render</text>
+<text x="150" y="208.5" text-anchor="middle" font-size="11.5" fill="#5F5E5A">→ ImGui 이미지로 표시</text>
+<rect x="330" y="76" width="230" height="72" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="1"/>
+<text x="445" y="101.5" text-anchor="middle" font-size="13" font-weight="600" fill="#085041">PGameViewport</text>
+<text x="445" y="118" text-anchor="middle" font-size="11.5" fill="#0F6E56">① PSceneRenderer::Render</text>
+<text x="445" y="134.5" text-anchor="middle" font-size="11.5" fill="#0F6E56">② 게임 UI Render</text>
+<rect x="330" y="206" width="230" height="92" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="1"/>
+<text x="445" y="233.25" text-anchor="middle" font-size="13" font-weight="600" fill="#085041">PWorld · 컴포넌트</text>
+<text x="445" y="249.75" text-anchor="middle" font-size="11.5" fill="#0F6E56">JGStaticMeshComponent</text>
+<text x="445" y="266.25" text-anchor="middle" font-size="11.5" fill="#0F6E56">JGCameraComponent</text>
+<text x="445" y="282.75" text-anchor="middle" font-size="11.5" fill="#0F6E56">틱마다 배치 · 카메라 갱신</text>
+<rect x="640" y="80" width="180" height="72" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="730" y="105.5" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">지오메트리 패스</text>
+<text x="730" y="122" text-anchor="middle" font-size="11.5" fill="#185FA5">메시 · Surface 머터리얼</text>
+<text x="730" y="138.5" text-anchor="middle" font-size="11.5" fill="#185FA5">→ G버퍼 4장 + 깊이</text>
+<rect x="860" y="80" width="180" height="72" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="950" y="105.5" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">합성 패스</text>
+<text x="950" y="122" text-anchor="middle" font-size="11.5" fill="#185FA5">G버퍼 → 출력(FP16)</text>
+<text x="950" y="138.5" text-anchor="middle" font-size="11.5" fill="#185FA5">고정 빛 1개</text>
+<rect x="1080" y="80" width="160" height="72" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="1160" y="113.75" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">디스플레이 패스</text>
+<text x="1160" y="130.25" text-anchor="middle" font-size="11.5" fill="#185FA5">출력 → sRGB 8비트</text>
+<rect x="640" y="220" width="180" height="64" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="730" y="249.75" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">PScene</text>
+<text x="730" y="266.25" text-anchor="middle" font-size="11.5" fill="#185FA5">메시 배치 · 카메라</text>
+<rect x="1080" y="220" width="160" height="64" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="1160" y="249.75" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">디스플레이 텍스처</text>
+<text x="1160" y="266.25" text-anchor="middle" font-size="11.5" fill="#185FA5">화면용 결과</text>
+<rect x="640" y="340" width="180" height="64" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="1"/>
+<text x="730" y="369.75" text-anchor="middle" font-size="13" font-weight="600" fill="#085041">PGameUIRenderer</text>
+<text x="730" y="386.25" text-anchor="middle" font-size="11.5" fill="#0F6E56">게임 UI → 2D 배치</text>
+<rect x="860" y="340" width="200" height="64" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="1"/>
+<text x="960" y="369.75" text-anchor="middle" font-size="13" font-weight="600" fill="#0C447C">Draw(H2DDrawArguments)</text>
+<text x="960" y="386.25" text-anchor="middle" font-size="11.5" fill="#185FA5">2D 삼각형 · 알파 블렌드</text>
+<rect x="330" y="460" width="690" height="64" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1"/>
+<text x="675" y="489.75" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">PDX12GraphicsCommand · PCommandQueue</text>
+<text x="675" y="506.25" text-anchor="middle" font-size="11.5" fill="#854F0B">패스 · 2D 그리기를 프레임마다 커맨드 리스트 하나에 기록</text>
+<rect x="1080" y="460" width="180" height="72" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="1"/>
+<text x="1170" y="485.5" text-anchor="middle" font-size="13" font-weight="600" fill="#633806">PDX12FrameBuffer</text>
+<text x="1170" y="502" text-anchor="middle" font-size="11.5" fill="#854F0B">백 버퍼 복사 · ImGui</text>
+<text x="1170" y="518.5" text-anchor="middle" font-size="11.5" fill="#854F0B">→ Present</text>
+<path d="M48,270 H278 L290,282 V374 Q290,382 282,382 H48 Q40,382 40,374 V278 Q40,270 48,270 Z" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/><path d="M278,270 V282 H290" fill="none" stroke="#B4B2A9" stroke-width="1"/>
+<text x="165" y="307.25" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">지금 카드 게임</text>
+<text x="165" y="323.75" text-anchor="middle" font-size="11.5" fill="#5F5E5A">장면에 카메라만 있고 메시가 없다</text>
+<text x="165" y="340.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">지오메트리 패스는 비어 배경색</text>
+<text x="165" y="356.75" text-anchor="middle" font-size="11.5" fill="#5F5E5A">카드 · 보드는 모두 게임 UI 2D</text>
+<path d="M48,420 H278 L290,432 V516 Q290,524 282,524 H48 Q40,524 40,516 V428 Q40,420 48,420 Z" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/><path d="M278,420 V432 H290" fill="none" stroke="#B4B2A9" stroke-width="1"/>
+<text x="165" y="453.25" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">범례</text>
+<text x="165" y="469.75" text-anchor="middle" font-size="11.5" fill="#5F5E5A">초록 GameFrameWork</text>
+<text x="165" y="486.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">파랑 Graphics · 노랑 DX12 백엔드</text>
+<text x="165" y="502.75" text-anchor="middle" font-size="11.5" fill="#5F5E5A">회색 호스트 · → 호출 · 데이터</text>
+<text x="634" y="57" text-anchor="start" font-size="13" font-weight="600" fill="#2C2C2A" stroke="#FAF9F6" stroke-width="5" stroke-linejoin="round" paint-order="stroke">PSceneRenderer · 디퍼드 렌더러</text>
+</svg>

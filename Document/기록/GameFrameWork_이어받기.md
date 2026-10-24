@@ -1,16 +1,17 @@
 # GameFrameWork 이어받기 메모
 
-갱신: 2026-10-24 18:27 (GameFrameWork 세션)
+갱신: 2026-10-24 18:45 (GameFrameWork 세션)
 
 ## 지금
 
 | 항목 | 상태 |
 |---|---|
-| 맡은 일 | Engine-26 언리얼 에셋 가져오기 — 끝, "검토 중"(엔진 총괄 확인 기다림). 새 일감 Engine-28 가져오기 진입점(할 일, 설계도 먼저) |
-| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "쉬는 중 — Engine-26 검토 중(엔진 총괄)" |
-| 잠금 · 빌드 · 시험 | 없음(메인 트리 잠금 18:24 놓음) |
+| 맡은 일 | Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — 구현 · 시험 끝, "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림. Engine-28(PNG · TGA 가져오기)은 In-Wait — 첫 판 뒤 따로 설계 |
+| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "Engine-30 … — 검토 중" |
+| 잠금 · 빌드 · 시험 | 없음. 메인 트리는 쓰지 않았다(워크트리 `Temp/wt/cb-gfw` 에서 빌드 · 시험) |
+| Engine-30 자리 | 워크트리 `Temp/wt/cb-gfw`(c6dd99d 위, 분리 HEAD). 새 파일 `Asset/AssetFolder.h` · `.cpp` · `SelfTest/AssetFolderSelfTest.cpp`, gfw.selftest 에 그룹 `asset`. 증적 `Temp/wt/cb-gfw/Temp/verify/cb/`(jg_log · editor/run_*.png) |
 | Engine-26 자리 | 기록 `Document/기록/GameFrameWork/Engine-26_언리얼에셋가져오기_2026-10-24.md`. git 밖: 내보내기 프로젝트 · 스크립트 · 결과 `Temp/UnrealExport/`, 시험 게임 `Temp/Games/UnrealAssetTest`(Content/Unreal 31개, 캡처 Temp/verify/editor_start.png). Epic 라이선스라 저장소 · 엔진 Content 에 넣지 않음 |
-| 미커밋 파일 | 없음 — 2단계는 51fb1da, 뒤따른 주석 정리는 710a7af · 2615da6(엔진 총괄 커밋) |
+| 미커밋 파일 | Engine-30 패치 5파일(위 새 파일 3 + `SelfTest/GameFrameWorkSelfTest.h` · `.cpp`) — Editor 패치와 함께 엔진 총괄이 메인에 붙여 커밋. 2단계는 51fb1da, 뒤따른 주석 정리는 710a7af · 2615da6 |
 
 ## 담당
 
@@ -59,6 +60,9 @@
 - PName NAME_NONE 은 "(null)" 로 직렬화된다. 이름 필드의 "없음"은 빈 문자열로 둔다.
 - `-host` 는 모든 인터페이스를 연다. 한 기계 시험은 `-bind=127.0.0.1`. 엔진 시험 포트는 47781~ (게임이 47771).
 - 에셋 DB 는 Graphics 가 연결된 프로세스에서만 있다. 종료 때 Graphics 보다 먼저 에셋을 놓는다(에디터 · GameHost 는 GameFrameWork 를 먼저 내림).
+- ImportAssetFile 은 Graphics 가 있어야 된다(메시 · 텍스처 에셋이 GPU 자원을 만든다). 에셋 DB 는 로드 스레드에서 읽고 메인 스레드 Update 에서 올리므로, 명령 안에서 로드를 기다릴 수 없다 — 자체 시험은 로드 콜백에서 "assetfolder selftest (load)" 를 따로 남기고 임시 폴더(`/JGEngine/__AssetFolderSelfTest`)를 지운다.
+- 이미 올라온 경로를 다시 가져오면 파일은 새로 쓰지만 에셋 DB 는 옛 에셋을 그대로 둔다(다시 읽기는 첫 판 밖).
+- JGConsole -graphics 의 jg_log 는 끝날 때 한꺼번에 써진다 — 로그를 지켜보며 끝을 기다리는 스크립트는 못 본다.
 - 소스 파일을 옮기거나 더하면 PreBuild. 코드 생성기는 옛 생성 파일(`Temp/CodeGen/<모듈>/`)을 지우지 않는다. 클래스를 옮기면 옛 `.generation.*` 를 손으로 지운다.
 
 ## 알릴 것 · 열어 둔 것

@@ -1,0 +1,54 @@
+컨텐츠 브라우저 HGUI 감싸개 셋(Engine-29) 검증 기록 — GUI 세션, 2026-10-24 18:3x ~ 18:41
+설계: Document/기록/Editor/Engine-24_컨텐츠브라우저_설계_2026-10-24.md (Q-002 시안 A 확인) — GUI 몫 "감싸개 셋 + 자체 시험"
+작업 폴더: C:/Develop/JGEngine/Temp/wt/cb-gui (git worktree, detached HEAD c6dd99d). 메인 트리 · 메인 Bin 은 건드리지 않음.
+패치: Temp/ContentBrowser/GUI.patch (3 파일, md5 7c182488f0e95280c07a11aaf4291ce1) — 메인 HEAD c6dd99d 에 git apply --check 통과
+
+== 결론 ==
+빌드 오류 0, 새 경고 0. 에디터에서 gui.selftest: OK (10/10). 일부러 깬 판에서는 그 항목만 FAILED. 에디터 창 닫기 종료 코드 0, 오류 · critical 로그 0.
+
+== 1. 바뀐 파일 ==
+M Source/Runtime/GUI/GUI.h                     HGUI 끝에 "컨텐츠 브라우저" 묶음 — TreeNode · TreePop · IsItemDoubleClicked 선언
+M Source/Runtime/GUI/GUI.cpp                   세 함수 구현(ImGui::TreeNodeEx OpenOnArrow · SpanAvailWidth [+ Selected · Leaf · DefaultOpen], IsItemClicked && !IsItemToggledOpen, IsItemHovered && IsMouseDoubleClicked)
+A Source/Runtime/GUI/SelfTest/GUISelfTest.cpp  콘솔 명령 gui.selftest [-exit] — 따로 만든 ImGui 컨텍스트에 마우스 입력을 흉내 내 10 항목 판정
+생성 파일(jgengine.lua ×2 · JGEngine.sln): 바뀌지 않음(파일 목록이 아니라 폴더 단위). 새 소스 파일이 있으므로 패치를 얹은 뒤 PreBuild 를 한 번 돌린다(vcxproj 는 git 밖).
+넣지 않음: jgengine.bat(작업 폴더 경로가 들어가는 부산물).
+
+선언:
+  static bool TreeNode(const PString& InLabel, bool bSelected, bool& OutClicked, bool bLeaf = false, bool bDefaultOpen = false);
+  static void TreePop();
+  static bool IsItemDoubleClicked();
+  — 펼쳐져 있으면 true, 그때만 TreePop(잎도 true). 화살표로만 펼침, 이름 누르면 OutClicked(그 프레임만), 화살표 누른 프레임은 OutClicked false.
+
+== 2. 빌드 ==
+BootstrapTools.bat exit 0 → .\PreBuild.bat exit 0 → MSBuild JGEngine.sln DevelopEngine|x64 exit 0
+경고: LNK4098 'MSVCRT' defaultlib (GameFrameWork.vcxproj) 하나 — 원래 있던 것(Editor DevKit 제거 검증 기록에도 있음). GUI 경고 0.
+GUISelfTest.cpp 가 GUI.vcxproj 에 들어가 컴파일됨(Temp/Obj/DevelopEngine/DevelopEngine/GUI/GUISelfTest.obj).
+
+== 3. 에디터 (엔진만, 작업 폴더 Temp/verify/run_gui, 메인 Bin/DevelopEngine/imgui.ini 복사) ==
+도구: Editor 세션 editor_probe.ps1(창 메시지 클릭 · 글자, DPI 인식 캡처) — DevConsole 입력줄(클라이언트 360,1320)을 두 번 누른 뒤 입력
+불러온 엔진 DLL: assimp-vc143-mt.dll, GameFrameWork.dll, GameHost.dll, Graphics.dll, GUI.dll, JGEditor.dll, JGLauncher.exe
+[info][GUI]: Layout: reopened JGDevConsole JGSceneViewport JGMemoryStatistcs
+> gui.selftest
+[PASS] TreeNode: closed by default
+[PASS] TreeNode: bDefaultOpen opens on the first frame
+[PASS] TreeNode: a leaf returns true (TreePop like an open node)
+[PASS] TreeNode: a label click sets OutClicked
+[PASS] TreeNode: a label click does not open the node
+[PASS] TreeNode: an arrow click does not set OutClicked
+[PASS] TreeNode: an arrow click opens the node
+[PASS] TreeNode: a leaf label click sets OutClicked
+[PASS] IsItemDoubleClicked: one click is not a double click
+[PASS] IsItemDoubleClicked: a second click within the double-click time
+gui.selftest: OK (10/10)
+[error] / [critical] 0 줄, WM_CLOSE 뒤 ExitCode 0. 시험 뒤에도 에디터 화면 정상(캡처 Document/기록/GUI/Engine-29_gui_selftest_editor.png).
+gui.selftest -exit 도 같은 결과로 에디터를 닫음.
+
+== 4. 깨진 판 확인 ==
+GUI.cpp 의 OutClicked 에서 "&& IsItemToggledOpen() == false" 를 잠시 빼고 빌드 → gui.selftest:
+[FAIL] TreeNode: an arrow click does not set OutClicked
+gui.selftest: FAILED (1 failures, 9 passed)
+→ 되돌리고 다시 빌드해 위 3절 결과(OK 10/10)를 얻음.
+
+== 5. 알아 둘 것 ==
+- 에디터(JGLauncher)는 main 끝에서 늘 0 을 돌려준다(Source/Programs/JGLauncher/Main.cpp) — 에디터에서 -exit 는 창만 닫고, 통과 · 실패는 로그 줄 "gui.selftest: OK/FAILED" 로 본다. 종료 코드를 버리는 것은 이번 범위 밖 → 따로 알림.
+- gui.selftest 는 콘솔 명령이 프레임 밖에서 도는 것을 기대고 에디터 ImGui 컨텍스트를 잠시 바꾼다(끝나면 되돌림). io.IniFilename = nullptr 라 에디터 imgui.ini 를 건드리지 않는다.
