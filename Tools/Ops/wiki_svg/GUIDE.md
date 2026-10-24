@@ -1,6 +1,6 @@
 # 위키 그림 그리기 안내 (엔진 위키 전체)
 
-엔진 위키(`C:/obsidian/ProjectJG/02. 위키/JGEngine/`)의 그림은 모두 이 폴더의 그리개로 그린 SVG다. 기준 문서는 `JGEngine Module/Core.md`(그림 18장)다.
+엔진 위키(`C:/obsidian/ProjectJG/02. 위키/JGEngine/`)의 그림은 모두 이 폴더의 그리개로 그린 SVG다. 기준 문서는 `JGEngine Module/00. Core.md` 다. GameFrameWork 분야 문서는 `JGEngine Module/02. GameFrameWork/` 폴더에 있고, 그림도 그 폴더의 `그림/` 에 쓴다.
 
 ## 파일
 
