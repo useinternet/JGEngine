@@ -18,3 +18,8 @@ jg_log.txt
 *.stackdump
 # 빌드 결과(Bin)는 넣지 않는다 — 소스에서 빌드(사용자 결정 D-40, 2026-10-17). 서드파티 바이너리는 ThirdParty/ 에서 JGBuildTool 이 Bin 으로 복사한다.
 Bin/
+# 되살린 검증 · 운영 도구(Tools/, DevOps 도구 새 자리 H-079, 2026-10-24)가 제자리에 만드는 파일 — 빌드한 exe · obj, 산출 폴더, DataTable 창 드라이버 상태 파일
+Tools/**/*.exe
+Tools/**/*.obj
+Tools/**/out/
+Tools/**/dt_ui_*.txt

@@ -5,7 +5,7 @@
 #include <intrin.h>
 
 // 풀 할당/해제 트레이스 로그 스위치 (Memory_TODO 1-1). 기본 꺼짐.
-// 켜려면 이 값을 1로 바꾸고 다시 빌드한다(이 파일만 다시 컴파일된다). 켠 빌드에서만 Document/Memory/tools/memlog_stats.sh 가 데이터를 얻는다.
+// 켜려면 이 값을 1로 바꾸고 다시 빌드한다(이 파일만 다시 컴파일된다). 켠 빌드에서만 Tools/Core/memlog_stats.sh 가 데이터를 얻는다.
 // 켜면 프레임당 수백 줄이 파일·콘솔 두 싱크에 쓰이므로 측정용으로만 쓴다.
 #ifndef JG_MEMORY_TRACE
 #define JG_MEMORY_TRACE 0

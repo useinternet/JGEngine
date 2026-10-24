@@ -1,0 +1,103 @@
+param(
+    [string]$BinDir,
+    [string]$OutPrefix,
+    [int]$WaitSeconds = 25,
+    # 마우스를 올려 풍선 도움말을 찍을 위치들(창 캡처 기준 좌표). "x,y;click:x,y;..." (-File 로는 배열이 안 넘어가서 문자열 하나로 받는다)
+    [string]$HoverPoints = ""
+)
+
+# 메모리 통계 창 캡처 (워크트리 검증용). JG_OPEN_MEMSTATS 로 시작할 때 창을 연다(워크트리 임시 코드).
+# 키·마우스는 PostMessage 로 런처 창에만 보낸다. 전경 창을 바꾸지 않는다.
+$ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.Drawing
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32MemCap {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT { public int X; public int Y; }
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdcBlt, uint nFlags);
+    [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
+}
+"@
+
+function Save-Capture([IntPtr]$hwnd, [string]$path) {
+    $rect = New-Object Win32MemCap+RECT
+    [Win32MemCap]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $bmp = New-Object System.Drawing.Bitmap(($rect.Right - $rect.Left), ($rect.Bottom - $rect.Top))
+    $gfx = [System.Drawing.Graphics]::FromImage($bmp)
+    $hdc = $gfx.GetHdc()
+    $ok = [Win32MemCap]::PrintWindow($hwnd, $hdc, 2)
+    $gfx.ReleaseHdc($hdc)
+    $gfx.Dispose()
+    if (-not $ok) { Write-Output "PrintWindow failed" }
+    $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Write-Output "Saved $path"
+}
+
+function Post-Hover([IntPtr]$hwnd, [int]$windowX, [int]$windowY) {
+    $rect = New-Object Win32MemCap+RECT
+    [Win32MemCap]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+    $origin = New-Object Win32MemCap+POINT
+    [Win32MemCap]::ClientToScreen($hwnd, [ref]$origin) | Out-Null
+    $x = $windowX - ($origin.X - $rect.Left)
+    $y = $windowY - ($origin.Y - $rect.Top)
+    $lParam = [IntPtr](($y -shl 16) -bor ($x -band 0xFFFF))
+    # 풍선 도움말은 머무름 지연 뒤에 뜨므로 같은 위치로 여러 번 보낸다.
+    for ($i = 0; $i -lt 12; $i++) {
+        [Win32MemCap]::PostMessage($hwnd, 0x0200, [IntPtr]::Zero, $lParam) | Out-Null   # WM_MOUSEMOVE
+        Start-Sleep -Milliseconds 100
+    }
+}
+
+$env:JG_OPEN_MEMSTATS = "1"
+$proc = Start-Process -FilePath (Join-Path $BinDir "JGLauncher.exe") -WorkingDirectory $BinDir -PassThru
+Write-Output "Started PID $($proc.Id)"
+
+$hwnd = [IntPtr]::Zero
+for ($i = 0; $i -lt 60; $i++) {
+    Start-Sleep -Milliseconds 500
+    $proc.Refresh()
+    if ($proc.HasExited) { Write-Output "Process exited early with code $($proc.ExitCode)"; exit 2 }
+    if ($proc.MainWindowHandle -ne [IntPtr]::Zero) { $hwnd = $proc.MainWindowHandle; break }
+}
+if ($hwnd -eq [IntPtr]::Zero) { Write-Output "No main window"; $proc.Kill(); exit 3 }
+
+Start-Sleep -Seconds $WaitSeconds
+$proc.Refresh()
+if ($proc.HasExited) { Write-Output "Process exited during wait with code $($proc.ExitCode)"; exit 4 }
+Save-Capture $hwnd "$OutPrefix.png"
+
+$index = 0
+foreach ($point in ($HoverPoints.Split(";") | Where-Object { $_ -ne "" })) {
+    # "x,y" = 올려 두기, "click:x,y" = 누른 뒤 캡처
+    $bClick = $point.StartsWith("click:")
+    $xy = $point.Replace("click:", "").Split(",")
+    Post-Hover $hwnd ([int]$xy[0]) ([int]$xy[1])
+    if ($bClick) {
+        $rect = New-Object Win32MemCap+RECT
+        [Win32MemCap]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+        $origin = New-Object Win32MemCap+POINT
+        [Win32MemCap]::ClientToScreen($hwnd, [ref]$origin) | Out-Null
+        $cx = [int]$xy[0] - ($origin.X - $rect.Left)
+        $cy = [int]$xy[1] - ($origin.Y - $rect.Top)
+        $lParam = [IntPtr](($cy -shl 16) -bor ($cx -band 0xFFFF))
+        # 이동 · 누름 · 뗌을 연달아 넣는다. 실제 커서가 창 밖이면 곧 WM_MOUSELEAVE 가 오므로 그 전에 큐에 있어야 한다.
+        [Win32MemCap]::PostMessage($hwnd, 0x0200, [IntPtr]::Zero, $lParam) | Out-Null      # WM_MOUSEMOVE
+        [Win32MemCap]::PostMessage($hwnd, 0x0201, [IntPtr]1, $lParam) | Out-Null           # WM_LBUTTONDOWN
+        [Win32MemCap]::PostMessage($hwnd, 0x0202, [IntPtr]::Zero, $lParam) | Out-Null      # WM_LBUTTONUP
+        Start-Sleep -Milliseconds 700
+    }
+    Save-Capture $hwnd "${OutPrefix}_hover$index.png"
+    $index++
+}
+
+[Win32MemCap]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CLOSE
+if (-not $proc.WaitForExit(40000)) { Write-Output "Timeout waiting exit, killing"; $proc.Kill(); exit 5 }
+Write-Output "ExitCode $($proc.ExitCode)"
+exit 0
