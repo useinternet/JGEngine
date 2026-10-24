@@ -2,7 +2,7 @@
 // 코드: Tools/README.md, Tools/Common/crashwalk/crashwalk.cpp, Tools/Common/capture_devscene.ps1, Tools/Ops/
 module.exports = {
   file: 'Programs_08_Tools구성',
-  alt: 'Tools 폴더 구성 — Tools/는 여러 분야가 함께 쓰는 Common(crashwalk · capture_devscene · uitest_hook), 팀 운영용 Ops(compaction_watch · wiki_svg), 분야별 검증 도구(Core · DevOps · Editor · GameFrameWorks · Graphics)로 나뉘며, 검증 도구는 JGLauncher · JGConsole · 패키지 exe를 crashwalk로 감싸 실행하고 종료 코드와 로그로 판정한다',
+  alt: 'Tools 폴더 구성 — Tools/는 여러 분야가 함께 쓰는 Common(crashwalk · capture_devscene · uitest_hook), 팀 운영용 Ops(compaction_watch · wiki_svg), 분야별 검증 도구(Core · DevOps · Editor · GameFrameWork · Graphics)로 나뉘며, 검증 도구는 JGLauncher · JGConsole · 패키지 exe를 crashwalk로 감싸 실행하고 종료 코드와 로그로 판정한다',
   type: 'flow',
   w: 980,
   h: 470,
@@ -10,7 +10,7 @@ module.exports = {
     { x: 20, y: 20, w: 940, h: 300, label: 'Tools/' },
     { x: 40, y: 60, w: 430, h: 240, label: 'Common/ — 공용 검증' },
     { x: 500, y: 60, w: 440, h: 110, label: 'Ops/ — 팀 운영' },
-    { x: 500, y: 190, w: 440, h: 110, label: '분야별 — Core · DevOps · Editor · GameFrameWorks · Graphics' }
+    { x: 500, y: 190, w: 440, h: 110, label: '분야별 — Core · DevOps · Editor · GameFrameWork · Graphics' }
   ],
   nodes: [
     { id: 'CW', x: 60, y: 100, w: 390, h: 56, color: 'purple', title: 'crashwalk', lines: ['디버거로 실행 · 예외 콜스택 · 정한 초 뒤 닫기 · 종료 코드'] },

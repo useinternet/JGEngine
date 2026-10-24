@@ -20,7 +20,7 @@
 | `Core/` | Core | 메모리 · 오디오 · 입력 검증 |
 | `DevOps/` | DevOps | 게임만 실행 · 패키지 · RunEditor 확인 |
 | `Editor/` | Editor | 에디터 창 · DPI · 콘솔 입력 확인 |
-| `GameFrameWorks/` | GameFrameWorks | 게임 UI · 월드 뷰 · DataTable 화면, 리뷰 재현, 네트워크(리슨 서버) |
+| `GameFrameWork/` | GameFrameWork | 게임 UI · 월드 뷰 · DataTable 화면, 리뷰 재현, 네트워크(리슨 서버) |
 | `Graphics/` | Graphics | 창 크기 · 디버그 출력 · 시험 FBX |
 
 ## 도구
@@ -47,14 +47,14 @@
 | `Editor/editor_dpi_before_after.ps1` | 두 모니터(125% · 150%)에서 에디터 캡처 | `-BinDir` · `-OutPrefix` |
 | `Editor/sceneviewport_focuslost_check.ps1` | 포커스 잃음 A~D(GameUIDemo) | `-BinDir` · `-OutDir` |
 | `Editor/sceneviewport_resize_check.ps1` | 창을 빠르게 줄여 뷰포트 크기 맞춤 확인 | `-BinDir` · `-OutPrefix` |
-| `GameFrameWorks/gameui_demo_testgame/` | 게임 UI 검증 게임 + `gameui_e2e.ps1` | `README.md` |
-| `GameFrameWorks/gfw_phase2_testgame/` | 씬 뷰포트 · DevView · 피킹 검증 게임 | `README.md` |
-| `GameFrameWorks/gfw_worldview_verify.ps1` | 월드 뷰 클릭 · 끌기 캡처 | `-BinDir` · `-OutPrefix` · `-Clicks` |
-| `GameFrameWorks/gfw_review_repro/` | 리뷰 재현 — 워크트리에서 JGConsole 에 넣어 `simreview` | 파일 머리 |
-| `GameFrameWorks/datatable_ui_driver.ps1.txt` | DataTable 창 입력 드라이버. `uitest_hook` 필요 | `.ps1` 로 복사 |
-| `GameFrameWorks/net_duel_testgame/` | 리슨 서버 결투 검증 게임 | `README.md` |
-| `GameFrameWorks/net_lobby_check/` | 세션 로비 창 검증. `uitest_hook` 필요 | `README.md` |
-| `GameFrameWorks/net_two_process/run_two_process.sh` | JGConsole 여러 프로세스를 TCP 로 붙여 결정론 확인 | `bash … <Bin/DevelopEngine> [포트] [명령 수] [출력 폴더] [kernel\|world] …` |
+| `GameFrameWork/gameui_demo_testgame/` | 게임 UI 검증 게임 + `gameui_e2e.ps1` | `README.md` |
+| `GameFrameWork/gfw_phase2_testgame/` | 씬 뷰포트 · DevView · 피킹 검증 게임 | `README.md` |
+| `GameFrameWork/gfw_worldview_verify.ps1` | 월드 뷰 클릭 · 끌기 캡처 | `-BinDir` · `-OutPrefix` · `-Clicks` |
+| `GameFrameWork/gfw_review_repro/` | 리뷰 재현 — 워크트리에서 JGConsole 에 넣어 `simreview` | 파일 머리 |
+| `GameFrameWork/datatable_ui_driver.ps1.txt` | DataTable 창 입력 드라이버. `uitest_hook` 필요 | `.ps1` 로 복사 |
+| `GameFrameWork/net_duel_testgame/` | 리슨 서버 결투 검증 게임 | `README.md` |
+| `GameFrameWork/net_lobby_check/` | 세션 로비 창 검증. `uitest_hook` 필요 | `README.md` |
+| `GameFrameWork/net_two_process/run_two_process.sh` | JGConsole 여러 프로세스를 TCP 로 붙여 결정론 확인 | `bash … <Bin/DevelopEngine> [포트] [명령 수] [출력 폴더] [kernel\|world] …` |
 | `Graphics/gp_window_test.ps1` | 창 크기 · 최소화 · Alt+Enter 확인 | `-Exe` · `-WorkDir` |
 | `Graphics/dbgevents/` | 디버그 이벤트 · OutputDebugString 세기 | `build.bat` → `dbgevents.exe <exe> <작업 폴더> <닫기 초>` |
 | `Graphics/fbx_embedded_texture/` | 임베디드 텍스처 시험 FBX 생성기(스스로 다시 읽어 확인) | `build.bat <출력 폴더>` → `make_embedded_texture_fbx.exe <출력 .fbx>` |

@@ -10,7 +10,7 @@
 //   3 에셋 안의 마운트 토큰 문자열(/JGEngine/… · /JGGame/…)이 쿠킹 대상 파일을 가리킨다.
 //     확장자가 없으면 .jgasset 을 붙인다(HAssetPath 와 같은 규칙). 런타임 찾기가 대소문자를 구분하므로 여기서도 구분한다.
 //     에셋 자기 경로 칸(JGAsset.AssetPath)은 참조가 아니다 — 에셋 DB 는 파일 위치로 경로를 정한다
-//   + 타입별 검사: JGObjectType 이 같은 에셋마다 부른다. 데이터 테이블 검사는 GameFrameWork 가 끼운다(Asset 은 GFW 를 모른다)
+//   + 타입별 검사: JGObjectType 이 같은 에셋마다 부른다. 데이터 테이블 검사는 Data/ContentCookCheck 가 끼운다
 // 경로는 HAssetPath · HFileHelper 의 Content 경로를 쓰지 않고 inMounts 로만 푼다 — 쿠킹하는 프로세스의 Content 와 상관없다.
 
 struct GAMEFRAMEWORK_API HAssetCookMount
