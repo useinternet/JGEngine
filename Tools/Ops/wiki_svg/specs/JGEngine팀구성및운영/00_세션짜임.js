@@ -1,7 +1,7 @@
 // 세션 짜임 — 사용자와 프로젝트 총괄(통합 대시보드 보고함), 엔진 총괄, 분야 세션 6개, Document Writer, 게임 총괄
 module.exports = {
   file: 'JGEngine팀구성및운영_00_세션짜임',
-  alt: '세션 짜임 — 사용자는 프로젝트 총괄의 통합 대시보드 보고함으로 묻고 답하며, 엔진 총괄은 hq_request.js로 보고 · 질문을 보내고 분야 세션 6개에 일을 맡기고, Document Writer가 보고함 글을 다듬으며, 게임 팀과는 엔진 요청서(ER)로 이어진다',
+  alt: '세션 짜임 — 사용자는 통합 대시보드의 엔진 팀 보고함(Q-n)으로 묻고 답하며, 엔진 총괄은 new_question.pl로 보고 · 질문을 올리고 프로젝트 총괄과는 hq_request.js로 전달을 주고받으며, 분야 세션 6개에 일감으로 일을 맡기고, Document Writer가 보고함 글을 다듬으며, 게임 팀과는 엔진 요청서(ER)로 이어진다',
   type: 'flow',
   w: 980,
   h: 530,
@@ -10,8 +10,8 @@ module.exports = {
   ],
   nodes: [
     { id: 'USER', x: 400, y: 40, w: 240, h: 52, color: 'yellow', title: '사용자', lines: ['방향 · 결정 · 확인'] },
-    { id: 'HQ', x: 400, y: 150, w: 240, h: 52, color: 'purple', title: '프로젝트 총괄', lines: ['통합 대시보드 보고함(H-n)'] },
-    { id: 'ENG', x: 160, y: 270, w: 260, h: 52, color: 'blue', title: '엔진 총괄', lines: ['일 나누기 · 묶음 적용 · 위키'] },
+    { id: 'HQ', x: 400, y: 150, w: 240, h: 52, color: 'purple', title: '프로젝트 총괄', lines: ['통합 대시보드 · 팀 사이 전달'] },
+    { id: 'ENG', x: 160, y: 270, w: 260, h: 52, color: 'blue', title: '엔진 총괄', lines: ['일감 나누기 · 보고함(Q-n) · 위키'] },
     { id: 'GAME', x: 600, y: 270, w: 240, h: 52, color: 'green', title: '게임 총괄', lines: ['ProjectAH 팀'] },
     { id: 'S1', x: 35, y: 430, w: 112, h: 50, color: 'blue', title: 'Core', lines: ['Core 모듈'] },
     { id: 'S2', x: 155, y: 430, w: 112, h: 50, color: 'blue', title: 'Graphics', lines: ['렌더러'] },
@@ -24,6 +24,7 @@ module.exports = {
   edges: [
     { from: 'USER', to: 'HQ', points: [[520, 92], [520, 150]], start: 'arrow', label: '묻기 · 답 · 확인' },
     { from: 'HQ', to: 'ENG', points: [[410, 202], [410, 270]], start: 'arrow', label: 'hq_request.js · 전달' },
+    { from: 'USER', to: 'ENG', points: [[400, 66], [290, 66], [290, 270]], start: 'arrow', label: '엔진 팀 보고함(Q-n)' },
     { from: 'HQ', to: 'GAME', points: [[620, 202], [620, 270]], start: 'arrow', label: '보고함 · 전달' },
     { from: 'ENG', to: 'GAME', points: [[420, 296], [600, 296]], dash: true, start: 'arrow', label: '엔진 요청서(ER)' },
     { from: 'ENG', to: 'S3', points: [[330, 322], [330, 430]], start: 'arrow', label: '일 맡기기 · 결과 보고' },
