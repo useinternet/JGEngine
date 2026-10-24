@@ -10,7 +10,7 @@
 
 namespace
 {
-	// Content 토큰(Asset 모듈 AssetDefines.h 의 JG_ASSET_*_PATH_RECOGNITION_TOEKN 과 같은 값). Audio 는 Core 만 의존해서 따로 둔다.
+	// Content 토큰(Asset/AssetDefines.h 의 JG_ASSET_*_PATH_RECOGNITION_TOEKN 과 같은 값). Audio 가 Core 만 의존하는 따로 모듈이던 때 둔 사본이다.
 	const char* const ENGINE_TOKEN = "/JGEngine/";
 	const char* const GAME_TOKEN   = "/JGGame/";
 

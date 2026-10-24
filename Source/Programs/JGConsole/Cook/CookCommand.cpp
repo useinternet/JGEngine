@@ -738,8 +738,8 @@ namespace
 			files.push_back(HCookPlatform::FromPath(file.Source));
 		}
 
-		// 토큰은 GameFrameWork Asset/AssetDefines.h 의 JG_ASSET_ENGINE/GAME_PATH_RECOGNITION_TOEKN 과 같은 값이다. JGConsole 은 Asset 헤더를 include 하지 않는다
-		// (include 경로는 직접 의존 Core · GameFrameWork 만 — DevOps C1-H1).
+		// 토큰은 GameFrameWork Asset/AssetDefines.h 의 JG_ASSET_ENGINE/GAME_PATH_RECOGNITION_TOEKN 과 같은 값이다.
+		// Asset 이 따로 모듈이던 때 JGConsole 이 그 헤더를 include 하지 못해(include 경로는 직접 의존 Core · GameFrameWork 만 — DevOps C1-H1) 값을 직접 쓴 것이다.
 		HList<HPair<PString, PString>> mounts;
 		mounts.push_back(HPair<PString, PString>(PString("/JGEngine/"), HCookPlatform::NormalizedAbsolute(context.EngineDirectory + "/Content") + "/"));
 		mounts.push_back(HPair<PString, PString>(PString("/JGGame/"), HCookPlatform::NormalizedAbsolute(context.ProjectDirectory + "/Content") + "/"));

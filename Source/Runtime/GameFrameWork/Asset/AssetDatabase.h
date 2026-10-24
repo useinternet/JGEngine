@@ -56,7 +56,7 @@ public:
 
 private:
 	// 보유한 에셋을 모두 놓는다. 진행 중인 로드는 잠시(최대 5초) 기다린다.
-	// Asset 모듈 종료 시 불려야 한다. 그래야 DisconnectModule의 GC Flush가 Graphics 모듈이 살아 있을 때 메시/버퍼를 정리한다.
+	// GameFrameWork 모듈 종료(ShutdownModule 이 GAssetDatabase 를 내리는 Destroy) 시 불려야 한다. 그래야 DisconnectModule의 GC Flush가 Graphics 모듈이 살아 있을 때 메시/버퍼를 정리한다.
 	// (놓지 않으면 GC 객체가 메모리 시스템 소멸의 강제 정리까지 살아남아, 먼저 해제된 객체의 카운터를 건드려 종료 크래시가 난다)
 	void releaseAssets();
 };
