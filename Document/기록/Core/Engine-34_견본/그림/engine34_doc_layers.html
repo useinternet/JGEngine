@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Engine-34 문서 세 곳</title>
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  svg text { font-family: "Segoe UI", "Malgun Gothic", sans-serif; fill: #1f1f1d; }
+  .h { font-size: 17px; font-weight: 700; }
+  .t { font-size: 14px; }
+  .s { font-size: 12.5px; fill: #5f5e5a; }
+  .c { font-family: Consolas, monospace; font-size: 12.5px; fill: #185fa5; }
+  .lb { font-size: 13px; fill: #5f5e5a; }
+  .bx-a { fill: #e6f1fb; stroke: #85b7eb; stroke-width: 1.5; }
+  .bx-b { fill: #e1f5ee; stroke: #5dcaa5; stroke-width: 1.5; }
+  .bx-c { fill: #eeedfe; stroke: #7f77dd; stroke-width: 1.5; }
+  .bx-d { fill: #faeeda; stroke: #ef9f27; stroke-width: 1.5; }
+  .bx-r { fill: #f1efe8; stroke: #b4b2a9; stroke-width: 1.5; }
+  .opt { fill: #ffffff; stroke: #b4b2a9; stroke-width: 1.2; }
+  .optrec { fill: #eef4fc; stroke: #2a78d6; stroke-width: 2.2; }
+  .ln { stroke: #888780; stroke-width: 1.6; fill: none; }
+  .ah { fill: #888780; }
+  .tag { fill: #2a78d6; }
+  .tagt { fill: #ffffff; font-size: 12px; font-weight: 700; }
+</style></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="640" viewBox="0 0 1240 640">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path class="ah" d="M1,1 L9,5 L1,9 z"/></marker>
+  </defs>
+  <text class="h" x="20" y="32">공개 API 하나가 놓이는 세 곳 — 내용은 같게, API 가 바뀌면 같은 작업에서 함께 고친다</text>
+
+  <!-- 세 곳 -->
+  <rect class="bx-a" x="20" y="56" width="380" height="190" rx="10"/>
+  <text class="h" x="36" y="84">공개 헤더 문서 주석</text>
+  <text class="s" x="36" y="104">Source/Runtime/&lt;모듈&gt;/….h — Visual Studio 툴팁에 보인다</text>
+  <text class="c" x="36" y="132">/// 파일 범위 전역 변수로 선언하는 콘솔 명령.</text>
+  <text class="c" x="36" y="152">/// 스레드: … 수명: … 순서: … 오류: …</text>
+  <text class="c" x="36" y="172">/// @param InName  명령 이름 …</text>
+  <text class="c" x="36" y="192">/// @returns …</text>
+  <text class="s" x="36" y="224">게임 코드가 부르지 않는 public 멤버 = "엔진 내부용" 한 줄</text>
+
+  <rect class="bx-b" x="430" y="56" width="380" height="190" rx="10"/>
+  <text class="h" x="446" y="84">API Reference 항목</text>
+  <text class="s" x="446" y="104">엔진 위키「&lt;모듈&gt; API Reference」(레퍼런스)</text>
+  <text class="t" x="446" y="134">개요 · 선언(헤더 · 시그니처)</text>
+  <text class="t" x="446" y="158">매개변수 / 반환값 · 사용 예시</text>
+  <text class="t" x="446" y="182">주의사항 — 스레드 · 수명 · 순서 · 오류</text>
+  <text class="t" x="446" y="222">문서 아래: 변경 이력(날짜 · API · 내용 · 게임 영향)</text>
+
+  <rect class="bx-c" x="840" y="56" width="380" height="190" rx="10"/>
+  <text class="h" x="856" y="84">모듈 README.md</text>
+  <text class="s" x="856" y="104">Source/Runtime/&lt;모듈&gt;/README.md (저장소)</text>
+  <text class="t" x="856" y="134">역할 · 의존 모듈</text>
+  <text class="t" x="856" y="158">주요 클래스(헤더 · 하는 일)</text>
+  <text class="t" x="856" y="182">사용 예시 하나</text>
+  <text class="t" x="856" y="222">세부는 위키 API Reference 로</text>
+
+  <line class="ln" x1="400" y1="150" x2="428" y2="150" marker-start="url(#a)" marker-end="url(#a)"/>
+  <line class="ln" x1="810" y1="150" x2="838" y2="150" marker-end="url(#a)"/>
+
+  <!-- 예시 원본 -->
+  <rect class="bx-d" x="430" y="300" width="380" height="80" rx="10"/>
+  <text class="h" x="446" y="328">예시 원본 .cpp</text>
+  <text class="t" x="446" y="354">Reference · README 예시는 여기서 그대로 옮긴다</text>
+  <path class="ln" d="M620,300 L620,248" marker-end="url(#a)"/>
+  <path class="ln" d="M810,330 L1030,330 L1030,248" marker-end="url(#a)"/>
+  <text class="lb" x="628" y="280">그대로 옮김</text>
+
+  <!-- 예시 확인 방법 -->
+  <text class="h" x="20" y="430">예시가 실제로 컴파일되는지 확인하는 방법</text>
+  <rect class="optrec" x="20" y="448" width="590" height="170" rx="10"/>
+  <rect class="tag" x="520" y="460" width="76" height="24" rx="12"/><text class="tagt" x="558" y="477" text-anchor="middle">권고</text>
+  <text class="h" x="36" y="478">안 1 — 엔진 빌드에 넣는다</text>
+  <text class="t" x="36" y="506">예시 원본을 시험 프로그램(JGApiSamples)으로 묶어 매 빌드 컴파일</text>
+  <text class="t" x="36" y="530">좋은 점: API 가 바뀌면 빌드가 깨져 문서 고칠 곳을 놓치지 않는다</text>
+  <text class="t" x="36" y="554">대가: 예시 파일이 엔진 저장소에 들어간다 · 처음 만들기 0.5일</text>
+  <text class="s" x="36" y="582">헤드리스로 돌 수 있는 예시(Core · GameFrameWork)는 명령으로 실행까지 확인</text>
+
+  <rect class="opt" x="630" y="448" width="590" height="170" rx="10"/>
+  <text class="h" x="646" y="478">안 2 — 문서를 쓸 때만 떼어 둔 폴더에서</text>
+  <text class="t" x="646" y="506">Temp/wt 작업 폴더에 예시를 넣어 빌드 · 실행(이번 견본 방식)</text>
+  <text class="t" x="646" y="530">좋은 점: 엔진 코드에 아무것도 들어가지 않는다</text>
+  <text class="t" x="646" y="554">대가: API 가 바뀐 뒤 예시가 깨져도 다음 확인 전까지 모른다</text>
+  <text class="s" x="646" y="582">확인할 때마다 작업 폴더 빌드(약 2분)를 다시 한다</text>
+</svg>
+</body></html>

@@ -1,0 +1,28 @@
+Engine-34 견본 예시 컴파일 · 실행 확인 — 2026-10-24 18:50
+작업 폴더: Temp/wt/engine34 (main c6dd99d 에서 떼어 냄, 본 폴더 코드는 그대로)
+예시 원본: Document/기록/Core/Engine-34_견본/ApiSample_ConsoleCommand.cpp → Source/Programs/JGConsole/ 에 복사
+빌드: MSBuild JGEngine.sln DevelopEngine x64 — 오류 0 (첫 빌드는 Core.h 없이 JG_LOG 미선언 C2065/C3861 → #include "Core.h" 더해 통과)
+
+### JGConsole.exe sample.greet World -count=2
+[:57532:][info][ConsoleCommand]: > sample.greet World -count=2
+[:57532:][info][Sample]: Hello, World
+[:57532:][info][Sample]: Hello, World
+exit=0
+
+### JGConsole.exe sample.greet
+[:49196:][info][ConsoleCommand]: > sample.greet
+[:49196:][warning][ConsoleCommand]: 'sample.greet' failed. Usage: sample.greet <name> [-count=N]
+exit=1
+
+### JGConsole.exe sample.greet World -count=abc
+[:3044:][info][ConsoleCommand]: > sample.greet World -count=abc
+[:3044:][warning][ConsoleCommand]: 'sample.greet' failed. Usage: sample.greet <name> [-count=N]
+exit=1
+
+### JGConsole.exe help sample.greet
+[:44768:][info][ConsoleCommand]: > help sample.greet
+[:44768:][info][ConsoleCommand]: Usage: sample.greet <name> [-count=N]
+exit=0
+
+### JGConsole.exe help | sample 줄
+[:55728:][info][ConsoleCommand]:   sample.greet                 Print a greeting N times

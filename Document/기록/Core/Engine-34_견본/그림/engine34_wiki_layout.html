@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Engine-34 위키 자리</title>
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  svg text { font-family: "Segoe UI", "Malgun Gothic", sans-serif; fill: #1f1f1d; }
+  .h { font-size: 19px; font-weight: 700; }
+  .s { font-size: 13px; fill: #5f5e5a; }
+  .t { font-size: 15px; }
+  .b { font-size: 15px; font-weight: 600; }
+  .new { fill: #0c447c; font-weight: 700; }
+  .col { fill: #f7f7f5; stroke: #d6d5ce; stroke-width: 1.5; }
+  .rec { fill: #eef4fc; stroke: #2a78d6; stroke-width: 2.5; }
+  .row { fill: #ffffff; stroke: #d6d5ce; stroke-width: 1; }
+  .rownew { fill: #dce8f8; stroke: #2a78d6; stroke-width: 1.5; }
+  .note { fill: #fdf1d6; stroke: #ef9f27; stroke-width: 1; }
+  .tag { fill: #2a78d6; }
+  .tagt { fill: #ffffff; font-size: 13px; font-weight: 700; }
+</style></head><body>
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="660" viewBox="0 0 1240 660">
+  <!-- 지금 -->
+  <rect class="col" x="20" y="20" width="370" height="620" rx="12"/>
+  <text class="h" x="40" y="54">지금</text>
+  <text class="s" x="40" y="76">02. 위키/JGEngine/</text>
+  <g>
+    <rect class="row" x="40" y="96" width="330" height="36" rx="6"/><text class="t" x="56" y="120">JGEngine (구조도)</text>
+    <rect class="row" x="40" y="140" width="330" height="36" rx="6"/><text class="t" x="56" y="164">00. Core</text>
+    <rect class="row" x="40" y="184" width="330" height="36" rx="6"/><text class="t" x="56" y="208">01. Graphics</text>
+    <rect class="row" x="40" y="228" width="330" height="36" rx="6"/><text class="t" x="56" y="252">▸ 02. GameFrameWork</text>
+    <text class="s" x="76" y="282">개요 · 00. Game UI … 08. GameHost 모듈</text>
+    <rect class="row" x="40" y="296" width="330" height="36" rx="6"/><text class="t" x="56" y="320">03. GUI</text>
+    <rect class="row" x="40" y="340" width="330" height="36" rx="6"/><text class="t" x="56" y="364">04. JGEditor</text>
+    <rect class="row" x="40" y="384" width="330" height="36" rx="6"/><text class="t" x="56" y="408">05. Programs</text>
+  </g>
+  <rect class="note" x="40" y="560" width="330" height="60" rx="8"/>
+  <text class="t" x="56" y="586">API Reference 문서 없음</text>
+  <text class="s" x="56" y="607">모듈 문서는 구조 · 흐름 설명(설계 설명)</text>
+
+  <!-- 안 A -->
+  <rect class="rec" x="420" y="20" width="390" height="620" rx="12"/>
+  <text class="h" x="440" y="54">안 A — 모듈 폴더 아래</text>
+  <rect class="tag" x="690" y="36" width="98" height="26" rx="13"/><text class="tagt" x="739" y="54" text-anchor="middle">권고</text>
+  <text class="s" x="440" y="76">폴더 줄 = 모듈 문서, 펼치면 API Reference</text>
+  <g>
+    <rect class="row" x="440" y="96" width="350" height="36" rx="6"/><text class="t" x="456" y="120">JGEngine (구조도)</text>
+    <rect class="row" x="440" y="140" width="350" height="36" rx="6"/><text class="t" x="456" y="164">▾ 00. Core</text>
+    <rect class="rownew" x="470" y="182" width="320" height="32" rx="6"/><text class="t new" x="486" y="203">Core API Reference</text>
+    <rect class="row" x="440" y="222" width="350" height="36" rx="6"/><text class="t" x="456" y="246">▾ 01. Graphics</text>
+    <rect class="rownew" x="470" y="264" width="320" height="32" rx="6"/><text class="t new" x="486" y="285">Graphics API Reference</text>
+    <rect class="row" x="440" y="304" width="350" height="36" rx="6"/><text class="t" x="456" y="328">▾ 02. GameFrameWork</text>
+    <text class="s" x="486" y="356">GameFrameWork 개요 · 00 … 08</text>
+    <rect class="rownew" x="470" y="366" width="320" height="32" rx="6"/><text class="t new" x="486" y="387">GameFrameWork API Reference</text>
+    <rect class="row" x="440" y="406" width="350" height="36" rx="6"/><text class="t" x="456" y="430">▾ 03. GUI · ▾ 04. JGEditor</text>
+    <text class="s" x="486" y="460">GUI API Reference · JGEditor API Reference</text>
+    <rect class="row" x="440" y="474" width="350" height="36" rx="6"/><text class="t" x="456" y="498">05. Programs</text>
+  </g>
+  <rect class="note" x="440" y="540" width="350" height="80" rx="8"/>
+  <text class="t" x="456" y="566">모듈 문서 4개를 같은 이름 폴더로 옮김</text>
+  <text class="s" x="456" y="588">00. Core.md → 00. Core/00. Core.md</text>
+  <text class="s" x="456" y="608">그림 · 그리개 경로도 같이 옮김(링크는 이름이라 그대로)</text>
+
+  <!-- 안 B -->
+  <rect class="col" x="840" y="20" width="380" height="620" rx="12"/>
+  <text class="h" x="860" y="54">안 B — 모듈 문서 옆</text>
+  <text class="s" x="860" y="76">옮기는 문서 없음, 번호를 같이 붙임</text>
+  <g>
+    <rect class="row" x="860" y="96" width="340" height="36" rx="6"/><text class="t" x="876" y="120">JGEngine (구조도)</text>
+    <rect class="row" x="860" y="140" width="340" height="36" rx="6"/><text class="t" x="876" y="164">00. Core</text>
+    <rect class="rownew" x="860" y="182" width="340" height="32" rx="6"/><text class="t new" x="876" y="203">00. Core API Reference</text>
+    <rect class="row" x="860" y="222" width="340" height="36" rx="6"/><text class="t" x="876" y="246">01. Graphics</text>
+    <rect class="rownew" x="860" y="264" width="340" height="32" rx="6"/><text class="t new" x="876" y="285">01. Graphics API Reference</text>
+    <rect class="row" x="860" y="304" width="340" height="36" rx="6"/><text class="t" x="876" y="328">▸ 02. GameFrameWork</text>
+    <text class="s" x="896" y="356">개요 … 08 · GameFrameWork API Reference</text>
+    <rect class="row" x="860" y="370" width="340" height="36" rx="6"/><text class="t" x="876" y="394">03. GUI</text>
+    <rect class="rownew" x="860" y="412" width="340" height="32" rx="6"/><text class="t new" x="876" y="433">03. GUI API Reference</text>
+    <text class="s" x="876" y="466">04. JGEditor · 04. JGEditor API Reference …</text>
+  </g>
+  <rect class="note" x="860" y="540" width="340" height="80" rx="8"/>
+  <text class="t" x="876" y="566">옮길 것 없음 · 바로 쓸 수 있음</text>
+  <text class="s" x="876" y="588">맨 위 목록이 두 배로 길어지고</text>
+  <text class="s" x="876" y="608">GameFrameWork 만 폴더 안에 들어가 모양이 다름</text>
+</svg>
+</body></html>

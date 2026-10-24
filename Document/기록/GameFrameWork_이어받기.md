@@ -1,17 +1,17 @@
 # GameFrameWork 이어받기 메모
 
-갱신: 2026-10-24 18:45 (GameFrameWork 세션)
+갱신: 2026-10-24 19:02 (GameFrameWork 세션)
 
 ## 지금
 
 | 항목 | 상태 |
 |---|---|
-| 맡은 일 | Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — 구현 · 시험 끝, "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림. Engine-28(PNG · TGA 가져오기)은 In-Wait — 첫 판 뒤 따로 설계 |
-| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "Engine-30 … — 검토 중" |
+| 맡은 일 | ① Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림(Editor 에 선언 · 동작 답도 보냄). ② Engine-46 위키 02. GameFrameWork 재검토 — "검토 중", 기록 `Document/기록/GameFrameWork/Engine-46_GameFrameWork문서_재검토_2026-10-24.md`(문서는 안 고침). ③ Engine-51(Graphics 의 3D 계획) GameFrameWork 몫 확인 — 19:04 답 보냄: 모두 맞음 + 덧붙임(FBX 위 축 · 단위는 파일 안 설정을 기본값으로, 법선 역전치 · 거울 감김, 머터리얼 이름 접미사, 클립은 뼈 이름 키, 시험 그룹 animation). 구현은 사용자 확인 뒤 단계별 일감. Engine-28(PNG · TGA 가져오기)은 In-Wait |
+| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "Engine-46 GameFrameWork 위키 재검토 — 검토 중" |
 | 잠금 · 빌드 · 시험 | 없음. 메인 트리는 쓰지 않았다(워크트리 `Temp/wt/cb-gfw` 에서 빌드 · 시험) |
 | Engine-30 자리 | 워크트리 `Temp/wt/cb-gfw`(c6dd99d 위, 분리 HEAD). 새 파일 `Asset/AssetFolder.h` · `.cpp` · `SelfTest/AssetFolderSelfTest.cpp`, gfw.selftest 에 그룹 `asset`. 증적 `Temp/wt/cb-gfw/Temp/verify/cb/`(jg_log · editor/run_*.png) |
 | Engine-26 자리 | 기록 `Document/기록/GameFrameWork/Engine-26_언리얼에셋가져오기_2026-10-24.md`. git 밖: 내보내기 프로젝트 · 스크립트 · 결과 `Temp/UnrealExport/`, 시험 게임 `Temp/Games/UnrealAssetTest`(Content/Unreal 31개, 캡처 Temp/verify/editor_start.png). Epic 라이선스라 저장소 · 엔진 Content 에 넣지 않음 |
-| 미커밋 파일 | Engine-30 패치 5파일(위 새 파일 3 + `SelfTest/GameFrameWorkSelfTest.h` · `.cpp`) — Editor 패치와 함께 엔진 총괄이 메인에 붙여 커밋. 2단계는 51fb1da, 뒤따른 주석 정리는 710a7af · 2615da6 |
+| 미커밋 파일 | `Document/기록/GameFrameWork/Engine-46_…재검토_2026-10-24.md`(새 기록) · 이 메모. Engine-30 패치 5파일(위 새 파일 3 + `SelfTest/GameFrameWorkSelfTest.h` · `.cpp`) — Editor 패치와 함께 엔진 총괄이 메인에 붙여 커밋. 2단계는 51fb1da, 뒤따른 주석 정리는 710a7af · 2615da6 |
 
 ## 담당
 
@@ -66,6 +66,8 @@
 - 소스 파일을 옮기거나 더하면 PreBuild. 코드 생성기는 옛 생성 파일(`Temp/CodeGen/<모듈>/`)을 지우지 않는다. 클래스를 옮기면 옛 `.generation.*` 를 손으로 지운다.
 
 ## 알릴 것 · 열어 둔 것
+
+- Engine-30 은 Editor 의 Engine-31 묶음 검증 뒤 엔진 총괄이 본 폴더에 적용하며 닫는다(19:05 총괄 알림). CLAUDE.md 9절(008cf58): 공개 API 가 바뀌면 같은 작업 안에서 API Reference · 구조도 · 모듈 README · 문서 주석 · 변경 이력. ListAssetFolder · ImportAssetFile 의 Reference 와 문서 주석 보강은 GameFrameWork API Reference(Engine-40) 때 한다 — 지금 헤더 주석에 없는 주의점: 메인 스레드에서만 부른다(에셋 DB 경로 표를 읽음), ImportAssetFile 은 가져오는 동안 부른 스레드를 막는다, 새 에셋의 ClassName 은 다음 프레임 뒤에 채워진다.
 
 - 2단계 검증 때 에디터 4번 중 1번, 시작할 때 D3D12 DebugLayer 경고("Fence values can never be less than zero") 1줄이 났다. 까닭은 조사하지 않았다(Graphics 확인 몫).
 - 옛 이어받기 메모(긴 판, 네트워크 인계 원문 포함)는 엔진 총괄 공유 메모 폴더의 `GameFrameWorks_이어받기_2026-10-24.md` 에 있다.

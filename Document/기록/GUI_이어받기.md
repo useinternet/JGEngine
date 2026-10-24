@@ -1,12 +1,13 @@
 # GUI 이어받기 메모
 
-갱신 2026-10-24 18:41. Engine-29 는 검토 중(패치 넘김), Engine-16 은 사용자 지시를 기다린다.
+갱신 2026-10-24 18:59. Engine-29 · Engine-47 은 검토 중(넘김), Engine-16 은 사용자 지시를 기다린다.
 
 ## 지금 일
 
 | 일 | 단계 | 기다리는 상대 |
 |---|---|---|
 | 컨텐츠 브라우저 HGUI 감싸개 셋(Engine-29) | 검토 중 — 작업 폴더 `Temp/wt/cb-gui` 에서 구현 · 빌드 · 에디터 `gui.selftest` OK (10/10). 패치 `Temp/ContentBrowser/GUI.patch` 를 Editor · 엔진 총괄에 넘김. 기록 `Document/기록/GUI/Engine-29_HGUI감싸개_검증_2026-10-24.txt` | Editor — 자기 작업 폴더에 얹어 묶음 검증(Engine-31). 엔진 총괄 — 메인 적용 · 커밋 |
+| 위키 03. GUI 재검토(Engine-47) | 검토 중 — 수정안 11개 표 `Document/기록/GUI/Engine-47_03GUI_재검토_2026-10-24.md`(문서는 안 고침). 위키 고치기는 엔진 총괄이 모든 문서 결과를 모아 보고한 뒤 | 엔진 총괄 · 사용자(Q-004 묶음 보고) |
 | 디테일 패널 — 위젯 부품 바탕 손질(Engine-16) | In-Wait, 0/4. 완료 조건은 첫 적용 두 곳(Data Table Editor 열 속성 · Gameplay DevView 엔티티 값)으로 고쳐짐 | 사용자 지시(H-107) → 엔진 총괄이 알리면 `start Engine-16`, 설계도부터 |
 
 ## 끝낸 일 (10-24)
