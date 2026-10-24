@@ -4,13 +4,13 @@
 //       (AddMainMenuItem · RegisterLayoutSettings · RestoreLayoutWidgets · UpdateLayoutWidgetStates · OpenWidgetByDefault), Runtime/GUI/Menu/MenuTree.cpp
 module.exports = {
   file: 'JGEditor_05_메뉴와창복원',
-  alt: '메뉴 등록과 창 복원 — HJGEditorModule과 게임 에디터 모듈이 HGUIModule::AddMainMenuItem으로 메뉴를 등록하면 HMainMenuTree가 경로별로 넣은 순서대로 표시하고, HGUIModule은 열린 창을 실행 폴더의 imgui.ini에 클래스 이름으로 저장했다가 다음 실행 첫 프레임에 RestoreLayoutWidgets로 리플렉션 생성해 다시 열며, 씬 뷰포트 같은 기본 창은 저장된 레이아웃에서 닫혀 있으면 열지 않는다',
+  alt: '메뉴 등록과 창 복원 — HJGEditorModule과 게임 에디터 모듈이 HGUIModule::AddMainMenuItem으로 메뉴를 등록하면 HMainMenuTree가 경로별로 넣은 순서대로 표시하고, HGUIModule은 열린 창을 작업 폴더의 imgui.ini에 클래스 이름으로 저장했다가 다음 실행 첫 프레임에 RestoreLayoutWidgets로 리플렉션 생성해 다시 열며, 씬 뷰포트 같은 기본 창은 저장된 레이아웃에서 닫혀 있으면 열지 않는다',
   type: 'flow',
   w: 1000,
   h: 600,
   groups: [
     { x: 20, y: 20, w: 960, h: 200, label: '메뉴 등록 (시작 시)' },
-    { x: 20, y: 260, w: 960, h: 320, label: '열린 창 저장 · 복원 (실행 폴더 imgui.ini)' }
+    { x: 20, y: 260, w: 960, h: 320, label: '열린 창 저장 · 복원 (작업 폴더 imgui.ini)' }
   ],
   nodes: [
     { id: 'M1', x: 40, y: 60, w: 280, h: 60, color: 'blue', title: 'HJGEditorModule', lines: ['Windows 메뉴 — 에디터 창'] },

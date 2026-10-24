@@ -135,3 +135,21 @@
 | 패키지 Content 경로 · `.jgasset` 붙이기 · 텍스처 리드백 · `GetMesh` | `Core/FileIO/FileHelper.cpp:635, 791`, `Asset/AssetPath.cpp:127`, `Asset/TextureAsset.cpp:44-48`, `Asset/StaticMeshAsset.cpp:340-364` |
 | `HAudio` 함수 · 묶음 · 비활성 모드 | `Audio/Audio.h:30-57`, `Audio/AudioDefines.h:6-20` |
 | GameHost 인자 · 창 모드 · 크기 변경 뒤 맞추기 · 최소화 쉬기 | `GameHost/GameHostModule.cpp:35-75, 245-281, 320-372` |
+
+## 가 반영 — Engine-62 (2026-10-24, 보고함 Q-011 답 "가 · 나 · 다 차례로 모두 고침")
+
+위키를 직접 고쳤다. 고치기 전 사본: `Temp/Light/wiki_backup_Engine-62/`. 끊긴 링크 0, 10개 문서 모두 변경 이력 절이 있다.
+
+| 문서 | 고친 곳 | 수정안 |
+|---|---|---|
+| 00. Game UI | 0-1 뒤로가기 줄에 `OnBackAction` | UI-1 |
+| 01. 월드와 액터 | 0-2 에 `OnWorldReady` · `OnWorldUnload` | 월-1(훅만) |
+| 02. 규칙 커널 | 0-1 보드 줄에 보드 종류 None | 규-3 |
+| 03. 네트워크 | 실행 인자 줄에 `-bind=주소` | 네-1(가) — 줄을 하우투로 옮기는 것은 다(Engine-66) |
+| 05. 에셋 | JGConsole 줄: `-graphics` 여도 에셋 DB 없음 + 개요 링크 | 에-2 · 공-5 |
+| 08. GameHost 모듈 | 1절 제목 `HGameWindowSettings (창 설정)` · 번호 표 | 호-1 |
+| GameFrameWork 개요 | JGConsole 연결 순서 · 에셋 DB 없음, 에셋 DB 줄에 05 링크 | 개-1 · 공-5 |
+| 04 · 06 (+ 위 문서들) | 변경 이력 절 | 공-4 |
+
+공-5 의 나머지 둘은 고치지 않았다: "Travel 을 엔트리 액터보다 먼저"는 03 본문에 겹치는 글이 없고(그림의 차례뿐), "에디터와 GameHost 가 같은 뷰포트"는 08 이 이미 짧게 쓰고 01 로 링크한다.
+나로 남긴 것(Engine-40): 공-1 · 공-2 · 공-3, UI-2 · 3 · 4, 월-2 · 3 · 4, 규-1 · 2 · 4 · 5, 네-2, 데-1, 에-1. 다로 남긴 것(Engine-66): 시-2, 호-2, 네-1 의 옮기기.

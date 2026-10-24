@@ -3,7 +3,7 @@
 //       Backends/GUIBackend.h · DX12GUIBackend.h, Programs/JGBuildTool/Class/BuildTool.cpp(DEVELOPMENT_RUNTIME_MODULES)
 module.exports = {
   file: 'GUI_00_GUI모듈',
-  alt: 'GUI 모듈 — GUI.dll은 모듈 · 에디터 창(HGUIModule, JGWidget, JGWidgetComponent), 메뉴 · 그리기 도구(HMainMenuTree, HGUI, PGUIGrid), 백엔드(PGUIBackend, PDX12GUIBackend, 내장 Dear ImGui · ImPlot)로 나뉘며, JGEditor와 게임 에디터 모듈이 사용하고 Core와 Graphics에 의존하며, GameHost와 패키지는 GUI를 연결하지 않는다',
+  alt: 'GUI 모듈 — GUI.dll은 모듈 · 에디터 창(HGUIModule, JGWidget, JGWidgetComponent), 메뉴 · 그리기 도구(HMainMenuTree, HGUI, PGUIGrid), 백엔드(PGUIBackend, PDX12GUIBackend, 내장 Dear ImGui · ImPlot)로 나뉘며, JGEditor와 게임 에디터 모듈이 사용하고 Core와 Graphics에 의존하며, GameHost는 GUI를 연결하지 않고 GUI는 게임 모듈이 GUI에 의존할 때만 패키지에 포함된다',
   type: 'class',
   w: 1080,
   h: 1000,
@@ -31,7 +31,7 @@ module.exports = {
   nodes: [
     { id: 'U1', x: 40, y: 56, w: 300, h: 56, color: 'purple', title: 'JGEditor', lines: ['에디터 창 · 메인 메뉴 등록'] },
     { id: 'U2', x: 370, y: 56, w: 300, h: 56, color: 'purple', title: '게임 에디터 모듈', lines: ['<게임>Editor — 메뉴 · 창 등록'] },
-    { id: 'NO', x: 700, y: 50, w: 340, h: 70, color: 'white', shape: 'note', title: 'GameHost · 패키지', lines: ['GUI를 연결하지 않는다', '(JGBuildTool의 개발용 런타임 모듈)'] },
+    { id: 'NO', x: 700, y: 50, w: 340, h: 70, color: 'white', shape: 'note', title: 'GameHost · 패키지', lines: ['GUI를 연결 · 포함하지 않는다', '(게임 모듈이 GUI에 의존하면 패키지에 포함)'] },
     { id: 'IMG', x: 740, y: 680, w: 280, h: 90, color: 'gray', title: 'Dear ImGui · ImPlot', lines: ['GUI.dll 안에 내장 · 밖으로 노출 안 함', '도킹 · 멀티 뷰포트', 'imgui_impl_win32 · imgui_impl_dx12'] },
     { id: 'CORE', x: 40, y: 906, w: 320, h: 56, color: 'gray', title: 'Core', lines: ['모듈 · 리플렉션 · 스케줄 · 창 WndProc'] },
     { id: 'GFX', x: 380, y: 906, w: 320, h: 56, color: 'gray', title: 'Graphics', lines: ['DX12 장치 · 프레임 버퍼 이벤트'] },

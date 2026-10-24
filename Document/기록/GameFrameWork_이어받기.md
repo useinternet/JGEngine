@@ -1,13 +1,14 @@
 # GameFrameWork 이어받기 메모
 
-갱신: 2026-10-24 19:14 (GameFrameWork 세션)
+갱신: 2026-10-24 19:41 (GameFrameWork 세션)
 
 ## 지금
 
 | 항목 | 상태 |
 |---|---|
-| 맡은 일 | ① Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림(Editor 에 선언 · 동작 답도 보냄). 9절 위키 반영글(05 에셋 새 절 · 07 asset 줄 · 그림 원본 세 곳 · 변경 이력)은 `Document/기록/GameFrameWork/Engine-30_위키반영글_2026-10-24.md` — 총괄이 본 폴더에 넣을 때 위키에 옮긴다(19:14). ② Engine-46 위키 02. GameFrameWork 재검토 — "검토 중", 기록 `Document/기록/GameFrameWork/Engine-46_GameFrameWork문서_재검토_2026-10-24.md`(문서는 안 고침). ③ Engine-51(Graphics 의 3D 계획) GameFrameWork 몫 확인 — 19:04 답 보냄: 모두 맞음 + 덧붙임(FBX 위 축 · 단위는 파일 안 설정을 기본값으로, 법선 역전치 · 거울 감김, 머터리얼 이름 접미사, 클립은 뼈 이름 키, 시험 그룹 animation). 구현은 사용자 확인 뒤 단계별 일감. Engine-28(PNG · TGA 가져오기)은 In-Wait |
-| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "Engine-46 GameFrameWork 위키 재검토 — 검토 중" |
+| 맡은 일 | Engine-57 빛 컴포넌트(언리얼 참고) · 걷기 · 달리기 클립 확보 — 상위 3D 1단계 조명(Engine-55), 사용자 Q-010 답 "이 계획대로 조명부터" + "빛 시스템은 언리얼 참고". 작업 폴더 `Temp/wt/light-gfw`(main `9fa12e2`, BootstrapTools 끝). 코드 다 씀: `Components/LightComponent` · `DirectionalLightComponent` · `PointLightComponent`(.h/.cpp), `SelfTest/LightSelfTest.cpp`, gfw.selftest 그룹 `light`. Graphics 장면 빛 API(Engine-56) 받아 맞춤: `HSceneLight` 필드 `Type · Direction · Position · LightColor · Intensity · AttenuationRadius · bUseInverseSquaredFalloff · LightFalloffExponent`, `Intensity` = 밝기 배율(노출 · 톤매핑이 없어 lux · cd 아님) → 컴포넌트 기본 세기 1. **Graphics 패치(`Temp/wt/light-gfx`)를 기다림** — 오면 그 위에 PreBuild · 빌드 · gfw.selftest(JGConsole) · 에디터 확인 → 패치 `Temp/Light/GameFrameWork.patch` + 검증 기록 → 엔진 총괄. 기록 `Document/기록/GameFrameWork/Engine-57_빛컴포넌트_2026-10-24.md`(언리얼 표 · 단위 · 클립), 위키 반영글 `Engine-57_위키반영글_2026-10-24.md`(그림 사본 `Temp/Light/wiki_check/`). 클립: Mixamo(X Bot 뼈 그대로)인데 Adobe 로그인 필요 → 엔진 총괄에 보고함 확인받기 부탁함, 받으면 `Temp/Assets/Mixamo/Walking.fbx` · `Running.fbx` 를 assimp 로 뼈 이름 · 길이 확인. Engine-28(PNG · TGA 가져오기) In-Wait |
+| 맡은 일 2 | Engine-62 02. GameFrameWork 위키 고치기(Q-011 가) — 위키 8개 문서를 직접 고침(사본 `Temp/Light/wiki_backup_Engine-62/`), 10개 문서 변경 이력 절, 끊긴 링크 0. Document Writer 다듬기 4군데 반영 확인, 엔진 총괄에 알림 — 검토 중. 변경 이력 열 이름(게임 영향 / 게임 프로젝트 영향) 통일은 총괄 판단 기다림. 고친 곳 표: Engine-46 기록 맨 아래 "가 반영". 나(Engine-40) · 다(Engine-66) 몫은 그 표 아래 |
+| 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "세션 기다림 — Graphics 장면 빛 API(Engine-56) …" |
 | 잠금 · 빌드 · 시험 | 없음. 메인 트리는 쓰지 않았다(워크트리 `Temp/wt/cb-gfw` 에서 빌드 · 시험) |
 | Engine-30 자리 | 워크트리 `Temp/wt/cb-gfw`(c6dd99d 위, 분리 HEAD). 새 파일 `Asset/AssetFolder.h` · `.cpp` · `SelfTest/AssetFolderSelfTest.cpp`, gfw.selftest 에 그룹 `asset`. 증적 `Temp/wt/cb-gfw/Temp/verify/cb/`(jg_log · editor/run_*.png) |
 | Engine-26 자리 | 기록 `Document/기록/GameFrameWork/Engine-26_언리얼에셋가져오기_2026-10-24.md`. git 밖: 내보내기 프로젝트 · 스크립트 · 결과 `Temp/UnrealExport/`, 시험 게임 `Temp/Games/UnrealAssetTest`(Content/Unreal 31개, 캡처 Temp/verify/editor_start.png). Epic 라이선스라 저장소 · 엔진 Content 에 넣지 않음 |

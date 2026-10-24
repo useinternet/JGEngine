@@ -1,18 +1,19 @@
 # Graphics 이어받기 메모
 
-갱신: 2026-10-24 19:15 (Graphics 세션)
+갱신: 2026-10-24 19:44 (Graphics 세션)
 
 ## 지금
 
 | 항목 | 상태 |
 |---|---|
-| 맡은 일 | ① Engine-51 3D 렌더링 계획 · 코드 설계(Q-005 답 18:52 "조명 => 머터리얼 => 스켈레탈, 애니메이션 … 계획 세우고 어떻게 코드를 작성할건지 보고해"). ② Engine-45 01. Graphics 재검토(Q-004) — 끝남, 엔진 총괄에 넘김(검토 중) |
-| 단계 | 둘 다 끝남 — Engine-51 다듬은 계획 · 그림 3장, Engine-45 수정안 표를 엔진 총괄에 넘겼다(일감 검토 중) |
-| 다음 할 것 | 사용자가 Engine-51 계획을 확인하면("이 계획대로 조명부터 구현 시작") 엔진 총괄이 여는 1단계 일감으로 구현. 구현 차례: 첫날 PScene 빛 API → 빛 상수 · 합성 셰이더 → 법선 행렬 → 시험 → 문서(9절). "계획을 고쳐 다시 보고"면 고칠 점만 고쳐 다시 올린다 |
-| 기다리는 상대 | 없음(사용자 답은 엔진 총괄이 전함) |
+| 맡은 일 | 없음. 마지막 일 Engine-56 3D 1단계 조명 Graphics 몫(Q-010 답 19:24 "이 계획대로 조명부터 구현 시작" + "빛 시스템은 언리얼 참고해서 만들어줘") — 끝남, 엔진 총괄에 넘김(검토 중) |
+| Engine-56 자리 | 작업 폴더 `Temp/wt/light-gfx`(main 9fa12e2 에서, 분리 HEAD). 코드 패치 `Temp/Light/Graphics.patch`(md5 e28092561901d854638cf6323b6bf9d8) · 문서 패치 `Temp/Light/Graphics_docs.patch`(그림 06 · 07 · 08). 검증 기록 `Document/기록/Graphics/Engine-56_조명_검증_2026-10-24.md`, 위키 반영 글 `Engine-56_위키반영글_2026-10-24.md`, 증적 `Temp/Light/Graphics_verify/`, 그림 확인본 `Temp/Light/wiki_check/Graphics/` |
+| 시험 | graphics.selftest 22/22 · gfw.selftest 9/9 그룹 1,120 검사 0 실패 · 에디터 오류 0 |
+| 다음 할 것 | 엔진 총괄이 패치 적용 · 커밋 · 위키 반영. GameFrameWork 빛 컴포넌트(Engine-57)는 이 패치 위에서 빌드(필드 이름 LightColor 알림). Graphics API Reference(Engine-39)는 Core 꼴 기다림 — 장면 빛 항목 넣기를 진행 기록에 남김. 2단계 머터리얼은 1단계 보고 뒤 |
+| 기다리는 상대 | 없음 |
 | 상태 줄 | `Saved/Feedback/status/graphics.txt` = "쉬는 중 — 맡은 일 없음" |
-| 잠금 · 빌드 · 시험 | 없음 |
-| 미커밋 파일 | `Document/기록/Graphics/Engine-51_*`(계획 .md · 그림 3장 .svg · .png), `Engine-45_01Graphics_재검토_2026-10-24.md`, 이 메모. 보고함 그림 사본 `Saved/UIShots/Engine-51_Plan_*.png`(Saved 는 커밋하지 않음) |
+| 잠금 · 빌드 · 시험 | 없음(메인 트리는 쓰지 않음, 작업 폴더에서만 빌드) |
+| 미커밋 파일 | 패치 두 개(엔진 총괄이 적용), `Document/기록/Graphics/Engine-56_*` 2개, 이 메모 |
 
 ## Engine-51 요약
 

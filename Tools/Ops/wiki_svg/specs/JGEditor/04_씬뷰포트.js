@@ -4,7 +4,7 @@
 // 코드(구조 개편 뒤): Editor/JGEditor/Widgets/SceneViewport.h · .cpp, Runtime/GameFrameWork/Viewport/GameViewport.h, Runtime/GameHost/GameHostModule.cpp
 module.exports = {
   file: 'JGEditor_04_씬뷰포트',
-  alt: 'JGSceneViewport와 PGameViewport — JGSceneViewport는 OnUpdate에서 PGameViewport::Render로 월드와 게임 UI를 디스플레이 텍스처에 그리고, OnGenerateGUI에서 그 텍스처를 이미지로 표시하며, ImGui 입력을 HInputEvent로 바꿔 HandleInput에 넘기고, 게임이 받지 않은 입력은 카메라 궤도 · 줌에 쓰며, 표시 크기가 멈추면 렌더 크기를 맞추고, GameHost는 같은 PGameViewport를 창 전체로 사용한다',
+  alt: 'JGSceneViewport와 PGameViewport — JGSceneViewport는 OnUpdate에서 PGameViewport::Render로 월드와 게임 UI를 디스플레이 텍스처에 그리고, OnGenerateGUI에서 그 텍스처를 이미지로 표시하며, ImGui 입력을 HInputEvent로 바꿔 HandleInput에 넘기고, 게임이 받지 않은 오른쪽 끌기 · 휠은 궤도 모드 카메라의 궤도 · 줌에 쓰며, 표시 크기가 멈추면 렌더 크기를 맞추고, GameHost는 같은 PGameViewport를 창 전체로 사용한다',
   type: 'flow',
   w: 1140,
   h: 560,
@@ -17,7 +17,7 @@ module.exports = {
     { id: 'A1', x: 40, y: 60, w: 360, h: 60, color: 'green', title: 'OnUpdate', lines: ['매 프레임 Render 호출'] },
     { id: 'A2', x: 40, y: 160, w: 360, h: 60, color: 'green', title: 'OnGenerateGUI', lines: ['디스플레이 텍스처를 창에 맞춰 이미지로 표시'] },
     { id: 'A3', x: 40, y: 260, w: 360, h: 60, color: 'green', title: '입력 변환', lines: ['ImGui 입력 → HInputEvent(뷰포트 픽셀)'] },
-    { id: 'A4', x: 40, y: 360, w: 360, h: 60, color: 'green', title: '에디터 조작', lines: ['받지 않은 입력(대상 None) → 궤도 · 줌'] },
+    { id: 'A4', x: 40, y: 360, w: 360, h: 60, color: 'green', title: '에디터 조작', lines: ['받지 않은 오른쪽 끌기 · 휠 → 궤도 · 줌'] },
     { id: 'A5', x: 40, y: 460, w: 360, h: 60, color: 'green', title: '렌더 크기 맞춤', lines: ['표시 크기가 멈춘 뒤 Resize'] },
     { id: 'B1', x: 540, y: 60, w: 280, h: 90, color: 'blue', title: 'Render', lines: ['PWorld → PSceneRenderer', '→ 디스플레이 텍스처', '→ 게임 UI'] },
     { id: 'B2', x: 540, y: 250, w: 280, h: 90, color: 'blue', title: 'HandleInput', lines: ['게임 UI 먼저', '나머지 클릭 → 카메라 광선', '→ 컨트롤러 HandleClick'] },

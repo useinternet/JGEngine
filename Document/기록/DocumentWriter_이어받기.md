@@ -11,6 +11,12 @@
 
 | 날짜 | 일 | 결과 |
 |---|---|---|
+| 2026-10-24 | 위키 02. GameFrameWork 문장 다듬기(Engine-62) — GameFrameWork 요청 | 고친 문장만(4군데 — 00 · 01 · 03 · 개요). 전 · 후 `…/polish/JGEngine/2026-10-24_<문서>_Engine-62.md`. 확인 하나(변경 이력 열 이름 "게임 영향" / 다른 모듈 "게임 프로젝트 영향") 넘김 |
+| 2026-10-24 | 위키 05. Programs 문장 다듬기(Engine-65) — DevOps 요청 | 위키를 바로 고침(3군데). 전 · 후 `…/polish/JGEngine/2026-10-24_05. Programs_Engine-65.md`. 그림 00 설명글 고칠 문장을 DevOps 에 넘김(그리개 원본 specs/Programs/00 에서 맞춤) |
+| 2026-10-24 | 위키 04. JGEditor 문장 다듬기(Engine-64) — Editor 요청 | 위키를 바로 고침(2군데). 전 · 후 `03. 대시보드/data/polish/JGEngine/2026-10-24_04. JGEditor.md`. 확인 필요 없음 |
+| 2026-10-24 | 위키 JGEngine · 팀 구성 및 운영 문장 다듬기(Engine-59) — 엔진 총괄 요청 | 고친 곳만(1 · 5군데). 전 · 후 `…/polish/JGEngine/2026-10-24_JGEngine_Engine-59.md` · `…_JGEngine 팀 구성 및 운영_Engine-59.md`. 확인 필요 둘(GUI 패키지 포함 조건 · In-Wait → 대기 중) 넘김 |
+| 2026-10-24 | 엔진 CLAUDE.md 다듬기(Engine-52) 결과 | 사용자가 보고함 Q-013 에서 "다듬은 문장으로 바꿈"을 골라 CLAUDE.md 에 들어감(커밋 7401aeb) |
+| 2026-10-24 | 위키 03. GUI 문장 다듬기(Engine-63) — GUI 요청 · 엔진 총괄 지시 | 위키 `02. 위키/JGEngine/03. GUI/03. GUI.md` 를 바로 고침(5군데). 전 · 후 `03. 대시보드/data/polish/JGEngine/2026-10-24_03. GUI.md`. 확인 필요 없음 |
 | 2026-10-24 | 3D 렌더링 계획 · 코드 설계 보고서(Engine-51) 다듬기 — Graphics 요청 | `Document/기록/Graphics/Engine-51_3D렌더링계획_2026-10-24_다듬음.md`(원본 19:11:42 판). 12군데. 빠진 것 없음. Graphics 에 확인 셋(_Mat 뜻 · "언제" 줄 · 일정 표 일수) 넘김 |
 | 2026-10-24 | 엔진 CLAUDE.md 문장 다듬기(Engine-52, 검토 중) — 사용자 요청(프로젝트 총괄 전달) | CLAUDE.md 는 그대로. 사본 · diff · 바꾼 곳 표: `Temp/개편검토/CLAUDE_문장다듬음_2026-10-24.md` · `.diff` · `_바꾼곳.md`(바탕 008cf58 전체 — 9절 · Engine-37 줄 포함). 바꾼 곳 30 · 물을 것 7 을 엔진 총괄에 넘김 → 엔진 총괄 답(1~6 고침, 7 그대로)을 사본에 넣음. 보고함 그림 `Saved/UIShots/Engine-52_ClaudeMd_polish.png`(원본 `Temp/개편검토/Engine-52_ClaudeMd_polish_src.html`). 엔진 총괄이 보고함 Q-n 으로 묻고 답에 따라 CLAUDE.md 반영 |
 | 2026-10-24 | API Reference 계획(Engine-34) 보고함 글 다듬기 — Core 요청 | `Document/기록/Core/Engine-34_보고함_다듬음_2026-10-24.md`. 빠진 것 없음. Core 에 확인 하나(안 가 의 대가가 없음) 넘김 |
@@ -24,6 +30,7 @@
 - 위키 문장 다듬기: 고치기 전에 엔진 총괄에 한 줄 알린다. 문장만 다듬고 절은 더하거나 빼지 않는다. 머리말 · 그림 줄 · 코드 상자 · 표 이름 칸은 손대지 않는다. 사실이 틀려 보이면 고치지 않고 "확인 필요: 문서 · 줄 · 까닭"으로 알린다. 전 · 후 기록은 `03. 대시보드/data/polish/JGEngine/` 에 남긴다.
 - 보고함 선택지는 번호 · 기호만 늘어놓지 않고, 고르면 어떻게 되는지를 그 줄만 읽어도 알게 말로 쓴다(사용자 Q-004 "선택지가 뭔소리인 줄 모르겠네").
 - 위키 다듬기: CLAUDE.md 8절 위키 글 규칙은 설계 설명 문서에만 쓴다. API Reference(레퍼런스)는 9절 꼴로 주의사항 · 선언 · 사용 예시를 쓰므로 그것을 빼지 않는다.
+- 문장을 옮기거나 조건을 앞으로 빼면 뜻이 바뀔 수 있다. 10-24 03. GUI 에서 "A는 X하지 않는다 … B면 Y" 를 "B가 아니면 A는 X하지 않는다"로 바꿨더니 "B면 A가 X한다"로 읽혀 틀렸다(GUI 세션이 바로잡음). 조건 · 부정이 든 문장은 끊기만 하고, 조건문으로 바꾸지 않는다.
 - 다듬기 전에 원본을 떠 두고, 다듬은 뒤 보호 부분(머리말 · 절 제목 · 그림 줄 · 코드 상자 · 표 이름 칸 · 링크 · 인라인 코드 · 숫자 · 영문 이름)이 그대로인지 기계로 맞춰 본다.
 - 일감: `node "C:/obsidian/ProjectJG/03. 대시보드/tools/ilgam.js" <명령> … --by "Document Writer"`. 받으면 `start`, TODO마다 `todo … start/done`, 끝나면 `status … "검토 중"`. 상태 줄 · 보고에 일감 번호를 넣는다.
 - 맡은 일의 결과 파일: `Saved/Feedback/results/<요청 id>.writer.txt`.

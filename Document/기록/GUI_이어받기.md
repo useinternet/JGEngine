@@ -1,13 +1,15 @@
 # GUI 이어받기 메모
 
-갱신 2026-10-24 18:59. Engine-29 · Engine-47 은 검토 중(넘김), Engine-16 은 사용자 지시를 기다린다.
+갱신 2026-10-24 19:35. Engine-53 은 설계도 답을, Engine-63 은 Writer 다듬기를 기다린다. Engine-29 · 47 은 검토 중, Engine-16 은 사용자 지시를 기다린다.
 
 ## 지금 일
 
 | 일 | 단계 | 기다리는 상대 |
 |---|---|---|
-| 컨텐츠 브라우저 HGUI 감싸개 셋(Engine-29) | 검토 중 — 작업 폴더 `Temp/wt/cb-gui` 에서 구현 · 빌드 · 에디터 `gui.selftest` OK (10/10). 패치 `Temp/ContentBrowser/GUI.patch` 를 Editor · 엔진 총괄에 넘김. 기록 `Document/기록/GUI/Engine-29_HGUI감싸개_검증_2026-10-24.txt` | Editor — 자기 작업 폴더에 얹어 묶음 검증(Engine-31). 엔진 총괄 — 메인 적용 · 커밋 |
-| 위키 03. GUI 재검토(Engine-47) | 검토 중 — 수정안 11개 표 `Document/기록/GUI/Engine-47_03GUI_재검토_2026-10-24.md`(문서는 안 고침). 위키 고치기는 엔진 총괄이 모든 문서 결과를 모아 보고한 뒤 | 엔진 총괄 · 사용자(Q-004 묶음 보고) |
+| 메뉴로 처음 연 창 크기(Engine-53) | In-Wait — 설계도 `Document/기록/GUI/Engine-53_창처음크기_설계_2026-10-24.md`(보고함 초안 9절), 그림 `Saved/UIShots/Engine-53_WindowSize_compare.png` · `_structure.png`. 권고: 모든 창 같은 처음 크기 · 가운데(`Widget.cpp` 두 줄). 코드는 안 고침 | 엔진 총괄 보고함 올림 → 사용자 답. 답이 오면 작업 폴더에서 구현 · 확인(설계도 7절) · 위키 03. GUI 3절 한 줄 + 변경 이력 |
+| 위키 03. GUI 고치기 가(Engine-63) | In-Wait — 가 몫 위키에 넣음(0절 제공 클래스 · 패키지 조건 · 2절 내부 한 줄 · 5절 "대표 함수" · 7절 GameHost 링크 · 변경 이력 둘째 줄, 그림 00 쪽지 다시 그림). 끊긴 링크 0 | Document Writer 다듬기 → 엔진 총괄 확인. 나 몫(Reference 로 옮길 것 · 새 문서 틀 — code-doc check 틀림 17)은 GUI API Reference(Engine-41) 때 |
+| 컨텐츠 브라우저 HGUI 감싸개 셋(Engine-29) | 검토 중 — 본 폴더에 커밋됨(e536612 묶음), 위키 반영글 `Document/기록/GUI/Engine-29_위키반영글_2026-10-24.md` 은 엔진 총괄이 위키에 넣음 | 엔진 총괄 완료 처리 |
+| 위키 03. GUI 재검토(Engine-47) | 검토 중 — 수정안 14개 표 `Document/기록/GUI/Engine-47_03GUI_재검토_2026-10-24.md`(9절 기준). 가 몫은 Engine-63 으로 반영 | 엔진 총괄 · 사용자 |
 | 디테일 패널 — 위젯 부품 바탕 손질(Engine-16) | In-Wait, 0/4. 완료 조건은 첫 적용 두 곳(Data Table Editor 열 속성 · Gameplay DevView 엔티티 값)으로 고쳐짐 | 사용자 지시(H-107) → 엔진 총괄이 알리면 `start Engine-16`, 설계도부터 |
 
 ## 끝낸 일 (10-24)

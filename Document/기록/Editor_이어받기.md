@@ -1,22 +1,20 @@
 # Editor 이어받기 메모
 
-갱신 2026-10-24 19:15. 옛 메모(엔진 총괄 공유 메모 폴더의 `editor_handover.md`)를 팀 지침 5절의 새 자리로 옮긴 것.
+갱신 2026-10-24 19:30. 옛 메모(엔진 총괄 공유 메모 폴더의 `editor_handover.md`)를 팀 지침 5절의 새 자리로 옮긴 것.
 
 ## 지금 일
 
 | 일 | 단계 | 기다리는 상대 |
 |---|---|---|
-| Engine-31 컨텐츠 브라우저 — JGContentBrowser 창(시안 A) | 검토 중 — 세 몫 묶음 검증 끝. 묶음 패치 `Temp/ContentBrowser/ContentBrowser_all.patch`, 검증 기록 `Document/기록/Editor/Engine-31_컨텐츠브라우저_검증_2026-10-24.md` | 엔진 총괄 — 본 폴더 적용 · PreBuild · 커밋 |
-| Engine-53 메뉴로 처음 연 창이 아주 작게 뜸(새로 찾은 일) | 할 일 — 엔진 총괄 앞으로 만듦(GUI 몫으로 보임) | 엔진 총괄 — 배정 |
-| Engine-48 위키 04. JGEditor 재검토(읽기만, 사용자 Q-004 답) | 검토 중 — 수정안 8줄 `Document/기록/Editor/Engine-48_04JGEditor_재검토_2026-10-24.md`. 위키는 고치지 않았다 | 엔진 총괄 — 수정안 반영 여부 |
+| Engine-64 위키 04. JGEditor 고치기 — 보고함 Q-011 가 몫 + 컨텐츠 브라우저 반영 | 검토 중 — Document Writer 다듬기 끝. 위키를 직접 고침(출처 · 메뉴 표 등록 순서 + Content Browser 줄 · 쓰는 API 문단 · 게임용 공개 API 없음(03. GUI 링크) · 궤도 조건 · imgui.ini 작업 폴더 · 복원 조건 · 변경 이력). 그림 00 · 03 · 04 · 05 다시 그림(6장 점검 통과, sync_alt 0, 링크 5 · 그림 6 있음). 고치기 전 사본은 세션 scratchpad `04_JGEditor_before.md` | 엔진 총괄 — 확인 · 그림 원본 커밋 · Engine-25 닫기 |
+| Engine-48 위키 04. JGEditor 재검토 | 검토 중 — 수정안 8줄 중 가 몫(1 · 2 · 3 · 4 · 6 · 8)은 Engine-64 로 넣음. 나 몫으로 남김: 5(GUI Reference 안내 — Reference 가 생긴 뒤 링크) · 7(메뉴 표 "선언" 열) | 엔진 총괄 |
 
-Engine-31 기록 끝에 "04. JGEditor 위키 갱신할 곳" 표를 더했다(엔진 총괄 요청, 패치 적용 뒤에 고칠 곳).
+- 컨텐츠 브라우저 세 몫(Engine-29 GUI · Engine-30 GameFrameWork · Engine-31 Editor)은 엔진 총괄이 본 폴더에 넣었다(커밋 e536612). 세 일감은 완료로 닫혔다.
+  - 엔진 총괄이 본 폴더에서 확인한 것: 빌드 오류 0, gfw.selftest 1,120 검사 0 실패, console.selftest 64/64, 에디터 종료 0.
+- 검증 기록: `Document/기록/Editor/Engine-31_컨텐츠브라우저_검증_2026-10-24.md`(e536612 에 들어감).
+- Engine-53(메뉴로 처음 연 창이 아주 작게 뜸, 새로 찾은 일)은 JGWidget 몫이라 엔진 총괄이 GUI 에 배정했다.
 
-상위 일감은 Engine-22(사용자 지시 "컨텐츠 브라우저 만들기 ( 언리얼 레퍼런스 ) …") → Engine-25 구현이다. 설계는 Q-002 에서 시안 A 로 확인받았다(Engine-24).
-- Engine-29 GUI 감싸개 · Engine-30 GameFrameWork 함수는 각 세션 패치(`Temp/ContentBrowser/GUI.patch` · `GameFrameWork.patch`)를 그대로 얹었다.
-- Editor 몫만 따로 `Temp/ContentBrowser/Editor.patch` 에 있다.
-
-상태 줄 `Saved/Feedback/status/editor.txt` = "Engine-31 … — 검토 중 …". 잠금 · 빌드 · 시험 진행 중인 것 없음(메인 트리는 쓰지 않음).
+상태 줄 `Saved/Feedback/status/editor.txt` = "쉬는 중 — 맡은 일 없음 (Engine-64 검토 중 …)". 잠금 · 빌드 · 시험 진행 중인 것 없음(메인 트리는 쓰지 않음).
 
 작업 폴더 `Temp/wt/content-browser`(main c6dd99d 에서, detached). 빌드된 Bin 과 시험 프로젝트 사본이 들어 있다. 지울지는 엔진 총괄이 정한다.
 - 시험 프로젝트 사본 `Temp/wt/content-browser/Temp/Games/UnrealAssetTest`:
@@ -27,9 +25,9 @@ Engine-31 기록 끝에 "04. JGEditor 위키 갱신할 곳" 표를 더했다(엔
 - 검증 원본: 캡처는 `…/Temp/verify/shots/`, 빌드 · 시험 로그는 `…/Temp/verify/`.
 
 미커밋(엔진 총괄 묶음 커밋 몫):
-- 이 메모, `Document/구현현황.md` 의 "지금 하는 일" 한 줄.
-- 검증 기록 `Document/기록/Editor/Engine-31_컨텐츠브라우저_검증_2026-10-24.md`.
-- 앞 일의 문서 셋(Engine-23 조사 · Engine-24 설계 · 다듬은 보고함 글)은 이미 커밋돼 있다(c6dd99d).
+- 이 메모.
+- `Document/기록/Editor/Engine-31_위키반영글_2026-10-24.md`. Engine-48 재검토 기록은 이미 커밋돼 있다(9fa12e2).
+- 그림 원본 넷: `Tools/Ops/wiki_svg/specs/JGEditor/00_JGEditor모듈.js` · `03_에디터창구조.js` · `04_씬뷰포트.js` · `05_메뉴와창복원.js`.
 
 ## 10-24 한 일
 
