@@ -22,7 +22,7 @@ Core 모듈의 공개 C++ API다. 게임 모듈은 `Core.h`와 아래 헤더를 
 
 **개요** — 파일 범위 전역 변수로 선언하는 콘솔 명령이다. 선언한 모듈이 연결되면 등록되고, 모듈이 내려가면 해제된다. 에디터 DevConsole 창과 명령줄 도구 JGConsole이 같은 명령을 실행하므로, 게임 모듈의 시험 · 점검 명령을 이것으로 만든다.
 
-**선언** — `#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"`. 핸들러에서 `JG_LOG`를 쓰려면 `Core.h`도 include한다(이 헤더는 로그를 포함하지 않는다).
+**선언** — 헤더 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandGlobalSystem.h`, `#include "ConsoleCommand/ConsoleCommandGlobalSystem.h"`. 핸들러에서 `JG_LOG`를 쓰려면 `Core.h`도 include한다(이 헤더는 로그를 포함하지 않는다).
 
 ```cpp
 class HAutoConsoleCommand
@@ -100,7 +100,7 @@ static HAutoConsoleCommand GreetCommand(
 
 **개요** — 콘솔 명령 한 줄을 나눈 인자다. `HAutoConsoleCommand`의 핸들러가 받는다. 문법은 `<이름> <위치 인자>... -플래그 -키=값 "따옴표 값"`이다.
 
-**선언** — `#include "ConsoleCommand/ConsoleCommandArgs.h"`(`ConsoleCommandGlobalSystem.h`가 포함한다).
+**선언** — 헤더 `Source/Runtime/Core/ConsoleCommand/ConsoleCommandArgs.h`, `#include "ConsoleCommand/ConsoleCommandArgs.h"`(`ConsoleCommandGlobalSystem.h`가 포함한다).
 
 ```cpp
 class HConsoleCommandArgs

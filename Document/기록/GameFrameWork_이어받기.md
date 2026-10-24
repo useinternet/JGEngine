@@ -1,12 +1,12 @@
 # GameFrameWork 이어받기 메모
 
-갱신: 2026-10-24 19:02 (GameFrameWork 세션)
+갱신: 2026-10-24 19:14 (GameFrameWork 세션)
 
 ## 지금
 
 | 항목 | 상태 |
 |---|---|
-| 맡은 일 | ① Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림(Editor 에 선언 · 동작 답도 보냄). ② Engine-46 위키 02. GameFrameWork 재검토 — "검토 중", 기록 `Document/기록/GameFrameWork/Engine-46_GameFrameWork문서_재검토_2026-10-24.md`(문서는 안 고침). ③ Engine-51(Graphics 의 3D 계획) GameFrameWork 몫 확인 — 19:04 답 보냄: 모두 맞음 + 덧붙임(FBX 위 축 · 단위는 파일 안 설정을 기본값으로, 법선 역전치 · 거울 감김, 머터리얼 이름 접미사, 클립은 뼈 이름 키, 시험 그룹 animation). 구현은 사용자 확인 뒤 단계별 일감. Engine-28(PNG · TGA 가져오기)은 In-Wait |
+| 맡은 일 | ① Engine-30 컨텐츠 브라우저용 ListAssetFolder · ImportAssetFile — "검토 중". 패치 `Temp/ContentBrowser/GameFrameWork.patch` 를 Editor 세션과 엔진 총괄에 알림(Editor 에 선언 · 동작 답도 보냄). 9절 위키 반영글(05 에셋 새 절 · 07 asset 줄 · 그림 원본 세 곳 · 변경 이력)은 `Document/기록/GameFrameWork/Engine-30_위키반영글_2026-10-24.md` — 총괄이 본 폴더에 넣을 때 위키에 옮긴다(19:14). ② Engine-46 위키 02. GameFrameWork 재검토 — "검토 중", 기록 `Document/기록/GameFrameWork/Engine-46_GameFrameWork문서_재검토_2026-10-24.md`(문서는 안 고침). ③ Engine-51(Graphics 의 3D 계획) GameFrameWork 몫 확인 — 19:04 답 보냄: 모두 맞음 + 덧붙임(FBX 위 축 · 단위는 파일 안 설정을 기본값으로, 법선 역전치 · 거울 감김, 머터리얼 이름 접미사, 클립은 뼈 이름 키, 시험 그룹 animation). 구현은 사용자 확인 뒤 단계별 일감. Engine-28(PNG · TGA 가져오기)은 In-Wait |
 | 상태 줄 | `Saved/Feedback/status/gameframework.txt` = "Engine-46 GameFrameWork 위키 재검토 — 검토 중" |
 | 잠금 · 빌드 · 시험 | 없음. 메인 트리는 쓰지 않았다(워크트리 `Temp/wt/cb-gfw` 에서 빌드 · 시험) |
 | Engine-30 자리 | 워크트리 `Temp/wt/cb-gfw`(c6dd99d 위, 분리 HEAD). 새 파일 `Asset/AssetFolder.h` · `.cpp` · `SelfTest/AssetFolderSelfTest.cpp`, gfw.selftest 에 그룹 `asset`. 증적 `Temp/wt/cb-gfw/Temp/verify/cb/`(jg_log · editor/run_*.png) |

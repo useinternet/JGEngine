@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 520" width="1240" height="520" font-family="'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif" role="img" aria-label="2단계 머터리얼 — 지금은 머터리얼을 저장하지 않고 쓰는 쪽이 HLSL 조각을 써서 머터리얼마다 컴파일하며, 바뀐 뒤에는 JGMaterial 에셋이 표준 Lit 머터리얼을 만들어 강참조로 들고 메시 슬롯에 경로로 저장되며, 같은 셰이더는 캐시로 한 번만 컴파일하고 텍스처는 sRGB · 밉을 쓴다">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#ffffff" stroke="#888780" stroke-width="1.2" stroke-linejoin="round"/></marker>
+<marker id="diamond" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#ffffff" stroke="#888780" stroke-width="1.2"/></marker>
+<marker id="diamondFill" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#888780"/></marker>
+</defs>
+<rect x="0" y="0" width="1240" height="520" fill="#ffffff"/>
+<rect x="20" y="20" width="520" height="440" rx="12" fill="#FAF9F6" stroke="#D3D1C7" stroke-width="1"/>
+<rect x="580" y="20" width="640" height="440" rx="12" fill="#FAF9F6" stroke="#D3D1C7" stroke-width="1"/>
+<path d="M280,128 L280,168" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="288" y="152.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">저장</text>
+<path d="M280,232 L280,272" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="288" y="256.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">약참조</text>
+<path d="M880,96 L940,96" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="910" y="88.0" text-anchor="middle" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">만듦</text>
+<path d="M740,128 L740,168" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="748" y="152.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">저장</text>
+<path d="M880,190 L910,190 L910,116 L940,116" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1070,128 L1070,168" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1078" y="152.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">생성 · 강참조</text>
+<path d="M1070,232 L1070,272" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1078" y="256.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">컴파일</text>
+<rect x="60" y="64" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="93.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">JGFBXAssetImporter</text>
+<text x="280" y="110.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">노드 변환 · 머터리얼 번호를 버림</text>
+<rect x="60" y="168" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="197.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">JGStaticMesh</text>
+<text x="280" y="214.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">서브메시 머터리얼 = 약참조 · 저장 안 함</text>
+<rect x="60" y="272" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="301.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">IRawMaterial</text>
+<text x="280" y="318.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">쓰는 쪽이 HLSL 조각 · 머터리얼마다 컴파일</text>
+<rect x="60" y="376" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="405.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">IRawTexture</text>
+<text x="280" y="422.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">R8G8B8A8_Unorm(선형으로 읽음) · 밉 1단계</text>
+<rect x="600" y="64" width="280" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="85.5" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">JGFBXAssetImporter</text>
+<text x="740" y="102" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 노드 변환 · 축 · 단위</text>
+<text x="740" y="118.5" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 머터리얼 번호 · 텍스처 경로</text>
+<rect x="940" y="64" width="260" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="1070" y="85.5" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">JGMaterial 에셋</text>
+<text x="1070" y="102" text-anchor="middle" font-size="11.5" fill="#534AB7">기본색 · 거칠기 · 금속성</text>
+<text x="1070" y="118.5" text-anchor="middle" font-size="11.5" fill="#534AB7">색 텍스처 경로 · 양면</text>
+<rect x="600" y="168" width="280" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="197.75" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">JGStaticMesh</text>
+<text x="740" y="214.25" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 슬롯마다 머터리얼 경로 저장</text>
+<rect x="940" y="168" width="260" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="1070" y="197.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">CreateStandardLitMaterial</text>
+<text x="1070" y="214.25" text-anchor="middle" font-size="11.5" fill="#534AB7">Graphics · 표준 Lit 머터리얼</text>
+<rect x="600" y="272" width="280" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="301.75" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">IRawTexture</text>
+<text x="740" y="318.25" text-anchor="middle" font-size="11.5" fill="#993C1D">+ R8G8B8A8_Unorm_sRGB · 밉</text>
+<rect x="940" y="272" width="260" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="1070" y="301.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">셰이더 캐시</text>
+<text x="1070" y="318.25" text-anchor="middle" font-size="11.5" fill="#534AB7">같은 코드는 한 번만 컴파일</text>
+<rect x="600" y="376" width="280" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="405.75" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">IRawMaterial · Draw</text>
+<text x="740" y="422.25" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 양면(컬링 끔)</text>
+<rect x="940" y="376" width="260" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="1070" y="405.75" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">합성 패스 셰이더</text>
+<text x="1070" y="422.25" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 거칠기 · 금속성 반영</text>
+<path d="M28,470 H1208 L1220,482 V502 Q1220,510 1212,510 H28 Q20,510 20,502 V478 Q20,470 28,470 Z" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/><path d="M1208,470 V482 H1220" fill="none" stroke="#B4B2A9" stroke-width="1"/>
+<text x="620" y="495.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">회색 그대로 · 주황 고침 · 보라 새로 · → 호출 · 데이터</text>
+<text x="34" y="41" text-anchor="start" font-size="13" font-weight="600" fill="#2C2C2A" stroke="#FAF9F6" stroke-width="5" stroke-linejoin="round" paint-order="stroke">지금</text>
+<text x="594" y="41" text-anchor="start" font-size="13" font-weight="600" fill="#2C2C2A" stroke="#FAF9F6" stroke-width="5" stroke-linejoin="round" paint-order="stroke">바뀐 뒤 (2단계 머터리얼)</text>
+</svg>

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 530" width="1240" height="530" font-family="'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif" role="img" aria-label="3단계 스켈레탈 · 애니메이션 — 지금은 FBX 뼈 읽기 일부만 있고 저장 · 재생 · 스키닝이 없으며, 바뀐 뒤에는 FBX 가져오기가 JGSkeletalMesh · JGAnimationClip 에셋을 저장하고 JGSkeletalMeshComponent 가 재생 · 블렌드로 스킨 행렬을 계산해 PScene 에 넘기면 PSkeletalMesh 와 셰이더 템플릿의 스키닝이 정점을 변환한다">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="open-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M2,1 L8,5 L2,9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#ffffff" stroke="#888780" stroke-width="1.2" stroke-linejoin="round"/></marker>
+<marker id="diamond" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#ffffff" stroke="#888780" stroke-width="1.2"/></marker>
+<marker id="diamondFill" viewBox="0 0 16 10" refX="15.5" refY="5" markerWidth="14" markerHeight="9" orient="auto-start-reverse"><path d="M0.5,5 L8,0.5 L15.5,5 L8,9.5 z" fill="#888780"/></marker>
+</defs>
+<rect x="0" y="0" width="1240" height="530" fill="#ffffff"/>
+<rect x="20" y="20" width="520" height="450" rx="12" fill="#FAF9F6" stroke="#D3D1C7" stroke-width="1"/>
+<rect x="580" y="20" width="640" height="450" rx="12" fill="#FAF9F6" stroke="#D3D1C7" stroke-width="1"/>
+<path d="M740,136 L740,176" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="748" y="160.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">저장</text>
+<path d="M880,100 L1070,100 L1070,176" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1078" y="144.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">저장</text>
+<path d="M740,240 L740,280" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="748" y="264.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">메시</text>
+<path d="M1070,240 L1070,280" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1078" y="264.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">클립</text>
+<path d="M740,344 L740,384" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="748" y="368.0" text-anchor="start" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">뼈 행렬</text>
+<path d="M880,416 L940,416" fill="none" stroke="#888780" stroke-width="1.2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="910" y="408.0" text-anchor="middle" font-size="11" fill="#5F5E5A" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" paint-order="stroke">그리기</text>
+<rect x="60" y="64" width="440" height="72" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="89.5" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">JGFBXAssetImporter</text>
+<text x="280" y="106" text-anchor="middle" font-size="11.5" fill="#5F5E5A">뼈 가중치 · 오프셋 · 뼈대 읽기 일부</text>
+<text x="280" y="122.5" text-anchor="middle" font-size="11.5" fill="#5F5E5A">저장 없음 · 애니메이션 not support</text>
+<rect x="60" y="176" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="205.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">HBoneVertex · HBoneOffsetData</text>
+<text x="280" y="222.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">직렬화용 · GPU 에 올리지 않음</text>
+<rect x="60" y="280" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="309.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">PStaticMesh</text>
+<text x="280" y="326.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">정적 정점(HVertexData)만</text>
+<rect x="60" y="384" width="440" height="64" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+<text x="280" y="413.75" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A">셰이더 템플릿</text>
+<text x="280" y="430.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">뼈 변환 없음</text>
+<rect x="600" y="64" width="280" height="72" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="89.5" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">JGFBXAssetImporter</text>
+<text x="740" y="106" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 가중치 정규화 · 애니메이션 읽기</text>
+<text x="740" y="122.5" text-anchor="middle" font-size="11.5" fill="#993C1D">+ 스켈레탈 · 클립 저장</text>
+<rect x="600" y="176" width="280" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="740" y="205.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">JGSkeletalMesh 에셋</text>
+<text x="740" y="222.25" text-anchor="middle" font-size="11.5" fill="#534AB7">스킨 정점 · 스켈레톤</text>
+<rect x="940" y="176" width="260" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="1070" y="205.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">JGAnimationClip 에셋</text>
+<text x="1070" y="222.25" text-anchor="middle" font-size="11.5" fill="#534AB7">뼈마다 위치 · 회전 · 크기 키</text>
+<rect x="600" y="280" width="600" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="900" y="309.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">JGSkeletalMeshComponent</text>
+<text x="900" y="326.25" text-anchor="middle" font-size="11.5" fill="#534AB7">재생 · 블렌드 → 전역 포즈 → 스킨 행렬(전역 × 오프셋)</text>
+<rect x="600" y="384" width="280" height="64" rx="8" fill="#FAECE7" stroke="#F0997B" stroke-width="1"/>
+<text x="740" y="413.75" text-anchor="middle" font-size="13" font-weight="600" fill="#712B13">PScene</text>
+<text x="740" y="430.25" text-anchor="middle" font-size="11.5" fill="#993C1D">+ SetMeshBoneMatrices</text>
+<rect x="940" y="384" width="260" height="64" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="1"/>
+<text x="1070" y="413.75" text-anchor="middle" font-size="13" font-weight="600" fill="#3C3489">PSkeletalMesh · 템플릿</text>
+<text x="1070" y="430.25" text-anchor="middle" font-size="11.5" fill="#534AB7">스킨 정점 · 뼈 상수 b4</text>
+<path d="M28,480 H1208 L1220,492 V512 Q1220,520 1212,520 H28 Q20,520 20,512 V488 Q20,480 28,480 Z" fill="#FFFFFF" stroke="#B4B2A9" stroke-width="1"/><path d="M1208,480 V492 H1220" fill="none" stroke="#B4B2A9" stroke-width="1"/>
+<text x="620" y="505.25" text-anchor="middle" font-size="11.5" fill="#5F5E5A">회색 그대로 · 주황 고침 · 보라 새로 · → 호출 · 데이터</text>
+<text x="34" y="41" text-anchor="start" font-size="13" font-weight="600" fill="#2C2C2A" stroke="#FAF9F6" stroke-width="5" stroke-linejoin="round" paint-order="stroke">지금</text>
+<text x="594" y="41" text-anchor="start" font-size="13" font-weight="600" fill="#2C2C2A" stroke="#FAF9F6" stroke-width="5" stroke-linejoin="round" paint-order="stroke">바뀐 뒤 (3단계 스켈레탈 · 애니메이션)</text>
+</svg>
