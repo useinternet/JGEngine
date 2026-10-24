@@ -15,7 +15,7 @@ module.exports = {
   ],
   nodes: [
     { id: 'O1', x: 40, y: 30, w: 250, h: 56, color: 'gray', title: 'PSceneRenderer', lines: ['메시 · 화면 그리기'] },
-    { id: 'O2', x: 320, y: 30, w: 300, h: 56, color: 'gray', title: 'PGameUIRenderer', lines: ['GameFrameWorks 게임 UI · 2D 그리기'] },
+    { id: 'O2', x: 320, y: 30, w: 300, h: 56, color: 'gray', title: 'PGameUIRenderer', lines: ['GameFrameWork 게임 UI · 2D 그리기'] },
     { id: 'KEY', x: 660, y: 30, w: 340, h: 90, color: 'white', shape: 'note', title: '범례', lines: ['—▷ 상속 · → 호출 · 기록', '- - → 인자', '+ public · - private'] },
     { id: 'GCL', x: 700, y: 300, w: 300, h: 56, color: 'gray', title: 'PGraphicsCommandList', lines: ['현재 프레임의 커맨드 리스트'] }
   ],

@@ -8,14 +8,14 @@ module.exports = {
   h: 600,
   classes: [
     { id: 'HFH', x: 40, y: 30, w: 420, name: 'HFileHelper', stereo: '파일 · 경로 도우미 · 정적 함수', color: 'blue', members: ['+ReadAllText() · ReadAllBytes()', '+WriteAllText() · WriteAllTextAtomic()', '+Exists() · CreateDirectory() · FileListInDirectory()', '+CombinePath() · AbsolutePath() · NormalizePath()', '+EngineDirectory() · ProjectDirectory()', '+EngineContentDirectory() · GameContentDirectory()', '+SavedDirectory() · EngineShaderDirectory()'] },
-    { id: 'GC', x: 540, y: 30, w: 440, name: 'GCoreSystem', stereo: '관리자', color: 'green', members: ['+Create()  // 엔진 · 프로젝트 루트 결정'] },
+    { id: 'GC', x: 540, y: 30, w: 440, name: 'GCoreSystem', stereo: '전역 시스템 보관 · 단일 객체', color: 'green', members: ['+Create()  // 엔진 · 프로젝트 루트 결정'] },
     { id: 'GV', x: 540, y: 150, w: 440, name: 'HCoreSystemGlobalValues', stereo: '모든 DLL이 공유하는 전역 값', color: 'green', members: ['EngineDirectory · ProjectDirectory', 'ProjectName · bProjectMode', 'PackageLaunchModule · PackageRuntimeModules'] },
     { id: 'HPD', x: 540, y: 320, w: 210, name: 'HProjectDescriptor', stereo: '.jgproject', color: 'purple', members: ['Name · EngineRoot', 'GameModules · EditorModules', '+Load() · ResolveEngineRoot()'] },
     { id: 'HPK', x: 770, y: 320, w: 210, name: 'HPackageDescriptor', stereo: 'JGPackage.json', color: 'purple', members: ['Name · Version · LaunchModule', 'RuntimeModules · GameModules', '+Load() · Save()'] },
     { id: 'IJS', x: 540, y: 490, w: 440, name: 'IJsonable', stereo: 'JSON 직렬화 인터페이스', color: 'orange', members: ['+WriteJson() · ReadJson()  // PJson · PJsonData(rapidjson 래퍼)'] }
   ],
   nodes: [
-    { id: 'USR', x: 40, y: 290, w: 420, h: 80, color: 'gray', title: '토큰 경로를 쓰는 모듈', lines: ['Asset(HAssetPath) · Audio(HAudioEngine)', '/JGEngine/ · /JGGame/ → Content 디렉터리'] },
+    { id: 'USR', x: 40, y: 290, w: 420, h: 80, color: 'gray', title: '토큰 경로를 쓰는 모듈', lines: ['GameFrameWork(HAssetPath · HAudioEngine)', '/JGEngine/ · /JGGame/ → Content 디렉터리'] },
     { id: 'KEY', x: 40, y: 430, w: 420, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 보관 · —▷ 상속 · → 호출 · 조회 · - - → 값 채움', '+ public · - private'] }
   ],
   edges: [

@@ -4,7 +4,7 @@ const TRUNK = 650;
 const derived = [
   { id: 'ED', x: 430, y: 230, name: 'HJGEditorModule', stereo: '실행 모듈 · 에디터' },
   { id: 'GH', x: 670, y: 230, name: 'HGameHostModule', stereo: '실행 모듈 · 게임' },
-  { id: 'EM', x: 430, y: 320, name: '엔진 모듈 클래스', stereo: 'Graphics, GUI, Asset 등' },
+  { id: 'EM', x: 430, y: 320, name: '엔진 모듈 클래스', stereo: 'Graphics · GUI · GameFrameWork' },
   { id: 'GM', x: 670, y: 320, name: '게임 모듈 클래스', stereo: '.jgproject GameModules' }
 ].map(c => Object.assign({ w: 200, color: 'purple' }, c));
 

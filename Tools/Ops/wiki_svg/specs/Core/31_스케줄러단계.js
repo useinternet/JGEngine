@@ -1,9 +1,9 @@
 // 0-2. GScheduleGlobalSystem (스케줄러) — 프레임 단계 순서와 단계마다 작업을 등록하는 모듈, 작업 스레드
 // 코드: Core/Thread/MainThreadExecutionOrder.h, Core/Thread/Scheduler.h/.cpp, Graphics/JGGraphics.cpp, GUI/Backends/DX12GUIBackend.cpp,
-//       GUI/GUIModule.cpp, GameFrameWorks/Core/GameFrameWorksModule.cpp, GameHost/GameHostModule.cpp, Core/Platform/Windows/WindowsJWindow.cpp
+//       GUI/GUIModule.cpp, GameFrameWork/Core/GameFrameWorkModule.cpp, GameHost/GameHostModule.cpp, Core/Platform/Windows/WindowsJWindow.cpp
 module.exports = {
   file: 'Core_31_스케줄러단계',
-  alt: 'GScheduleGlobalSystem (스케줄러) — GScheduleGlobalSystem은 GraphicsBegin · Begin · Update · End · GraphicsEnd · UpdateWindow 단계 순서로 메인 스레드 작업을 실행하고, Graphics · GUI · GameFrameWorks · GameHost · 창이 각 단계에 작업을 등록하며, ScheduleAsync는 작업을 작업 스레드(PThread)에 넣는다',
+  alt: 'GScheduleGlobalSystem (스케줄러) — GScheduleGlobalSystem은 GraphicsBegin · Begin · Update · End · GraphicsEnd · UpdateWindow 단계 순서로 메인 스레드 작업을 실행하고, Graphics · GUI · GameFrameWork · GameHost · 창이 각 단계에 작업을 등록하며, ScheduleAsync는 작업을 작업 스레드(PThread)에 넣는다',
   type: 'class',
   w: 900,
   h: 600,
@@ -22,7 +22,7 @@ module.exports = {
     { id: 'GE', x: 330, y: 316, w: 220, h: 44, color: 'blue', title: 'GraphicsEnd' },
     { id: 'UW', x: 330, y: 380, w: 220, h: 44, color: 'blue', title: 'UpdateWindow' },
     { id: 'M1', x: 650, y: 57, w: 230, h: 50, color: 'purple', title: 'Graphics · GUI 백엔드', lines: ['BeginFrame · NewFrame'] },
-    { id: 'M3', x: 650, y: 185, w: 230, h: 50, color: 'purple', title: 'GUI · GameFrameWorks', lines: ['UpdateWidgets · tick'] },
+    { id: 'M3', x: 650, y: 185, w: 230, h: 50, color: 'purple', title: 'GUI · GameFrameWork', lines: ['UpdateWidgets · tick'] },
     { id: 'M4', x: 650, y: 249, w: 230, h: 50, color: 'purple', title: 'GameHost', lines: ['renderFrame'] },
     { id: 'M5', x: 650, y: 313, w: 230, h: 50, color: 'purple', title: 'Graphics', lines: ['EndFrame'] },
     { id: 'M6', x: 650, y: 377, w: 230, h: 50, color: 'purple', title: 'PWindowsJWindow', lines: ['창 메시지 처리'] }

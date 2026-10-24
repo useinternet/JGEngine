@@ -1,23 +1,26 @@
 // 위키 문서 목록 — 그림 원본 폴더 specs/<key>/ 와 위키 문서를 잇는다.
 // 그림은 문서와 같은 폴더의 그림/ 에 <file>.svg 로 쓰고, 문서에서는 ![설명](그림/<file>.svg) 로 넣는다.
-// <file> 이름은 "문서키_번호_내용"(빈칸 없이), 예: Core_06_모듈연결, JGEngine구조도_00_모듈의존
+// <file> 이름은 "문서키_번호_내용"(빈칸 없이), 예: Core_06_모듈연결, JGEngine전체구조_00_모듈계층
 'use strict';
 const W = 'C:/obsidian/ProjectJG/02. 위키/JGEngine';
 const M = W + '/JGEngine Module';
 module.exports = {
+  JGEngine전체구조: W + '/JGEngine 전체 구조.md',
+  JGEngine프로젝트구성도: W + '/JGEngine 프로젝트 구성도.md',
+  JGEngine팀구성및운영: W + '/JGEngine 팀 구성 및 운영.md',
   Core: M + '/00.Core.md',
-  JGEngine구조도: W + '/JGEngine 구조도.md',
-  JGEngine빌드와실행: W + '/JGEngine 빌드와 실행.md',
-  JGEngine팀운영: W + '/JGEngine 팀 운영.md',
-  AI: M + '/AI.md',
-  Asset: M + '/Asset.md',
-  Audio: M + '/Audio.md',
-  Devkit: M + '/Devkit.md',
-  GUI: M + '/GUI.md',
-  GameFrameWorks: M + '/GameFrameWorks.md',
-  GameHost: M + '/GameHost.md',
   Graphics: M + '/01.Graphics.md',
-  JGEditor: M + '/JGEditor와 도구 창.md',
-  Server: M + '/네트워크(Server).md',
-  엔진프로그램: M + '/엔진 프로그램.md'
+  GameFrameWork: M + '/02.GameFrameWork.md',
+  GameFrameWork_World: M + '/GameFrameWork 월드와 액터.md',
+  GameFrameWork_GameMaster: M + '/GameFrameWork 규칙 커널(GameMaster).md',
+  GameFrameWork_Network: M + '/GameFrameWork 네트워크.md',
+  GameFrameWork_GameUI: M + '/GameFrameWork 게임 UI.md',
+  GameFrameWork_DataTable: M + '/GameFrameWork 데이터 테이블.md',
+  GameFrameWork_Asset: M + '/GameFrameWork 에셋.md',
+  GameFrameWork_Audio: M + '/GameFrameWork 오디오.md',
+  GameFrameWork_SelfTest: M + '/GameFrameWork 자체 시험.md',
+  GameFrameWork_GameHost: M + '/GameHost 모듈.md',
+  GUI: M + '/03.GUI.md',
+  JGEditor: M + '/04.JGEditor.md',
+  Programs: M + '/05.Programs.md'
 };

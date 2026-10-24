@@ -1,32 +1,34 @@
-// 7-1. JGStaticMesh와 JGTexture — 에셋(JGAsset, 직렬화)과 렌더용 GPU 리소스(PStaticMesh · IRawTexture)의 분리, FBX 임포터가 두 에셋을 생성
-// 코드: Classes/StaticMesh.h/.cpp(JGStaticMesh · HStaticSubMesh · PStaticMesh · HRenderSubMesh), Classes/Texture.h/.cpp(JGTexture), Importers/FBXAssetImporter.h/.cpp, Asset/Asset.h(JGAsset) · AssetImporter.h
+// 7-1. PStaticMesh와 HRenderSubMesh — 렌더 메시(IMesh 구현)와 GPU 텍스처. CPU 사본 · 직렬화는 GameFrameWork 의 메시 · 텍스처 에셋이 맡고, 에셋이 이 GPU 자원을 생성한다
+// 2026-10-24 모듈 정리(H-077 B) 뒤 다시 그림: 옛 그림(JGAsset · JGStaticMesh · JGTexture · FBX 가져오기)은 GameFrameWork 문서로 넘김
+// 코드: Classes/StaticMesh.h/.cpp(PStaticMesh · HRenderSubMesh), Classes/Mesh.h(IMesh), Classes/Texture.h(IRawTexture), JGGraphicsAPI.h(CreateRawTexture · ReadbackTextureImmediate),
+//       GameFrameWork/Asset/StaticMeshAsset.cpp(JGStaticMesh::GetMesh → SetSubMeshes), GameFrameWork/Asset/TextureAsset.cpp(JGTexture)
 module.exports = {
   file: 'Graphics_09_메시텍스처에셋',
-  alt: 'JGStaticMesh와 JGTexture — 두 에셋은 JGAsset을 상속해 JSON 형식의 .jgasset으로 저장되고, JGStaticMesh는 서브메시(HStaticSubMesh)마다 CPU 사본과 GPU 버퍼를 보관하며 GetMesh()로 렌더 메시 PStaticMesh를 생성하고, JGTexture는 CPU 사본 없이 GPU 텍스처 IRawTexture를 소유해 저장 시 PJGGraphicsAPI로 리드백하며, JGFBXAssetImporter가 FBX 파일에서 두 에셋을 생성한다',
+  alt: 'PStaticMesh와 HRenderSubMesh — PStaticMesh는 IMesh를 구현하고 서브메시(HRenderSubMesh)마다 GPU 버퍼와 머터리얼을 보관하며, GameFrameWork의 메시 에셋 JGStaticMesh가 GetMesh()에서 SetSubMeshes로 렌더 메시를 생성하고, 텍스처 에셋 JGTexture는 PJGGraphicsAPI로 생성한 IRawTexture를 소유하며 저장 시 리드백한다',
   type: 'class',
-  w: 1440,
-  h: 600,
+  w: 1100,
+  h: 530,
+  groups: [
+    { x: 20, y: 20, w: 1060, h: 104, label: 'GameFrameWork (메시 · 텍스처 에셋)', dash: true }
+  ],
   classes: [
-    { id: 'AST', x: 300, y: 30, w: 500, name: 'JGAsset', stereo: '에셋 기반 클래스 · Asset 모듈', color: 'purple', members: ['직렬화 → .jgasset (JSON)'] },
-    { id: 'SM', x: 40, y: 170, w: 400, name: 'JGStaticMesh', stereo: '정적 메시 에셋', color: 'green', members: ['JGPROPERTY _subMeshes : HStaticSubMesh[]', 'JGPROPERTY _bounds  // 경계 상자', '-_mesh : PStaticMesh', '+SetData() · SetMaterial()', '+GetMesh()  // 렌더 메시 지연 생성'] },
-    { id: 'IMP', x: 480, y: 170, w: 260, name: 'JGFBXAssetImporter', stereo: 'FBX 임포터 · JGAssetImporter 상속', color: 'yellow', members: ['+Import(args)'] },
-    { id: 'TEX', x: 780, y: 170, w: 280, name: 'JGTexture', stereo: '텍스처 에셋', color: 'green', members: ['-_texture : IRawTexture', '+GetRawTexture()'] },
-    { id: 'SUB', x: 40, y: 380, w: 400, name: 'HStaticSubMesh', stereo: '서브메시 · 직렬화 대상', color: 'green', stack: 1, members: ['Vertices · Indices  // CPU 사본', 'VertexBuffer · IndexBuffer  // GPU 버퍼', 'Material'] },
-    { id: 'PSM', x: 480, y: 380, w: 260, name: 'PStaticMesh', stereo: '렌더 메시 · IMesh 구현', color: 'blue', members: ['HRenderSubMesh[]  // GPU 버퍼 · 머터리얼'] },
-    { id: 'RT', x: 780, y: 380, w: 280, name: 'IRawTexture', stereo: 'GPU 텍스처', color: 'blue' }
+    { id: 'PSM', x: 40, y: 190, w: 360, name: 'PStaticMesh', stereo: '렌더 메시 · IMesh 구현', color: 'blue', members: ['-_subMeshes : HRenderSubMesh[]', '+SetSubMeshes(subMeshes)', '+GetMaterial(slot)  // 비면 기본 머터리얼'] },
+    { id: 'IMS', x: 420, y: 190, w: 270, name: 'IMesh', stereo: '렌더 메시 인터페이스', color: 'purple', members: ['+GetVertexBuffer() · GetIndexBuffer()', '+GetMaterial() · GetInputLayout()'] },
+    { id: 'SUB', x: 40, y: 390, w: 360, name: 'HRenderSubMesh', stereo: '서브메시 · GPU 자원만', color: 'blue', stack: 1, members: ['VertexBuffer · IndexBuffer  // GPU 버퍼', 'Material'] },
+    { id: 'RTX', x: 760, y: 330, w: 300, name: 'IRawTexture', stereo: 'GPU 텍스처', color: 'blue', members: ['+GetTextureID() · GetTextureInfo()'] }
   ],
   nodes: [
-    { id: 'KEY', x: 480, y: 500, w: 580, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 소유 · —▷ 상속 · → 생성 · 사용', '겹친 카드 = 여러 개 · + public · - private'] },
-    { id: 'GAPI', x: 1120, y: 380, w: 280, h: 56, color: 'gray', title: 'PJGGraphicsAPI', lines: ['그래픽스 API'] }
+    { id: 'SMA', x: 40, y: 54, w: 360, h: 56, color: 'gray', title: 'JGStaticMesh', lines: ['메시 에셋 · CPU 사본 · 직렬화'] },
+    { id: 'TXA', x: 760, y: 54, w: 300, h: 56, color: 'gray', title: 'JGTexture', lines: ['텍스처 에셋 · 직렬화'] },
+    { id: 'GAPI', x: 760, y: 200, w: 300, h: 56, color: 'gray', title: 'PJGGraphicsAPI', lines: ['그래픽스 API'] },
+    { id: 'KEY', x: 440, y: 410, w: 300, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 소유 · —▷ 상속 · → 생성 · 사용', '겹친 카드 = 여러 개 · + public · - private'] }
   ],
   edges: [
-    { from: 'SM', to: 'AST', fs: 't', ts: 'b', fo: 110, to_off: -200, end: 'triangle' },
-    { from: 'TEX', to: 'AST', fs: 't', ts: 'b', fo: -130, to_off: 240, end: 'triangle' },
-    { from: 'IMP', to: 'SM', fs: 'l', ts: 'r', fo: 0, to_off: -36, label: '생성' },
-    { from: 'IMP', to: 'TEX', fs: 'r', ts: 'l', fo: 0, to_off: -9, label: '생성' },
-    { from: 'SM', to: 'SUB', fs: 'b', ts: 't', start: 'diamond', end: 'none', label: '1 : N' },
-    { points: [[440, 290], [610, 290], [610, 380]], label: 'GetMesh()로 생성', lx: 610, ly: 335 },
-    { from: 'TEX', to: 'RT', fs: 'b', ts: 't', start: 'diamond', end: 'none', label: '소유' },
-    { points: [[1060, 200], [1260, 200], [1260, 380]], label: '저장 시 리드백 · 로드 시 생성', lx: 1260, ly: 290, lpos: 'l' }
+    { from: 'SMA', to: 'PSM', fs: 'b', ts: 't', label: 'GetMesh() · SetSubMeshes' },
+    { from: 'PSM', to: 'IMS', fs: 'r', ts: 'l', fo: -9, to_off: 0, end: 'triangle' },
+    { from: 'PSM', to: 'SUB', fs: 'b', ts: 't', start: 'diamond', end: 'none', label: '1 : N' },
+    { from: 'TXA', to: 'GAPI', fs: 'b', ts: 't', label: 'CreateRawTexture · 저장 시 리드백', lpos: 'l', lw: 260 },
+    { from: 'GAPI', to: 'RTX', fs: 'b', ts: 't', label: '생성' },
+    { points: [[760, 96], [735, 96], [735, 360], [760, 360]], start: 'diamond', end: 'none', label: '소유', lx: 735, ly: 300, lpos: 'l' }
   ]
 };

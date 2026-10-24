@@ -16,7 +16,7 @@ module.exports = {
   ],
   nodes: [
     { id: 'C1', x: 340, y: 30, w: 230, h: 60, color: 'gray', title: 'GPU 리소스 생성', lines: ['PDX12Texture · 정점 버퍼 등'] },
-    { id: 'C2', x: 590, y: 30, w: 190, h: 60, color: 'gray', title: '리드백 사용처', lines: ['JGTexture 저장 · DevScene'] },
+    { id: 'C2', x: 590, y: 30, w: 190, h: 60, color: 'gray', title: '리드백 사용처', lines: ['텍스처 에셋 저장 · 렌더 자체 시험'] },
     { id: 'KEY', x: 20, y: 300, w: 280, h: 80, color: 'white', shape: 'note', title: '범례', lines: ['◇— 보관 · → 요청 · 기록', '겹친 카드 = 여러 개'] }
   ],
   edges: [

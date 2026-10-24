@@ -25,7 +25,7 @@ module.exports = {
   h: 890,
   classes: [
     { id: 'MOD', x: 40, y: 30, w: 330, name: 'HJGGraphicsModule', stereo: 'Graphics 모듈 클래스', color: 'blue', members: ['-_graphicsAPI : PJGGraphicsAPI', '#StartupModule()  // API 생성 · 초기화', '#ShutdownModule()', '-BeginFrame()  // GraphicsBegin 단계', '-EndFrame()  // GraphicsEnd 단계'] },
-    { id: 'API', x: 460, y: 30, w: 480, name: 'PJGGraphicsAPI', stereo: '그래픽스 API · 추상 클래스', color: 'blue', members: ['#Initialize() · Destroy()', '#BeginFrame() · EndFrame()', '#OnWindowResized(w, h)', '+CreateRawTexture() · CreateVertexBuffer() · CreateIndexBuffer()', '+CreateRawMaterial()', '+CreateStaticMesh() · CreateTexture()  // 에셋', '+GetGraphicsCommand()', '+RequestTextureReadback() · ReadbackTextureImmediate()', '+SubmitFinalTexture() · SetVSyncEnabled()'] },
+    { id: 'API', x: 460, y: 30, w: 480, name: 'PJGGraphicsAPI', stereo: '그래픽스 API · 추상 클래스', color: 'blue', members: ['#Initialize() · Destroy()', '#BeginFrame() · EndFrame()', '#OnWindowResized(w, h)', '+CreateRawTexture() · CreateVertexBuffer() · CreateIndexBuffer()', '+CreateRawMaterial()', '+GetGraphicsCommand()', '+RequestTextureReadback() · ReadbackTextureImmediate()', '+SubmitFinalTexture() · SetVSyncEnabled()'] },
     { id: 'DX', x: 560, y: 300, w: 280, name: 'PDirectX12API', stereo: 'DX12 백엔드 구현', color: 'yellow' },
     { id: 'OBJ', x: 355, y: 470, w: 320, name: 'IJGGraphicsObject', stereo: 'GPU 리소스 기반 인터페이스 · IMemoryObject 상속', color: 'purple', members: ['+GetName() · SetName()'] }
   ].concat(kids),
@@ -36,7 +36,7 @@ module.exports = {
     { id: 'IMPL', x: 180, y: 810, w: 670, h: 56, color: 'white', shape: 'note', title: '구현 클래스', lines: ['PDX12Texture · PDX12VertexBuffer · PDX12Material · PDX12FrameBuffer 등(DX12), PStaticMesh(IMesh)'] }
   ],
   edges: [
-    { from: 'MOD', to: 'API', fs: 'r', ts: 'l', fo: 36, to_off: 0, start: 'diamond', end: 'none', label: '생성 · 소유' },
+    { from: 'MOD', to: 'API', fs: 'r', ts: 'l', fo: 36, to_off: 9, start: 'diamond', end: 'none', label: '생성 · 소유' },
     { from: 'MOD', to: 'SCH', fs: 'b', ts: 't', dash: true, label: 'BeginFrame · EndFrame 예약' },
     { points: [[370, 358], [430, 358], [430, 220], [460, 220]], label: '참조', lx: 430, ly: 290, lpos: 'l' },
     { from: 'DX', to: 'API', fs: 't', ts: 'b', end: 'triangle' },

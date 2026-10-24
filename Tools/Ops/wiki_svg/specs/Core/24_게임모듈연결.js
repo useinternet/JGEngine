@@ -13,9 +13,9 @@ module.exports = {
     { id: 'J0', x: 620, y: 112, w: 250, h: 82, color: 'white', shape: 'note', title: '모듈 목록 파일', lines: ['에디터: module_system_info.json', '게임만: runtime_module_info.json', '패키지: JGPackage.json RuntimeModules'], small: true },
     { id: 'L', x: 250, y: 230, w: 300, h: 56, color: 'blue', title: 'ConnectModule(LaunchModule)', lines: ['실행 모듈 연결'] },
     { id: 'Q', x: 290, y: 326, w: 220, h: 80, color: 'white', shape: 'diamond', title: '실행 모듈' },
-    { id: 'E1', x: 40, y: 450, w: 320, h: 74, color: 'purple', title: 'HJGEditorModule::StartupModule', lines: ['창 생성', '엔진 모듈 7개 연결(Graphics, GUI, Asset 등)'] },
+    { id: 'E1', x: 40, y: 450, w: 320, h: 74, color: 'purple', title: 'HJGEditorModule::StartupModule', lines: ['창 생성', '엔진 모듈 연결(Graphics, GUI, GameFrameWork)'] },
     { id: 'E2', x: 40, y: 564, w: 320, h: 56, color: 'purple', title: 'connectProjectModules', lines: ['GameModules → EditorModules 순서로 연결'] },
-    { id: 'G1', x: 540, y: 450, w: 320, h: 74, color: 'purple', title: 'HGameHostModule::StartupModule', lines: ['창 생성', '엔진 모듈 연결(Graphics, Asset, GameFrameWorks)'] },
+    { id: 'G1', x: 540, y: 450, w: 320, h: 74, color: 'purple', title: 'HGameHostModule::StartupModule', lines: ['창 생성', '엔진 모듈 연결(Graphics, GameFrameWork)'] },
     { id: 'G2', x: 540, y: 564, w: 320, h: 56, color: 'purple', title: 'connectModules', lines: ['GameModules 연결(에디터 모듈은 연결 안 함)'] },
     { id: 'JP', x: 40, y: 664, w: 320, h: 62, color: 'yellow', shape: 'note', title: '<프로젝트>.jgproject', lines: ['GameModules · EditorModules'] },
     { id: 'PK', x: 540, y: 664, w: 320, h: 62, color: 'yellow', shape: 'note', title: 'Bin/JGPackage.json', lines: ['LaunchModule · GameModules · RuntimeModules'] }
