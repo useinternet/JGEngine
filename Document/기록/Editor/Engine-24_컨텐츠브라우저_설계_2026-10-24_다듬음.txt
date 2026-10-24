@@ -1,0 +1,125 @@
+# 컨텐츠 브라우저 설계도(Engine-24) — 보고함 글 다듬음
+
+원본: Document/기록/Editor/Engine-24_컨텐츠브라우저_설계_2026-10-24.md (8절 보고함 초안 · 1 · 3절)
+다듬은 세션: Document Writer, 2026-10-24
+그대로 둔 것: 뜻 · 숫자(셋 · 둘 · 약 2.5일) · 코드 이름 · 경로 · 선택지 순서(A · B · C) · 그림 두 장 · 예제 코드 세 블록(5절 그대로 옮김)
+
+────────────────────────────────────────
+## 8절 보고함 글 (엔진 총괄이 new_question.pl 로 올림)
+────────────────────────────────────────
+
+--from    Editor
+--area    Editor
+--title   컨텐츠 브라우저 설계도
+
+--why (줄마다 따로 — 대시보드에서 한 줄씩 나뉜다)
+
+컨텐츠 브라우저(Engine-22) 설계도를 확인받으려 합니다.
+사용자 말씀: "컨텐츠 브라우저 만들기 ( 언리얼 레퍼런스 ) … 메시든 텍스쳐든 뭐든"
+지금 에디터에는 에셋을 둘러볼 창이 없습니다.
+데이터 테이블만 Data Table Editor 의 Open 목록에서 열 수 있습니다. 메시 · 텍스처는 코드에 경로 글자로만 적습니다.
+FBX 가져오기 함수는 있지만 아무 곳에서도 부르지 않습니다.
+만들 것: 에디터에 새 Content Browser 창을 둡니다.
+- 왼쪽: 폴더 트리(/JGEngine/ · /JGGame/)
+- 가운데: 타일. 텍스처는 실제 그림으로 보입니다.
+- 할 수 있는 일: 찾기 · 종류 칩으로 거르기 · 원본 .fbx 가져오기 · 데이터 테이블 더블클릭으로 열기 · 경로 복사
+나눠 맡기: 화면은 JGEditor 가 그립니다. 폴더 읽기와 가져오기는 GameFrameWork 에 함수 둘(ListAssetFolder · ImportAssetFile)을 더해 맡깁니다. GUI 에는 트리 · 더블클릭용 감싸개 셋을 더합니다. 약 2.5일.
+① 시안 A(트리 · 타일 · 아래 세부): 텍스처를 그림으로 보고 고르기 쉽고, 씬 뷰포트 아래 넓은 도킹 자리에 맞습니다. 대신 파일이 아주 많으면 표보다 훑기 어렵습니다.
+② 시안 B(트리 · 목록 · 오른쪽 세부): 파일이 많아도 표로 훑기 좋습니다. 대신 썸네일이 없어 텍스처를 고르기 어렵고, 세 칸이라 좁은 자리에서 답답합니다.
+③ 시안 C(아래 서랍): 씬 뷰포트 아래에 낮게 붙어 자리를 적게 씁니다. 대신 트리가 없어 폴더가 깊으면 오가기 어렵고, 세부를 보여 줄 자리가 없습니다.
+첫 판에서 미루는 것: 끌어 놓기 · 이름 바꾸기 · 지우기 · 메시 썸네일 · 목록 보기 · 파일 고르기 창
+PNG 가져오기는 언리얼 에셋 가져오기(Engine-26)에서 따로 합니다.
+권고: ① 시안 A 와 위 첫 판 범위. 텍스처 · 메시를 고르는 일이 많고, 미룬 기능은 이 구조 위에 나중에 더할 수 있기 때문입니다.
+예제 — 에셋 목록 얻기, 지금(데이터 테이블만 얻음):
+```cpp
+// 지금: 데이터 테이블만, 폴더 없이
+HList<HDataTableAssetEntry> tables;
+GetLoadedDataTables(tables);
+for (const HDataTableAssetEntry& entry : tables)
+{
+	if (HGUI::Selectable(entry.TokenPath, findTab(entry.TokenPath) != nullptr))
+	{
+		OpenTable(entry.TokenPath);
+	}
+}
+```
+예제 — 에셋 목록 얻기, 바뀐 뒤(한 폴더의 하위 폴더 · 에셋 · 원본 파일):
+```cpp
+// 바뀐 뒤: 한 폴더의 하위 폴더 · 에셋 · 원본 파일
+HList<HAssetFolderEntry> entries;
+ListAssetFolder("/JGGame/Meshes", entries);
+for (const HAssetFolderEntry& entry : entries)
+{
+	// entry.Kind = Folder · Asset · Source, entry.TokenPath, entry.ClassName(예: JGStaticMesh)
+	drawTile(entry);
+}
+```
+예제 — 가져오기, 지금(가져오기 클래스만 있고 부르는 곳이 없음):
+```cpp
+// 지금: 인자를 직접 꾸려 가져오기 클래스를 불러야 하고, 새 에셋은 다음 실행에야 에셋 DB 에 올라온다
+class PFBXAssetImportArguments : public PAssetImportArguments
+{
+	EFBXAssetImportFlags Flags;      // SrcPath(원본 파일) · DestPath(저장 폴더, 디스크 경로)는 기반 클래스
+};
+virtual bool JGFBXAssetImporter::Import(PSharedPtr<PAssetImportArguments> inArgs);
+```
+예제 — 가져오기, 바뀐 뒤(원본 파일과 저장 폴더만 주면 됨):
+```cpp
+// 바뀐 뒤: 원본 파일과 저장 폴더(토큰 경로)만 주면 확장자로 가져오기 클래스를 고르고, 새 에셋을 바로 올린다
+HAssetImportResult result;
+if (ImportAssetFile(source.TokenPath, "/JGGame/Meshes", &result) == false)
+{
+	_statusText = result.Error;
+}
+// result.CreatedAssets(새 .jgasset 토큰 경로)는 다음 프레임 브라우저에 보인다
+```
+
+--q       컨텐츠 브라우저를 어느 시안으로 만들까요? 첫 판 범위는 위 설계대로입니다.
+--option  시안 A — 트리 · 타일 · 아래 세부(권고)
+--option  시안 B — 트리 · 목록 · 오른쪽 세부
+--option  시안 C — 아래 서랍
+--now     코드는 그대로 둡니다. 설계도를 확인받기 전에는 고치지 않습니다.
+--image   Saved/UIShots/Engine-24_컨텐츠브라우저_시안비교.png
+--image   Saved/UIShots/Engine-24_컨텐츠브라우저_구조.png
+
+────────────────────────────────────────
+## 1절 · 3절 문장 (원본 설계 문서에 고쳐 넣을 것 — 고치는 것은 Editor 몫)
+────────────────────────────────────────
+
+1절 9줄
+전: 에디터에 **Content Browser 창**을 새로 만든다. 왼쪽 폴더 트리(`/JGEngine/` · `/JGGame/`)에서 폴더를 고르면 가운데 타일로 메시 · 텍스처 · 데이터 테이블 · 원본 파일(.fbx · .png)을 보여 주고, 찾기 · 종류 거르기 · 가져오기 · 더블클릭 열기를 한다.
+후: 에디터에 **Content Browser 창**을 새로 만든다. 왼쪽 폴더 트리(`/JGEngine/` · `/JGGame/`)에서 폴더를 고르면, 가운데 타일에 메시 · 텍스처 · 데이터 테이블 · 원본 파일(.fbx · .png)이 보인다. 창에서 찾기 · 종류 거르기 · 가져오기 · 더블클릭 열기를 할 수 있다.
+
+1절 10줄
+전: 화면은 JGEditor 가, 폴더 읽기 · 가져오기 로직은 GameFrameWork 가 맡는다(런타임 로직과 에디터 UI 나눔). 약 2.5일.
+후: 화면은 JGEditor 가, 폴더 읽기 · 가져오기 로직은 GameFrameWork 가 맡는다(런타임 로직과 에디터 UI 나눔). 약 2.5일 걸린다.
+
+3절 표 "PNG → 텍스처 에셋 가져오기" 줄, 첫 판 칸
+전: Engine-26
+후: 언리얼 에셋 가져오기(Engine-26)
+
+3절 표 "가져오기 — 파일 고르기 창 · OS 탐색기에서 끌어 놓기" 줄, 까닭 칸
+전: 플랫폼 코드에 둘 다 없다. 원본을 Content 폴더에 두고 가져온다
+후: 플랫폼 코드에 둘 다 없다. 첫 판은 원본을 Content 폴더에 두고 가져온다
+
+3절 나머지 칸은 짧고 뜻이 분명해 그대로 둔다.
+
+────────────────────────────────────────
+## 다듬으며 바꾼 것 · 확인할 것
+────────────────────────────────────────
+
+바꾼 것
+- --why: 한 줄에 몰린 내용을 "지금 상황 → 만들 것 → 나눠 맡기 → 선택지 → 미루는 것 → 권고 → 예제" 차례로 줄을 나눔.
+- ① 선택지 줄에 대가를 더함(2절 시안 비교 표의 A "대가" 칸에서 옮김). ② · ③도 2절 표 문장으로 좋은 점 · 대가를 맞춤.
+- Engine-26 → "언리얼 에셋 가져오기(Engine-26)"(사용자 글에는 이름(번호)).
+- --q: 원래 "이 설계(시안 · 첫 판 범위)대로 만들까요?"는 예 · 아니오 질문이라, 시안을 고르는 선택지 셋과 맞지 않음. "어느 시안으로 만들까요? 첫 판 범위는 위 설계대로입니다."로 바꿈.
+- --option: "시안 A 로 이대로 진행(권고)" · "시안 B 로" · "시안 C 로" → 단추만 봐도 시안 모습이 떠오르게 시안 이름을 붙임. 순서 · 권고 표시는 그대로.
+
+Editor 확인 결과(2026-10-24 18:24)
+- 1 → 감싸개는 셋(TreeNode · TreePop · IsItemDoubleClicked)으로 맞춤. 구조 그림 GUI 칸 제목을 "감싸개 셋 더함"으로 고쳐 다시 찍음.
+- 2 → 가져오기 "지금" 블록을 --why 예제에 넣음(바뀐 뒤 블록 바로 앞). 예제 코드는 이제 넷.
+- 1 · 3절 문장은 원본 설계 문서에 반영함.
+
+Editor 가 확인할 것(고치지 않음)
+1. 감싸개 수: 글은 "감싸개 셋"(TreeNode · TreePop · IsItemDoubleClicked), 구조 그림 GUI 칸 제목은 "감싸개 둘 더함". 그림 제목을 "셋"으로 맞출지, 글을 "트리 · 더블클릭 두 가지(함수 셋)"로 쓸지.
+2. 예제 코드: 가져오기는 "바뀐 뒤"만 넣었다. CLAUDE.md 6절은 바뀌기 전과 뒤를 함께 붙이라고 한다. 5절의 가져오기 "지금" 블록(PFBXAssetImportArguments · Import 선언)도 넣을지.
