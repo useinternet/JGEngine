@@ -3,11 +3,11 @@
 // <file> 이름은 "문서키_번호_내용"(빈칸 없이), 예: Core_06_모듈연결, JGEngine전체구조_00_모듈계층
 'use strict';
 const W = 'C:/obsidian/ProjectJG/02. 위키/JGEngine';
-const M = W + '/JGEngine Module';
+const M = W + '/JGEngine';
 const G = M + '/02. GameFrameWork';
 module.exports = {
   JGEngine전체구조: W + '/JGEngine 전체 구조.md',
-  JGEngine프로젝트구성도: W + '/JGEngine 프로젝트 구성도.md',
+  JGEngine프로젝트구성도: M + '/JGEngine.md',
   JGEngine팀구성및운영: W + '/JGEngine 팀 구성 및 운영.md',
   Core: M + '/00. Core.md',
   Graphics: M + '/01. Graphics.md',
