@@ -17,3 +17,4 @@ HSelfTestResult RunGameUISelfTest(const HConsoleCommandArgs& inArgs);
 HSelfTestResult RunDataTableSelfTest(const HConsoleCommandArgs& inArgs);
 HSelfTestResult RunCookCheckSelfTest(const HConsoleCommandArgs& inArgs);
 HSelfTestResult RunAudioSelfTest(const HConsoleCommandArgs& inArgs);
+HSelfTestResult RunAssetFolderSelfTest(const HConsoleCommandArgs& inArgs);

@@ -43,6 +43,8 @@ namespace
 			[](const HConsoleCommandArgs&, const PString& inNetSub) { return PGameplayNetSelfTest::Run(inNetSub); } },
 		{ "audio",      "audio mixing without a device, null device, lazy device open",
 			[](const HConsoleCommandArgs& inArgs, const PString&) { return RunAudioSelfTest(inArgs); } },
+		{ "asset",      "asset folder listing and import for the content browser (ListAssetFolder, ImportAssetFile)",
+			[](const HConsoleCommandArgs& inArgs, const PString&) { return RunAssetFolderSelfTest(inArgs); } },
 	};
 	constexpr int32 GROUP_COUNT = (int32)(sizeof(GROUPS) / sizeof(GROUPS[0]));
 
@@ -75,7 +77,7 @@ namespace
 	// 사용법 줄은 명령이 false 를 돌려주면 콘솔이 찍는다
 	void logGroups()
 	{
-		JG_LOG(GameFrameWork, ELogLevel::Error, "gfw.selftest groups: gamemaster world viewport gameui datatable cookcheck net audio");
+		JG_LOG(GameFrameWork, ELogLevel::Error, "gfw.selftest groups: gamemaster world viewport gameui datatable cookcheck net audio asset");
 	}
 
 	HSelfTestResult runGroup(const HSelfTestGroup& inGroup, const HConsoleCommandArgs& inArgs, const PString& inNetSub, float64& outSeconds)
@@ -172,7 +174,7 @@ namespace
 	HAutoConsoleCommand GfwSelfTestCommand(
 		"gfw.selftest",
 		"gfw.selftest [group ...] [net=<transport|session|recovery|lobby|rewind|world|all>] [-list]",
-		"Run the GameFrameWork self tests (all groups when none is given): gamemaster world viewport gameui datatable cookcheck net audio",
+		"Run the GameFrameWork self tests (all groups when none is given): gamemaster world viewport gameui datatable cookcheck net audio asset",
 		&executeAll);
 
 	// --- 옛 명령 이름(별칭). 출력 · 인자 · 판정은 예전 명령과 같다.

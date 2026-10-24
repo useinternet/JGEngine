@@ -1270,3 +1270,36 @@ bool HGUI::IsAppFocusLost()
 {
 	return ImGui::GetIO().AppFocusLost;
 }
+
+bool HGUI::TreeNode(const PString& InLabel, bool bSelected, bool& OutClicked, bool bLeaf, bool bDefaultOpen)
+{
+	// 펼침은 화살표로만 바꾼다(OpenOnArrow). 이름 누르기는 노드 고르기에 쓴다. 행 오른쪽 끝까지 누를 수 있다.
+	ImGuiTreeNodeFlags Flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+	if (bSelected)
+	{
+		Flags |= ImGuiTreeNodeFlags_Selected;
+	}
+	if (bLeaf)
+	{
+		Flags |= ImGuiTreeNodeFlags_Leaf;
+	}
+	if (bDefaultOpen)
+	{
+		Flags |= ImGuiTreeNodeFlags_DefaultOpen;
+	}
+
+	const bool bOpen = ImGui::TreeNodeEx(InLabel.GetCStr(), Flags);
+	// 화살표를 누른 프레임(펼침이 바뀜)은 고르기로 치지 않는다.
+	OutClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left) && ImGui::IsItemToggledOpen() == false;
+	return bOpen;
+}
+
+void HGUI::TreePop()
+{
+	ImGui::TreePop();
+}
+
+bool HGUI::IsItemDoubleClicked()
+{
+	return ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+}

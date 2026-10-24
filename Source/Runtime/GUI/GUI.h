@@ -232,4 +232,14 @@ public:
 	static float32 GetDpiScale();
 	// 앱이 OS 포커스를 잃은 그 프레임만 true(그 프레임 끝에 ImGui 가 키 · 마우스 버튼 상태를 지운다). 누름 · 끌기 정리에 쓴다.
 	static bool IsAppFocusLost();
+
+public:
+	// ---- 컨텐츠 브라우저(JGEditor JGContentBrowser)가 쓰는 것. Engine-29 ----
+	// 트리 노드(폴더 트리). 펼쳐져 있으면 true — 그때만 자식을 그리고 TreePop 을 부른다(ImGui 규칙, 잎도 같다).
+	// 화살표를 누르면 펼치고 접는다. 이름을 누르면 펼침은 그대로이고 OutClicked 가 그 프레임만 true(노드 고르기).
+	// bSelected = 고른 노드 강조, bLeaf = 화살표 없는 잎, bDefaultOpen = 처음 그릴 때 펼쳐 둔다. InLabel 은 같은 부모 안의 ID 다("이름##ID" 가능).
+	static bool TreeNode(const PString& InLabel, bool bSelected, bool& OutClicked, bool bLeaf = false, bool bDefaultOpen = false);
+	static void TreePop();
+	// 바로 앞 항목 위에서 왼쪽 단추를 두 번 누른 프레임에 true(타일 더블클릭 열기).
+	static bool IsItemDoubleClicked();
 };

@@ -12,6 +12,7 @@
 #include "Widgets/SessionLobby.h"
 #include "Widgets/DevConsole.h"
 #include "Widgets/MemoryStatistics.h"
+#include "Widgets/ContentBrowser.h"
 
 #ifdef _PLATFORM_WINDOWS
 #include "Platform/Windows/WindowsJWindow.h"
@@ -165,6 +166,19 @@ void HJGEditorModule::openDefaultWidgets()
 			}
 		});
 	GUIModule->AddMainMenuItem(SessionLobbyItem);
+
+	// 컨텐츠 브라우저(엔진 · 게임 Content 의 폴더 · 에셋 · 원본 파일 둘러보기 · 가져오기, Engine-31).
+	HMainMenuItem ContentBrowserItem;
+	ContentBrowserItem.MenuPath = "Windows/Content Browser";
+	ContentBrowserItem.Action.BindLambda([]()
+		{
+			HGUIModule* GUIModule = GModuleGlobalSystem::GetInstance().FindModule<HGUIModule>();
+			if (GUIModule != nullptr)
+			{
+				GUIModule->OpenWidget<JGContentBrowser>();
+			}
+		});
+	GUIModule->AddMainMenuItem(ContentBrowserItem);
 }
 
 void HJGEditorModule::openSceneViewport()
