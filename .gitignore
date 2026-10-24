@@ -16,6 +16,8 @@ Bin/ReleaseGame/
 Document/Dashboard/사용자메모.md
 # 통합 대시보드 팀 화면이 쓰는 자리(2026-10-24 팀 대시보드 템플릿) — 사용자 메모 Saved/Feedback/memo.md · 보고함 글 · 답 · 첨부 그림. 공개 저장소에 넣지 않는다.
 Saved/
+# 언리얼에서 가져온 에셋(.jgasset · 원본) — Epic 라이선스라 공개 저장소에 넣지 않는다. 이 PC 의 에디터에서 보는 시험용(2026-10-24 사용자 요청, Engine-67)
+Content/Unreal/
 jg_log.txt
 *.stackdump
 # 빌드 결과(Bin)는 넣지 않는다 — 소스에서 빌드(사용자 결정 D-40, 2026-10-17). 서드파티 바이너리는 ThirdParty/ 에서 JGBuildTool 이 Bin 으로 복사한다.
